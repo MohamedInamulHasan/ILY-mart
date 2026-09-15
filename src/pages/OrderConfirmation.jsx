@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { playSuccessSound, unlockAudio } from '../utils/soundHelper';
 import { CheckCircle, ArrowLeft, ClipboardList, ShoppingBag, MapPin, Store, ChevronLeft, MoreHorizontal, Package, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const OrderConfirmation = () => {
     const location = useLocation();
@@ -448,35 +448,48 @@ const OrderConfirmation = () => {
                 </div>
             )}
 
-            {showSuccessModal && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-black/60 backdrop-blur-md">
-                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 transform transition-all scale-100">
-                        <div className="text-center">
-                            <div className="w-24 h-24 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                {t('Order Placed!')}
-                            </h2>
-                            <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
-                                {t('Your order has been placed successfully.')}
-                            </p>
-                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 mb-8 border border-gray-100 dark:border-gray-600/50">
-                                <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 tracking-widest uppercase font-bold">{t('Order ID')}</p>
-                                <p className="font-mono font-bold text-gray-900 dark:text-white text-xl">
-                                    #{String(createdOrderId || '000').slice(-6).toUpperCase()}
+            <AnimatePresence>
+                {showSuccessModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-black/60 backdrop-blur-md"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.4, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.7, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                            className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 relative overflow-hidden"
+                        >
+                            <div className="text-center">
+                                <div className="w-24 h-24 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                                    <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2]" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                    {t('Order Placed!')}
+                                </h2>
+                                <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
+                                    {t('Your order has been placed successfully.')}
                                 </p>
+                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 mb-8 border border-gray-100 dark:border-gray-600/50">
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 tracking-widest uppercase font-bold">{t('Order ID')}</p>
+                                    <p className="font-mono font-bold text-gray-900 dark:text-white text-xl">
+                                        #{String(createdOrderId || '000').slice(-6).toUpperCase()}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleCloseSuccess}
+                                    className="w-full bg-black text-white py-4 px-6 rounded-full font-normal shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform"
+                                >
+                                    {t('Go to Orders')}
+                                </button>
                             </div>
-                            <button
-                                onClick={handleCloseSuccess}
-                                className="w-full bg-black text-white py-4 px-6 rounded-full font-normal shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform"
-                            >
-                                {t('Go to Orders')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
