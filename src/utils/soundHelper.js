@@ -1,12 +1,17 @@
 // Utility to play popup sound effect for Order Confirmation & Service Request Confirmation
+import successSound from '../assets/sounds/success.mp3';
 
 let cachedAudio = null;
+
+const getAudioSource = () => {
+    return successSound || '/sounds/success.mp3';
+};
 
 // Pre-unlock / Pre-load audio on user gesture (e.g., when clicking Confirm button)
 export const unlockAudio = () => {
     try {
         if (!cachedAudio) {
-            cachedAudio = new Audio('/sounds/success.mp3');
+            cachedAudio = new Audio(getAudioSource());
         }
         cachedAudio.volume = 0.01;
         const p = cachedAudio.play();
@@ -24,7 +29,7 @@ export const unlockAudio = () => {
 
 export const playSuccessSound = () => {
     try {
-        const audio = cachedAudio || new Audio('/sounds/success.mp3');
+        const audio = cachedAudio || new Audio(getAudioSource());
         audio.volume = 1.0;
         audio.currentTime = 0;
 

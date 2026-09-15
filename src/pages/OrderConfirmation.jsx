@@ -443,11 +443,11 @@ const OrderConfirmation = () => {
                     <div className="p-4 sm:p-6">
                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
                             {cartItems.map((item) => (
-                                <div key={item.id} className="py-4 flex gap-4 first:pt-0">
+                                <div key={item.id || item._id} className="py-4 flex gap-4 first:pt-0">
                                     <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden flex-shrink-0 relative">
                                         <img
                                             src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
-                                            alt={item.adTitle || item.title}
+                                            alt={item.adTitle || item.title || 'Product'}
                                             className="h-full w-full object-cover"
                                             loading="lazy"
                                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
@@ -468,7 +468,7 @@ const OrderConfirmation = () => {
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                         <h4 className={`text-sm font-medium text-gray-900 dark:text-white mb-0.5 ${item.isFromAd ? '' : 'truncate'}`} title={item.adTitle || item.title}>
                                             {(() => {
-                                                const fullTitle = t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name;
+                                                const fullTitle = t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name || '';
                                                 if (language !== 'ta') return fullTitle;
                                                 
                                                 const bracketIndex = fullTitle.indexOf('(');
