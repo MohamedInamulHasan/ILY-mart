@@ -235,6 +235,7 @@ const OrderConfirmation = () => {
     }, [showConfirmModal, showSuccessModal, setIsFooterHidden]);
 
     const handleConfirmOrder = () => {
+        unlockAudio();
         setShowConfirmModal(true);
     };
 

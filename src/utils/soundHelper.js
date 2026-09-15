@@ -7,7 +7,7 @@ const getAudioSource = () => {
     return successSound || '/sounds/success.mp3';
 };
 
-// Pre-unlock / Pre-load audio on user gesture (e.g., when clicking Confirm button)
+// Pre-unlock / Pre-load audio on user gesture (e.g., first tap or click anywhere on app)
 export const unlockAudio = () => {
     try {
         if (!cachedAudio) {
@@ -26,6 +26,17 @@ export const unlockAudio = () => {
         }
     } catch (e) {}
 };
+
+// Automatically attach unlock listener to first tap/click on website
+if (typeof window !== 'undefined') {
+    const handleFirstUserInteraction = () => {
+        unlockAudio();
+        window.removeEventListener('click', handleFirstUserInteraction);
+        window.removeEventListener('touchstart', handleFirstUserInteraction);
+    };
+    window.addEventListener('click', handleFirstUserInteraction, { passive: true, once: true });
+    window.addEventListener('touchstart', handleFirstUserInteraction, { passive: true, once: true });
+}
 
 export const playSuccessSound = () => {
     try {
