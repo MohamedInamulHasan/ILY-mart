@@ -475,7 +475,7 @@ const Services = () => {
                                 </h3>
                                 <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
                                     {t('Are you sure you want to request')} <br />
-                                    <span className="font-bold text-gray-900 dark:text-white">"{selectedService.name}"</span>
+                                    <span className="font-bold text-gray-900 dark:text-white">"{t(selectedService, 'name') || selectedService.name}"</span>
                                 </p>
                                 <div className="flex flex-col gap-3">
                                     <button
@@ -512,7 +512,7 @@ const Services = () => {
                                     {t('Request Sent!')}
                                 </h2>
                                 <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium text-sm leading-relaxed px-2">
-                                    {t('Your request for')} <span className="font-bold text-gray-900 dark:text-white">"{selectedService.name}"</span> {t('has been received')}.
+                                    {t('Your request for')} <span className="font-bold text-gray-900 dark:text-white">"{t(selectedService, 'name') || selectedService.name}"</span> {t('has been received')}.
                                     <br />
                                     <span className="text-xs opacity-70 mt-2 block">{t('Our team will contact you shortly')}</span>
                                 </p>

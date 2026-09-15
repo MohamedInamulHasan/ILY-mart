@@ -329,6 +329,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                     <input 
                                         type="text" value={serviceForm.name} onChange={e => setServiceForm(p => ({...p, name: e.target.value}))}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all"
+                                        placeholder={t('e.g., Electrician Services, AC Repair')}
                                         required
                                     />
                                 </div>
@@ -337,7 +338,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                     <input 
                                         type="text" value={serviceForm.category} onChange={e => setServiceForm(p => ({...p, category: e.target.value}))}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all"
-                                        placeholder="e.g. Home Care" required
+                                        placeholder={t('e.g., Home Care, Maintenance')} required
                                     />
                                 </div>
                                 <div className="md:col-span-2">
@@ -345,6 +346,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                     <textarea 
                                         value={serviceForm.description} onChange={e => setServiceForm(p => ({...p, description: e.target.value}))}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all h-24"
+                                        placeholder={t('Service description...')}
                                         required
                                     />
                                 </div>
@@ -414,6 +416,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                     <input 
                                         type="text" value={serviceForm.address} onChange={e => setServiceForm(p => ({...p, address: e.target.value}))}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all"
+                                        placeholder={t('e.g., Main Road, Ilayangudi')}
                                         required
                                     />
                                 </div>
@@ -422,6 +425,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                     <input 
                                         type="text" value={serviceForm.mobile} onChange={e => setServiceForm(p => ({...p, mobile: e.target.value}))}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all"
+                                        placeholder={t('e.g., 9876543210')}
                                         required
                                     />
                                 </div>
@@ -475,6 +479,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                     <input 
                                         type="text" value={itemForm.name} onChange={e => setItemForm(p => ({...p, name: e.target.value}))}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all font-bold"
+                                        placeholder={t('e.g., AC Filter Cleaning, Wiring Check')}
                                         required
                                     />
                                 </div>
@@ -483,6 +488,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                     <textarea 
                                         value={itemForm.description} onChange={e => setItemForm(p => ({...p, description: e.target.value}))}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all h-20 text-sm"
+                                        placeholder={t('Item description...')}
                                     />
                                 </div>
                                 <div>

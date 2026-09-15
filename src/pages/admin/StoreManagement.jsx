@@ -1188,6 +1188,7 @@ const StoreManagement = () => {
                                     value={productForm.title}
                                     onChange={(e) => setProductForm({ ...productForm, title: e.target.value })}
                                     className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                    placeholder={t('e.g., Wireless Headphones, Fresh Milk')}
                                     required
                                 />
                             </div>
@@ -1199,6 +1200,7 @@ const StoreManagement = () => {
                                     value={productForm.price}
                                     onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
                                     className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                    placeholder="0.00"
                                     required
                                 />
                             </div>
@@ -1386,6 +1388,7 @@ const StoreManagement = () => {
                                 onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                                 rows="4"
                                 className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                placeholder={t('Product description...')}
                                 required
                             ></textarea>
                         </div>
