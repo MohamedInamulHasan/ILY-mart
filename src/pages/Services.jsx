@@ -6,7 +6,8 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext'; // Import useAuth
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { useServices, useServiceItems } from '../hooks/queries/useServices';
-import { API_BASE_URL } from '../utils/api';
+import { motion } from 'framer-motion';
+import { playSuccessSound } from '../utils/soundHelper';
 import { isStoreOpen as isServiceOpen } from '../utils/storeHelpers';
 
 const Services = () => {
@@ -128,6 +129,7 @@ const Services = () => {
             setTimeout(() => {
                 setRequestSuccess(true);
                 setIsSubmitting(false);
+                playSuccessSound();
             }, 50);
         } catch (error) {
             console.error("Failed to request service:", error);
@@ -464,7 +466,7 @@ const Services = () => {
                 {/* Confirmation Modal - Matches Order Confirmation Design */}
                 {showConfirmation && selectedService && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700 shadow-2xl">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700 shadow-2xl">
                             <div className="text-center">
                                 <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
                                     <div className="absolute inset-0 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-5 animate-ping"></div>
@@ -496,17 +498,23 @@ const Services = () => {
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
                 )}
 
                 {/* Success Modal - Matches Order Confirmation Design */}
                 {requestSuccess && selectedService && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-[#CBF9B2]/20 backdrop-blur-md">
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 transform transition-all scale-100">
+                        <motion.div 
+                            initial={{ scale: 0.5, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                            className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 transform transition-all scale-100 relative overflow-hidden"
+                        >
                             <div className="text-center">
-                                <div className="w-24 h-24 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2]" />
+                                <div className="w-24 h-24 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                                    <div className="absolute inset-0 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-20 animate-ping"></div>
+                                    <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2] relative z-10 animate-bounce" />
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
                                     {t('Request Sent!')}
@@ -527,7 +535,7 @@ const Services = () => {
                                     {t('Close')}
                                 </button>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
                 )}
             </div>
