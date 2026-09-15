@@ -9,8 +9,8 @@ import { openExternalLink } from '../utils/linkHelper';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { CheckCircle, ArrowLeft, ClipboardList, ShoppingBag, MapPin, Store, ChevronLeft, MoreHorizontal, Package, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { playSuccessSound } from '../utils/soundHelper';
+import { motion, AnimatePresence } from 'framer-motion';
+import { playSuccessSound, unlockAudio } from '../utils/soundHelper';
 
 const OrderConfirmation = () => {
     const location = useLocation();
@@ -240,6 +240,7 @@ const OrderConfirmation = () => {
 
     const confirmOrderAction = async () => {
         if (isSubmitting) return;
+        unlockAudio();
         setIsSubmitting(true);
 
         // Use provided delivery charge or default to 20
@@ -613,78 +614,99 @@ const OrderConfirmation = () => {
                 </div>
             </div>
 
-            {showConfirmModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700">
-                        <div className="text-center">
-                            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
-                                <div className="absolute inset-0 rounded-full bg-black opacity-5 animate-ping"></div>
-                                <ShoppingBag className="h-10 w-10 text-black dark:text-white relative z-10" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                                {t('Ready to Wrap Up?')}
-                            </h3>
-                            <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                                {t('You are just one step away from confirming your order. Do you want to proceed?')}
-                            </p>
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    onClick={confirmOrderAction}
-                                    disabled={isSubmitting}
-                                    className="w-full px-4 py-4 text-sm font-normal text-white bg-black hover:bg-gray-900 rounded-full shadow-lg shadow-gray-200 dark:shadow-gray-900/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                                >
-                                    {isSubmitting ? (
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    ) : t('Confirm Order')}
-                                </button>
-                                <button
-                                    onClick={() => setShowConfirmModal(false)}
-                                    disabled={isSubmitting}
-                                    className="w-full px-4 py-3 text-sm font-normal text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
-                                >
-                                    {t('Cancel')}
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-
-            {showSuccessModal && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-black/60 backdrop-blur-md">
-                    <motion.div 
-                        initial={{ scale: 0.5, opacity: 0, y: 30 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                        className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 transform transition-all scale-100 relative overflow-hidden"
+            <AnimatePresence>
+                {showConfirmModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
                     >
-                        <div className="text-center">
-                            <div className="w-24 h-24 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                                <div className="absolute inset-0 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-20 animate-ping"></div>
-                                <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2] relative z-10 animate-bounce" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                {t('Order Placed!')}
-                            </h2>
-                            <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
-                                {t('Your order has been placed successfully.')}
-                            </p>
-                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 mb-8 border border-gray-100 dark:border-gray-600/50">
-                                <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 tracking-widest uppercase font-bold">{t('Order ID')}</p>
-                                <p className="font-mono font-bold text-gray-900 dark:text-white text-xl">
-                                    #{String(createdOrderId || '000').slice(-6).toUpperCase()}
+                        <motion.div
+                            initial={{ scale: 0.7, opacity: 0, y: 40 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.7, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                            className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700 shadow-2xl"
+                        >
+                            <div className="text-center">
+                                <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
+                                    <div className="absolute inset-0 rounded-full bg-black opacity-5 animate-ping"></div>
+                                    <ShoppingBag className="h-10 w-10 text-black dark:text-white relative z-10" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                    {t('Ready to Wrap Up?')}
+                                </h3>
+                                <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+                                    {t('You are just one step away from confirming your order. Do you want to proceed?')}
                                 </p>
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={confirmOrderAction}
+                                        disabled={isSubmitting}
+                                        className="w-full px-4 py-4 text-sm font-normal text-white bg-black hover:bg-gray-900 rounded-full shadow-lg shadow-gray-200 dark:shadow-gray-900/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                                    >
+                                        {isSubmitting ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : t('Confirm Order')}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowConfirmModal(false)}
+                                        disabled={isSubmitting}
+                                        className="w-full px-4 py-3 text-sm font-normal text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+                                    >
+                                        {t('Cancel')}
+                                    </button>
+                                </div>
                             </div>
-                            <button
-                                onClick={handleCloseSuccess}
-                                className="w-full bg-black text-white py-4 px-6 rounded-full font-normal shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform"
-                            >
-                                {t('Go to Orders')}
-                            </button>
-                        </div>
+                        </motion.div>
                     </motion.div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showSuccessModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-black/60 backdrop-blur-md"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.3, opacity: 0, y: 50 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.7, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                            className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 relative overflow-hidden"
+                        >
+                            <div className="text-center">
+                                <div className="w-24 h-24 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                                    <div className="absolute inset-0 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-20 animate-ping"></div>
+                                    <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2] relative z-10 animate-bounce" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                    {t('Order Placed!')}
+                                </h2>
+                                <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
+                                    {t('Your order has been placed successfully.')}
+                                </p>
+                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 mb-8 border border-gray-100 dark:border-gray-600/50">
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 tracking-widest uppercase font-bold">{t('Order ID')}</p>
+                                    <p className="font-mono font-bold text-gray-900 dark:text-white text-xl">
+                                        #{String(createdOrderId || '000').slice(-6).toUpperCase()}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleCloseSuccess}
+                                    className="w-full bg-black text-white py-4 px-6 rounded-full font-normal shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform"
+                                >
+                                    {t('Go to Orders')}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
