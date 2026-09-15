@@ -3,11 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Wrench, ShieldCheck, MapPin, CheckCircle, Phone, Send, Check, Search, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext';
+import { playSuccessSound, unlockAudio } from '../utils/soundHelper'; // Import useAuth
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { useServices, useServiceItems } from '../hooks/queries/useServices';
-import { motion, AnimatePresence } from 'framer-motion';
-import { playSuccessSound, unlockAudio } from '../utils/soundHelper';
+import { API_BASE_URL } from '../utils/api';
 import { isStoreOpen as isServiceOpen } from '../utils/storeHelpers';
 
 const Services = () => {
@@ -90,7 +90,7 @@ const Services = () => {
 
     const confirmRequest = async () => {
         if (!selectedService) return;
-        unlockAudio();
+
         setIsSubmitting(true);
         try {
             // 1. Get Location Data
@@ -129,7 +129,6 @@ const Services = () => {
             setTimeout(() => {
                 setRequestSuccess(true);
                 setIsSubmitting(false);
-                playSuccessSound();
             }, 50);
         } catch (error) {
             console.error("Failed to request service:", error);
@@ -464,101 +463,74 @@ const Services = () => {
                 </div>
 
                 {/* Confirmation Modal - Matches Order Confirmation Design */}
-                <AnimatePresence>
-                    {showConfirmation && selectedService && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
-                        >
-                            <motion.div
-                                initial={{ scale: 0.7, opacity: 0, y: 40 }}
-                                animate={{ scale: 1, opacity: 1, y: 0 }}
-                                exit={{ scale: 0.7, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 450, damping: 22 }}
-                                className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700 shadow-2xl"
-                            >
-                                <div className="text-center">
-                                    <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
-                                        <div className="absolute inset-0 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-5 animate-ping"></div>
-                                        <Wrench className="h-10 w-10 text-[#2E5A2E] dark:text-[#CBF9B2] relative z-10" />
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
-                                        {t('Confirm Request')}
-                                    </h3>
-                                    <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                                        {t('Are you sure you want to request')} <br />
-                                        <span className="font-bold text-gray-900 dark:text-white">"{t(selectedService, 'name') || selectedService.name}"</span>
-                                    </p>
-                                    <div className="flex flex-col gap-3">
-                                        <button
-                                            onClick={confirmRequest}
-                                            disabled={isSubmitting}
-                                            className="w-full px-4 py-4 text-[15px] font-normal text-white bg-black hover:bg-gray-900 rounded-full shadow-lg shadow-gray-200 dark:shadow-gray-900/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                                        >
-                                            {isSubmitting ? (
-                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            ) : t('Confirm')}
-                                        </button>
-                                        <button
-                                            onClick={() => setShowConfirmation(false)}
-                                            disabled={isSubmitting}
-                                            className="w-full px-4 py-3 text-[14px] font-normal text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
-                                        >
-                                            {t('Cancel')}
-                                        </button>
-                                    </div>
+                {showConfirmation && selectedService && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700 shadow-2xl">
+                            <div className="text-center">
+                                <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
+                                    <div className="absolute inset-0 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-5 animate-ping"></div>
+                                    <Wrench className="h-10 w-10 text-[#2E5A2E] dark:text-[#CBF9B2] relative z-10" />
                                 </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Success Modal - Matches Order Confirmation Design */}
-                <AnimatePresence>
-                    {requestSuccess && selectedService && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-[#CBF9B2]/20 backdrop-blur-md"
-                        >
-                            <motion.div 
-                                initial={{ scale: 0.3, opacity: 0, y: 50 }}
-                                animate={{ scale: 1, opacity: 1, y: 0 }}
-                                exit={{ scale: 0.7, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                                className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 relative overflow-hidden"
-                            >
-                                <div className="text-center">
-                                    <div className="w-24 h-24 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                                        <div className="absolute inset-0 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-20 animate-ping"></div>
-                                        <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2] relative z-10 animate-bounce" />
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
-                                        {t('Request Sent!')}
-                                    </h2>
-                                    <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium text-sm leading-relaxed px-2">
-                                        {t('Your request for')} <span className="font-bold text-gray-900 dark:text-white">"{t(selectedService, 'name') || selectedService.name}"</span> {t('has been received')}.
-                                        <br />
-                                        <span className="text-xs opacity-70 mt-2 block">{t('Our team will contact you shortly')}</span>
-                                    </p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+                                    {t('Confirm Request')}
+                                </h3>
+                                <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+                                    {t('Are you sure you want to request')} <br />
+                                    <span className="font-bold text-gray-900 dark:text-white">"{t(selectedService, 'name') || selectedService.name}"</span>
+                                </p>
+                                <div className="flex flex-col gap-3">
                                     <button
-                                        onClick={() => {
-                                            setRequestSuccess(false);
-                                            setSelectedItem(null);
-                                            handleBackToList();
-                                        }}
-                                        className="w-full bg-black text-white py-4 px-6 rounded-full font-normal shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform text-[15px]"
+                                        onClick={confirmRequest}
+                                        disabled={isSubmitting}
+                                        className="w-full px-4 py-4 text-[15px] font-normal text-white bg-black hover:bg-gray-900 rounded-full shadow-lg shadow-gray-200 dark:shadow-gray-900/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                                     >
-                                        {t('Close')}
+                                        {isSubmitting ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : t('Confirm')}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowConfirmation(false)}
+                                        disabled={isSubmitting}
+                                        className="w-full px-4 py-3 text-[14px] font-normal text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+                                    >
+                                        {t('Cancel')}
                                     </button>
                                 </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Success Modal - Matches Order Confirmation Design */}
+                {requestSuccess && selectedService && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-[#CBF9B2]/20 backdrop-blur-md">
+                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 transform transition-all scale-100">
+                            <div className="text-center">
+                                <div className="w-24 h-24 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2]" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
+                                    {t('Request Sent!')}
+                                </h2>
+                                <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium text-sm leading-relaxed px-2">
+                                    {t('Your request for')} <span className="font-bold text-gray-900 dark:text-white">"{t(selectedService, 'name') || selectedService.name}"</span> {t('has been received')}.
+                                    <br />
+                                    <span className="text-xs opacity-70 mt-2 block">{t('Our team will contact you shortly')}</span>
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        setRequestSuccess(false);
+                                        setSelectedItem(null);
+                                        handleBackToList();
+                                    }}
+                                    className="w-full bg-black text-white py-4 px-6 rounded-full font-normal shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform text-[15px]"
+                                >
+                                    {t('Close')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </PullToRefreshLayout>
     );

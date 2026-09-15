@@ -8,9 +8,9 @@ import { API_BASE_URL } from '../utils/api';
 import { openExternalLink } from '../utils/linkHelper';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle, ArrowLeft, ClipboardList, ShoppingBag, MapPin, Store, ChevronLeft, MoreHorizontal, Package, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { playSuccessSound, unlockAudio } from '../utils/soundHelper';
+import { CheckCircle, ArrowLeft, ClipboardList, ShoppingBag, MapPin, Store, ChevronLeft, MoreHorizontal, Package, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const OrderConfirmation = () => {
     const location = useLocation();
@@ -46,7 +46,6 @@ const OrderConfirmation = () => {
 
     const confirmOrderAction = async () => {
         if (isSubmitting) return;
-        unlockAudio();
         setIsSubmitting(true);
 
         // Use provided delivery charge or default to 20
@@ -237,7 +236,6 @@ const OrderConfirmation = () => {
             </div>
 
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-                {/* Total Summary Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="p-5 border-b border-gray-50 dark:border-gray-700 flex items-center gap-3">
                         <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
@@ -248,75 +246,74 @@ const OrderConfirmation = () => {
 
                     <div className="p-4 sm:p-6">
                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                            {cartItems.map((item) => (
-                                <div key={item.id || item._id} className="py-4 flex gap-4 first:pt-0">
-                                    <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden flex-shrink-0 relative">
-                                        <img
-                                            src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
-                                            alt={item.adTitle || item.title || 'Product'}
-                                            className="h-full w-full object-cover"
-                                            loading="lazy"
-                                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
-                                        />
-                                        <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
-                                            {item.isGold && (
-                                                <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
-                                                    {t('Free Delivery')}
-                                                </span>
-                                            )}
-                                            {item.isFromAd && (
-                                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
-                                                    {t('Special Offer')}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                        <h4 className={`text-sm font-medium text-gray-900 dark:text-white mb-0.5 ${item.isFromAd ? '' : 'truncate'}`} title={item.adTitle || item.title}>
-                                            {(() => {
-                                                const fullTitle = t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name || '';
-                                                if (language !== 'ta') return fullTitle;
-                                                
-                                                const bracketIndex = fullTitle.indexOf('(');
-                                                if (bracketIndex === -1) return fullTitle;
-
-                                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                                
-                                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                                
-                                                if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                                if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                                return fullTitle;
-                                            })()}
-                                        </h4>
-                                        {(item.storeId || item.storeName) && (
-                                            <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate">
-                                                {getStoreName(item.storeId, stores) || item.storeName}
-                                            </p>
-                                        )}
-                                        <div className="flex items-center justify-between mt-1">
-                                            <div>
-                                                <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
-                                                {item.unit && (
-                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                                                        {item.unit}
-                                                    </p>
+                                {cartItems.map((item) => (
+                                    <div key={item.id} className="py-4 flex gap-4 first:pt-0">
+                                        <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden flex-shrink-0 relative">
+                                            <img
+                                                src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
+                                                alt={item.adTitle || item.title}
+                                                className="h-full w-full object-cover"
+                                                loading="lazy"
+                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
+                                            />
+                                            <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
+                                                {item.isGold && (
+                                                    <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
+                                                        {t('Free Delivery')}
+                                                    </span>
+                                                )}
+                                                {item.isFromAd && (
+                                                    <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
+                                                        {t('Special Offer')}
+                                                    </span>
                                                 )}
                                             </div>
-                                            <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
-                                                x{item.quantity}
+                                        </div>
+                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                            <h4 className={`text-sm font-medium text-gray-900 dark:text-white mb-0.5 ${item.isFromAd ? '' : 'truncate'}`} title={item.adTitle || item.title}>
+                                                {(() => {
+                                                    const fullTitle = t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name;
+                                                    if (language !== 'ta') return fullTitle;
+                                                    
+                                                    const bracketIndex = fullTitle.indexOf('(');
+                                                    if (bracketIndex === -1) return fullTitle;
+
+                                                    const part1 = fullTitle.substring(0, bracketIndex).trim();
+                                                    const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
+                                                    
+                                                    const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
+                                                    const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
+                                                    
+                                                    if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
+                                                    if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
+                                                    return fullTitle;
+                                                })()}
+                                            </h4>
+                                            {(item.storeId || item.storeName) && (
+                                                <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate">
+                                                    {getStoreName(item.storeId, stores) || item.storeName}
+                                                </p>
+                                            )}
+                                            <div className="flex items-center justify-between mt-1">
+                                                <div>
+                                                    <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
+                                                    {item.unit && (
+                                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                                                            {item.unit}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                    x{item.quantity}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Shipping Details Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="p-5 border-b border-gray-50 dark:border-gray-700 flex items-center gap-3">
                         <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
@@ -376,143 +373,110 @@ const OrderConfirmation = () => {
                     </div>
                 </div>
 
-                {/* Payment Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">{t('Payment')}</h2>
-                        <span className="text-[13px] font-medium text-gray-400 tracking-tight">{cartItems.length} items</span>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[14px] text-gray-400 font-medium">{t('Subtotal')}</span>
-                            <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹{(cartTotal || 0).toFixed(0)}</span>
+                <div className="block mb-16">
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">{t('Payment')}</h2>
+                            <span className="text-[13px] font-medium text-gray-400 tracking-tight">{cartItems.length} items</span>
                         </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-[14px] text-gray-400 font-medium">{t('Delivery Charge')}</span>
-                            {(deliveryCharge === 0 || deliveryCharge === null) ? (
-                                <span className="text-[15px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2]">FREE</span>
-                            ) : (
-                                <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹{(deliveryCharge || 20).toFixed(0)}</span>
-                            )}
-                        </div>
-                        <div className="flex justify-between items-center pt-3 border-t border-gray-50 dark:border-gray-700/50">
-                            <span className="text-[15px] text-gray-500 font-medium">{t('Total Amount')}</span>
-                            <span className="text-[17px] font-black text-gray-900 dark:text-white">₹{finalTotal.toFixed(0)}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            {/* Bottom Floating Bar */}
-            <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg border-t border-gray-100 dark:border-gray-700 p-4 shadow-lg">
-                <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-                    <div>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-wider">{t('Total Amount')}</p>
-                        <p className="text-xl font-black text-[#2E5A2E] dark:text-[#CBF9B2]">₹{finalTotal.toFixed(0)}</p>
-                    </div>
-                    <button
-                        onClick={handleConfirmOrder}
-                        className="px-8 py-3.5 bg-[#2E5A2E] text-white dark:bg-[#CBF9B2] dark:text-gray-900 rounded-full font-bold text-sm active:scale-95 transition-all shadow-md hover:bg-[#1f3f1f]"
-                    >
-                        {t('Place Order')}
-                    </button>
-                </div>
-            </div>
-
-            <AnimatePresence>
-                {showConfirmModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.7, opacity: 0, y: 40 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.7, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 450, damping: 22 }}
-                            className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700 shadow-2xl"
-                        >
-                            <div className="text-center">
-                                <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
-                                    <div className="absolute inset-0 rounded-full bg-black opacity-5 animate-ping"></div>
-                                    <ShoppingBag className="h-10 w-10 text-black dark:text-white relative z-10" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                                    {t('Ready to Wrap Up?')}
-                                </h3>
-                                <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                                    {t('You are just one step away from confirming your order. Do you want to proceed?')}
-                                </p>
-                                <div className="flex flex-col gap-3">
-                                    <button
-                                        onClick={confirmOrderAction}
-                                        disabled={isSubmitting}
-                                        className="w-full px-4 py-4 text-sm font-normal text-white bg-black hover:bg-gray-900 rounded-full shadow-lg shadow-gray-200 dark:shadow-gray-900/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                                    >
-                                        {isSubmitting ? (
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        ) : t('Confirm Order')}
-                                    </button>
-                                    <button
-                                        onClick={() => setShowConfirmModal(false)}
-                                        disabled={isSubmitting}
-                                        className="w-full px-4 py-3 text-sm font-normal text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
-                                    >
-                                        {t('Cancel')}
-                                    </button>
-                                </div>
+                        <div className="space-y-5 mb-8">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[14px] text-gray-400 font-medium">{t('Subtotal')}</span>
+                                <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹{(cartTotal || 0).toFixed(0)}</span>
                             </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[14px] text-gray-400 font-medium">{t('Delivery Charge')}</span>
+                                {(deliveryCharge === 0 || deliveryCharge === null) ? (
+                                    <span className="text-[15px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2]">FREE</span>
+                                ) : (
+                                    <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹{(deliveryCharge || 20).toFixed(0)}</span>
+                                )}
+                            </div>
+                            <div className="flex justify-between items-center pt-3 border-t border-gray-50 dark:border-gray-700/50">
+                                <span className="text-[15px] text-gray-500 font-medium">{t('Total Amount')}</span>
+                                <span className="text-[17px] font-black text-gray-900 dark:text-white">₹{finalTotal.toFixed(0)}</span>
+                            </div>
+                        </div>
 
-            <AnimatePresence>
-                {showSuccessModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-black/60 backdrop-blur-md"
-                    >
-                        <motion.div 
-                            initial={{ scale: 0.3, opacity: 0, y: 50 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.7, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                            className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 relative overflow-hidden"
+                        <button
+                            onClick={handleConfirmOrder}
+                            className="w-full bg-black text-white rounded-full py-4 flex items-center justify-center font-normal text-[15px] active:scale-[0.98] transition-transform"
                         >
-                            <div className="text-center">
-                                <div className="w-24 h-24 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                                    <div className="absolute inset-0 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-20 animate-ping"></div>
-                                    <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2] relative z-10 animate-bounce" />
-                                </div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                    {t('Order Placed!')}
-                                </h2>
-                                <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
-                                    {t('Your order has been placed successfully.')}
-                                </p>
-                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 mb-8 border border-gray-100 dark:border-gray-600/50">
-                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 tracking-widest uppercase font-bold">{t('Order ID')}</p>
-                                    <p className="font-mono font-bold text-gray-900 dark:text-white text-xl">
-                                        #{String(createdOrderId || '000').slice(-6).toUpperCase()}
-                                    </p>
-                                </div>
+                            {t('Place Order')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+
+            {showConfirmModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700">
+                        <div className="text-center">
+                            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
+                                <div className="absolute inset-0 rounded-full bg-black opacity-5 animate-ping"></div>
+                                <ShoppingBag className="h-10 w-10 text-black dark:text-white relative z-10" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                {t('Ready to Wrap Up?')}
+                            </h3>
+                            <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+                                {t('You are just one step away from confirming your order. Do you want to proceed?')}
+                            </p>
+                            <div className="flex flex-col gap-3">
                                 <button
-                                    onClick={handleCloseSuccess}
-                                    className="w-full bg-black text-white py-4 px-6 rounded-full font-normal shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform"
+                                    onClick={confirmOrderAction}
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-4 text-sm font-normal text-white bg-black hover:bg-gray-900 rounded-full shadow-lg shadow-gray-200 dark:shadow-gray-900/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                                 >
-                                    {t('Go to Orders')}
+                                    {isSubmitting ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : t('Confirm Order')}
+                                </button>
+                                <button
+                                    onClick={() => setShowConfirmModal(false)}
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-3 text-sm font-normal text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+                                >
+                                    {t('Cancel')}
                                 </button>
                             </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-black/60 backdrop-blur-md">
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 transform transition-all scale-100">
+                        <div className="text-center">
+                            <div className="w-24 h-24 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2]" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                {t('Order Placed!')}
+                            </h2>
+                            <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
+                                {t('Your order has been placed successfully.')}
+                            </p>
+                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 mb-8 border border-gray-100 dark:border-gray-600/50">
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 tracking-widest uppercase font-bold">{t('Order ID')}</p>
+                                <p className="font-mono font-bold text-gray-900 dark:text-white text-xl">
+                                    #{String(createdOrderId || '000').slice(-6).toUpperCase()}
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleCloseSuccess}
+                                className="w-full bg-black text-white py-4 px-6 rounded-full font-normal shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform"
+                            >
+                                {t('Go to Orders')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
