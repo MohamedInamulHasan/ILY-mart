@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
+import { renderBilingualTitle } from '../utils/titleHelpers';
 import { API_BASE_URL } from '../utils/api';
 import { isStoreOpen, isProductScheduled, getProductTimeLabel } from '../utils/storeHelpers';
 import { useState, useEffect } from 'react';
@@ -179,31 +180,12 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
 
                 </div>
                 <div className="p-3 flex flex-col flex-1 border-t border-gray-100 dark:border-gray-700">
-                    <div className="w-full">
-                        {(() => {
-                            const fullTitle = t(product, 'title');
-                            const bracketIndex = fullTitle.indexOf('(');
-                            let mainTitle = fullTitle;
-                            let bracketContent = '';
-
-                            if (bracketIndex !== -1) {
-                                mainTitle = fullTitle.substring(0, bracketIndex).trim();
-                                bracketContent = fullTitle.substring(bracketIndex).trim();
-                            }
-
-                            return (
-                                <div className="mb-1">
-                                    <h3 className={`text-sm font-semibold text-gray-800 dark:text-white leading-tight ${bracketContent ? 'truncate' : 'line-clamp-2'} w-full`}>
-                                        {mainTitle}
-                                    </h3>
-                                    {bracketContent && (
-                                        <span className={`block text-xs text-gray-500 dark:text-gray-400 font-medium truncate w-full`}>
-                                            {bracketContent}
-                                        </span>
-                                    )}
-                                </div>
-                            );
-                        })()}
+                    <div className="w-full mb-1">
+                        {renderBilingualTitle(t(product, 'title') || product.title || product.name, useLanguage().language, {
+                            mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-tight truncate w-full',
+                            subClassName: 'text-xs text-gray-500 dark:text-gray-400 font-medium truncate w-full opacity-80'
+                        })}
+                    </div>
                         {/* Store Options - Centered */}
                         <div className="flex items-center gap-1 mt-1 mb-1">
                             <Store size={12} className={`text-gray-400 dark:text-gray-500 flex-shrink-0`} />
@@ -213,7 +195,6 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                     : `${(product.variantExtraCount || 0) + 1} ${t('options')}`}
                             </p>
                         </div>
-                    </div>
 
                     <div className="flex items-center justify-between mt-2 w-full pt-2 border-t border-gray-50 dark:border-gray-700/50">
                         <span className={`text-base font-bold ${!product.anyStoreOpen ? 'text-gray-400' : 'text-[#2E5A2E] dark:text-[#CBF9B2]'}`}>
@@ -352,31 +333,12 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 )}
             </div>
             <div className="p-3 flex flex-col flex-1">
-                <div className="w-full">
-                    {(() => {
-                        const fullTitle = t(featuredVariant, 'title');
-                        const bracketIndex = fullTitle.indexOf('(');
-                        let mainTitle = fullTitle;
-                        let bracketContent = '';
-
-                        if (bracketIndex !== -1) {
-                            mainTitle = fullTitle.substring(0, bracketIndex).trim();
-                            bracketContent = fullTitle.substring(bracketIndex).trim();
-                        }
-
-                        return (
-                            <div className="mb-1">
-                                <h3 className={`text-sm font-semibold text-gray-800 dark:text-white leading-normal ${bracketContent ? 'truncate' : 'line-clamp-2'} pb-0.5 w-full`}>
-                                    {mainTitle}
-                                </h3>
-                                {bracketContent && (
-                                    <span className={`block text-xs text-gray-500 dark:text-gray-400 font-medium truncate pb-0.5 w-full`}>
-                                        {bracketContent}
-                                    </span>
-                                )}
-                            </div>
-                        );
-                    })()}
+                <div className="w-full mb-1">
+                    {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, useLanguage().language, {
+                        mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-normal truncate w-full',
+                        subClassName: 'text-xs text-gray-500 dark:text-gray-400 font-medium truncate pb-0.5 w-full opacity-80'
+                    })}
+                </div>
                     {product.storeId && (
                         <div className="flex items-center gap-1 mb-2">
                             <Store size={12} className={`text-gray-400 dark:text-gray-500 flex-shrink-0`} />
@@ -385,7 +347,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                             </p>
                         </div>
                     )}
-                </div>
+
                 <div className="flex items-center justify-between mt-2 w-full pt-2">
                     <span className={`text-base font-bold ${!isStoreOpenCheck || !isAvailable ? 'text-gray-400' : 'text-[#2E5A2E] dark:text-[#CBF9B2]'}`}>
                         ₹{Number((product.price || 0) * (cartQuantity || 1)).toFixed(0)}

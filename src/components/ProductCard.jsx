@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../utils/api';
 import { isStoreOpen, getStoreName, isProductScheduled, getProductTimeLabel } from '../utils/storeHelpers';
 
 import { useData } from '../context/DataContext';
+import { renderBilingualTitle } from '../utils/titleHelpers';
 
 const ProductCard = ({ product, showCartControls = true, showHeart = false, stores: propStores }) => {
     const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
@@ -133,55 +134,10 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                 {/* Content Section */}
                 <div className="px-3.5 pb-4 pt-1 flex flex-col items-start flex-1 min-w-0 transition-opacity duration-300">
                     <div className="flex-1 min-h-[42px] mb-1 w-full flex flex-col justify-center transition-opacity duration-300">
-                        {(() => {
-                            const fullTitle = t(featuredVariant, 'title');
-                            let mainTitle = fullTitle;
-                            let bracketText = null;
-
-                            const bracketIndex = fullTitle.indexOf('(');
-                            if (bracketIndex !== -1) {
-                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                
-                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                
-                                let tamStr = '';
-                                let engStr = '';
-                                
-                                if (isPart1Tamil && !isPart2Tamil) {
-                                    tamStr = part1;
-                                    engStr = part2;
-                                } else if (isPart2Tamil && !isPart1Tamil) {
-                                    tamStr = part2;
-                                    engStr = part1;
-                                } else {
-                                    engStr = part1;
-                                    tamStr = part2;
-                                }
-
-                                if (language === 'ta') {
-                                    mainTitle = tamStr || engStr;
-                                    bracketText = tamStr && engStr ? `(${engStr})` : null;
-                                } else {
-                                    mainTitle = engStr || tamStr;
-                                    bracketText = engStr && tamStr ? `(${tamStr})` : null;
-                                }
-                            }
-                            
-                            return (
-                                <>
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-white truncate w-full">
-                                        {mainTitle}
-                                    </h3>
-                                    {bracketText && (
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-white truncate w-full opacity-80">
-                                            {bracketText}
-                                        </p>
-                                    )}
-                                </>
-                            );
-                        })()}
+                        {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, language, {
+                            mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white truncate w-full',
+                            subClassName: 'text-xs font-semibold text-gray-800 dark:text-white truncate w-full opacity-80'
+                        })}
                     </div>
                     <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium truncate mb-2 w-full">
                        {getStoreName(product.storeId, stores) || "ILY mart Direct"}

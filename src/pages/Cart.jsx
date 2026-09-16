@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
 import { useLanguage } from '../context/LanguageContext';
+import { renderBilingualTitle } from '../utils/titleHelpers';
 import { useData } from '../context/DataContext';
 import { calculateDeliveryCharge, getStoreName } from '../utils/storeHelpers';
 import { API_BASE_URL } from '../utils/api';
@@ -125,23 +126,7 @@ const Cart = () => {
                                   <div className="flex justify-between items-start">
                                        <div className="flex-1 min-w-0 pr-2">
                                             <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white truncate">
-                                                {(() => {
-                                                    const fullTitle = t(item, 'title');
-                                                    if (language !== 'ta') return fullTitle;
-                                                    
-                                                    const bracketIndex = fullTitle.indexOf('(');
-                                                    if (bracketIndex === -1) return fullTitle;
-
-                                                    const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                    const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                                    
-                                                    const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                    const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                                    
-                                                    if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                                    if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                                    return fullTitle;
-                                                })()}
+                                                {renderBilingualTitle(t(item, 'title') || item.title || item.name, language)}
                                             </h3>
                                             <p className="text-[12px] text-gray-400 dark:text-gray-500 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                                                 {getStoreName(item.storeId, stores) || "ILY mart Direct"}

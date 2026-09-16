@@ -54,6 +54,7 @@ import ServiceManagement from './ServiceManagement';
 import useCloudinaryUpload from '../../hooks/useCloudinaryUpload';
 import { isProductScheduled } from '../../utils/storeHelpers';
 import { openExternalLink } from '../../utils/linkHelper';
+import { renderBilingualTitle } from '../../utils/titleHelpers';
 
 // New Query Hooks
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useUpdateProductOrder } from '../../hooks/queries/useProducts';
@@ -823,7 +824,7 @@ const ProductManagement = () => {
         }
     };
 
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [view, setView] = useState('list'); // 'list' or 'form'
     const [editingProduct, setEditingProduct] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -1100,26 +1101,9 @@ const ProductManagement = () => {
                                                             </div>
                                                         </td>
                                                         <td className="p-4 font-normal text-gray-900 dark:text-white">
-                                                            {(() => {
-                                                                const fullTitle = product.title;
-                                                                const bracketIndex = fullTitle?.indexOf('(');
-
-                                                                if (bracketIndex !== -1) {
-                                                                    const mainTitle = fullTitle.substring(0, bracketIndex).trim();
-                                                                    const bracketText = fullTitle.substring(bracketIndex).trim();
-                                                                    return (
-                                                                        <div className="max-w-[150px] sm:max-w-xs">
-                                                                            <div className="truncate" title={mainTitle}>{mainTitle}</div>
-                                                                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={bracketText}>{bracketText}</div>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return (
-                                                                    <div className="max-w-[150px] sm:max-w-xs truncate" title={fullTitle}>
-                                                                        {fullTitle}
-                                                                    </div>
-                                                                );
-                                                            })()}
+                                                            <div className="max-w-[180px] sm:max-w-xs leading-tight" title={product.title}>
+                                                                {renderBilingualTitle(product.title, language)}
+                                                            </div>
                                                         </td>
                                                         <td className="p-4 text-gray-500 dark:text-gray-400">
                                                             {(() => {
@@ -1293,9 +1277,12 @@ const ProductManagement = () => {
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     className="w-full px-4 py-3 rounded-xl border border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#7CA90E] outline-none"
-                                    placeholder={t('e.g., Wireless Headphones')}
+                                    placeholder="Parotta ( பரோட்டா ) [1]"
                                     required
                                 />
+                                <p className="text-xs text-gray-400 dark:text-gray-400 mt-1">
+                                    Format: <span className="font-medium text-gray-600 dark:text-gray-300">Name ( Tamil ) [1]</span> or <span className="font-medium text-gray-600 dark:text-gray-300">தமிழ் ( Name ) [1]</span>. Upper tag [1] attaches to the first word!
+                                </p>
                             </div>
 
                             <div>

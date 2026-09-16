@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { renderBilingualTitle } from '../utils/titleHelpers';
 import { Plus, ArrowLeft, Minus, ShoppingBag, ShoppingCart, ChevronLeft, ChevronRight, Star, Share2, Bookmark, Store as StoreIcon } from 'lucide-react';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 
@@ -13,7 +14,7 @@ const ProductDetails = () => {
     const { addToCart, cartItems, updateQuantity } = useCart();
     const { products, stores, savedProducts, toggleSaveProduct } = useData();
     const { user } = useAuth();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -263,29 +264,9 @@ const ProductDetails = () => {
                     <div className="max-w-2xl mx-auto w-full">
                     {/* Header: Title & Unit */}
                     <div className="mb-2 min-w-0">
-                        {(() => {
-                            const fullTitle = t(product, 'title') || product.title || '';
-                            const bracketIndex = fullTitle.indexOf('(');
-                            if (bracketIndex !== -1) {
-                                const mainTitle = fullTitle.substring(0, bracketIndex).trim();
-                                const bracketContent = fullTitle.substring(bracketIndex).trim();
-                                return (
-                                    <div className="min-w-0">
-                                        <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white leading-tight truncate" title={mainTitle}>
-                                            {mainTitle}
-                                        </h1>
-                                        <p className="text-sm md:text-base font-normal text-gray-500 dark:text-gray-400 leading-tight truncate mt-0.5" title={bracketContent}>
-                                            {bracketContent}
-                                        </p>
-                                    </div>
-                                );
-                            }
-                            return (
-                                <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white leading-tight truncate" title={fullTitle}>
-                                    {fullTitle}
-                                </h1>
-                            );
-                        })()}
+                        <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white leading-tight" title={product.title}>
+                            {renderBilingualTitle(t(product, 'title') || product.title, language)}
+                        </h1>
                         {product.unit && (
                             <p className="text-sm text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mt-1">
                                 {product.unit}
