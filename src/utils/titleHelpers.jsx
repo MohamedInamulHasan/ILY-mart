@@ -67,40 +67,24 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     // Determine main and subtitle based on active language preference
     let mainText = '';
     let subText = '';
-    let mainHasTag = false;
-    let subHasTag = false;
 
     if (language === 'ta') {
         mainText = tamStr || engStr;
         subText = tamStr && engStr ? engStr : '';
-        if (tagContent) {
-            if (firstPartIsTamil) {
-                mainHasTag = true;
-            } else {
-                subHasTag = true;
-            }
-        }
     } else {
         mainText = engStr || tamStr;
         subText = engStr && tamStr ? tamStr : '';
-        if (tagContent) {
-            if (!firstPartIsTamil) {
-                mainHasTag = true;
-            } else {
-                subHasTag = true;
-            }
-        }
     }
 
     return (
         <span className="inline-flex flex-col max-w-full">
             <span className={`truncate ${mainClassName}`}>
                 {mainText}
-                {mainHasTag && <sup className={tagClassName}>[{tagContent}]</sup>}
+                {tagContent && <sup className={tagClassName}>[{tagContent}]</sup>}
             </span>
             {subText && (
                 <span className={`truncate ${subClassName}`}>
-                    ({subText}{subHasTag ? <sup className={tagClassName}>[{tagContent}]</sup> : ''})
+                    ({subText})
                 </span>
             )}
         </span>
