@@ -15,7 +15,7 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     const {
         mainClassName = '',
         subClassName = 'opacity-80 text-xs font-normal',
-        tagClassName = 'text-[11px] font-bold text-red-500 dark:text-red-400 align-super ml-0.5 inline-block -top-1 relative'
+        tagClassName = 'font-bold text-red-500 dark:text-red-400 ml-1 inline-block'
     } = options;
 
     // Extract tag if present, e.g. [1], [2], [1/2]
@@ -32,7 +32,7 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
         return (
             <span className={`inline-flex items-baseline gap-0.5 ${mainClassName}`}>
                 <span>{cleanTitle}</span>
-                {tagContent && <sup className={tagClassName}>[{tagContent}]</sup>}
+                {tagContent && <span className={tagClassName}>[{tagContent}]</span>}
             </span>
         );
     }
@@ -80,7 +80,7 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
         <span className="inline-flex flex-col max-w-full">
             <span className={`truncate ${mainClassName}`}>
                 {mainText}
-                {tagContent && <sup className={tagClassName}>[{tagContent}]</sup>}
+                {tagContent && <span className={tagClassName}>[{tagContent}]</span>}
             </span>
             {subText && (
                 <span className={`truncate ${subClassName}`}>
