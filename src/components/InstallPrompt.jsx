@@ -90,9 +90,6 @@ const InstallPrompt = () => {
             {showPrompt && !showGuideModal && (
                 <div className="fixed bottom-20 md:bottom-5 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-sm z-[90] animate-slide-up">
                     <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgba(46,90,46,0.18)] border border-emerald-500/30 p-3 sm:p-3.5 relative overflow-hidden flex items-center gap-3">
-                        {/* Top Green Accent bar */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#2E5A2E] via-[#5A7C0A] to-[#8bc910]" />
-
                         {/* Clean App Icon Container */}
                         <div className="w-11 h-11 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl p-1.5 flex items-center justify-center flex-shrink-0 shadow-sm">
                             <img src="/logo-new.png" alt="ILY mart Logo" className="w-full h-full object-contain" />
