@@ -369,7 +369,7 @@ const OrderDetails = () => {
                         </div>
                         <h3 className="font-bold text-gray-900 dark:text-white">{t('Delivery To')}</h3>
                     </div>
-                    <div className="pl-11 space-y-1.5">
+                    <div className="pl-2 space-y-1.5">
                         {/* 1. Name */}
                         <p className="font-bold text-[16px] text-gray-900 dark:text-white">
                             {order.shippingAddress?.name || 'User'}

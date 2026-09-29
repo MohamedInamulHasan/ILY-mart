@@ -35,15 +35,16 @@ export const formatOrderDeliveryTime = (order) => {
 
     const date = new Date(rawDeliveryTime);
     if (!isNaN(date.getTime())) {
-        const hStart = date.getHours();
-        const mStart = date.getMinutes().toString().padStart(2, '0');
+        const istTimeString = date.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit' });
+        const [hours, minutes] = istTimeString.split(':');
+        const hStart = parseInt(hours, 10);
         const formatShortTime = (h, m) => {
             const ampm = h >= 12 ? 'PM' : 'AM';
             const h12 = h % 12 || 12;
             const mStr = parseInt(m, 10) === 0 ? '' : `:${m}`;
-            return `${h12}${mStr}${ampm}`;
+            return `${h12}${mStr} ${ampm}`;
         };
-        return `${formatShortTime(hStart, mStart)} - ${formatShortTime((hStart + 1) % 24, mStart)}`;
+        return `${formatShortTime(hStart, minutes)} - ${formatShortTime((hStart + 1) % 24, minutes)}`;
     }
 
     return String(rawDeliveryTime);
