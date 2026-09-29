@@ -25,6 +25,14 @@ const Cart = () => {
     const deliveryCharge = (hasCoins || hasGoldProduct) ? 0 : baseDeliveryCharge;
     const finalTotal = cartTotal + deliveryCharge;
 
+    const handleBackNav = () => {
+        if (cartItems.length === 0 || !window.history.state || window.history.state.idx <= 0) {
+            navigate('/');
+        } else {
+            navigate(-1);
+        }
+    };
+
     if (cartItems.length === 0) {
         return (
             <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 flex flex-col transition-colors duration-200">
@@ -35,7 +43,7 @@ const Cart = () => {
                         <div className="max-w-7xl mx-auto px-2 relative min-h-[42px]">
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button 
-                                    onClick={() => navigate(-1)} 
+                                    onClick={handleBackNav} 
                                     className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50"
                                 >
                                     <ArrowLeft size={22} />
@@ -74,7 +82,7 @@ const Cart = () => {
                 <div className="relative z-10">
                     <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                            <button onClick={() => navigate(-1)} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50">
+                            <button onClick={handleBackNav} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50">
                                 <ArrowLeft size={22} />
                             </button>
                         </div>

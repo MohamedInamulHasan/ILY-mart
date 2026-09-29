@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useData } from '../context/DataContext';
-import { getStoreName, formatDeliveryRange, calculateDeliveryCharge } from '../utils/storeHelpers';
+import { getStoreName, formatDeliveryRange, formatDeliveryRangeFromDate, calculateDeliveryCharge } from '../utils/storeHelpers';
 import { useLanguage } from '../context/LanguageContext';
 import { API_BASE_URL } from '../utils/api';
 import { openExternalLink } from '../utils/linkHelper';
@@ -91,12 +91,14 @@ const OrderConfirmation = () => {
                 zip: formData.pincode || formData.zip || '',
                 country: 'India',
                 mobile: formData.mobile,
-                location: formData.location // Add GPS Location
+                location: formData.location, // Add GPS Location
+                deliveryTime: formData.deliveryTime
             },
             paymentMethod: {
                 type: 'Cash on Delivery',
                 last4: ''
             },
+            deliveryTime: formData.deliveryTime,
             scheduledDeliveryTime: formData.deliveryTime ? (() => {
                 const deliveryDate = new Date();
                 

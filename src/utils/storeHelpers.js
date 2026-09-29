@@ -60,34 +60,47 @@ export const formatTime12h = (time24) => {
     }
 };
 
-// Convert HH:mm to 12-hour range format (e.g., "13:00" -> "1pm - 2pm")
+// Convert HH:mm or period|HH:mm to 12-hour range format (e.g., "13:00" -> "1 PM - 2 PM", "today|11:00" -> "Today 11 AM - 12 PM")
 export const formatDeliveryRange = (time24) => {
     if (!time24) return '';
     try {
-        const [hours, minutes] = time24.split(':');
-        const hStart = parseInt(hours);
+        let rawTime = time24;
+        let prefixDate = '';
+        if (typeof time24 === 'string' && time24.includes('|')) {
+            const parts = time24.split('|');
+            prefixDate = parts[0] === 'tomorrow' ? 'Tomorrow ' : 'Today ';
+            rawTime = parts[1];
+        }
+
+        const [hours, minutes] = rawTime.split(':');
+        const hStart = parseInt(hours, 10);
+        if (isNaN(hStart)) return time24;
         const hEnd = (hStart + 1) % 24;
 
         const formatShortTime = (h, m) => {
             const ampmStr = h >= 12 ? ' PM' : ' AM';
             const h12 = h % 12 || 12;
-            // Only show minutes if they are not 00
-            const mStr = parseInt(m) === 0 ? '' : `:${m}`;
+            const mStr = parseInt(m, 10) === 0 ? '' : `:${m}`;
             return `${h12}${mStr}${ampmStr}`;
         };
 
-        return `${formatShortTime(hStart, minutes)} - ${formatShortTime(hEnd, minutes)}`;
+        return `${prefixDate}${formatShortTime(hStart, minutes)} - ${formatShortTime(hEnd, minutes)}`;
     } catch (e) {
         return time24;
     }
 };
 
-// Convert Date or ISO string to 12-hour range format (e.g., ISO -> "1pm - 2pm")
+// Convert Date or ISO string or period|HH:mm string to 12-hour range format
 export const formatDeliveryRangeFromDate = (date) => {
     if (!date) return '';
     try {
+        if (typeof date === 'string' && date.includes('|')) {
+            return formatDeliveryRange(date);
+        }
+
         const d = new Date(date);
-        if (isNaN(d.getTime())) return String(date);
+        if (isNaN(d.getTime())) return formatDeliveryRange(String(date));
+
         const hStart = d.getHours();
         const mStart = d.getMinutes().toString().padStart(2, '0');
         const hEnd = (hStart + 1) % 24;
@@ -95,11 +108,15 @@ export const formatDeliveryRangeFromDate = (date) => {
         const formatShortTime = (h, m) => {
             const ampmStr = h >= 12 ? ' PM' : ' AM';
             const h12 = h % 12 || 12;
-            const mStr = parseInt(m) === 0 ? '' : `:${m}`;
+            const mStr = parseInt(m, 10) === 0 ? '' : `:${m}`;
             return `${h12}${mStr}${ampmStr}`;
         };
 
-        return `${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
+        const today = new Date();
+        const isTomorrow = d.getDate() === (today.getDate() + 1) && d.getMonth() === today.getMonth();
+        const dayPrefix = isTomorrow ? 'Tomorrow ' : '';
+
+        return `${dayPrefix}${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
     } catch (e) {
         return String(date || '');
     }
