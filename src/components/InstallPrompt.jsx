@@ -44,13 +44,12 @@ const InstallPrompt = () => {
 
         window.addEventListener('appinstalled', handleAppInstalled);
 
-        // Automatically show prompt 2s after load if not dismissed
+        // ALWAYS show prompt every time website is opened in browser if not installed
         const timer = setTimeout(() => {
-            const isDismissed = sessionStorage.getItem('installPromptDismissed') === 'true';
-            if (!isStandalone && !isDismissed) {
+            if (!isStandalone) {
                 setShowPrompt(true);
             }
-        }, 2000);
+        }, 1000); // 1 second after open
 
         return () => {
             clearTimeout(timer);
@@ -79,7 +78,6 @@ const InstallPrompt = () => {
 
     const handleDismiss = () => {
         setShowPrompt(false);
-        sessionStorage.setItem('installPromptDismissed', 'true');
     };
 
     if (isInstalled) {
@@ -146,8 +144,8 @@ const InstallPrompt = () => {
                             <X size={18} />
                         </button>
 
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#2E5A2E] to-[#5A7C0A] rounded-2xl mx-auto p-2.5 flex items-center justify-center shadow-md mb-2">
-                            <img src="/icon.svg" alt="ILY mart Logo" className="w-full h-full object-contain" />
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#2E5A2E] to-[#5A7C0A] rounded-2xl mx-auto p-2 flex items-center justify-center shadow-md mb-2">
+                            <img src="/logo-new.png" alt="ILY mart Logo" className="w-full h-full object-contain" />
                         </div>
                         
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white">
