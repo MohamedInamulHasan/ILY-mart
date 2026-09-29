@@ -1,14 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Save, Clock, CheckCircle, AlertCircle, ShieldAlert, Zap, Calendar, Check } from 'lucide-react';
+import { Save, Clock, CheckCircle, AlertCircle, ShieldAlert, Zap, Calendar, Check, KeyRound, Eye, EyeOff, Lock } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatDeliveryRange } from '../../utils/storeHelpers';
+import { apiService } from '../../utils/api';
 
 const SettingsManagement = () => {
     const { settings, updateDeliverySettings, updateMaintenanceMode, updateDeliveryTimingType, updateMaintenanceMessage } = useData();
+    const { user } = useAuth();
     const { t } = useLanguage();
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+
+    // Admin Password Security State
+    const [adminPassword, setAdminPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
 
     // Generate 30-minute slots for a 24-hour day
     const generateAllSlots = () => {
@@ -109,6 +119,34 @@ const SettingsManagement = () => {
         } finally {
             setLoading(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+        }
+    };
+
+    const handlePasswordUpdate = async (e) => {
+        e.preventDefault();
+        if (!adminPassword || adminPassword.length < 6) {
+            setPasswordMessage({ type: 'error', text: t('Password must be at least 6 characters long.') });
+            return;
+        }
+        if (adminPassword !== confirmPassword) {
+            setPasswordMessage({ type: 'error', text: t('Passwords do not match.') });
+            return;
+        }
+
+        setPasswordLoading(true);
+        setPasswordMessage({ type: '', text: '' });
+        try {
+            await apiService.updateProfile({ password: adminPassword });
+            setPasswordMessage({ type: 'success', text: t('Admin password updated successfully!') });
+            setAdminPassword('');
+            setConfirmPassword('');
+        } catch (err) {
+            console.error('Password update error:', err);
+            const errText = err?.message || err?.data?.message || t('Failed to update admin password.');
+            setPasswordMessage({ type: 'error', text: errText });
+        } finally {
+            setPasswordLoading(false);
+            setTimeout(() => setPasswordMessage({ type: '', text: '' }), 4000);
         }
     };
 
@@ -227,7 +265,80 @@ const SettingsManagement = () => {
                 </div>
             </div>
 
-            {/* CARD 3: Delivery Time Slots (Compact Grid) */}
+            {/* CARD 3: Admin Account & Password Edit Security Box */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <div className="p-2 bg-[#E8F5E9] dark:bg-[#2E5A2E]/20 text-[#2E5A2E] dark:text-[#CBF9B2] rounded-xl">
+                            <KeyRound size={18} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900 dark:text-white text-sm">{t('Admin Account Security')}</h3>
+                            <p className="text-xs text-gray-400">{user?.email || user?.name || user?.mobile || t('Edit Admin Password')}</p>
+                        </div>
+                    </div>
+                    <span className="text-[10px] bg-[#2E5A2E] text-white font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        {t('ADMIN')}
+                    </span>
+                </div>
+
+                {passwordMessage.text && (
+                    <div className={`p-3 rounded-xl flex items-center gap-2 text-xs font-semibold ${
+                        passwordMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}>
+                        {passwordMessage.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+                        <span>{passwordMessage.text}</span>
+                    </div>
+                )}
+
+                <form onSubmit={handlePasswordUpdate} className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{t('New Admin Password')}</label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={adminPassword}
+                                    onChange={(e) => setAdminPassword(e.target.value)}
+                                    placeholder={t('Enter new password')}
+                                    className="w-full pl-3 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                >
+                                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{t('Confirm Password')}</label>
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder={t('Re-enter new password')}
+                                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                        <button
+                            type="submit"
+                            disabled={passwordLoading || !adminPassword}
+                            className="px-4 py-2 bg-[#2E5A2E] text-white text-xs font-bold rounded-xl hover:bg-[#1a3d1a] transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
+                        >
+                            {passwordLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Lock size={14} />}
+                            <span>{t('Update Admin Password')}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {/* CARD 4: Delivery Time Slots (Compact Grid) */}
             {deliveryTimingMode !== 'instant' && (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -258,7 +369,7 @@ const SettingsManagement = () => {
                                     }`}
                                 >
                                     <span>{slot.label}</span>
-                                    {isSelected && <Check size={12} className="text-white" />}
+                                    {isSelected && <Check size={12} className="text-[#CBF9B2]" />}
                                 </button>
                             );
                         })}

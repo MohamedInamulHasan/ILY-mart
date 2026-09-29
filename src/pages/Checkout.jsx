@@ -329,7 +329,8 @@ const Checkout = () => {
                 const baseDeliveryCharge = calculateDeliveryCharge(displayItems);
                 const finalDeliveryCharge = (hasCoins || hasGoldProduct) ? 0 : baseDeliveryCharge;
 
-                const deliveryTimeParam = deliveryTimingMode === 'scheduled' && selectedTimeSlot 
+                const isScheduledMode = settings?.deliveryTimingType !== 'instant';
+                const deliveryTimeParam = isScheduledMode && selectedTimeSlot 
                     ? `${selectedDatePeriod}|${selectedTimeSlot}` 
                     : '';
 
