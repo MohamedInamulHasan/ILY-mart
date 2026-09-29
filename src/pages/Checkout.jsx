@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
-import { getStoreName, calculateDeliveryCharge } from '../utils/storeHelpers';
-import { ArrowLeft, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle } from 'lucide-react';
+import { getStoreName, calculateDeliveryCharge, formatDeliveryRange } from '../utils/storeHelpers';
+import { ArrowLeft, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar } from 'lucide-react';
 import { checkLocationPermission, requestLocationPermission, getCurrentLocation } from '../utils/locationHelpers';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -21,7 +21,10 @@ const Checkout = () => {
     const { user, setUser, loading: authLoading, updateGuest } = useAuth();
     const { data: userProfile } = useUserProfile(); // Fetch fresh user data with coins
     const { t, language } = useLanguage();
-    const { stores, updateUser } = useData();
+    const { stores, updateUser, settings } = useData();
+    const [deliveryTimingMode, setDeliveryTimingMode] = useState('instant'); // 'instant' | 'scheduled'
+    const [selectedDatePeriod, setSelectedDatePeriod] = useState('today'); // 'today' | 'tomorrow'
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
     const [formData, setFormData] = useState({
         fullName: '',
         mobile: '',
@@ -318,13 +321,18 @@ const Checkout = () => {
                 const baseDeliveryCharge = calculateDeliveryCharge(displayItems);
                 const finalDeliveryCharge = (hasCoins || hasGoldProduct) ? 0 : baseDeliveryCharge;
 
+                const deliveryTimeParam = deliveryTimingMode === 'scheduled' && selectedTimeSlot 
+                    ? `${selectedDatePeriod}|${selectedTimeSlot}` 
+                    : '';
+
                 navigate('/order-confirmation', {
                     state: {
                         formData: {
                             ...formData,
                             name: formData.fullName,
                             pincode: formData.zip,
-                            location: formData.location
+                            location: formData.location,
+                            deliveryTime: deliveryTimeParam
                         },
                         cartItems: displayItems,
                         cartTotal: displayTotal,
@@ -672,6 +680,127 @@ const Checkout = () => {
                                         </div>
                                     </div>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Preferred Order Timing & Delivery Slot Selection */}
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm p-6">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="p-2.5 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-xl text-[#2E5A2E] dark:text-[#7CA90E]">
+                                    <Clock size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 dark:text-white text-base">{t('Order Timing & Delivery')}</h3>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500">{t('Choose when you want your order delivered')}</p>
+                                </div>
+                            </div>
+
+                            {/* Mode Options: Instant vs Scheduled */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setDeliveryTimingMode('instant')}
+                                    className={`p-4 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                                        deliveryTimingMode === 'instant'
+                                            ? 'border-[#2E5A2E] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/10 dark:border-[#CBF9B2]'
+                                            : 'border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 hover:border-gray-200'
+                                    }`}
+                                >
+                                    <div className={`p-2 rounded-xl flex-shrink-0 ${deliveryTimingMode === 'instant' ? 'bg-[#2E5A2E] text-white dark:bg-[#CBF9B2] dark:text-gray-900' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                                        <Sparkles size={18} />
+                                    </div>
+                                    <div>
+                                        <span className="block font-bold text-sm text-gray-900 dark:text-white">{t('Instant Delivery')}</span>
+                                        <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('As soon as possible')}</span>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setDeliveryTimingMode('scheduled');
+                                        const slots = (settings?.deliveryTimes && settings.deliveryTimes.length > 0)
+                                            ? settings.deliveryTimes
+                                            : ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+                                        if (!selectedTimeSlot && slots.length > 0) {
+                                            setSelectedTimeSlot(slots[0]);
+                                        }
+                                    }}
+                                    className={`p-4 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                                        deliveryTimingMode === 'scheduled'
+                                            ? 'border-[#2E5A2E] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/10 dark:border-[#CBF9B2]'
+                                            : 'border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 hover:border-gray-200'
+                                    }`}
+                                >
+                                    <div className={`p-2 rounded-xl flex-shrink-0 ${deliveryTimingMode === 'scheduled' ? 'bg-[#2E5A2E] text-white dark:bg-[#CBF9B2] dark:text-gray-900' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                                        <Calendar size={18} />
+                                    </div>
+                                    <div>
+                                        <span className="block font-bold text-sm text-gray-900 dark:text-white">{t('Schedule Timing')}</span>
+                                        <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('Select preferred time slot')}</span>
+                                    </div>
+                                </button>
+                            </div>
+
+                            {/* Time Slot Selection Grid when Scheduled is Active */}
+                            {deliveryTimingMode === 'scheduled' && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="pt-3 border-t border-gray-100 dark:border-gray-700"
+                                >
+                                    {/* Period selector: Today vs Tomorrow */}
+                                    <div className="flex gap-2 mb-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedDatePeriod('today')}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                                selectedDatePeriod === 'today'
+                                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                                            }`}
+                                        >
+                                            {t('Today')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedDatePeriod('tomorrow')}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                                selectedDatePeriod === 'tomorrow'
+                                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                                            }`}
+                                        >
+                                            {t('Tomorrow')}
+                                        </button>
+                                    </div>
+
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('Select Preferred Delivery Slot:')}</p>
+                                    
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-48 overflow-y-auto pr-1">
+                                        {((settings?.deliveryTimes && settings.deliveryTimes.length > 0)
+                                            ? settings.deliveryTimes
+                                            : ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
+                                        ).map(slotId => {
+                                            const isSelected = selectedTimeSlot === slotId;
+                                            return (
+                                                <button
+                                                    key={slotId}
+                                                    type="button"
+                                                    onClick={() => setSelectedTimeSlot(slotId)}
+                                                    className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all text-center ${
+                                                        isSelected
+                                                            ? 'bg-[#2E5A2E] border-[#2E5A2E] text-white shadow-md scale-[1.02]'
+                                                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#2E5A2E]'
+                                                    }`}
+                                                >
+                                                    {formatDeliveryRange(slotId)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
                             )}
                         </div>
 
