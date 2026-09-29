@@ -683,81 +683,23 @@ const Checkout = () => {
                             )}
                         </div>
 
-                        {/* Preferred Order Timing & Delivery Slot Selection */}
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm p-6">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="p-2.5 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-xl text-[#2E5A2E] dark:text-[#7CA90E]">
-                                    <Clock size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 dark:text-white text-base">{t('Order Timing & Delivery')}</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-500">{t('Choose when you want your order delivered')}</p>
-                                </div>
-                            </div>
+                        {/* Preferred Order Timing & Delivery Slot Selection - Simple, Small & Compact */}
+                        {settings?.deliveryTimingType !== 'instant' && (
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Clock size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />
+                                        <span className="font-bold text-xs text-gray-900 dark:text-white">{t('Delivery Timing')}</span>
+                                    </div>
 
-                            {/* Mode Options: Instant vs Scheduled */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setDeliveryTimingMode('instant')}
-                                    className={`p-4 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
-                                        deliveryTimingMode === 'instant'
-                                            ? 'border-[#2E5A2E] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/10 dark:border-[#CBF9B2]'
-                                            : 'border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 hover:border-gray-200'
-                                    }`}
-                                >
-                                    <div className={`p-2 rounded-xl flex-shrink-0 ${deliveryTimingMode === 'instant' ? 'bg-[#2E5A2E] text-white dark:bg-[#CBF9B2] dark:text-gray-900' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
-                                        <Sparkles size={18} />
-                                    </div>
-                                    <div>
-                                        <span className="block font-bold text-sm text-gray-900 dark:text-white">{t('Instant Delivery')}</span>
-                                        <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('As soon as possible')}</span>
-                                    </div>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setDeliveryTimingMode('scheduled');
-                                        const slots = (settings?.deliveryTimes && settings.deliveryTimes.length > 0)
-                                            ? settings.deliveryTimes
-                                            : ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
-                                        if (!selectedTimeSlot && slots.length > 0) {
-                                            setSelectedTimeSlot(slots[0]);
-                                        }
-                                    }}
-                                    className={`p-4 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
-                                        deliveryTimingMode === 'scheduled'
-                                            ? 'border-[#2E5A2E] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/10 dark:border-[#CBF9B2]'
-                                            : 'border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 hover:border-gray-200'
-                                    }`}
-                                >
-                                    <div className={`p-2 rounded-xl flex-shrink-0 ${deliveryTimingMode === 'scheduled' ? 'bg-[#2E5A2E] text-white dark:bg-[#CBF9B2] dark:text-gray-900' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
-                                        <Calendar size={18} />
-                                    </div>
-                                    <div>
-                                        <span className="block font-bold text-sm text-gray-900 dark:text-white">{t('Schedule Timing')}</span>
-                                        <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('Select preferred time slot')}</span>
-                                    </div>
-                                </button>
-                            </div>
-
-                            {/* Time Slot Selection Grid when Scheduled is Active */}
-                            {deliveryTimingMode === 'scheduled' && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="pt-3 border-t border-gray-100 dark:border-gray-700"
-                                >
                                     {/* Period selector: Today vs Tomorrow */}
-                                    <div className="flex gap-2 mb-3">
+                                    <div className="flex gap-1.5">
                                         <button
                                             type="button"
                                             onClick={() => setSelectedDatePeriod('today')}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                                                 selectedDatePeriod === 'today'
-                                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
+                                                    ? 'bg-[#2E5A2E] text-white'
                                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                                             }`}
                                         >
@@ -766,43 +708,41 @@ const Checkout = () => {
                                         <button
                                             type="button"
                                             onClick={() => setSelectedDatePeriod('tomorrow')}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                                                 selectedDatePeriod === 'tomorrow'
-                                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
+                                                    ? 'bg-[#2E5A2E] text-white'
                                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                                             }`}
                                         >
                                             {t('Tomorrow')}
                                         </button>
                                     </div>
+                                </div>
 
-                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('Select Preferred Delivery Slot:')}</p>
-                                    
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-48 overflow-y-auto pr-1">
-                                        {((settings?.deliveryTimes && settings.deliveryTimes.length > 0)
-                                            ? settings.deliveryTimes
-                                            : ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
-                                        ).map(slotId => {
-                                            const isSelected = selectedTimeSlot === slotId;
-                                            return (
-                                                <button
-                                                    key={slotId}
-                                                    type="button"
-                                                    onClick={() => setSelectedTimeSlot(slotId)}
-                                                    className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all text-center ${
-                                                        isSelected
-                                                            ? 'bg-[#2E5A2E] border-[#2E5A2E] text-white shadow-md scale-[1.02]'
-                                                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#2E5A2E]'
-                                                    }`}
-                                                >
-                                                    {formatDeliveryRange(slotId)}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-36 overflow-y-auto pr-1">
+                                    {((settings?.deliveryTimes && settings.deliveryTimes.length > 0)
+                                        ? settings.deliveryTimes
+                                        : ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
+                                    ).map(slotId => {
+                                        const isSelected = selectedTimeSlot === slotId;
+                                        return (
+                                            <button
+                                                key={slotId}
+                                                type="button"
+                                                onClick={() => setSelectedTimeSlot(slotId)}
+                                                className={`py-1.5 px-2 rounded-xl border text-[11px] font-bold transition-all text-center ${
+                                                    isSelected
+                                                        ? 'bg-[#2E5A2E] border-[#2E5A2E] text-white shadow-sm'
+                                                        : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#2E5A2E]'
+                                                }`}
+                                            >
+                                                {formatDeliveryRange(slotId)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Order Summary (Items List) */}
                         <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">

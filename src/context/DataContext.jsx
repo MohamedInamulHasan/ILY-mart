@@ -384,6 +384,9 @@ export const DataProvider = ({ children }) => {
             if (servicesRes.success && servicesRes.data) setServices(servicesRes.data);
             if (hasToken && ordersRes.success && ordersRes.data) setOrders(ordersRes.data);
 
+            // Fetch latest settings silently for instant real-time updates across users
+            fetchSettings();
+
         } catch (e) {
             console.error("Silent background refresh failed:", e);
         }
@@ -398,7 +401,7 @@ export const DataProvider = ({ children }) => {
             // Start interval loop
             const intervalId = setInterval(() => {
                 backgroundRefresh();
-            }, 10000); // Poll every 10 seconds for faster settings updates
+            }, 4000); // Poll every 4 seconds for instant real-time settings updates
 
             // Cleanup
             return () => clearInterval(intervalId);

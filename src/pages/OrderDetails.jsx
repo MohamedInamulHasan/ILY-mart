@@ -5,7 +5,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { apiService, API_BASE_URL } from '../utils/api';
-import { getStoreName } from '../utils/storeHelpers';
+import { getStoreName, formatDeliveryRangeFromDate } from '../utils/storeHelpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CancelOrderModal from '../components/CancelOrderModal';
 import { openExternalLink } from '../utils/linkHelper';
@@ -397,6 +397,16 @@ const OrderDetails = () => {
                                     <MapPin size={13} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
                                     <span>{t('View on Map')}</span>
                                 </button>
+                            </div>
+                        )}
+
+                        {/* 5. Scheduled Delivery Time */}
+                        {order.scheduledDeliveryTime && (
+                            <div className="pt-2">
+                                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2E5A2E] dark:text-[#CBF9B2] bg-emerald-50 dark:bg-[#CBF9B2]/10 px-3 py-1.5 rounded-xl border border-[#2E5A2E]/20">
+                                    <Clock size={14} />
+                                    <span>{t('Scheduled Time')}: {formatDeliveryRangeFromDate(order.scheduledDeliveryTime)}</span>
+                                </div>
                             </div>
                         )}
                     </div>
