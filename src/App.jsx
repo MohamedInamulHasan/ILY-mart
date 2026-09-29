@@ -59,12 +59,13 @@ const HomeWithRedirect = () => {
     // Guests are auto-created on app launch, so !user is only a rare fallback.
     // Don't redirect to /login — just show Home for all users (including guests).
     const roles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
+    const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
     const isDeliveryBoy = roles.some(r => {
         const normalized = String(r || '').toLowerCase().trim();
         return normalized === 'delivery_boy' || normalized === 'deliveryboy';
     });
 
-    if (isDeliveryBoy) {
+    if (isDeliveryBoy && !isAdmin) {
         return <Navigate to="/admin" replace />;
     }
     return <Home />;
@@ -97,19 +98,21 @@ const RoleRedirectHandler = () => {
         if (!user) return;
 
         const roles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
+        const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
         const isDeliveryBoy = roles.some(r => {
             const normalized = String(r || '').toLowerCase().trim();
             return normalized === 'delivery_boy' || normalized === 'deliveryboy';
         });
-        const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
         
         console.log('RoleRedirectHandler: Checking role', { roles, pathname: location.pathname });
 
         // Force delivery_boy to /admin, but allow them to see specific order details
-        const isAllowedPath = location.pathname.startsWith('/admin') || location.pathname.startsWith('/orders/');
-        if (isDeliveryBoy && !isAllowedPath) {
-            console.log('RoleRedirectHandler: Redirecting delivery_boy to /admin');
-            navigate('/admin', { replace: true });
+        if (isDeliveryBoy && !isAdmin) {
+            const isAllowedPath = location.pathname.startsWith('/admin') || location.pathname.startsWith('/orders');
+            if (!isAllowedPath) {
+                console.log('RoleRedirectHandler: Redirecting delivery_boy to /admin');
+                navigate('/admin', { replace: true });
+            }
         }
         // No longer forcing admin to /admin automatically here, so they can "see all pages"
     }, [user, loading, location.pathname, navigate]);
