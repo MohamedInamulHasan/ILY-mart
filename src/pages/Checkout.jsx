@@ -695,37 +695,9 @@ const Checkout = () => {
                         {/* Preferred Order Timing & Delivery Slot Selection - Next 4 Real-time Options */}
                         {settings?.deliveryTimingType !== 'instant' && (
                             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />
-                                        <span className="font-bold text-xs text-gray-900 dark:text-white">{t('Delivery Timing')}</span>
-                                    </div>
-
-                                    {/* Period selector: Today vs Tomorrow */}
-                                    <div className="flex gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedDatePeriod('today')}
-                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                                                selectedDatePeriod === 'today'
-                                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
-                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                                            }`}
-                                        >
-                                            {t('Today')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedDatePeriod('tomorrow')}
-                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                                                selectedDatePeriod === 'tomorrow'
-                                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
-                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                                            }`}
-                                        >
-                                            {t('Tomorrow')}
-                                        </button>
-                                    </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />
+                                    <span className="font-bold text-xs text-gray-900 dark:text-white">{t('Delivery Timing')}</span>
                                 </div>
 
                                 {/* Next 4 Real-Time Available Time Slots */}

@@ -401,14 +401,24 @@ const OrderDetails = () => {
                         )}
 
                         {/* 5. Scheduled Delivery Time */}
-                        {(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime) && (
-                            <div className="pt-2">
-                                <div className="inline-flex items-center gap-2 text-xs font-bold text-[#1b5e20] dark:text-[#CBF9B2] bg-[#e6f7ed] dark:bg-[#CBF9B2]/15 px-4 py-2 rounded-full border border-[#bce8ce] dark:border-[#CBF9B2]/30 shadow-xs">
-                                    <Clock size={15} className="text-[#1b5e20] dark:text-[#CBF9B2]" />
-                                    <span>{t('Scheduled Time')}: {formatDeliveryRangeFromDate(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime)}</span>
+                        {(() => {
+                            const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
+                            if (!rawTime) return null;
+                            const strTime = String(rawTime).toLowerCase();
+                            if (strTime.includes('instant')) return null;
+
+                            const formattedRange = formatDeliveryRangeFromDate(rawTime);
+                            if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
+
+                            return (
+                                <div className="pt-2">
+                                    <div className="inline-flex items-center gap-2 text-xs font-bold text-[#1b5e20] dark:text-[#CBF9B2] bg-[#e6f7ed] dark:bg-[#CBF9B2]/15 px-4 py-2 rounded-full border border-[#bce8ce] dark:border-[#CBF9B2]/30 shadow-xs">
+                                        <Clock size={15} className="text-[#1b5e20] dark:text-[#CBF9B2]" />
+                                        <span>{t('Scheduled Time')}: {formattedRange}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </div>
                 </div>
 

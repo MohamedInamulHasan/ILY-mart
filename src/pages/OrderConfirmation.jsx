@@ -357,21 +357,24 @@ const OrderConfirmation = () => {
                             )}
                         </div>
 
-                        {formData.deliveryTime && (
-                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                <div className="flex items-center gap-3 text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                    <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center">
-                                        <Clock size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">{t('Scheduled Delivery')}</p>
-                                        <p className="font-medium text-gray-900 dark:text-white">
-                                            {formatDeliveryRange(formData.deliveryTime)}
-                                        </p>
+                        {(() => {
+                            const rawTime = formData.deliveryTime;
+                            if (!rawTime) return null;
+                            const strTime = String(rawTime).toLowerCase();
+                            if (strTime.includes('instant')) return null;
+
+                            const formattedRange = formatDeliveryRange(rawTime);
+                            if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
+
+                            return (
+                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="inline-flex items-center gap-2 text-xs font-bold text-[#1b5e20] dark:text-[#CBF9B2] bg-[#e6f7ed] dark:bg-[#CBF9B2]/15 px-4 py-2 rounded-full border border-[#bce8ce] dark:border-[#CBF9B2]/30 shadow-xs">
+                                        <Clock size={15} className="text-[#1b5e20] dark:text-[#CBF9B2]" />
+                                        <span>{t('Scheduled Time')}: {formattedRange}</span>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </div>
                 </div>
 
