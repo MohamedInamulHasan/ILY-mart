@@ -88,7 +88,7 @@ const InstallPrompt = () => {
         <>
             {/* Compact Non-Intrusive Bottom Banner */}
             {showPrompt && !showGuideModal && (
-                <div className="fixed bottom-20 md:bottom-5 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-sm z-[90] animate-slide-up">
+                <div className="hidden md:block fixed bottom-5 right-5 sm:max-w-sm z-[90] animate-slide-up">
                     <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgba(46,90,46,0.18)] border border-emerald-500/30 p-3 sm:p-3.5 relative overflow-hidden flex items-center gap-3">
                         {/* Clean App Icon Container */}
                         <div className="w-11 h-11 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl p-1.5 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -132,7 +132,7 @@ const InstallPrompt = () => {
 
             {/* Step-by-Step Install Guide Modal (Only shows if direct install isn't supported like iOS Safari) */}
             {showGuideModal && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                <div className="hidden md:flex fixed inset-0 z-[110] items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
                     <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-xs w-full p-5 shadow-2xl border border-emerald-500/30 relative text-center">
                         <button
                             onClick={() => setShowGuideModal(false)}
