@@ -32,24 +32,45 @@ export const sendOrderTelegramNotification = async (order) => {
         }
 
         // Format scheduled delivery time
-        let deliveryTimeText = 'Not specified';
-        if (order.scheduledDeliveryTime) {
-            const date = new Date(order.scheduledDeliveryTime);
-            const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-            const hStart = date.getHours();
-            const mStart = date.getMinutes().toString().padStart(2, '0');
-            const hEnd = (hStart + 1) % 24;
-
-            const formatShortTime = (h, m) => {
-                const ampm = h >= 12 ? 'PM' : 'AM';
-                const h12 = h % 12 || 12;
-                const mStr = parseInt(m) === 0 ? '' : `:${m}`;
-                return `${h12}${mStr}${ampm}`;
-            };
-
-            const formattedDate = date.toLocaleDateString('en-US', dateOptions);
-            const range = `${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
-            deliveryTimeText = `${formattedDate} (${range})`;
+        let deliveryTimeText = 'Instant Delivery';
+        const rawDeliveryTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
+        if (rawDeliveryTime) {
+            const strTime = String(rawDeliveryTime).toLowerCase();
+            if (strTime.includes('instant')) {
+                deliveryTimeText = 'Instant Delivery';
+            } else if (typeof rawDeliveryTime === 'string' && rawDeliveryTime.includes('|')) {
+                const parts = rawDeliveryTime.split('|');
+                const [hours, minutes] = parts[1].split(':');
+                const hStart = parseInt(hours, 10);
+                if (!isNaN(hStart)) {
+                    const formatShortTime = (h, m) => {
+                        const ampm = h >= 12 ? 'PM' : 'AM';
+                        const h12 = h % 12 || 12;
+                        const mStr = parseInt(m, 10) === 0 ? '' : `:${m}`;
+                        return `${h12}${mStr}${ampm}`;
+                    };
+                    const hEnd = (hStart + 1) % 24;
+                    deliveryTimeText = `${formatShortTime(hStart, minutes)} - ${formatShortTime(hEnd, minutes)}`;
+                } else {
+                    deliveryTimeText = rawDeliveryTime;
+                }
+            } else {
+                const date = new Date(rawDeliveryTime);
+                if (!isNaN(date.getTime())) {
+                    const hStart = date.getHours();
+                    const mStart = date.getMinutes().toString().padStart(2, '0');
+                    const hEnd = (hStart + 1) % 24;
+                    const formatShortTime = (h, m) => {
+                        const ampm = h >= 12 ? 'PM' : 'AM';
+                        const h12 = h % 12 || 12;
+                        const mStr = parseInt(m, 10) === 0 ? '' : `:${m}`;
+                        return `${h12}${mStr}${ampm}`;
+                    };
+                    deliveryTimeText = `${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
+                } else {
+                    deliveryTimeText = String(rawDeliveryTime);
+                }
+            }
         }
 
         // Google Maps Link

@@ -11,6 +11,44 @@ import nodemailer from 'nodemailer';
 // Lazy initialization of transporter to ensure env vars are loaded
 let transporter = null;
 
+export const formatOrderDeliveryTime = (order) => {
+    const rawDeliveryTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
+    if (!rawDeliveryTime) return 'Instant Delivery';
+    const strTime = String(rawDeliveryTime).toLowerCase();
+    if (strTime.includes('instant')) return 'Instant Delivery';
+
+    if (typeof rawDeliveryTime === 'string' && rawDeliveryTime.includes('|')) {
+        const parts = rawDeliveryTime.split('|');
+        const [hours, minutes] = parts[1].split(':');
+        const hStart = parseInt(hours, 10);
+        if (!isNaN(hStart)) {
+            const formatShortTime = (h, m) => {
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const h12 = h % 12 || 12;
+                const mStr = parseInt(m, 10) === 0 ? '' : `:${m}`;
+                return `${h12}${mStr}${ampm}`;
+            };
+            return `${formatShortTime(hStart, minutes)} - ${formatShortTime((hStart + 1) % 24, minutes)}`;
+        }
+        return rawDeliveryTime;
+    }
+
+    const date = new Date(rawDeliveryTime);
+    if (!isNaN(date.getTime())) {
+        const hStart = date.getHours();
+        const mStart = date.getMinutes().toString().padStart(2, '0');
+        const formatShortTime = (h, m) => {
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 || 12;
+            const mStr = parseInt(m, 10) === 0 ? '' : `:${m}`;
+            return `${h12}${mStr}${ampm}`;
+        };
+        return `${formatShortTime(hStart, mStart)} - ${formatShortTime((hStart + 1) % 24, mStart)}`;
+    }
+
+    return String(rawDeliveryTime);
+};
+
 const getTransporter = () => {
     if (!transporter) {
         transporter = nodemailer.createTransport({
@@ -189,38 +227,12 @@ export const sendOrderNotificationEmail = async (order) => {
                     
                     <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                         <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${order.paymentMethod?.type || 'Cash on Delivery'}</p>
-                        <p style="margin: 5px 0;"><strong>Delivery Time:</strong> ${order.scheduledDeliveryTime ? (() => {
-                    const date = new Date(order.scheduledDeliveryTime);
-                    const hStart = date.getHours();
-                    const mStart = date.getMinutes().toString().padStart(2, '0');
-                    const hEnd = (hStart + 1) % 24;
-                    const formatShortTime = (h, m) => {
-                        const ampm = h >= 12 ? 'PM' : 'AM';
-                        const h12 = h % 12 || 12;
-                        const mStr = parseInt(m) === 0 ? '' : `:${m}`;
-                        return `${h12}${mStr}${ampm}`;
-                    };
-                    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    return `${formattedDate} (${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)})`;
-                })() : 'Not specified'}</p>
+                        <p style="margin: 5px 0;"><strong>Delivery Time:</strong> ${formatOrderDeliveryTime(order)}</p>
                     </div>
                     
                     <div style="text-align: center; margin-top: 30px;">
                         <p style="margin-bottom: 15px;"><strong>Contact Customer:</strong></p>
-                        <a href="https://wa.me/${whatsappNumber}?text=Hello%20${encodeURIComponent(customerName)}%21%0A%0AYour%20order%20has%20been%20received%20from%20Ily%20Mart.%0A%0A*Order%20Details%3A*%0AOrder%20ID%3A%20%23${order._id.toString().slice(-8).toUpperCase()}%0ATotal%20Amount%3A%20₹${order.total.toFixed(0)}%0ADelivery%20Time%3A%20${order.scheduledDeliveryTime ? encodeURIComponent((() => {
-                    const date = new Date(order.scheduledDeliveryTime);
-                    const hStart = date.getHours();
-                    const mStart = date.getMinutes().toString().padStart(2, '0');
-                    const hEnd = (hStart + 1) % 24;
-                    const formatShortTime = (h, m) => {
-                        const ampm = h >= 12 ? 'PM' : 'AM';
-                        const h12 = h % 12 || 12;
-                        const mStr = parseInt(m) === 0 ? '' : `:${m}`;
-                        return `${h12}${mStr}${ampm}`;
-                    };
-                    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    return `${formattedDate} (${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)})`;
-                })()) : 'Standard'}%0ADelivery%20Charge%3A%20${order.shipping === 0 ? (order.items.some(i => i.isGold) ? 'FREE%20(Gold%20Member)' : 'FREE%20(Coin%20Applied)') : `₹${(order.shipping || 0).toFixed(0)}`}%0APayment%3A%20${encodeURIComponent(order.paymentMethod?.type || 'Cash on Delivery')}%0A%0A*Delivery%20Address%3A*%0A${encodeURIComponent(customerAddress)}${customerLocation ? `%20(${encodeURIComponent(customerLocation)})` : ''}%2C%20${encodeURIComponent(customerCity)}%20-%20${customerZip}%0A%0A*Items%20Ordered%3A*%0A${order.items.map((item, idx) => `${idx + 1}.%20${encodeURIComponent(item.name || item.title || 'Product')}%20x${item.quantity}%20-%20₹${(item.price * item.quantity).toFixed(0)}`).join('%0A')}%0A%0AYour%20order%20is%20being%20processed%20and%20will%20be%20delivered%20soon.%20Thank%20you%20for%20shopping%20with%20Ily%20Mart%21" 
+                        <a href="https://wa.me/${whatsappNumber}?text=Hello%20${encodeURIComponent(customerName)}%21%0A%0AYour%20order%20has%20been%20received%20from%20Ily%20Mart.%0A%0A*Order%20Details%3A*%0AOrder%20ID%3A%20%23${order._id.toString().slice(-8).toUpperCase()}%0ATotal%20Amount%3A%20₹${order.total.toFixed(0)}%0ADelivery%20Time%3A%20${encodeURIComponent(formatOrderDeliveryTime(order))}%0ADelivery%20Charge%3A%20${order.shipping === 0 ? (order.items.some(i => i.isGold) ? 'FREE%20(Gold%20Member)' : 'FREE%20(Coin%20Applied)') : `₹${(order.shipping || 0).toFixed(0)}`}%0APayment%3A%20${encodeURIComponent(order.paymentMethod?.type || 'Cash on Delivery')}%0A%0A*Delivery%20Address%3A*%0A${encodeURIComponent(customerAddress)}${customerLocation ? `%20(${encodeURIComponent(customerLocation)})` : ''}%2C%20${encodeURIComponent(customerCity)}%20-%20${customerZip}%0A%0A*Items%20Ordered%3A*%0A${order.items.map((item, idx) => `${idx + 1}.%20${encodeURIComponent(item.name || item.title || 'Product')}%20x${item.quantity}%20-%20₹${(item.price * item.quantity).toFixed(0)}`).join('%0A')}%0A%0AYour%20order%20is%20being%20processed%20and%20will%20be%20delivered%20soon.%20Thank%20you%20for%20shopping%20with%20Ily%20Mart%21" 
                            style="display: inline-block; padding: 12px 24px; background-color: #25D366; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-bottom: 20px;">
                             📱 Contact via WhatsApp
                         </a>
@@ -422,20 +434,7 @@ export const sendCustomerOrderConfirmationEmail = async (order) => {
                             <p style="margin: 5px 0;"><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
                             <p style="margin: 5px 0;"><strong>Total Amount:</strong> ₹${order.total.toFixed(0)}</p>
                             <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${order.paymentMethod?.type || 'Cash on Delivery'}</p>
-                            ${order.scheduledDeliveryTime ? `<p style="margin: 5px 0;"><strong>Delivery Time:</strong> ${(() => {
-                    const date = new Date(order.scheduledDeliveryTime);
-                    const hStart = date.getHours();
-                    const mStart = date.getMinutes().toString().padStart(2, '0');
-                    const hEnd = (hStart + 1) % 24;
-                    const formatShortTime = (h, m) => {
-                        const ampm = h >= 12 ? 'PM' : 'AM';
-                        const h12 = h % 12 || 12;
-                        const mStr = parseInt(m) === 0 ? '' : `:${m}`;
-                        return `${h12}${mStr}${ampm}`;
-                    };
-                    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    return `${formattedDate} (${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)})`;
-                })()}</p>` : ''}
+                            <p style="margin: 5px 0;"><strong>Delivery Time:</strong> ${formatOrderDeliveryTime(order)}</p>
                         </div>
 
                         <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
