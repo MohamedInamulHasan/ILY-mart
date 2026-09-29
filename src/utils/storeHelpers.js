@@ -105,6 +105,51 @@ export const formatDeliveryRangeFromDate = (date) => {
     }
 };
 
+/**
+ * Calculates real-time 4 future delivery time slot options.
+ * Rules:
+ * - If current minute < 30: includes the current hour slot (e.g. 11:21 -> 11:00 slot, i.e. 11 AM - 12 PM).
+ * - If current minute >= 30: starts from next hour slot (e.g. 11:30 -> 12:00 slot, i.e. 12 PM - 1 PM).
+ * - Always returns exactly the next 4 available options.
+ */
+export const getAvailableDeliverySlots = (configuredTimes, period = 'today') => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMin = now.getMinutes();
+
+    // Start hour: current hour if min < 30, else next hour
+    const startHour = currentMin < 30 ? currentHour : currentHour + 1;
+
+    if (period === 'today') {
+        let availableToday = [];
+        if (Array.isArray(configuredTimes) && configuredTimes.length > 0) {
+            availableToday = configuredTimes.filter(slot => {
+                const slotHour = parseInt(String(slot).split(':')[0], 10);
+                return slotHour >= startHour;
+            });
+        }
+
+        // If configured times have fewer than 4 slots left today, dynamically generate 4 consecutive hourly slots from startHour
+        if (availableToday.length < 4) {
+            const dynamicSlots = [];
+            for (let i = 0; i < 4; i++) {
+                const hour = (startHour + i) % 24;
+                const hh = String(hour).padStart(2, '0');
+                dynamicSlots.push(`${hh}:00`);
+            }
+            return dynamicSlots;
+        }
+
+        return availableToday.slice(0, 4);
+    } else {
+        // Tomorrow: Return first 4 configured slots or 4 morning slots
+        if (Array.isArray(configuredTimes) && configuredTimes.length >= 4) {
+            return configuredTimes.slice(0, 4);
+        }
+        return ['08:00', '09:00', '10:00', '11:00'];
+    }
+};
+
 // Get current time in minutes since midnight
 export const getCurrentTimeInMinutes = () => {
     const now = new Date();

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
-import { getStoreName, calculateDeliveryCharge, formatDeliveryRange } from '../utils/storeHelpers';
+import { getStoreName, calculateDeliveryCharge, formatDeliveryRange, getAvailableDeliverySlots } from '../utils/storeHelpers';
 import { ArrowLeft, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar } from 'lucide-react';
 import { checkLocationPermission, requestLocationPermission, getCurrentLocation } from '../utils/locationHelpers';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -25,6 +25,14 @@ const Checkout = () => {
     const [deliveryTimingMode, setDeliveryTimingMode] = useState('instant'); // 'instant' | 'scheduled'
     const [selectedDatePeriod, setSelectedDatePeriod] = useState('today'); // 'today' | 'tomorrow'
     const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+
+    const availableDeliverySlots = getAvailableDeliverySlots(settings?.deliveryTimes, selectedDatePeriod);
+
+    useEffect(() => {
+        if (availableDeliverySlots.length > 0 && (!selectedTimeSlot || !availableDeliverySlots.includes(selectedTimeSlot))) {
+            setSelectedTimeSlot(availableDeliverySlots[0]);
+        }
+    }, [selectedDatePeriod, availableDeliverySlots, selectedTimeSlot]);
     const [formData, setFormData] = useState({
         fullName: '',
         mobile: '',
@@ -683,7 +691,7 @@ const Checkout = () => {
                             )}
                         </div>
 
-                        {/* Preferred Order Timing & Delivery Slot Selection - Simple, Small & Compact */}
+                        {/* Preferred Order Timing & Delivery Slot Selection - Next 4 Real-time Options */}
                         {settings?.deliveryTimingType !== 'instant' && (
                             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3">
                                 <div className="flex items-center justify-between">
@@ -699,7 +707,7 @@ const Checkout = () => {
                                             onClick={() => setSelectedDatePeriod('today')}
                                             className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                                                 selectedDatePeriod === 'today'
-                                                    ? 'bg-[#2E5A2E] text-white'
+                                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
                                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                                             }`}
                                         >
@@ -710,7 +718,7 @@ const Checkout = () => {
                                             onClick={() => setSelectedDatePeriod('tomorrow')}
                                             className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                                                 selectedDatePeriod === 'tomorrow'
-                                                    ? 'bg-[#2E5A2E] text-white'
+                                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
                                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                                             }`}
                                         >
@@ -719,20 +727,18 @@ const Checkout = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-36 overflow-y-auto pr-1">
-                                    {((settings?.deliveryTimes && settings.deliveryTimes.length > 0)
-                                        ? settings.deliveryTimes
-                                        : ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
-                                    ).map(slotId => {
+                                {/* Next 4 Real-Time Available Time Slots */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {availableDeliverySlots.map(slotId => {
                                         const isSelected = selectedTimeSlot === slotId;
                                         return (
                                             <button
                                                 key={slotId}
                                                 type="button"
                                                 onClick={() => setSelectedTimeSlot(slotId)}
-                                                className={`py-1.5 px-2 rounded-xl border text-[11px] font-bold transition-all text-center ${
+                                                className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold transition-all text-center ${
                                                     isSelected
-                                                        ? 'bg-[#2E5A2E] border-[#2E5A2E] text-white shadow-sm'
+                                                        ? 'bg-[#2E5A2E] border-[#2E5A2E] text-white shadow-sm scale-[1.02]'
                                                         : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#2E5A2E]'
                                                 }`}
                                             >
