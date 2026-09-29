@@ -60,15 +60,13 @@ export const formatTime12h = (time24) => {
     }
 };
 
-// Convert HH:mm or period|HH:mm to 12-hour range format (e.g., "13:00" -> "1 PM - 2 PM", "today|11:00" -> "Today 11 AM - 12 PM")
+// Convert HH:mm or period|HH:mm to 12-hour range format (e.g., "13:00" -> "1 PM - 2 PM", "today|11:00" -> "11 AM - 12 PM")
 export const formatDeliveryRange = (time24) => {
     if (!time24) return '';
     try {
         let rawTime = time24;
-        let prefixDate = '';
         if (typeof time24 === 'string' && time24.includes('|')) {
             const parts = time24.split('|');
-            prefixDate = parts[0] === 'tomorrow' ? 'Tomorrow ' : 'Today ';
             rawTime = parts[1];
         }
 
@@ -84,7 +82,7 @@ export const formatDeliveryRange = (time24) => {
             return `${h12}${mStr}${ampmStr}`;
         };
 
-        return `${prefixDate}${formatShortTime(hStart, minutes)} - ${formatShortTime(hEnd, minutes)}`;
+        return `${formatShortTime(hStart, minutes)} - ${formatShortTime(hEnd, minutes)}`;
     } catch (e) {
         return time24;
     }
@@ -112,11 +110,7 @@ export const formatDeliveryRangeFromDate = (date) => {
             return `${h12}${mStr}${ampmStr}`;
         };
 
-        const today = new Date();
-        const isTomorrow = d.getDate() === (today.getDate() + 1) && d.getMonth() === today.getMonth();
-        const dayPrefix = isTomorrow ? 'Tomorrow ' : '';
-
-        return `${dayPrefix}${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
+        return `${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
     } catch (e) {
         return String(date || '');
     }
