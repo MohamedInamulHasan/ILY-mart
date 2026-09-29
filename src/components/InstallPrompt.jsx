@@ -97,7 +97,7 @@ const InstallPrompt = () => {
 
                         {/* App Icon */}
                         <div className="w-10 h-10 bg-gradient-to-br from-[#2E5A2E] to-[#5A7C0A] rounded-xl p-1.5 flex items-center justify-center flex-shrink-0 shadow-sm">
-                            <img src="/icon.svg" alt="ILY mart Logo" className="w-full h-full object-contain" />
+                            <img src="/logo-new.png" alt="ILY mart Logo" className="w-full h-full object-contain" />
                         </div>
 
                         {/* Text details */}
