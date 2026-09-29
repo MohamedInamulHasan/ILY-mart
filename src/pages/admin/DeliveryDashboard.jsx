@@ -25,7 +25,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useOrders, useUpdateOrderStatus } from '../../hooks/queries/useOrders';
 import { useServiceRequests, useUpdateServiceRequestStatus } from '../../hooks/queries/useServiceRequests';
 import { useStores } from '../../hooks/queries/useStores';
-import { getStoreName } from '../../utils/storeHelpers';
+import { getStoreName, formatDeliveryRangeFromDate } from '../../utils/storeHelpers';
 import { formatOrderDateTime, formatDeliveryTime } from '../../utils/dateUtils';
 import { openExternalLink } from '../../utils/linkHelper';
 import { API_BASE_URL } from '../../utils/api';
@@ -308,6 +308,11 @@ const DeliveryDashboard = () => {
                                                             </p>
                                                             <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
                                                                 {formatOrderDateTime(order.createdAt || order.date)}
+                                                                {(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime) && (
+                                                                    <span className="text-[#2E5A2E] dark:text-[#8bc910] ml-1 font-bold">
+                                                                        • ⏰ {formatDeliveryRangeFromDate(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime)}
+                                                                    </span>
+                                                                )}
                                                             </p>
                                                         </div>
                                                     </div>

@@ -87,6 +87,7 @@ export const formatDeliveryRangeFromDate = (date) => {
     if (!date) return '';
     try {
         const d = new Date(date);
+        if (isNaN(d.getTime())) return String(date);
         const hStart = d.getHours();
         const mStart = d.getMinutes().toString().padStart(2, '0');
         const hEnd = (hStart + 1) % 24;
@@ -100,7 +101,7 @@ export const formatDeliveryRangeFromDate = (date) => {
 
         return `${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
     } catch (e) {
-        return '';
+        return String(date || '');
     }
 };
 

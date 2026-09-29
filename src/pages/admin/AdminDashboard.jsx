@@ -52,7 +52,7 @@ import StoreManagement from './StoreManagement';
 import SettingsManagement from './SettingsManagement';
 import ServiceManagement from './ServiceManagement';
 import useCloudinaryUpload from '../../hooks/useCloudinaryUpload';
-import { isProductScheduled } from '../../utils/storeHelpers';
+import { isProductScheduled, formatDeliveryRangeFromDate } from '../../utils/storeHelpers';
 import { openExternalLink } from '../../utils/linkHelper';
 import { renderBilingualTitle } from '../../utils/titleHelpers';
 
@@ -1937,6 +1937,13 @@ const OrderManagement = () => {
                                         </td>
                                         <td className="p-4 text-gray-500 dark:text-gray-400 text-sm">
                                             {formatDateTime(order.createdAt || order.date)}
+                                             {(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime) && (
+                                                 <div className="mt-1">
+                                                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2E5A2E] dark:text-[#7CA90E] bg-[#E8F5E9] dark:bg-[#7CA90E]/10 px-2 py-0.5 rounded-md border border-[#2E5A2E]/20">
+                                                         ⏰ {formatDeliveryRangeFromDate(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime)}
+                                                     </span>
+                                                 </div>
+                                             )}
                                         </td>
                                         <td className="p-4 font-medium text-gray-900 dark:text-white">₹{(
                                             (order.items?.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0) || 0) +

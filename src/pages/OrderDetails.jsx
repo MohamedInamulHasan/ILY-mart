@@ -401,11 +401,11 @@ const OrderDetails = () => {
                         )}
 
                         {/* 5. Scheduled Delivery Time */}
-                        {order.scheduledDeliveryTime && (
+                        {(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime) && (
                             <div className="pt-2">
                                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2E5A2E] dark:text-[#CBF9B2] bg-emerald-50 dark:bg-[#CBF9B2]/10 px-3 py-1.5 rounded-xl border border-[#2E5A2E]/20">
                                     <Clock size={14} />
-                                    <span>{t('Scheduled Time')}: {formatDeliveryRangeFromDate(order.scheduledDeliveryTime)}</span>
+                                    <span>{t('Scheduled Time')}: {formatDeliveryRangeFromDate(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime)}</span>
                                 </div>
                             </div>
                         )}

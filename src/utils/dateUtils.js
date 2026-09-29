@@ -53,7 +53,7 @@ export const formatDeliveryTime = (dateString) => {
 
     try {
         const date = new Date(dateString);
-        if (isNaN(date.getTime())) return null;
+        if (isNaN(date.getTime())) return String(dateString);
 
         const dateOptions = { month: 'short', day: 'numeric' };
         const hStart = date.getHours();
@@ -73,7 +73,7 @@ export const formatDeliveryTime = (dateString) => {
         return `${formattedDate} (${range})`;
     } catch (error) {
         console.error('Error formatting delivery time:', error);
-        return null;
+        return String(dateString);
     }
 };
 
