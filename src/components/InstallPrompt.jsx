@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 const InstallPrompt = () => {
     const { t } = useLanguage();
     const [deferredPrompt, setDeferredPrompt] = useState(null);
-    const [showPrompt, setShowPrompt] = useState(false);
+    const [showPrompt, setShowPrompt] = useState(true);
     const [isInstalled, setIsInstalled] = useState(false);
     const [showGuideModal, setShowGuideModal] = useState(false);
     const [isIOS, setIsIOS] = useState(false);

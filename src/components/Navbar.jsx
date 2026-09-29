@@ -25,6 +25,7 @@ const Navbar = () => {
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                         className="flex items-center gap-2 group active:scale-95 transition-transform duration-200"
                     >
+                        <img src="/logo-new.png" alt="ILY mart Logo" className="w-8 h-8 md:w-9 md:h-9 object-contain rounded-xl shadow-sm" />
                         <span className="text-xl md:text-2xl font-black tracking-tight flex items-center bg-gradient-to-r from-[#2E5A2E] to-[#5A7C0A] bg-clip-text text-transparent dark:from-[#CBF9B2] dark:to-[#8bc910]">
                             ILY mart
                         </span>
