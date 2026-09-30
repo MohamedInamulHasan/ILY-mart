@@ -4,6 +4,7 @@ import { sendServiceRequestNotification } from '../services/emailService.js';
 import { sendServiceRequestTelegramNotification } from '../services/telegramService.js';
 import { sendServiceRequestVoiceAlert } from '../services/voiceService.js';
 import { sendServiceRequestNtfyAlert } from '../services/ntfyService.js';
+import { sendN8nServiceRequestEvent } from '../services/n8nService.js';
 
 
 // @desc    Create a new service request
@@ -84,6 +85,14 @@ export const createServiceRequest = async (req, res) => {
             console.error('❌ ntfy service request trigger error:', ntfyError);
         }
 
+        // Send n8n webhook notification (non-blocking)
+        try {
+            sendN8nServiceRequestEvent(createdRequest, 'service.created')
+                .catch(err => console.error('❌ Failed to send n8n service request webhook:', err));
+        } catch (n8nError) {
+            console.error('❌ n8n service request trigger error:', n8nError);
+        }
+
         res.status(201).json(createdRequest);
     } catch (error) {
         console.error('Error creating service request:', error);
@@ -140,6 +149,11 @@ export const updateServiceRequestStatus = async (req, res) => {
             const updatedRequest = await request.save();
             await updatedRequest.populate('user', 'name email mobile');
             await updatedRequest.populate('service', 'name image mobile');
+
+            // Send n8n webhook notification for service status update (non-blocking)
+            sendN8nServiceRequestEvent(updatedRequest, 'service.status_updated')
+                .catch(err => console.error('❌ Failed to send n8n service request status webhook:', err));
+
             res.json(updatedRequest);
         } else {
             res.status(404).json({ message: 'Service Request not found' });

@@ -4,6 +4,7 @@ import { sendOrderNotificationEmail, sendCustomerOrderConfirmationEmail } from '
 import { sendOrderTelegramNotification } from '../services/telegramService.js';
 import { sendOrderVoiceAlert } from '../services/voiceService.js';
 import { sendOrderNtfyAlert } from '../services/ntfyService.js';
+import { sendN8nOrderEvent } from '../services/n8nService.js';
 import { getIO } from '../socket.js';
 
 
@@ -175,6 +176,11 @@ export const createOrder = async (req, res, next) => {
         sendOrderNtfyAlert(order)
             .then(result => console.log('🔔 ntfy alert result:', result))
             .catch(err => console.error('❌ Failed to send ntfy alert:', err));
+
+        // Send n8n webhook notification (non-blocking)
+        console.log('⚡ Triggering n8n order webhook...');
+        sendN8nOrderEvent(order, 'order.created')
+            .catch(err => console.error('❌ Failed to send n8n order webhook:', err));
 
         // Emit real-time event for admin
         getIO().emit('order:created', order);
@@ -384,6 +390,11 @@ export const updateOrderStatus = async (req, res, next) => {
         }
 
         const updatedOrder = await order.save();
+
+        // Send n8n webhook notification for status update (non-blocking)
+        const eventType = updatedOrder.status === 'Cancelled' ? 'order.cancelled' : 'order.status_updated';
+        sendN8nOrderEvent(updatedOrder, eventType)
+            .catch(err => console.error('❌ Failed to send n8n order status webhook:', err));
 
         // Emit real-time event for user
         getIO().emit('order:updated', updatedOrder);
