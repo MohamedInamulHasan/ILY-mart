@@ -1,5 +1,5 @@
 // Green-API WhatsApp Notification Service
-// Sends instant direct WhatsApp messages with clean IST dates, formatted payment info, and delivery time ranges
+// Sends instant direct WhatsApp messages with clean IST dates, formatted payment info, delivery charge, and delivery time ranges
 
 const getGreenApiCredentials = () => {
     const idInstance = process.env.GREEN_API_ID_INSTANCE || '710722753410';
@@ -170,13 +170,17 @@ export const sendOrderWhatsAppNotification = async (order, eventType = 'created'
         const scheduledTimeFormatted = formatScheduledTime(rawDeliveryTime);
         const paymentFormatted = formatPaymentMethod(order.paymentMethod, order.isPaid);
 
-        // Format delivery charge
-        const shippingFee = order.shipping || 0;
+        // Format delivery charge cleanly
+        const shippingFee = Number(order.shipping ?? order.shippingFee ?? order.deliveryCharge ?? 0);
         let shippingText = `₹${shippingFee}`;
         if (shippingFee === 0) {
             const hasGold = (order.items || []).some(i => i.isGold);
-            shippingText = hasGold ? 'FREE (Gold Product) ⚡' : 'FREE (Coin Applied) 🪙';
+            shippingText = hasGold ? 'FREE ⚡ (Gold Product)' : 'FREE 🪙 (Coin Applied)';
         }
+
+        const subtotal = Number(order.subtotal || 0);
+        const discount = Number(order.discount || 0);
+        const total = Number(order.total || (subtotal + (shippingFee === 0 ? 0 : shippingFee) - discount));
 
         let header = '📦 *New Order Placed on ILY-mart!*';
         if (eventType === 'status_updated') {
@@ -211,11 +215,11 @@ ${header}
 - Mobile: ${customerMobile}
 - Address: ${fullAddress}${mapsLink}
 
-💳 *Payment & Totals:*
-- Payment Method: ${paymentFormatted}
-- Subtotal: ₹${(order.subtotal || 0).toFixed(0)}
+💳 *Payment & Bill Breakdown:*
+- Subtotal: ₹${subtotal.toFixed(0)}
 - Delivery Charge: ${shippingText}
-- *Total Amount:* ₹${(order.total || 0).toFixed(0)}
+${discount > 0 ? `- Discount: -₹${discount.toFixed(0)}\n` : ''}- *Total Amount:* ₹${total.toFixed(0)}
+- Payment Method: ${paymentFormatted}
 
 🛒 *Ordered Items (${(order.items || []).length}):*
 ${itemsList}
