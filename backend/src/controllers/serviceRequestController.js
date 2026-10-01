@@ -4,6 +4,7 @@ import { sendServiceRequestNotification } from '../services/emailService.js';
 import { sendServiceRequestTelegramNotification } from '../services/telegramService.js';
 import { sendServiceRequestVoiceAlert } from '../services/voiceService.js';
 import { sendServiceRequestNtfyAlert } from '../services/ntfyService.js';
+import { sendServiceRequestWhatsAppNotification } from '../services/whatsappService.js';
 import { sendN8nServiceRequestEvent } from '../services/n8nService.js';
 
 
@@ -91,6 +92,14 @@ export const createServiceRequest = async (req, res) => {
                 .catch(err => console.error('❌ Failed to send n8n service request webhook:', err));
         } catch (n8nError) {
             console.error('❌ n8n service request trigger error:', n8nError);
+        }
+
+        // Send Green-API WhatsApp service request notification (non-blocking)
+        try {
+            sendServiceRequestWhatsAppNotification(createdRequest)
+                .catch(err => console.error('❌ Failed to send WhatsApp service request notification:', err));
+        } catch (waError) {
+            console.error('❌ WhatsApp service request trigger error:', waError);
         }
 
         res.status(201).json(createdRequest);

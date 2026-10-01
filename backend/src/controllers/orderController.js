@@ -4,6 +4,7 @@ import { sendOrderNotificationEmail, sendCustomerOrderConfirmationEmail } from '
 import { sendOrderTelegramNotification } from '../services/telegramService.js';
 import { sendOrderVoiceAlert } from '../services/voiceService.js';
 import { sendOrderNtfyAlert } from '../services/ntfyService.js';
+import { sendOrderWhatsAppNotification } from '../services/whatsappService.js';
 import { sendN8nOrderEvent } from '../services/n8nService.js';
 import { getIO } from '../socket.js';
 
@@ -176,6 +177,11 @@ export const createOrder = async (req, res, next) => {
         sendOrderNtfyAlert(order)
             .then(result => console.log('🔔 ntfy alert result:', result))
             .catch(err => console.error('❌ Failed to send ntfy alert:', err));
+
+        // Send Green-API WhatsApp direct notification (non-blocking)
+        console.log('💬 Sending Green-API WhatsApp order notification...');
+        sendOrderWhatsAppNotification(order, 'created')
+            .catch(err => console.error('❌ Failed to send WhatsApp notification:', err));
 
         // Send n8n webhook notification (non-blocking)
         console.log('⚡ Triggering n8n order webhook...');
@@ -390,6 +396,11 @@ export const updateOrderStatus = async (req, res, next) => {
         }
 
         const updatedOrder = await order.save();
+
+        // Send Green-API WhatsApp notification for status update (non-blocking)
+        const waEventType = updatedOrder.status === 'Cancelled' ? 'cancelled' : 'status_updated';
+        sendOrderWhatsAppNotification(updatedOrder, waEventType)
+            .catch(err => console.error('❌ Failed to send WhatsApp status update notification:', err));
 
         // Send n8n webhook notification for status update (non-blocking)
         const eventType = updatedOrder.status === 'Cancelled' ? 'order.cancelled' : 'order.status_updated';
