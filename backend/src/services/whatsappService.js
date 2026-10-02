@@ -190,7 +190,11 @@ export const sendOrderWhatsAppNotification = async (order, eventType = 'created'
         }
 
         const itemsList = (order.items || [])
-            .map(item => `- ${item.quantity || 1}x ${item.name || item.product?.title || 'Item'} (₹${item.price || 0})`)
+            .map(item => {
+                const unitStr = (item.unit || item.product?.unit || item.weight || '').trim();
+                const unitTag = unitStr ? ` (${unitStr})` : '';
+                return `- ${item.quantity || 1}x ${item.name || item.product?.title || 'Item'}${unitTag} (₹${item.price || 0})`;
+            })
             .join('\n');
 
         let mapsLink = '';
