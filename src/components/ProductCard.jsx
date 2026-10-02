@@ -147,7 +147,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                         <div className="flex flex-col">
                             <div className="flex items-center gap-1.5">
                                 {product.isGroup ? (
-                                    <span className="text-base font-extrabold text-gray-900 dark:text-white">
+                                    <span className="text-base font-bold text-gray-900 dark:text-white">
                                         {Number(product.minPrice) === Number(product.maxPrice)
                                             ? `₹${Number(product.minPrice).toFixed(0)}`
                                             : `₹${Number(product.minPrice).toFixed(0)} - ₹${Number(product.maxPrice).toFixed(0)}`
@@ -155,7 +155,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                     </span>
                                 ) : (
                                     <>
-                                        <span className="text-base font-extrabold text-gray-900 dark:text-white">
+                                        <span className="text-base font-bold text-gray-900 dark:text-white">
                                             ₹{Number(product.price * (quantity || 1)).toFixed(0)}
                                         </span>
                                     </>
@@ -171,7 +171,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                         {showCartControls && !product.isGroup && (
                             quantity > 0 ? (
                                 <div 
-                                    className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-2xl shadow-none"
+                                    className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-2xl shadow-sm"
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -192,7 +192,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                     >
                                         <Minus size={16} />
                                     </button>
-                                    <span className="font-extrabold text-sm min-w-[20px] text-center select-none text-[#2E5A2E] dark:text-[#CBF9B2]">{quantity}</span>
+                                    <span className="font-bold text-sm min-w-[20px] text-center select-none text-[#2E5A2E] dark:text-[#CBF9B2]">{quantity}</span>
                                     <button 
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -213,10 +213,10 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                         if (!user) { navigate('/login'); return; }
                                         addToCart(product);
                                     }}
-                                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 select-none shadow-none ${
+                                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 select-none ${
                                         (!isAvailable || !isOpen || !isScheduled)
                                             ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                            : 'bg-[#CBF9B2] hover:bg-[#bbf2a0] text-gray-900 border-none'
+                                            : 'bg-[#2E5A2E] dark:bg-[#CBF9B2] hover:opacity-90 text-white dark:text-gray-900'
                                     }`}
                                     disabled={!isAvailable || !isOpen || !isScheduled}
                                 >
