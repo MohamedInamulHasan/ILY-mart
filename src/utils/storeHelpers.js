@@ -278,18 +278,24 @@ export const getStoreTimeLabel = (store) => {
 };
 
 export const calculateDeliveryCharge = (items) => {
-    if (!items || items.length === 0) return 0;
+    try {
+        if (!items || !Array.isArray(items) || items.length === 0) return 0;
 
-    const uniqueStoreIds = new Set();
-    items.forEach(item => {
-        const storeId = item.storeId?._id || item.storeId;
-        if (storeId) {
-            uniqueStoreIds.add(storeId.toString());
-        }
-    });
+        const uniqueStoreIds = new Set();
+        items.forEach(item => {
+            if (!item) return;
+            const rawStoreId = item.storeId?._id || item.storeId || item.product?.storeId?._id || item.product?.storeId;
+            if (rawStoreId) {
+                const str = typeof rawStoreId === 'object' ? (rawStoreId._id || String(rawStoreId)) : String(rawStoreId);
+                uniqueStoreIds.add(str);
+            }
+        });
 
-    const storeCount = uniqueStoreIds.size;
-
-    if (storeCount <= 1) return 20;
-    return 20 + (storeCount - 1) * 5;
+        const storeCount = uniqueStoreIds.size;
+        if (storeCount <= 1) return 20;
+        return 20 + (storeCount - 1) * 5;
+    } catch (err) {
+        console.warn('calculateDeliveryCharge fallback error:', err);
+        return 20;
+    }
 };
