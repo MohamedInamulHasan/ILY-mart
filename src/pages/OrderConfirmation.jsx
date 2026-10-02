@@ -122,50 +122,40 @@ const OrderConfirmation = () => {
         console.log('📦 Creating order with data:', newOrder);
         console.log('⏰ scheduledDeliveryTime in order:', newOrder.scheduledDeliveryTime);
 
+        // INSTANT UPDATE: Immediately update UI, play sound, close confirm modal, show success modal & clear cart
+        playSuccessSound();
+        setShowConfirmModal(false);
+        setShowSuccessModal(true);
+        if (!isDirectPurchase) {
+            clearCart();
+        }
+
+        const hasGoldProduct = cartItems.some(item => item.isGold);
+        if (finalDeliveryCharge === 0 && deliveryCharge === 0 && !hasGoldProduct) {
+            setUser(prev => ({ 
+                ...prev, 
+                coins: Math.max((prev?.coins || 0) - 1, 0),
+                location: newOrder.shippingAddress.location || prev.location
+            }));
+            queryClient.invalidateQueries(['user-profile']);
+        } else if (newOrder.shippingAddress.location) {
+            setUser(prev => ({ ...prev, location: newOrder.shippingAddress.location }));
+        }
+
         try {
             const createdOrder = await addOrder(newOrder);
             console.log('✅ Order created successfully:', createdOrder);
-            
-            // Only clear cart if this was NOT a direct purchase
-            if (!isDirectPurchase) {
-                clearCart();
-            }
-            
-            playSuccessSound();
             setCreatedOrderId(createdOrderId || createdOrder?._id || 'NEW');
-            setShowConfirmModal(false);
-            setShowSuccessModal(true);
-
-            // Instant update: Deduct coin locally if used (AND not a Gold Product order)
-            // Note: Backend also handles this check, but we update UI immediately
-            const hasGoldProduct = cartItems.some(item => item.isGold);
-            if (finalDeliveryCharge === 0 && deliveryCharge === 0 && !hasGoldProduct) {
-                setUser(prev => ({ 
-                    ...prev, 
-                    coins: Math.max((prev?.coins || 0) - 1, 0),
-                    location: newOrder.shippingAddress.location || prev.location
-                }));
-                queryClient.invalidateQueries(['user-profile']);
-            } else if (newOrder.shippingAddress.location) {
-                // Always update location if present
-                setUser(prev => ({ ...prev, location: newOrder.shippingAddress.location }));
-            }
-
-            // WhatsApp notification (Disabled as per user request to only have it in email)
-            // sendWhatsAppNotification(createdOrder, formData, cartItems, finalTotal, finalDeliveryCharge);
-
-            // Email notification is sent automatically from backend
         } catch (error) {
             console.error('❌ Failed to create order:', error);
-
             let errorMessage = t('Failed to place order. Please try again.');
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
             } else if (error.message) {
                 errorMessage = error.message;
             }
-
             alert(`${t('Error')}: ${errorMessage}`);
+        } finally {
             setIsSubmitting(false);
         }
     };
@@ -395,19 +385,19 @@ const OrderConfirmation = () => {
                         <div className="space-y-5 mb-8">
                             <div className="flex justify-between items-center">
                                 <span className="text-[14px] text-gray-400 font-medium">{t('Subtotal')}</span>
-                                <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹{(cartTotal || 0).toFixed(0)}</span>
+                                <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹{(cartTotal || 0).toFixed(0)}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-[14px] text-gray-400 font-medium">{t('Delivery Charge')}</span>
                                 {(deliveryCharge === 0 || deliveryCharge === null) ? (
-                                    <span className="text-[15px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2]">FREE</span>
+                                    <span className="text-[15px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2]">FREE</span>
                                 ) : (
-                                    <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹{(deliveryCharge || 20).toFixed(0)}</span>
+                                    <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹{(deliveryCharge || 20).toFixed(0)}</span>
                                 )}
                             </div>
                             <div className="flex justify-between items-center pt-3 border-t border-gray-50 dark:border-gray-700/50">
                                 <span className="text-[15px] text-gray-500 font-medium">{t('Total Amount')}</span>
-                                <span className="text-[17px] font-black text-gray-900 dark:text-white">₹{finalTotal.toFixed(0)}</span>
+                                <span className="text-[17px] font-extrabold text-gray-900 dark:text-white">₹{finalTotal.toFixed(0)}</span>
                             </div>
                         </div>
 

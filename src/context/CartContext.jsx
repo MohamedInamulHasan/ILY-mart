@@ -353,29 +353,29 @@ export const CartProvider = ({ children }) => {
                                 ×
                             </button>
 
-                            {/* Label without logo icon */}
+                            {/* Label with Forest Green accent */}
                             <div className="flex items-center gap-1.5 mb-2">
-                                <p className="text-[12px] font-extrabold text-orange-500 uppercase tracking-wider">
+                                <p className="text-[12px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-wider">
                                     {language === 'ta' ? 'கவனம்!' : 'NOTE!'}
                                 </p>
                             </div>
 
-                            {/* Main speech message */}
-                            <p className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 leading-relaxed mb-3">
+                            {/* Main speech message — stylish font */}
+                            <p className="text-[13px] italic font-semibold text-gray-800 dark:text-gray-100 leading-relaxed mb-3">
                                 {isMultiStore ? (
                                     language === 'ta' ? (
                                         <>
-                                            நீங்கள் ஏற்கனவே <span className="text-orange-500 font-black">{warningStoreNames}</span> ல் products add பண்ணிருக்கீங்க. Current delivery charge: <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>.
+                                            நீங்கள் ஏற்கனவே <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> ல் products add பண்ணிருக்கீங்க. Current delivery charge: <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>.
                                             <br />
-                                            இப்போ <span className="text-orange-500 font-black">{newStoreName}</span> ல் இருந்து products add பண்ண, delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span> (<span className="text-orange-500 font-bold">₹{extraCharge} extra</span>) ஆகும்.
+                                            இப்போ <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> ல் இருந்து products add பண்ண, delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span> (<span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">₹{extraCharge} extra</span>) ஆகும்.
                                             <br />
                                             Add பண்ணலாமா?
                                         </>
                                     ) : (
                                         <>
-                                            Neenga already <span className="text-orange-500 font-black">{warningStoreNames}</span> la products add pannirukeenga. Current delivery charge: <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>.
+                                            Neenga already <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> la products add pannirukeenga. Current delivery charge: <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>.
                                             <br />
-                                            Ippo <span className="text-orange-500 font-black">{newStoreName}</span> la irundhu products add panna, delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span> (<span className="text-orange-500 font-bold">₹{extraCharge} extra</span>) aagum.
+                                            Ippo <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> la irundhu products add panna, delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span> (<span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">₹{extraCharge} extra</span>) aagum.
                                             <br />
                                             Add pannava?
                                         </>
@@ -383,17 +383,17 @@ export const CartProvider = ({ children }) => {
                                 ) : (
                                     language === 'ta' ? (
                                         <>
-                                            நீங்கள் ஏற்கனவே <span className="text-orange-500 font-black">{warningStoreNames}</span> ல் products add பண்ணிருக்கீங்க. Current delivery charge: <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>.
+                                            நீங்கள் ஏற்கனவே <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> ல் products add பண்ணிருக்கீங்க. Current delivery charge: <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>.
                                             <br />
-                                            <span className="text-orange-500 font-black">{newStoreName}</span> ல் இருந்து add பண்ண <span className="text-orange-500 font-bold">₹5 extra charge</span> ஆகும்.
+                                            <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> ல் இருந்து add பண்ண <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">₹5 extra charge</span> ஆகும்.
                                             <br />
                                             Add பண்ணலாமா?
                                         </>
                                     ) : (
                                         <>
-                                            Neenga already <span className="text-orange-500 font-black">{warningStoreNames}</span> la products add pannirukeenga. Current delivery charge: <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>.
+                                            Neenga already <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> la products add pannirukeenga. Current delivery charge: <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>.
                                             <br />
-                                            <span className="text-orange-500 font-black">{newStoreName}</span> la irundhu add panna <span className="text-orange-500 font-bold">₹5 extra charge</span> aagum.
+                                            <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> la irundhu add panna <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">₹5 extra charge</span> aagum.
                                             <br />
                                             Add pannava?
                                         </>
@@ -411,8 +411,7 @@ export const CartProvider = ({ children }) => {
                                 </button>
                                 <button
                                     onClick={confirmAddToCart}
-                                    className="flex-1 py-2 text-white font-extrabold rounded-xl text-xs active:scale-95 transition-transform shadow-md"
-                                    style={{ background: 'linear-gradient(135deg, #FF6B00, #FF9D00)' }}
+                                    className="flex-1 py-2 bg-[#CBF9B2] hover:bg-[#bbf2a0] text-gray-900 font-extrabold rounded-xl text-xs active:scale-95 transition-transform shadow-none border-none"
                                 >
                                     {language === 'ta' ? 'ஆமா, சேர்' : 'Yes, Add'}
                                 </button>

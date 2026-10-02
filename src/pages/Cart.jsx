@@ -149,7 +149,7 @@ const Cart = () => {
                                   <div className="flex justify-between items-end mt-auto">
                                        <div className="flex flex-col">
                                             <div className="flex items-center gap-1.5">
-                                                 <span className="text-[15px] font-bold text-gray-900 dark:text-white leading-none">
+                                                 <span className="text-[15px] font-extrabold text-gray-900 dark:text-white leading-none">
                                                      ₹ {(item.price * item.quantity).toFixed(0)}
                                                  </span>
 
@@ -181,14 +181,14 @@ const Cart = () => {
                 {/* Order Summary Integrated in Flow */}
                 <div className="mt-4 bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.03)] border border-gray-100 dark:border-gray-700">
                      <div className="flex justify-between items-center mb-6">
-                          <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">{t('Payment')}</h2>
+                          <h2 className="text-[16px] font-extrabold text-gray-900 dark:text-white">{t('Payment')}</h2>
                           <span className="text-[12px] font-semibold text-gray-400">{cartItems.length} item{cartItems.length > 1 ? 's' : ''}</span>
                      </div>
     
                      <div className="space-y-4 mb-8">
                           <div className="flex justify-between items-center">
                                <span className="text-[14px] text-gray-400 font-medium">{t('Payment')}</span>
-                               <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹ {cartTotal.toFixed(0)}</span>
+                               <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹ {cartTotal.toFixed(0)}</span>
                           </div>
                           <div className="flex justify-between items-center">
                                <span className="text-[14px] text-gray-400 font-medium">{t('Delivery')}</span>

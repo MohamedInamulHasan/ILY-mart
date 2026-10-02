@@ -275,17 +275,8 @@ const Checkout = () => {
 
         const performOrderCheckout = async () => {
             try {
-                // Step A: Link guest account or switch to existing profile using the phone number
-                console.log('🔄 Upgrading guest user profile with name and mobile...');
+                // Step A: Update local user state immediately
                 let activeUser = user;
-                try {
-                    const freshUser = await updateGuest(formData.fullName, formData.mobile);
-                    if (freshUser) activeUser = freshUser;
-                } catch (guestErr) {
-                    console.warn('⚠️ Guest upgrade failed (non-critical), continuing:', guestErr);
-                }
-
-                // Step B: Update user profile address details
                 const updatedUserData = {
                     ...activeUser,
                     name: formData.fullName,
@@ -304,25 +295,11 @@ const Checkout = () => {
                     pincode: formData.zip
                 };
 
-                // Save locally first (always succeeds)
+                // Save locally first (instant)
                 localStorage.setItem('userInfo', JSON.stringify(updatedUserData));
                 setUser(updatedUserData);
 
-                // Save to database via own profile endpoint (non-blocking — don't fail order if this fails)
-                try {
-                    await apiService.updateProfile({
-                        name: formData.fullName,
-                        mobile: formData.mobile,
-                        address: updatedUserData.address,
-                        city: formData.city,
-                        zip: formData.zip
-                    });
-                    console.log('✅ User profile and address saved to DB.');
-                } catch (profileErr) {
-                    console.warn('⚠️ Profile save failed (non-critical), continuing with order:', profileErr);
-                }
-
-                // Step C: Proceed to Order Confirmation
+                // Step B: Calculate delivery & slot parameters
                 const currentUser = userProfile?.data || updatedUserData;
                 const hasCoins = currentUser?.coins > 0;
                 const hasGoldProduct = displayItems.some(item => item.isGold);
@@ -334,6 +311,17 @@ const Checkout = () => {
                     ? `${selectedDatePeriod}|${selectedTimeSlot}` 
                     : '';
 
+                // Step C: Fire background guest upgrade & profile update (non-blocking)
+                updateGuest(formData.fullName, formData.mobile).catch(e => console.warn('Guest upgrade background warning:', e));
+                apiService.updateProfile({
+                    name: formData.fullName,
+                    mobile: formData.mobile,
+                    address: updatedUserData.address,
+                    city: formData.city,
+                    zip: formData.zip
+                }).catch(e => console.warn('Profile update background warning:', e));
+
+                // Step D: Navigate instantly to Order Confirmation!
                 navigate('/order-confirmation', {
                     state: {
                         formData: {
@@ -549,9 +537,9 @@ const Checkout = () => {
                                         </button>
 
                                         {fieldErrors.location && (
-                                            <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
+                                            <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
                                                 <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                 <span>{t('GPS Location is required')}</span>
                                             </div>
                                         )}
@@ -581,9 +569,9 @@ const Checkout = () => {
                                                 placeholder={t('Enter your full name')}
                                             />
                                             {fieldErrors.fullName && (
-                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
+                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                    <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                     <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
                                                 </div>
                                             )}
@@ -601,9 +589,9 @@ const Checkout = () => {
                                                 placeholder={t('House no, Flat, Street name, Landmark')}
                                             />
                                             {fieldErrors.address && (
-                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
+                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                    <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                     <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
                                                 </div>
                                             )}
@@ -621,9 +609,9 @@ const Checkout = () => {
                                                 placeholder={t('Enter 10-digit mobile number')}
                                             />
                                             {fieldErrors.mobile && (
-                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
+                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                    <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                     <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
                                                 </div>
                                             )}
@@ -667,9 +655,9 @@ const Checkout = () => {
                                                 </select>
                                             )}
                                             {fieldErrors.city && (
-                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
+                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                    <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                     <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
                                                 </div>
                                             )}
@@ -859,19 +847,19 @@ const Checkout = () => {
                             <div className="space-y-4 mb-8">
                                 <div className="flex justify-between items-center">
                                     <span className="text-[14px] text-gray-400 font-medium">{t('Subtotal')}</span>
-                                    <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹{displayTotal.toFixed(0)}</span>
+                                    <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹{displayTotal.toFixed(0)}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-[14px] text-gray-400 font-medium">{t('Delivery')}</span>
                                     {deliveryCharge === 0 ? (
-                                        <span className="text-[15px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2]">FREE</span>
+                                        <span className="text-[15px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2]">FREE</span>
                                     ) : (
-                                        <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹{deliveryCharge.toFixed(0)}</span>
+                                        <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹{deliveryCharge.toFixed(0)}</span>
                                     )}
                                 </div>
                                 <div className="flex justify-between items-center pt-2">
                                     <span className="text-[15px] text-gray-500 font-medium">{t('Total')}</span>
-                                    <span className="text-[17px] font-bold text-gray-900 dark:text-white">₹{finalTotal.toFixed(0)}</span>
+                                    <span className="text-[17px] font-extrabold text-gray-900 dark:text-white">₹{finalTotal.toFixed(0)}</span>
                                 </div>
                             </div>
     

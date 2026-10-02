@@ -197,7 +197,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                         </div>
 
                     <div className="flex items-center justify-between mt-2 w-full pt-2 border-t border-gray-50 dark:border-gray-700/50">
-                        <span className={`text-base font-bold ${!product.anyStoreOpen ? 'text-gray-400' : 'text-[#2E5A2E] dark:text-[#CBF9B2]'}`}>
+                        <span className={`text-base font-extrabold ${!product.anyStoreOpen ? 'text-gray-400' : 'text-[#2E5A2E] dark:text-[#CBF9B2]'}`}>
                             {(() => {
                                 // Robust Price Logic
                                 if (product.minPrice !== undefined && product.maxPrice !== undefined) {
@@ -228,13 +228,13 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                         <div className="">
                             {!product.anyStoreOpen ? (
                                 <div
-                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full transition-colors border border-gray-200 dark:border-gray-600"
+                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full transition-colors border border-gray-200 dark:border-gray-600 shadow-none"
                                 >
                                     <ShoppingCart size={16} className="text-gray-400" />
                                 </div>
                             ) : (
                                 <div
-                                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors cursor-pointer bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 active:scale-90`}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors cursor-pointer bg-[#CBF9B2] hover:bg-[#bbf2a0] text-gray-900 active:scale-90 shadow-none`}
                                 >
                                     <ShoppingCart size={16} />
                                 </div>
@@ -349,25 +349,25 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                     )}
 
                 <div className="flex items-center justify-between mt-2 w-full pt-2">
-                    <span className={`text-base font-bold ${!isStoreOpenCheck || !isAvailable ? 'text-gray-400' : 'text-[#2E5A2E] dark:text-[#CBF9B2]'}`}>
+                    <span className={`text-base font-extrabold ${!isStoreOpenCheck || !isAvailable ? 'text-gray-400' : 'text-[#2E5A2E] dark:text-[#CBF9B2]'}`}>
                         ₹{Number((product.price || 0) * (cartQuantity || 1)).toFixed(0)}
                     </span>
 
                     {isFastPurchase && isAvailable && (
                         <div className="flex items-center" onClick={(e) => e.preventDefault()}>
                             {!isStoreOpenCheck ? (
-                                <div className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600">
+                                <div className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 shadow-none">
                                     <ShoppingCart size={16} className="text-gray-400" />
                                 </div>
                             ) : cartQuantity > 0 ? (
-                                <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-2xl shadow-sm">
+                                <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-2xl shadow-none">
                                     <button 
                                         onClick={handleDecrement}
                                         className="w-8 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
                                     >
                                         <Minus size={16} />
                                     </button>
-                                    <span className="font-bold text-sm min-w-[20px] text-center select-none text-[#2E5A2E] dark:text-[#CBF9B2]">{cartQuantity}</span>
+                                    <span className="font-extrabold text-sm min-w-[20px] text-center select-none text-[#2E5A2E] dark:text-[#CBF9B2]">{cartQuantity}</span>
                                     <button 
                                         onClick={handleIncrement}
                                         className="w-8 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors"
@@ -378,7 +378,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                             ) : (
                                 <button
                                     onClick={handleFastPurchaseClick}
-                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 active:scale-95 transition-transform"
+                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-[#CBF9B2] hover:bg-[#bbf2a0] text-gray-900 active:scale-95 transition-transform shadow-none"
                                 >
                                     <ShoppingCart size={16} />
                                 </button>
