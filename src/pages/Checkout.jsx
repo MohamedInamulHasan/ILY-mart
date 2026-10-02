@@ -10,7 +10,7 @@ import { ArrowLeft, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navi
 import { checkLocationPermission, requestLocationPermission, getCurrentLocation } from '../utils/locationHelpers';
 import { AnimatePresence, motion } from 'framer-motion';
 
-import { API_BASE_URL } from '../utils/api';
+import { API_BASE_URL, apiService } from '../utils/api';
 import { openExternalLink } from '../utils/linkHelper';
 
 const Checkout = () => {
@@ -312,14 +312,20 @@ const Checkout = () => {
                     : '';
 
                 // Step C: Fire background guest upgrade & profile update (non-blocking)
-                updateGuest(formData.fullName, formData.mobile).catch(e => console.warn('Guest upgrade background warning:', e));
-                apiService.updateProfile({
-                    name: formData.fullName,
-                    mobile: formData.mobile,
-                    address: updatedUserData.address,
-                    city: formData.city,
-                    zip: formData.zip
-                }).catch(e => console.warn('Profile update background warning:', e));
+                if (typeof updateGuest === 'function') {
+                    try { Promise.resolve(updateGuest(formData.fullName, formData.mobile)).catch(e => console.warn('Guest upgrade warning:', e)); } catch (e) {}
+                }
+                if (apiService && typeof apiService.updateProfile === 'function') {
+                    try {
+                        Promise.resolve(apiService.updateProfile({
+                            name: formData.fullName,
+                            mobile: formData.mobile,
+                            address: updatedUserData.address,
+                            city: formData.city,
+                            zip: formData.zip
+                        })).catch(e => console.warn('Profile update warning:', e));
+                    } catch (e) {}
+                }
 
                 // Step D: Navigate instantly to Order Confirmation!
                 navigate('/order-confirmation', {
