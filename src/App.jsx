@@ -173,7 +173,7 @@ const Layout = ({ children, onRefresh }) => {
                 <div className="fixed right-0 top-[25%] -translate-y-1/2 z-[90]">
                     <div
                         className="rounded-l-2xl py-2 px-3 flex flex-col items-center shadow-lg border-2 border-r-0 border-white text-center"
-                        style={{ background: '#2E5A2E' }}
+                        style={{ background: '#000000' }}
                     >
                         <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider mb-0.5 select-none leading-none">
                             {t('Delivery')}

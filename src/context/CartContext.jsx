@@ -405,15 +405,15 @@ export const CartProvider = ({ children }) => {
                             <div className="flex gap-2">
                                 <button
                                     onClick={cancelAddToCart}
-                                    className="flex-1 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs active:scale-95 transition-transform"
+                                    className="flex-1 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium rounded-xl text-xs active:scale-95 transition-transform"
                                 >
                                     {language === 'ta' ? 'வேண்டாம்' : 'Cancel'}
                                 </button>
                                 <button
                                     onClick={confirmAddToCart}
-                                    className="flex-1 py-2 bg-[#CBF9B2] hover:bg-[#bbf2a0] text-gray-900 font-extrabold rounded-xl text-xs active:scale-95 transition-transform shadow-none border-none"
+                                    className="flex-1 py-2 bg-[#CBF9B2] hover:bg-[#bbf2a0] text-gray-900 font-medium rounded-xl text-xs active:scale-95 transition-transform shadow-none border-none"
                                 >
-                                    {language === 'ta' ? 'ஆமா, சேர்' : 'Yes, Add'}
+                                    {language === 'ta' ? 'ஆமாம்' : 'Yes'}
                                 </button>
                             </div>
                         </div>
