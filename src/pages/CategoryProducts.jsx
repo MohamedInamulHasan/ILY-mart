@@ -212,7 +212,14 @@ const CategoryProducts = () => {
                         {isLoading ? (
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                 {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                                    <div key={i} className="aspect-[3/4] bg-white dark:bg-gray-800/50 rounded-2xl animate-pulse shadow-sm" />
+                                    <div key={i} className="aspect-[3/4] bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col space-y-3">
+                                        <div className="aspect-square w-full rounded-xl blinkit-shimmer"></div>
+                                        <div className="h-3.5 w-full rounded-lg blinkit-shimmer"></div>
+                                        <div className="flex items-center justify-between pt-1">
+                                            <div className="h-5 w-12 rounded-md blinkit-shimmer"></div>
+                                            <div className="h-8 w-8 rounded-full blinkit-shimmer"></div>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         ) : sections.length > 0 ? (

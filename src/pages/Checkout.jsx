@@ -173,11 +173,6 @@ const Checkout = () => {
         }
     }, [user, authLoading]);
 
-    // If no user, don't render the form (will redirect)
-    if (!user) {
-        return null;
-    }
-
     // Check geolocation permission status on mount and when editing starts
     useEffect(() => {
         if (isEditingAddress && navigator.permissions && navigator.permissions.query) {
@@ -363,7 +358,7 @@ const Checkout = () => {
         }
     }, [displayItems.length, navigate]);
 
-    if (displayItems.length === 0) {
+    if (!user || displayItems.length === 0) {
         return null;
     }
 
@@ -390,19 +385,11 @@ const Checkout = () => {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                {/* Location Toast Message - Refined for clarity */}
-                {locationMessage.show && (
-                    <div className={`fixed top-32 left-1/2 transform -translate-x-1/2 z-[9999] px-6 py-3 rounded-full shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-top-4 max-w-[90vw] ${
-                        locationMessage.type === 'success'
-                        ? 'bg-[#2E5A2E] text-white'
-                        : 'bg-red-600 text-white'
-                        }`}>
+                {/* Location Toast Message (errors only) */}
+                {locationMessage.show && locationMessage.type === 'error' && (
+                    <div className="fixed top-32 left-1/2 transform -translate-x-1/2 z-[9999] px-6 py-3 rounded-full shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-top-4 max-w-[90vw] bg-red-600 text-white">
                         <div className="flex items-center gap-3 whitespace-nowrap">
-                            {locationMessage.type === 'success' ? (
-                                <ShieldCheck size={18} className="flex-shrink-0" />
-                            ) : (
-                                <AlertCircle size={18} className="flex-shrink-0" />
-                            )}
+                            <AlertCircle size={18} className="flex-shrink-0" />
                             <span className="font-bold text-[13px] tracking-tight">{locationMessage.text}</span>
                         </div>
                     </div>
@@ -470,8 +457,8 @@ const Checkout = () => {
                             ) : (
                                 <div className="space-y-5">
                                     {/* Location Detection Block */}
-                                    <div ref={locationRef} className="relative mb-6">
-                                        <div className="flex items-center justify-between mb-2 px-1">
+                                    <div ref={locationRef} className="relative">
+                                        <div className="flex items-center justify-between mb-1.5">
                                             <span className="text-[11px] font-bold text-gray-500 dark:text-gray-300 uppercase tracking-widest">{t('GPS Location')}</span>
                                         </div>
 
@@ -480,66 +467,141 @@ const Checkout = () => {
                                             onClick={async () => {
                                                 setIsLocationSearching(true);
                                                 setShowLocationError(false);
-                                                const result = await getCurrentLocation();
-                                                
-                                                if (result.success) {
-                                                    setFormData(prev => ({ ...prev, location: result.mapsLink }));
-                                                    setFieldErrors(prev => ({ ...prev, location: false }));
+                                                try {
+                                                    const result = await getCurrentLocation();
+                                                    
+                                                    if (result && result.success) {
+                                                        setFormData(prev => {
+                                                            const next = { ...prev, location: result.mapsLink };
+                                                            if (result.addressDetails) {
+                                                                if (result.addressDetails.street) {
+                                                                    next.address = result.addressDetails.street;
+                                                                }
+                                                                if (result.addressDetails.city && Array.isArray(cities)) {
+                                                                    const clean = (s) => String(s || '').replace(/\s*\([^)]*\)/, '').trim().toLowerCase();
+                                                                    const target = clean(result.addressDetails.city);
+                                                                    const matched = cities.find(c => {
+                                                                        const cClean = clean(c);
+                                                                        return cClean === target || cClean.includes(target) || target.includes(cClean);
+                                                                    });
+                                                                    if (matched) {
+                                                                        next.city = matched;
+                                                                    } else if (!prev.city) {
+                                                                        next.city = result.addressDetails.city;
+                                                                    }
+                                                                }
+                                                                if (result.addressDetails.zip && !prev.zip) {
+                                                                    next.zip = result.addressDetails.zip;
+                                                                }
+                                                            }
+                                                            return next;
+                                                        });
+                                                        setFieldErrors(prev => ({
+                                                            ...prev,
+                                                            location: false,
+                                                            ...(result.addressDetails?.street ? { address: false } : {}),
+                                                            ...(result.addressDetails?.city ? { city: false } : {})
+                                                        }));
+                                                    } else {
+                                                        setLocationMessage({ show: true, type: 'error', text: t(result?.message || 'Unable to get location') });
+                                                    }
+                                                } catch (locErr) {
+                                                    console.error('Checkout location error:', locErr);
+                                                    setLocationMessage({ show: true, type: 'error', text: t('Unable to get location') });
+                                                } finally {
                                                     setIsLocationSearching(false);
-                                                    setLocationMessage({ show: true, type: 'success', text: t('Location Accessed Successfully') });
-                                                } else {
-                                                    setIsLocationSearching(false);
-                                                    setLocationMessage({ show: true, type: 'error', text: t(result.message) });
                                                 }
                                             }}
                                             disabled={isLocationSearching}
-                                            className={`w-full bg-white dark:bg-gray-800 border rounded-xl px-4 py-3.5 flex items-center gap-3 transition-all duration-300 active:scale-[0.98] shadow-none ${
-                                                isLocationSearching ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-green-50/30' :
-                                                formData.location ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-green-50/30 dark:bg-[#CBF9B2]/5' :
-                                                showLocationError ? 'border-amber-400 bg-amber-50/10' :
-                                                'border-gray-200 dark:border-gray-700'
+                                            className={`w-full border rounded-xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] shadow-none ${
+                                                isLocationSearching
+                                                    ? 'bg-black/70 dark:bg-black/70 border border-black/30 text-white backdrop-blur-sm shadow-md'
+                                                    : formData.location
+                                                    ? 'bg-black dark:bg-black border-black text-white shadow-md'
+                                                    : showLocationError
+                                                    ? 'border-amber-400 bg-amber-50/10'
+                                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                                             }`}
                                         >
-                                            {/* Icon */}
-                                            <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-300 ${
-                                                isLocationSearching ? 'bg-[#2E5A2E] text-white' :
-                                                formData.location ? 'bg-green-100 dark:bg-[#CBF9B2]/20 text-[#2E5A2E] dark:text-[#CBF9B2]' :
-                                                showLocationError ? 'bg-amber-100 text-amber-600' :
-                                                'bg-gray-100 dark:bg-gray-700 text-gray-400'
-                                            }`}>
-                                                <AnimatePresence mode="wait">
-                                                    {isLocationSearching ? (
-                                                        <motion.div key="spin" animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}>
-                                                            <Navigation size={16} />
-                                                        </motion.div>
-                                                    ) : (
-                                                        <motion.div key={formData.location ? 'pin-on' : 'pin-off'} initial={{ scale: 0.6 }} animate={{ scale: 1 }}>
-                                                            <MapPin size={16} />
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
+                                            {/* Icon Container: Round with low opacity white color */}
+                                            <div className="relative flex-shrink-0 flex items-center justify-center w-11 h-11">
+                                                {isLocationSearching ? (
+                                                    /* Location Loading Animation */
+                                                    <div className="relative flex items-center justify-center w-11 h-11">
+                                                        <motion.span
+                                                            className="absolute rounded-full border border-red-500/50 bg-red-500/10 pointer-events-none"
+                                                            initial={{ width: 14, height: 14, opacity: 0.9 }}
+                                                            animate={{ width: 44, height: 44, opacity: 0 }}
+                                                            transition={{ repeat: Infinity, duration: 1.4, ease: 'easeOut' }}
+                                                        />
+                                                        <motion.span
+                                                            className="absolute rounded-full border border-white/60 bg-white/10 pointer-events-none"
+                                                            initial={{ width: 14, height: 14, opacity: 0.8 }}
+                                                            animate={{ width: 52, height: 52, opacity: 0 }}
+                                                            transition={{ repeat: Infinity, duration: 1.4, delay: 0.45, ease: 'easeOut' }}
+                                                        />
+                                                        <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+                                                            <motion.div
+                                                                animate={{ y: [0, -4, 0] }}
+                                                                transition={{ repeat: Infinity, duration: 1, ease: 'easeInOut' }}
+                                                                className="flex flex-col items-center justify-center"
+                                                            >
+                                                                <MapPin size={20} className="text-red-500 fill-red-500/30" strokeWidth={2.2} />
+                                                            </motion.div>
+                                                            <motion.span
+                                                                animate={{ scale: [1, 0.4, 1], opacity: [0.8, 0.2, 0.8] }}
+                                                                transition={{ repeat: Infinity, duration: 1, ease: 'easeInOut' }}
+                                                                className="absolute bottom-1 w-1.5 h-1 bg-red-400 rounded-full pointer-events-none"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : formData.location ? (
+                                                    /* Location Attached: Round low-opacity white circle with red pin */
+                                                    <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner transition-transform duration-200">
+                                                        <MapPin size={20} className="text-red-500 fill-red-500/20" strokeWidth={2.2} />
+                                                    </div>
+                                                ) : (
+                                                    /* Idle Unattached */
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${showLocationError ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
+                                                        <MapPin size={20} className={showLocationError ? 'text-amber-600' : 'text-gray-400 dark:text-gray-500'} strokeWidth={2} />
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Text */}
                                             <div className="flex-1 text-left min-w-0">
                                                 <p className={`text-[13px] font-bold truncate ${
-                                                    formData.location ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' :
-                                                    isLocationSearching ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 
-                                                    showLocationError ? 'text-amber-600 font-bold' : 'text-gray-700 dark:text-gray-300'
+                                                    isLocationSearching || formData.location ? 'text-white' : 
+                                                    showLocationError ? 'text-amber-600 font-bold' : 'text-gray-800 dark:text-gray-200'
                                                 }`}>
-                                                    {isLocationSearching ? t('Finding location...') : formData.location ? t('Location Attached') : t('Tap to attach GPS location')}
+                                                    {isLocationSearching 
+                                                        ? t('Finding location...') 
+                                                        : formData.location 
+                                                        ? 'GPS Attached' 
+                                                        : t('Tap to attach GPS location')}
                                                 </p>
-                                                {!isLocationSearching && (
-                                                    <p className="text-[11px] text-gray-400 truncate">
-                                                        {formData.location ? t('Tap to update location') : t('Helps us deliver faster')}
-                                                    </p>
-                                                )}
+                                                <p className={`text-[11px] truncate ${
+                                                    isLocationSearching || formData.location ? 'text-white/80' : 'text-gray-400'
+                                                }`}>
+                                                    {isLocationSearching 
+                                                        ? t('Accessing GPS coordinates...') 
+                                                        : formData.location 
+                                                        ? t('Tap to update location') 
+                                                        : t('Helps us deliver faster')}
+                                                </p>
                                             </div>
 
-                                            {/* Arrow */}
-                                            <ArrowLeft size={14} className={`flex-shrink-0 rotate-180 transition-colors ${
-                                                formData.location ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-300 dark:text-gray-600'
-                                            }`} />
+                                            {/* Arrow or Pulsing Indicator */}
+                                            {isLocationSearching ? (
+                                                <span className="flex h-2.5 w-2.5 relative flex-shrink-0">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                                                </span>
+                                            ) : (
+                                                <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
+                                                    formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
+                                                }`} />
+                                            )}
                                         </button>
 
                                         {fieldErrors.location && (

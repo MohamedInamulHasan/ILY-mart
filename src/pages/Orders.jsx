@@ -190,25 +190,46 @@ const Orders = () => {
                     {/* Orders List */}
                     <div className="space-y-4">
                         {loadingOrders ? (
-                            // Inline Loading State (Skeleton)
+                            // Blinkit-style Orders Skeleton Loader
                             <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
                                 {[1, 2, 3].map((i) => (
-                                    <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse">
-                                        <div className="flex gap-4 mb-4">
-                                            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                                            <div className="flex-1 space-y-2">
-                                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                                                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                                    <div
+                                        key={i}
+                                        className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700/60 p-6 shadow-sm space-y-5"
+                                    >
+                                        {/* Top Header: Package Icon + Order ID/Date + Status Pill */}
+                                        <div className="flex justify-between items-start gap-2">
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <div className="w-10 h-10 rounded-xl blinkit-shimmer flex-shrink-0" />
+                                                <div className="space-y-1.5 flex-1 min-w-0">
+                                                    <div className="h-4 w-28 rounded-md blinkit-shimmer" />
+                                                    <div className="h-3 w-36 rounded-md blinkit-shimmer" />
+                                                </div>
                                             </div>
-                                            <div className="w-20 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                                            <div className="h-6 w-24 rounded-full blinkit-shimmer flex-shrink-0" />
                                         </div>
-                                        <div className="space-y-3">
-                                            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                                            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+
+                                        {/* Items Section: Product image + Details */}
+                                        <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                                            {[1, 2].map((itemIdx) => (
+                                                <div key={itemIdx} className="py-3 flex items-center gap-4 first:pt-0">
+                                                    <div className="h-16 w-16 rounded-2xl blinkit-shimmer flex-shrink-0" />
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="h-4 w-3/4 rounded-md blinkit-shimmer" />
+                                                        <div className="h-3 w-1/3 rounded-md blinkit-shimmer" />
+                                                        <div className="h-3.5 w-20 rounded-md blinkit-shimmer" />
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between">
-                                            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+
+                                        {/* Bottom Footer: Total Amount + View Details */}
+                                        <div className="pt-4 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center">
+                                            <div className="space-y-1">
+                                                <div className="h-2.5 w-16 rounded-full blinkit-shimmer" />
+                                                <div className="h-5 w-20 rounded-md blinkit-shimmer" />
+                                            </div>
+                                            <div className="h-9 w-28 rounded-full blinkit-shimmer" />
                                         </div>
                                     </div>
                                 ))}

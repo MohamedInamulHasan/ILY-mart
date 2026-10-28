@@ -7,6 +7,15 @@
   --safe-area-inset-bottom: env(safe-area-inset-bottom);
 }
 
+/* Remove unwanted default browser outline boxes on links and buttons */
+a, button {
+    -webkit-tap-highlight-color: transparent;
+}
+a:focus, a:focus-visible, a:active,
+button:focus, button:focus-visible, button:active {
+    outline: none !important;
+}
+
 /* Hide native password reveal icon in Edge/IE */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
@@ -119,4 +128,46 @@ input[type="password"]::-ms-clear {
 
 .animate-progress {
   animation: progress linear forwards;
+}
+/* Blinkit-style Shimmer Effect */
+@keyframes blinkit-shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.blinkit-shimmer {
+    position: relative;
+    overflow: hidden;
+    background-color: #edf0f3;
+}
+
+.dark .blinkit-shimmer {
+    background-color: #272f3d;
+}
+
+.blinkit-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.85) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: blinkit-shimmer 1.3s infinite ease-in-out;
+}
+
+.dark .blinkit-shimmer::after {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
 }

@@ -387,10 +387,19 @@ const Shop = () => {
                                 transition={{ duration: 0.2 }}
                             >
                                 {isStoresLoading ? (
-                                    // Skeleton Loader
+                                    // Blinkit style store card skeleton
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
-                                            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100 dark:border-gray-700/50 overflow-hidden animate-pulse" />
+                                            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700/50 flex flex-col space-y-3">
+                                                <div className="aspect-[16/9] w-full rounded-xl blinkit-shimmer"></div>
+                                                <div className="flex items-center justify-between pt-1">
+                                                    <div className="space-y-1.5 flex-1 pr-3">
+                                                        <div className="h-4 w-3/4 rounded-lg blinkit-shimmer"></div>
+                                                        <div className="h-3 w-1/2 rounded-md blinkit-shimmer"></div>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-full blinkit-shimmer flex-shrink-0"></div>
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 ) : filteredStores.length > 0 ? (

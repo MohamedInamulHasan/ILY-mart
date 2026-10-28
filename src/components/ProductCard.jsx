@@ -64,19 +64,6 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                     }
                 }}
             >
-                {/* Unit pill — left side (only for single products) */}
-                {!product.isGroup && product.unit && product.unit.trim() !== '' && (
-                    <div className="absolute top-3 left-3 z-[15] pointer-events-none flex flex-col gap-1.5 items-start">
-                        <div className="bg-red-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-full shadow-sm">
-                            {product.unit.trim()}
-                        </div>
-                    </div>
-                )}
-
-
-
-
-
                 {/* Status Overlays */}
                 {!isAvailable && (
                     <div className="absolute inset-0 z-20 bg-black/5 flex items-center justify-center backdrop-blur-[1px]">
@@ -162,7 +149,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                 )}
                             </div>
                             {(product.isGroup || product.unit) && (
-                                <span className="text-[10px] text-gray-400 font-medium">
+                                <span className="text-[10px] font-semibold text-gray-900 dark:text-white">
                                     {product.isGroup ? `${product.variantExtraCount + 1} ${t('options')}` : product.unit}
                                 </span>
                             )}

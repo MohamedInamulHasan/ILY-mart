@@ -193,65 +193,142 @@ const DeliveryDashboard = () => {
             <PullToRefreshLayout>
                 <div className="pt-[95px]">
                 <div className="px-5 mt-2 max-w-3xl mx-auto">
-                    {/* Mode Switcher - Full Width Big */}
-                    <div className="flex items-center mb-8 border-b-2 border-gray-100 dark:border-gray-700/50">
+                    {/* Mode Switcher - In Line like before */}
+                    <div className="flex items-center mb-6 border-b-2 border-gray-200 dark:border-gray-700/60">
                         <button 
-                            onClick={() => { setDashboardType('Orders'); setActiveTab('Active'); }}
-                            className={`flex-1 pb-4 text-[18px] font-black transition-all relative ${dashboardType === 'Orders' ? 'text-gray-900 dark:text-white' : 'text-gray-400 opacity-60'}`}
+                            type="button"
+                            onClick={() => { setDashboardType('Orders'); setActiveTab('Processing'); }}
+                            className={`flex-1 pb-3 text-[17px] font-black transition-all relative flex items-center justify-center gap-2 ${
+                                dashboardType === 'Orders'
+                                    ? 'text-gray-900 dark:text-white'
+                                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                            }`}
                         >
-                            <span className="flex items-center justify-center gap-2">
-                                {t('Orders')}
-                                {orders.filter(o => o.status === 'Processing').length > 0 && (
-                                    <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1 text-[11px] bg-rose-500 text-white rounded-full font-black">
-                                        {orders.filter(o => o.status === 'Processing').length}
-                                    </span>
-                                )}
-                            </span>
+                            <span>{t('Orders')}</span>
+                            {orders.filter(o => o.status === 'Processing').length > 0 && (
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-[11px] bg-rose-500 text-white rounded-full font-black">
+                                    {orders.filter(o => o.status === 'Processing').length}
+                                </span>
+                            )}
                             {dashboardType === 'Orders' && (
-                                <div className="absolute bottom-[-2px] left-0 right-0 h-[4px] bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full" />
+                                <div className="absolute bottom-[-2px] left-0 right-0 h-[3.5px] bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full" />
                             )}
                         </button>
                         <button 
-                            onClick={() => { setDashboardType('Services'); setActiveTab('Active'); }}
-                            className={`flex-1 pb-4 text-[18px] font-black transition-all relative ${dashboardType === 'Services' ? 'text-gray-900 dark:text-white' : 'text-gray-400 opacity-60'}`}
+                            type="button"
+                            onClick={() => { setDashboardType('Services'); setActiveTab('Pending'); }}
+                            className={`flex-1 pb-3 text-[17px] font-black transition-all relative flex items-center justify-center gap-2 ${
+                                dashboardType === 'Services'
+                                    ? 'text-gray-900 dark:text-white'
+                                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                            }`}
                         >
-                            <span className="flex items-center justify-center gap-2">
-                                {t('Services')}
-                                {serviceRequests.filter(s => s.status === 'Pending').length > 0 && (
-                                    <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1 text-[11px] bg-rose-500 text-white rounded-full font-black">
-                                        {serviceRequests.filter(s => s.status === 'Pending').length}
-                                    </span>
-                                )}
-                            </span>
+                            <span>{t('Services')}</span>
+                            {serviceRequests.filter(s => s.status === 'Pending').length > 0 && (
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-[11px] bg-rose-500 text-white rounded-full font-black">
+                                    {serviceRequests.filter(s => s.status === 'Pending').length}
+                                </span>
+                            )}
                             {dashboardType === 'Services' && (
-                                <div className="absolute bottom-[-2px] left-0 right-0 h-[4px] bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full" />
+                                <div className="absolute bottom-[-2px] left-0 right-0 h-[3.5px] bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full" />
                             )}
                         </button>
                     </div>
 
-                    {/* Dashboard Stats - Clickable Filters */}
-                    <div className="flex flex-wrap gap-3 mb-6">
+                    {/* Rectangular Cards - Card Color Highlight (No outline/ring) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                         {(dashboardType === 'Orders' ? [
-                            { id: 'Processing', label: 'Processing', count: orders.filter(o => o.status === 'Processing').length, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/20' },
-                            { id: 'Out for Delivery', label: 'Out for Delivery', count: orders.filter(o => o.status === 'Out for Delivery').length, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-950/20' },
-                            { id: 'Delivered', label: 'Delivered', count: orders.filter(o => o.status === 'Delivered').length, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
-                            { id: 'Cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'Cancelled').length, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-950/20' }
+                            { 
+                                id: 'Processing', 
+                                label: 'Processing', 
+                                count: orders.filter(o => o.status === 'Processing').length, 
+                                activeCardBg: 'bg-amber-500 dark:bg-amber-500 text-white shadow-sm',
+                                inactiveBadge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300',
+                                activeNumberColor: 'text-amber-600'
+                            },
+                            { 
+                                id: 'Out for Delivery', 
+                                label: 'Out for Delivery', 
+                                count: orders.filter(o => o.status === 'Out for Delivery').length, 
+                                activeCardBg: 'bg-sky-500 dark:bg-sky-500 text-white shadow-sm',
+                                inactiveBadge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300',
+                                activeNumberColor: 'text-sky-600'
+                            },
+                            { 
+                                id: 'Delivered', 
+                                label: 'Delivered', 
+                                count: orders.filter(o => o.status === 'Delivered').length, 
+                                activeCardBg: 'bg-emerald-600 dark:bg-emerald-600 text-white shadow-sm',
+                                inactiveBadge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
+                                activeNumberColor: 'text-emerald-600'
+                            },
+                            { 
+                                id: 'Cancelled', 
+                                label: 'Cancelled', 
+                                count: orders.filter(o => o.status === 'Cancelled').length, 
+                                activeCardBg: 'bg-rose-500 dark:bg-rose-500 text-white shadow-sm',
+                                inactiveBadge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300',
+                                activeNumberColor: 'text-rose-600'
+                            }
                         ] : [
-                            { id: 'Pending', label: 'Requested', count: serviceRequests.filter(s => s.status === 'Pending').length, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/20' },
-                            { id: 'In Progress', label: 'Accepted', count: serviceRequests.filter(s => s.status === 'In Progress').length, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-950/20' }
-                        ]).map((stat) => (
-                            <button 
-                                key={stat.id} 
-                                onClick={() => setActiveTab(stat.id)}
-                                className={`flex-1 min-w-[140px] ${stat.bg} p-5 rounded-2xl transition-all duration-300 active:scale-95 flex flex-col items-center justify-center border-[3px]
-                                    ${String(activeTab).toLowerCase() === String(stat.id).toLowerCase()
-                                        ? `bg-white dark:bg-gray-800 ${stat.color.replace('text', 'border')}` 
-                                        : 'border-transparent opacity-40'}`}
-                            >
-                                <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${String(activeTab).toLowerCase() === String(stat.id).toLowerCase() ? stat.color : 'text-gray-400'}`}>{t(stat.label)}</p>
-                                <p className={`text-2xl font-black ${stat.color}`}>{stat.count}</p>
-                            </button>
-                        ))}
+                            { 
+                                id: 'Pending', 
+                                label: 'Requested', 
+                                count: serviceRequests.filter(s => s.status === 'Pending').length, 
+                                activeCardBg: 'bg-amber-500 dark:bg-amber-500 text-white shadow-sm',
+                                inactiveBadge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300',
+                                activeNumberColor: 'text-amber-600'
+                            },
+                            { 
+                                id: 'In Progress', 
+                                label: 'Accepted', 
+                                count: serviceRequests.filter(s => s.status === 'In Progress').length, 
+                                activeCardBg: 'bg-sky-500 dark:bg-sky-500 text-white shadow-sm',
+                                inactiveBadge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300',
+                                activeNumberColor: 'text-sky-600'
+                            },
+                            { 
+                                id: 'Completed', 
+                                label: 'Completed', 
+                                count: serviceRequests.filter(s => s.status === 'Completed').length, 
+                                activeCardBg: 'bg-emerald-600 dark:bg-emerald-600 text-white shadow-sm',
+                                inactiveBadge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
+                                activeNumberColor: 'text-emerald-600'
+                            },
+                            { 
+                                id: 'Cancelled', 
+                                label: 'Cancelled', 
+                                count: serviceRequests.filter(s => s.status === 'Cancelled').length, 
+                                activeCardBg: 'bg-rose-500 dark:bg-rose-500 text-white shadow-sm',
+                                inactiveBadge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300',
+                                activeNumberColor: 'text-rose-600'
+                            }
+                        ]).map((stat) => {
+                            const isSelected = String(activeTab).toLowerCase() === String(stat.id).toLowerCase();
+                            return (
+                                <button 
+                                    key={stat.id} 
+                                    type="button"
+                                    onClick={() => setActiveTab(stat.id)}
+                                    className={`p-4 rounded-2xl transition-all duration-200 active:scale-95 flex flex-col items-center justify-center text-center select-none outline-none border-0 ${
+                                        isSelected
+                                            ? `${stat.activeCardBg} scale-[1.02]`
+                                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-sm border border-gray-100 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-750'
+                                    }`}
+                                >
+                                    <p className={`text-[11px] font-black uppercase tracking-tight mb-2.5 truncate w-full ${
+                                        isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+                                    }`}>
+                                        {t(stat.label)}
+                                    </p>
+                                    <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg font-black transition-colors ${
+                                        isSelected ? `bg-white ${stat.activeNumberColor} shadow-md` : stat.inactiveBadge
+                                    }`}>
+                                        {stat.count}
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     {/* Search Pill */}

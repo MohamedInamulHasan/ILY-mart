@@ -63,34 +63,38 @@ const OrderDetails = () => {
     // Show skeleton ONLY if we don't have the order AND we are loading.
     if (!order && (loading.orders || loadingSingle)) {
         return (
-            <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 mx-auto max-w-3xl w-full relative pb-12 animate-pulse">
+            <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 mx-auto max-w-3xl w-full relative pb-12">
                 <div className="px-5 pt-8">
                     {/* Header Skeleton */}
                     <div className="flex items-center justify-between mb-8 mt-2">
-                        <div className="w-[46px] h-[46px] bg-white dark:bg-gray-800 rounded-full"></div>
-                        <div className="h-6 w-32 bg-white dark:bg-gray-800 rounded-xl"></div>
+                        <div className="w-[46px] h-[46px] rounded-full blinkit-shimmer"></div>
+                        <div className="h-6 w-36 rounded-xl blinkit-shimmer"></div>
                         <div className="w-[46px] h-[46px]"></div>
                     </div>
 
                     <div className="space-y-5">
                         {/* Status Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] h-48 shadow-sm"></div>
+                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
+                            <div className="h-5 w-40 rounded-lg blinkit-shimmer" />
+                            <div className="h-3 w-60 rounded-md blinkit-shimmer" />
+                            <div className="h-10 w-full rounded-2xl blinkit-shimmer mt-4" />
+                        </div>
 
                         {/* Items Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm overflow-hidden">
+                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                             <div className="p-4 border-b border-gray-50 dark:border-gray-700">
-                                <div className="h-6 w-40 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
+                                <div className="h-6 w-40 rounded-lg blinkit-shimmer"></div>
                             </div>
                             <div className="p-5 space-y-6">
                                 {[1, 2].map((i) => (
                                     <div key={i} className="flex gap-4">
-                                        <div className="h-16 w-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex-shrink-0"></div>
+                                        <div className="h-16 w-16 rounded-2xl blinkit-shimmer flex-shrink-0"></div>
                                         <div className="flex-1 space-y-2">
-                                            <div className="h-4 w-3/4 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
-                                            <div className="h-3 w-1/2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"></div>
+                                            <div className="h-4 w-3/4 rounded-lg blinkit-shimmer"></div>
+                                            <div className="h-3 w-1/2 rounded-md blinkit-shimmer"></div>
                                             <div className="flex justify-between items-center pt-1">
-                                                <div className="h-5 w-16 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
-                                                <div className="h-5 w-10 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
+                                                <div className="h-5 w-16 rounded-lg blinkit-shimmer"></div>
+                                                <div className="h-5 w-10 rounded-lg blinkit-shimmer"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -99,10 +103,21 @@ const OrderDetails = () => {
                         </div>
 
                         {/* Address Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] h-32 shadow-sm"></div>
+                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3">
+                            <div className="h-4 w-28 rounded-md blinkit-shimmer" />
+                            <div className="h-3.5 w-3/4 rounded-md blinkit-shimmer" />
+                            <div className="h-3.5 w-1/2 rounded-md blinkit-shimmer" />
+                        </div>
 
                         {/* Payment Summary Skeleton */}
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] h-48 shadow-sm"></div>
+                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
+                            <div className="h-5 w-36 rounded-lg blinkit-shimmer" />
+                            <div className="space-y-3">
+                                <div className="flex justify-between"><div className="h-3.5 w-20 rounded blinkit-shimmer" /><div className="h-3.5 w-16 rounded blinkit-shimmer" /></div>
+                                <div className="flex justify-between"><div className="h-3.5 w-24 rounded blinkit-shimmer" /><div className="h-3.5 w-12 rounded blinkit-shimmer" /></div>
+                                <div className="flex justify-between pt-2 border-t border-gray-50 dark:border-gray-700"><div className="h-4 w-24 rounded blinkit-shimmer" /><div className="h-4 w-20 rounded blinkit-shimmer" /></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

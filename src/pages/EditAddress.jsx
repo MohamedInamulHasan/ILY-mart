@@ -118,11 +118,38 @@ const EditAddress = () => {
             console.log('📍 EditAddress: Detection result:', result);
 
             if (result.success) {
-                setFormData(prev => ({ ...prev, location: result.mapsLink }));
+                setFormData(prev => {
+                    const next = { ...prev, location: result.mapsLink };
+                    if (result.addressDetails) {
+                        if (result.addressDetails.street) {
+                            next.street = result.addressDetails.street;
+                        }
+                        if (result.addressDetails.city && Array.isArray(cities)) {
+                            const clean = (s) => String(s || '').replace(/\s*\([^)]*\)/, '').trim().toLowerCase();
+                            const target = clean(result.addressDetails.city);
+                            const matched = cities.find(c => {
+                                const cClean = clean(c);
+                                return cClean === target || cClean.includes(target) || target.includes(cClean);
+                            });
+                            if (matched) {
+                                next.city = matched;
+                            } else if (!prev.city) {
+                                next.city = result.addressDetails.city;
+                            }
+                        }
+                        if (result.addressDetails.zip && !prev.zip) {
+                            next.zip = result.addressDetails.zip;
+                        }
+                    }
+                    return next;
+                });
+                setFieldErrors(prev => ({
+                    ...prev,
+                    location: false,
+                    ...(result.addressDetails?.street ? { street: false } : {}),
+                    ...(result.addressDetails?.city ? { city: false } : {})
+                }));
                 setShowLocationError(false);
-                setMessage({ type: 'success', text: t('GPS coordinates saved!') });
-                // Auto-clear success message after 3 seconds
-                setTimeout(() => setMessage({ type: '', text: '' }), 3000);
             } else {
                 console.error('📍 EditAddress: Detection failed:', result.message);
                 setMessage({ type: 'error', text: t(result.message) });
@@ -264,53 +291,98 @@ const EditAddress = () => {
                             type="button"
                             onClick={handleDetectLocation}
                             disabled={isDetecting}
-                            className={`w-full bg-white dark:bg-gray-800 border rounded-2xl px-4 py-3 flex items-center gap-3 transition-all duration-300 active:scale-[0.98] ${
-                                isDetecting ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-green-50/30' :
-                                formData.location ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-green-50/30 dark:bg-[#CBF9B2]/5' :
-                                'border-gray-200 dark:border-gray-700'
+                            className={`w-full border rounded-2xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] ${
+                                isDetecting
+                                    ? 'bg-black/70 dark:bg-black/70 border border-black/30 text-white backdrop-blur-sm shadow-md'
+                                    : formData.location
+                                    ? 'bg-black dark:bg-black border-black text-white shadow-md'
+                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                             }`}
                         >
-                            {/* Icon */}
-                            <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-300 ${
-                                isDetecting ? 'bg-[#2E5A2E] text-white' :
-                                formData.location ? 'bg-green-100 dark:bg-[#CBF9B2]/20 text-[#2E5A2E] dark:text-[#CBF9B2]' :
-                                'bg-gray-100 dark:bg-gray-700 text-gray-400'
-                            }`}>
-                                <AnimatePresence mode="wait">
-                                    {isDetecting ? (
-                                        <motion.div key="spin" animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}>
-                                            <Navigation size={16} />
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div key={formData.location ? 'pin-on' : 'pin-off'} initial={{ scale: 0.6 }} animate={{ scale: 1 }}>
-                                            <MapPin size={16} />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                            {/* Icon Container: Round with low opacity white color */}
+                            <div className="relative flex-shrink-0 flex items-center justify-center w-11 h-11">
+                                {isDetecting ? (
+                                    /* Location Loading Animation */
+                                    <div className="relative flex items-center justify-center w-11 h-11">
+                                        {/* Expanding Radar / Sonar Rings */}
+                                        <motion.span
+                                            className="absolute rounded-full border border-red-500/50 bg-red-500/10 pointer-events-none"
+                                            initial={{ width: 14, height: 14, opacity: 0.9 }}
+                                            animate={{ width: 44, height: 44, opacity: 0 }}
+                                            transition={{ repeat: Infinity, duration: 1.4, ease: 'easeOut' }}
+                                        />
+                                        <motion.span
+                                            className="absolute rounded-full border border-white/60 bg-white/10 pointer-events-none"
+                                            initial={{ width: 14, height: 14, opacity: 0.8 }}
+                                            animate={{ width: 52, height: 52, opacity: 0 }}
+                                            transition={{ repeat: Infinity, duration: 1.4, delay: 0.45, ease: 'easeOut' }}
+                                        />
+
+                                        {/* Round low-opacity white circle container */}
+                                        <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+                                            {/* Bouncing red location pin */}
+                                            <motion.div
+                                                animate={{ y: [0, -4, 0] }}
+                                                transition={{ repeat: Infinity, duration: 1, ease: 'easeInOut' }}
+                                                className="flex flex-col items-center justify-center"
+                                            >
+                                                <MapPin size={20} className="text-red-500 fill-red-500/30" strokeWidth={2.2} />
+                                            </motion.div>
+                                            {/* Ground pulse dot */}
+                                            <motion.span
+                                                animate={{ scale: [1, 0.4, 1], opacity: [0.8, 0.2, 0.8] }}
+                                                transition={{ repeat: Infinity, duration: 1, ease: 'easeInOut' }}
+                                                className="absolute bottom-1 w-1.5 h-1 bg-red-400 rounded-full pointer-events-none"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : formData.location ? (
+                                    /* Location Attached: Round low-opacity white circle with red pin */
+                                    <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner transition-transform duration-200">
+                                        <MapPin size={20} className="text-red-500 fill-red-500/20" strokeWidth={2.2} />
+                                    </div>
+                                ) : (
+                                    /* Idle Unattached: Round light circle with gray pin */
+                                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                        <MapPin size={20} className="text-gray-400 dark:text-gray-500" strokeWidth={2} />
+                                    </div>
+                                )}
                             </div>
 
                             {/* Text */}
                             <div className="flex-1 text-left min-w-0">
                                 <p className={`text-[13px] font-bold truncate ${
-                                    formData.location ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' :
-                                    isDetecting ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-700 dark:text-gray-300'
+                                    isDetecting || formData.location ? 'text-white' : 'text-gray-800 dark:text-gray-200'
                                 }`}>
-                                    {isDetecting ? t('Finding location...') : formData.location ? t('Location Attached') : t('Tap to attach GPS location')}
+                                    {isDetecting 
+                                        ? t('Finding location...') 
+                                        : formData.location 
+                                        ? 'GPS Attached' 
+                                        : t('Tap to attach GPS location')}
                                 </p>
-                                {!isDetecting && (
-                                    <p className="text-[11px] text-gray-400 truncate">
-                                        {formData.location ? t('Tap to update location') : t('Helps us deliver faster')}
-                                    </p>
-                                )}
+                                <p className={`text-[11px] truncate ${
+                                    isDetecting || formData.location ? 'text-white/80' : 'text-gray-400'
+                                }`}>
+                                    {isDetecting 
+                                        ? t('Accessing GPS coordinates...') 
+                                        : formData.location 
+                                        ? t('Tap to update location') 
+                                        : t('Helps us deliver faster')}
+                                </p>
                             </div>
 
-                            {/* Arrow */}
-                            <ArrowLeft size={14} className={`flex-shrink-0 rotate-180 transition-colors ${
-                                formData.location ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-300 dark:text-gray-600'
-                            }`} />
+                            {/* Arrow or Pulsing Indicator */}
+                            {isDetecting ? (
+                                <span className="flex h-2.5 w-2.5 relative flex-shrink-0">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                                </span>
+                            ) : (
+                                <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
+                                    formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
+                                }`} />
+                            )}
                         </button>
-
-
 
                         {/* Remove link when attached */}
                         {formData.location && !isDetecting && (

@@ -44,7 +44,73 @@ export const checkLocationPermission = async () => {
     }
 };
 
-// Request location permission (for native apps)
+export const reverseGeocode = async (latitude, longitude) => {
+    // 1. Try BigDataCloud first (Fastest, client-side CORS enabled, ~200ms)
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
+            { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        if (res.ok) {
+            const data = await res.json();
+            const locality = data.locality || data.city || '';
+            const street = [data.locality, data.principalSubdivision].filter(Boolean).join(', ');
+            const city = data.city || data.locality || data.principalSubdivision || '';
+            const zip = data.postcode || '';
+            return {
+                street: locality || street,
+                city,
+                zip,
+                fullAddress: street
+            };
+        }
+    } catch (err) {
+        console.warn('BigDataCloud reverse geocode error:', err);
+    }
+
+    // 2. Fallback to Nominatim
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            {
+                headers: { 'Accept-Language': 'en' },
+                signal: controller.signal
+            }
+        );
+        clearTimeout(timeoutId);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.address) {
+                const addr = data.address;
+                const roadPart = [addr.house_number, addr.road || addr.street || addr.pedestrian].filter(Boolean).join(' ');
+                const areaPart = addr.neighbourhood || addr.suburb || addr.residential || addr.hamlet || addr.village || '';
+                const townPart = addr.town || addr.city || addr.municipality || '';
+                
+                const parts = [roadPart, areaPart].filter(Boolean);
+                const street = parts.length > 0 ? parts.join(', ') : (areaPart || townPart || data.display_name?.split(',').slice(0, 2).join(', ').trim() || '');
+                const city = townPart || addr.county || addr.state_district || '';
+                const zip = addr.postcode || '';
+
+                return {
+                    street,
+                    city,
+                    zip,
+                    fullAddress: data.display_name || street
+                };
+            }
+        }
+    } catch (err) {
+        console.warn('Nominatim reverse geocode error:', err);
+    }
+
+    return null;
+};
+
 export const requestLocationPermission = async () => {
     const isNative = window.Capacitor?.isNativePlatform?.() ?? false;
 
@@ -80,6 +146,37 @@ export const requestLocationPermission = async () => {
 export const getCurrentLocation = async () => {
     const isNative = window.Capacitor?.isNativePlatform?.() ?? false;
     
+        const buildResult = async (lat, lon, extra = {}) => {
+        let addressDetails = null;
+        try {
+            // Race reverseGeocode with a 1.5s maximum timeout so location NEVER hangs
+            const geocodePromise = reverseGeocode(lat, lon);
+            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 1500));
+            addressDetails = await Promise.race([geocodePromise, timeoutPromise]);
+        } catch (e) {
+            console.warn('Failed to reverse geocode in getCurrentLocation', e);
+        }
+
+        // If reverse geocoding didn't get details but an initialCity was provided by IP
+        if (!addressDetails && extra.initialCity) {
+            addressDetails = {
+                street: extra.initialCity,
+                city: extra.initialCity,
+                zip: extra.initialZip || '',
+                fullAddress: extra.initialCity
+            };
+        }
+
+        return {
+            latitude: lat,
+            longitude: lon,
+            mapsLink: `https://www.google.com/maps/place/${lat}+${lon}/@${lat},${lon},17z`,
+            success: true,
+            addressDetails,
+            ...extra
+        };
+    };
+
     try {
         if (isNative) {
             const { Geolocation } = await import('@capacitor/geolocation');
@@ -109,17 +206,12 @@ export const getCurrentLocation = async () => {
                 const position = await Geolocation.getCurrentPosition({
                     enableHighAccuracy: true,
                     timeout: 8000, // 8 seconds timeout
-                    maximumAge: 0
+                    maximumAge: 30000
                 });
                 
                 const { latitude, longitude } = position.coords;
                 console.log('✅ Native: High accuracy location obtained:', latitude, longitude);
-                return {
-                    latitude,
-                    longitude,
-                    mapsLink: `https://www.google.com/maps/place/${latitude}+${longitude}/@${latitude},${longitude},17z`,
-                    success: true
-                };
+                return await buildResult(latitude, longitude);
             } catch (highAccuracyError) {
                 console.warn('📍 Native: High accuracy failed, trying last known position...', highAccuracyError);
                 
@@ -129,13 +221,7 @@ export const getCurrentLocation = async () => {
                     if (lastKnown && lastKnown.coords) {
                         const { latitude, longitude } = lastKnown.coords;
                         console.log('✅ Native: Last known location obtained:', latitude, longitude);
-                        return {
-                            latitude,
-                            longitude,
-                            mapsLink: `https://www.google.com/maps/place/${latitude}+${longitude}/@${latitude},${longitude},17z`,
-                            success: true,
-                            isLastKnown: true
-                        };
+                        return await buildResult(latitude, longitude, { isLastKnown: true });
                     }
                 } catch (lkError) {
                     console.warn('📍 Native: Last known location retrieval failed:', lkError);
@@ -152,67 +238,65 @@ export const getCurrentLocation = async () => {
                     
                     const { latitude, longitude } = position.coords;
                     console.log('✅ Native: Low accuracy location obtained:', latitude, longitude);
-                    return {
-                        latitude,
-                        longitude,
-                        mapsLink: `https://www.google.com/maps/place/${latitude}+${longitude}/@${latitude},${longitude},17z`,
-                        success: true
-                    };
+                    return await buildResult(latitude, longitude);
                 } catch (lowAccuracyError) {
                     console.error('📍 Native: Low accuracy failed as well:', lowAccuracyError);
                     throw lowAccuracyError; // Escalate to IP fallback
                 }
             }
         } else {
-            // Browser Fallback
+            // Browser Environment with strict 3.5s failsafe
             if (!navigator.geolocation) {
                 throw new Error('UNSUPPORTED');
             }
             
-            const position = await new Promise((resolve, reject) => {
-                // Try high accuracy first
-                console.log('📡 Browser: Attempting high accuracy...');
-                navigator.geolocation.getCurrentPosition(resolve, (err) => {
-                    console.warn('📡 Browser: High accuracy failed, trying low accuracy...', err);
-                    // Fallback to low accuracy
-                    navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: false,
-                        timeout: 10000,
-                        maximumAge: 30000
-                    });
-                }, {
-                    enableHighAccuracy: true,
-                    timeout: 6000,
-                    maximumAge: 0
-                });
+            const getBrowserPosition = () => new Promise((resolve, reject) => {
+                let settled = false;
+                const done = (fn, val) => {
+                    if (!settled) {
+                        settled = true;
+                        fn(val);
+                    }
+                };
+
+                navigator.geolocation.getCurrentPosition(
+                    pos => done(resolve, pos),
+                    err => {
+                        console.warn('📡 Browser: High accuracy failed, trying low accuracy...', err);
+                        navigator.geolocation.getCurrentPosition(
+                            pos => done(resolve, pos),
+                            e => done(reject, e),
+                            { enableHighAccuracy: false, timeout: 2000, maximumAge: 60000 }
+                        );
+                    },
+                    { enableHighAccuracy: true, timeout: 2000, maximumAge: 60000 }
+                );
             });
-            
+
+            // Hard 3.5s timeout so GPS acquisition NEVER hangs indefinitely
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('GPS_TIMEOUT')), 3500)
+            );
+
+            const position = await Promise.race([getBrowserPosition(), timeoutPromise]);
             const { latitude, longitude } = position.coords;
             console.log('✅ Browser: Geolocation obtained:', latitude, longitude);
-            return {
-                latitude,
-                longitude,
-                mapsLink: `https://www.google.com/maps/place/${latitude}+${longitude}/@${latitude},${longitude},17z`,
-                success: true
-            };
+            return await buildResult(latitude, longitude);
         }
     } catch (error) {
-        console.error('📍 Location Error:', error);
+        console.warn('📍 Hardware GPS not available or timed out, trying fast IP location...', error);
         
-        // --- FINAL FALLBACK: IP-based Geolocation ---
-        // Try multiple reliable providers that support HTTPS for free
+        // --- FAST FALLBACK: IP-based Geolocation ---
         const ipProviders = [
-            { url: 'https://ipwho.is', latKey: 'latitude', lonKey: 'longitude' },
-            { url: 'https://freeipapi.com/api/json', latKey: 'latitude', lonKey: 'longitude' },
-            { url: 'https://ipapi.co/json/', latKey: 'latitude', lonKey: 'longitude' },
-            { url: 'http://ip-api.com/json', latKey: 'lat', lonKey: 'lon' } // HTTP only fallback
+            { url: 'https://ipwho.is', latKey: 'latitude', lonKey: 'longitude', cityKey: 'city', zipKey: 'postal' },
+            { url: 'https://freeipapi.com/api/json', latKey: 'latitude', lonKey: 'longitude', cityKey: 'cityName', zipKey: 'zipCode' }
         ];
- 
+
         for (const provider of ipProviders) {
             try {
                 console.log(`📡 Attempting IP-based fallback: ${provider.url}`);
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
                 
                 const response = await fetch(provider.url, { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -220,22 +304,20 @@ export const getCurrentLocation = async () => {
                 const data = await response.json();
                 const lat = data[provider.latKey];
                 const lon = data[provider.lonKey];
- 
+
                 if (lat && lon) {
                     console.log(`✅ IP-based geolocation successful using ${provider.url}:`, lat, lon);
-                    return {
-                        latitude: lat,
-                        longitude: lon,
-                        mapsLink: `https://www.google.com/maps/place/${lat}+${lon}/@${lat},${lon},17z`,
-                        success: true,
-                        isIPFallback: true
-                    };
+                    return await buildResult(lat, lon, { 
+                        isIPFallback: true, 
+                        initialCity: data[provider.cityKey] || '',
+                        initialZip: data[provider.zipKey] || ''
+                    });
                 }
             } catch (ipError) {
                 console.warn(`❌ IP Fallback failed for ${provider.url}:`, ipError.message);
             }
         }
- 
+
         let message = 'Unable to get location';
         let code = 'UNKNOWN';
         const rawError = error.message || 'No specific error message';

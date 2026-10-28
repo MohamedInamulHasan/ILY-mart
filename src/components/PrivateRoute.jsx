@@ -8,7 +8,7 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
     const location = useLocation();
 
     // Show spinner while auth is loading (guest registration in progress)
-    if (loading) {
+    if (loading && adminOnly) {
         return <LoadingSpinner />;
     }
 

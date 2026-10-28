@@ -420,7 +420,6 @@ const OrderConfirmation = () => {
                     <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700">
                         <div className="text-center">
                             <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
-                                <div className="absolute inset-0 rounded-full bg-black opacity-5 animate-ping"></div>
                                 <ShoppingBag className="h-10 w-10 text-black dark:text-white relative z-10" />
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
@@ -468,8 +467,67 @@ const OrderConfirmation = () => {
                             className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 relative overflow-hidden"
                         >
                             <div className="text-center">
-                                <div className="w-24 h-24 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                                    <CheckCircle className="h-12 w-12 text-[#2E5A2E] dark:text-[#CBF9B2]" />
+                                <div className="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+                                    {/* Green star burst rotating ONLY during the entrance movement like GPay */}
+                                    <motion.div
+                                        initial={{ rotate: -40, scale: 0.2, opacity: 0 }}
+                                        animate={{ rotate: 30, scale: 1, opacity: 1 }}
+                                        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                                        className="absolute inset-0 pointer-events-none flex items-center justify-center"
+                                    >
+                                        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                                            <motion.div
+                                                key={angle}
+                                                initial={{ scale: 0, opacity: 0 }}
+                                                animate={{ scale: [0, 1.25, 1], opacity: [0, 1, 0.95] }}
+                                                transition={{ duration: 0.5, delay: 0.1 + i * 0.02, ease: "easeOut" }}
+                                                style={{
+                                                    transform: `rotate(${angle}deg) translateY(-54px)`,
+                                                    transformOrigin: 'center center'
+                                                }}
+                                                className="absolute"
+                                            >
+                                                {/* 4-point green star (GPay style) */}
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="#22C55E" className="drop-shadow-sm">
+                                                    <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
+                                                </svg>
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
+
+                                    {/* Expanding soft ring */}
+                                    <motion.div
+                                        initial={{ scale: 0.8, opacity: 0.8 }}
+                                        animate={{ scale: 1.45, opacity: 0 }}
+                                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+                                        className="absolute w-20 h-20 rounded-full border-2 border-green-500/60 pointer-events-none"
+                                    />
+
+                                    {/* Green Circle Base */}
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: [0, 1.15, 1] }}
+                                        transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1], delay: 0.05 }}
+                                        className="w-20 h-20 rounded-full bg-[#1EA34B] dark:bg-[#22C55E] flex items-center justify-center shadow-xl shadow-green-500/30 relative z-10"
+                                    >
+                                        {/* Animated GPay Checkmark SVG */}
+                                        <svg
+                                            className="w-10 h-10 text-white"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="3.2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <motion.path
+                                                d="M5 13l4 4L19 7"
+                                                initial={{ pathLength: 0, opacity: 0 }}
+                                                animate={{ pathLength: 1, opacity: 1 }}
+                                                transition={{ duration: 0.45, delay: 0.25, ease: "easeOut" }}
+                                            />
+                                        </svg>
+                                    </motion.div>
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                                     {t('Order Placed!')}

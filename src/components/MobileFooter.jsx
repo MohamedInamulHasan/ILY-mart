@@ -119,13 +119,16 @@ const MobileFooter = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const isActive = (path) => location.pathname === path;
+    const isActive = (path) => {
+        if (path === '/') return location.pathname === '/';
+        return location.pathname.startsWith(path);
+    };
 
     const navItems = [
         { path: '/', icon: HomeIcon, label: 'Home' },
         { path: '/store', icon: StoreIcon, label: 'Store' },
-        { path: user ? '/orders' : '/login', icon: OrdersIcon, label: 'Orders' },
-        { path: user ? '/profile' : '/login', icon: ProfileIcon, label: user ? t('profile') : t('login') },
+        { path: '/orders', icon: OrdersIcon, label: 'Orders' },
+        { path: '/profile', icon: ProfileIcon, label: t('profile') },
     ];
 
     const allowedFooterRoutes = ['/', '/store', '/orders', '/profile', '/categories'];
@@ -145,10 +148,10 @@ const MobileFooter = () => {
                         <Link
                             key={item.label}
                             to={item.path}
-                            className="relative flex items-center justify-center group text-gray-900 dark:text-gray-100"
+                            className="relative flex items-center justify-center group text-gray-900 dark:text-gray-100 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 border-0 no-underline select-none [-webkit-tap-highlight-color:transparent]"
                         >
                              <div 
-                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${active ? 'bg-black dark:bg-[#CBF9B2] shadow-lg shadow-black/20 dark:shadow-[#CBF9B2]/20 scale-110 md:scale-125 text-white dark:text-gray-900' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 border-0 ${active ? 'bg-black dark:bg-[#CBF9B2] shadow-lg shadow-black/20 dark:shadow-[#CBF9B2]/20 scale-110 md:scale-125 text-white dark:text-gray-900' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                             >
                                 <item.icon isActive={active} activeColor={activeIconColor} />
                             </div>

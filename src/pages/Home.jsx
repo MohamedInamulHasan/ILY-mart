@@ -361,47 +361,43 @@ const Home = () => {
                 {/* Categories */}
                 <CategorySection 
                     categories={featuredCategories} 
-                    isLoading={isLoadingAll} 
+                    isLoading={loadingCategories} 
                     selectedCategory={selectedCategory}
                     onSelectCategory={setSelectedCategory}
                 />
 
                 {/* Store Sections Loading Skeleton */}
                 {isLoadingAll ? (
-                    <div className="space-y-2 py-2">
+                    <div className="space-y-4 py-2">
                         {[1, 2].map((sectionIndex) => (
                             <section key={sectionIndex} className="px-4 py-3">
-
                                 {/* Section Header — shop name + See All */}
-                                <div className="flex justify-between items-end mb-6 px-1">
+                                <div className="flex justify-between items-end mb-4 px-1">
                                     <div className="flex flex-col gap-2 flex-1">
-                                        {/* Shop name — big heading */}
-                                        <div className="h-7 w-52 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
-                                        {/* Address / slogan line */}
-                                        <div className="h-3 w-40 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"></div>
+                                        <div className="h-6 w-48 rounded-xl blinkit-shimmer"></div>
+                                        <div className="h-3 w-32 rounded-lg blinkit-shimmer"></div>
                                     </div>
-                                    {/* See All pill */}
-                                    <div className="h-4 w-14 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                                    <div className="h-5 w-14 rounded-full blinkit-shimmer"></div>
                                 </div>
 
-                                {/* Horizontal Product Cards */}
+                                {/* Horizontal Product Cards — Blinkit shimmer style */}
                                 <div className="flex gap-3 overflow-hidden pb-2 px-1">
-                                    {[1, 2, 3].map((cardIndex) => (
+                                    {[1, 2, 3, 4].map((cardIndex) => (
                                         <div
                                             key={cardIndex}
-                                            className="w-[165px] md:w-[190px] shrink-0 bg-white dark:bg-gray-800 rounded-3xl p-3 shadow-sm border border-gray-50 dark:border-gray-700/50 flex flex-col space-y-3"
+                                            className="w-[160px] md:w-[185px] shrink-0 bg-white dark:bg-gray-800 rounded-3xl p-3 shadow-sm border border-gray-100 dark:border-gray-700/50 flex flex-col space-y-3"
                                         >
-                                            {/* Image */}
-                                            <div className="aspect-square w-full bg-gray-100 dark:bg-gray-900 rounded-2xl animate-pulse"></div>
-                                            {/* Product name */}
-                                            <div className="space-y-1.5">
-                                                <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded-lg w-full animate-pulse"></div>
-                                                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-md w-2/3 animate-pulse"></div>
+                                            {/* Product Image placeholder */}
+                                            <div className="aspect-square w-full rounded-2xl blinkit-shimmer"></div>
+                                            {/* Product Title */}
+                                            <div className="space-y-2">
+                                                <div className="h-3.5 rounded-lg w-full blinkit-shimmer"></div>
+                                                <div className="h-3 rounded-md w-2/3 blinkit-shimmer"></div>
                                             </div>
                                             {/* Price + Add button */}
                                             <div className="flex items-center justify-between pt-1">
-                                                <div className="h-5 w-14 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse"></div>
-                                                <div className="h-9 w-9 bg-gray-100 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                                                <div className="h-5 w-14 rounded-md blinkit-shimmer"></div>
+                                                <div className="h-9 w-9 rounded-full blinkit-shimmer"></div>
                                             </div>
                                         </div>
                                     ))}

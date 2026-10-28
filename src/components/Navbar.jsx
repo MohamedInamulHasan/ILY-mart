@@ -40,13 +40,9 @@ const Navbar = () => {
                         <Link to="/orders" className="text-gray-600 dark:text-gray-300 hover:text-[#2E5A2E] dark:hover:text-[#8bc910] font-medium transition-colors">{t('Orders')}</Link>
 
 
-                        {user ? (
-                            <Link to="/profile" className="text-gray-600 dark:text-gray-300 hover:text-[#2E5A2E] dark:hover:text-[#8bc910] font-medium transition-colors">
-                                {t('Profile')}
-                            </Link>
-                        ) : (
-                            <Link to="/login" className="text-gray-600 dark:text-gray-300 hover:text-[#2E5A2E] dark:hover:text-[#8bc910] font-medium transition-colors">{t('Login')}</Link>
-                        )}
+                        <Link to="/profile" className="text-gray-600 dark:text-gray-300 hover:text-[#2E5A2E] dark:hover:text-[#8bc910] font-medium transition-colors">
+                            {user ? t('Profile') : t('Profile')}
+                        </Link>
 
                         {!isAdmin && (
                             <div className="flex items-center gap-3">
@@ -157,23 +153,13 @@ const Navbar = () => {
                             </Link>
 
 
-                            {user ? (
-                                <Link
-                                    to="/profile"
-                                    className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-[#2E5A2E] dark:hover:text-[#8bc910] font-medium transition-colors"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    {t('Profile')}
-                                </Link>
-                            ) : (
-                                <Link
-                                    to="/login"
-                                    className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-[#2E5A2E] dark:hover:text-[#8bc910] font-medium transition-colors"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    {t('Login')}
-                                </Link>
-                            )}
+                            <Link
+                                to="/profile"
+                                className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-[#2E5A2E] dark:hover:text-[#8bc910] font-medium transition-colors"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                {t('Profile')}
+                            </Link>
                         </div>
                     </div>
                 )
