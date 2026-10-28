@@ -307,11 +307,7 @@ export const getCurrentLocation = async () => {
 
                 if (lat && lon) {
                     console.log(`✅ IP-based geolocation successful using ${provider.url}:`, lat, lon);
-                    return await buildResult(lat, lon, { 
-                        isIPFallback: true, 
-                        initialCity: data[provider.cityKey] || '',
-                        initialZip: data[provider.zipKey] || ''
-                    });
+                    return await buildResult(lat, lon, { isIPFallback: true, addressDetails: null });
                 }
             } catch (ipError) {
                 console.warn(`❌ IP Fallback failed for ${provider.url}:`, ipError.message);

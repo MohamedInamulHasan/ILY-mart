@@ -120,22 +120,13 @@ const EditAddress = () => {
             if (result.success) {
                 setFormData(prev => {
                     const next = { ...prev, location: result.mapsLink };
-                    if (result.addressDetails) {
-                        if (result.addressDetails.street) {
+                    // Only autofill address fields if genuine GPS (not IP fallback) and user has not typed them
+                    if (!result.isIPFallback && result.addressDetails) {
+                        if (result.addressDetails.street && !prev.street) {
                             next.street = result.addressDetails.street;
                         }
-                        if (result.addressDetails.city && Array.isArray(cities)) {
-                            const clean = (s) => String(s || '').replace(/\s*\([^)]*\)/, '').trim().toLowerCase();
-                            const target = clean(result.addressDetails.city);
-                            const matched = cities.find(c => {
-                                const cClean = clean(c);
-                                return cClean === target || cClean.includes(target) || target.includes(cClean);
-                            });
-                            if (matched) {
-                                next.city = matched;
-                            } else if (!prev.city) {
-                                next.city = result.addressDetails.city;
-                            }
+                        if (result.addressDetails.city && !prev.city) {
+                            next.city = result.addressDetails.city;
                         }
                         if (result.addressDetails.zip && !prev.zip) {
                             next.zip = result.addressDetails.zip;
@@ -169,19 +160,19 @@ const EditAddress = () => {
         if (!formData.fullName) errors.fullName = true;
         if (!formData.mobile) errors.mobile = true;
         if (!formData.street) errors.street = true;
-        if (!formData.city) {
+        if (!formData.city || !formData.city.trim()) {
             errors.city = true;
-        } else {
-            const cl = formData.city.toLowerCase();
-            if (cl.includes('(') && (cl.includes('not available') || cl.includes('not deliverable') || cl.includes('unavailable'))) {
-                errors.city = true;
-            }
+        }
+        if (!formData.location) {
+            errors.location = true;
+            setShowLocationError(true);
         }
 
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
             // Scroll to first error
-            if (errors.fullName) fullNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (errors.location) locationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            else if (errors.fullName) fullNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             else if (errors.mobile) mobileRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             else if (errors.street) streetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             else if (errors.city) cityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -284,7 +275,7 @@ const EditAddress = () => {
                     <div ref={locationRef}>
                         <div className="flex items-center justify-between mb-2 px-1">
                             <span className="text-[11px] font-bold text-gray-500 dark:text-gray-300 uppercase tracking-widest">{t('GPS Location')}</span>
-                            <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{t('Optional')}</span>
+                            <span className="text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full">* {t('Required')}</span>
                         </div>
 
                         <button
@@ -371,18 +362,18 @@ const EditAddress = () => {
                                 </p>
                             </div>
 
-                            {/* Arrow or Pulsing Indicator */}
-                            {isDetecting ? (
-                                <span className="flex h-2.5 w-2.5 relative flex-shrink-0">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                </span>
-                            ) : (
-                                <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
-                                    formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
-                                }`} />
-                            )}
+                            {/* Arrow */}
+                            <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
+                                isDetecting || formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
+                            }`} />
                         </button>
+
+                        {fieldErrors.location && (
+                            <div className="relative mt-2 bg-white dark:bg-gray-855 border border-red-300 dark:border-red-600 rounded-lg px-3 py-2 text-red-600 dark:text-red-400 text-[13px] font-medium flex items-center gap-2.5 w-fit shadow-md z-10 animate-in fade-in">
+                                <div className="w-5 h-5 rounded bg-red-600 text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                <span>{t('GPS Location is required')}</span>
+                            </div>
+                        )}
 
                         {/* Remove link when attached */}
                         {formData.location && !isDetecting && (
@@ -461,41 +452,18 @@ const EditAddress = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 px-1">{t('City')}</label>
-                                {loadingCities ? (
-                                    <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-400">{t('Loading cities...')}</div>
-                                ) : (
-                                    <select
-                                        ref={cityRef}
-                                        value={formData.city}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setFormData(prev => ({ ...prev, city: val }));
-                                            setFieldErrors(prev => ({ ...prev, city: false }));
-                                        }}
-                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
-                                    >
-                                        <option value="">{t('Select City')}</option>
-                                        {cities.map((city) => {
-                                            const m = city.match(/\(([^)]+)\)/);
-                                            const isUnavail = m && (() => {
-                                                const inner = m[1].toLowerCase();
-                                                return inner.includes('not available') || inner.includes('not deliverable') || inner.includes('unavailable');
-                                            })();
-                                            const baseName = city.replace(/\s*\([^)]*\)/, '').trim();
-                                            const note = m ? m[1] : '';
-                                            return (
-                                                <option
-                                                    key={city}
-                                                    value={city}
-                                                    disabled={!!isUnavail}
-                                                    style={isUnavail ? { color: '#9CA3AF' } : {}}
-                                                >
-                                                    {isUnavail ? `${baseName} (${note})` : city}
-                                                </option>
-                                            );
-                                        })}
-                                    </select>
-                                )}
+                                <input
+                                    ref={cityRef}
+                                    type="text"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={(e) => {
+                                        setFormData(prev => ({ ...prev, city: e.target.value }));
+                                        setFieldErrors(prev => ({ ...prev, city: false }));
+                                    }}
+                                    placeholder={t('Enter city name')}
+                                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
+                                />
                                 {fieldErrors.city && (
                                     <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
                                         <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>

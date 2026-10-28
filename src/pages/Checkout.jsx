@@ -473,22 +473,12 @@ const Checkout = () => {
                                                     if (result && result.success) {
                                                         setFormData(prev => {
                                                             const next = { ...prev, location: result.mapsLink };
-                                                            if (result.addressDetails) {
-                                                                if (result.addressDetails.street) {
+                                                            if (!result.isIPFallback && result.addressDetails) {
+                                                                if (result.addressDetails.street && !prev.address) {
                                                                     next.address = result.addressDetails.street;
                                                                 }
-                                                                if (result.addressDetails.city && Array.isArray(cities)) {
-                                                                    const clean = (s) => String(s || '').replace(/\s*\([^)]*\)/, '').trim().toLowerCase();
-                                                                    const target = clean(result.addressDetails.city);
-                                                                    const matched = cities.find(c => {
-                                                                        const cClean = clean(c);
-                                                                        return cClean === target || cClean.includes(target) || target.includes(cClean);
-                                                                    });
-                                                                    if (matched) {
-                                                                        next.city = matched;
-                                                                    } else if (!prev.city) {
-                                                                        next.city = result.addressDetails.city;
-                                                                    }
+                                                                if (result.addressDetails.city && !prev.city) {
+                                                                    next.city = result.addressDetails.city;
                                                                 }
                                                                 if (result.addressDetails.zip && !prev.zip) {
                                                                     next.zip = result.addressDetails.zip;
@@ -591,17 +581,10 @@ const Checkout = () => {
                                                 </p>
                                             </div>
 
-                                            {/* Arrow or Pulsing Indicator */}
-                                            {isLocationSearching ? (
-                                                <span className="flex h-2.5 w-2.5 relative flex-shrink-0">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                                </span>
-                                            ) : (
-                                                <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
-                                                    formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
-                                                }`} />
-                                            )}
+                                            {/* Arrow */}
+                                            <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
+                                                isLocationSearching || formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
+                                            }`} />
                                         </button>
 
                                         {fieldErrors.location && (
@@ -687,41 +670,18 @@ const Checkout = () => {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('City')}</label>
-                                            {loadingCities ? (
-                                                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-400">{t('Loading cities...')}</div>
-                                            ) : (
-                                                <select
-                                                    ref={cityRef}
-                                                    value={formData.city}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        setFormData(prev => ({ ...prev, city: val }));
-                                                        setFieldErrors(prev => ({ ...prev, city: false }));
-                                                    }}
-                                                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
-                                                >
-                                                    <option value="">{t('Select City')}</option>
-                                                    {cities.map((city) => {
-                                                        const m = city.match(/\(([^)]+)\)/);
-                                                        const isUnavail = m && (() => {
-                                                            const inner = m[1].toLowerCase();
-                                                            return inner.includes('not available') || inner.includes('not deliverable') || inner.includes('unavailable');
-                                                        })();
-                                                        const baseName = city.replace(/\s*\([^)]*\)/, '').trim();
-                                                        const note = m ? m[1] : '';
-                                                        return (
-                                                            <option
-                                                                key={city}
-                                                                value={city}
-                                                                disabled={!!isUnavail}
-                                                                style={isUnavail ? { color: '#9CA3AF' } : {}}
-                                                            >
-                                                                {isUnavail ? `${baseName} (${note})` : city}
-                                                            </option>
-                                                        );
-                                                    })}
-                                                </select>
-                                            )}
+                                            <input
+                                                ref={cityRef}
+                                                type="text"
+                                                name="city"
+                                                value={formData.city}
+                                                onChange={(e) => {
+                                                    setFormData(prev => ({ ...prev, city: e.target.value }));
+                                                    setFieldErrors(prev => ({ ...prev, city: false }));
+                                                }}
+                                                placeholder={t('Enter city name')}
+                                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
+                                            />
                                             {fieldErrors.city && (
                                                 <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
