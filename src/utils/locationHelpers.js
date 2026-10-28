@@ -45,7 +45,56 @@ export const checkLocationPermission = async () => {
 };
 
 export const reverseGeocode = async (latitude, longitude) => {
-    // 1. Try BigDataCloud first (Fastest, client-side CORS enabled, ~200ms)
+    // 1. Try Nominatim OpenStreetMap first (accurate road & street level detail)
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            {
+                headers: { 
+                    'User-Agent': 'ILAYANGUDI-APP/1.5',
+                    'Accept-Language': 'en' 
+                },
+                signal: controller.signal
+            }
+        );
+        clearTimeout(timeoutId);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.address) {
+                const addr = data.address;
+                const roadPart = [addr.house_number, addr.road || addr.street || addr.pedestrian || addr.footway || addr.path].filter(Boolean).join(' ').trim();
+                const areaPart = (addr.neighbourhood || addr.suburb || addr.residential || addr.hamlet || addr.quarter || '').trim();
+                const city = (addr.town || addr.city || addr.municipality || addr.village || addr.county || '').trim();
+                const zip = addr.postcode || '';
+
+                // Extract genuine street: ONLY use road/area if distinct from city
+                let street = '';
+                if (roadPart) {
+                    street = [roadPart, areaPart].filter(Boolean).join(', ');
+                } else if (areaPart && areaPart.toLowerCase() !== city.toLowerCase()) {
+                    street = areaPart;
+                }
+
+                // Never return city as street
+                if (street.toLowerCase() === city.toLowerCase()) {
+                    street = '';
+                }
+
+                return {
+                    street,
+                    city,
+                    zip,
+                    fullAddress: data.display_name || [street, city].filter(Boolean).join(', ')
+                };
+            }
+        }
+    } catch (err) {
+        console.warn('Nominatim reverse geocode error:', err);
+    }
+
+    // 2. Fallback to BigDataCloud (Administrative level: locality & city)
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -56,56 +105,18 @@ export const reverseGeocode = async (latitude, longitude) => {
         clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
-            const locality = data.locality || data.city || '';
-            const street = [data.locality, data.principalSubdivision].filter(Boolean).join(', ');
             const city = data.city || data.locality || data.principalSubdivision || '';
             const zip = data.postcode || '';
+            // BigDataCloud free tier only provides city/state, never fake it as a street
             return {
-                street: locality || street,
+                street: '',
                 city,
                 zip,
-                fullAddress: street
+                fullAddress: [city, data.principalSubdivision].filter(Boolean).join(', ')
             };
         }
     } catch (err) {
         console.warn('BigDataCloud reverse geocode error:', err);
-    }
-
-    // 2. Fallback to Nominatim
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-            {
-                headers: { 'Accept-Language': 'en' },
-                signal: controller.signal
-            }
-        );
-        clearTimeout(timeoutId);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.address) {
-                const addr = data.address;
-                const roadPart = [addr.house_number, addr.road || addr.street || addr.pedestrian].filter(Boolean).join(' ');
-                const areaPart = addr.neighbourhood || addr.suburb || addr.residential || addr.hamlet || addr.village || '';
-                const townPart = addr.town || addr.city || addr.municipality || '';
-                
-                const parts = [roadPart, areaPart].filter(Boolean);
-                const street = parts.length > 0 ? parts.join(', ') : (areaPart || townPart || data.display_name?.split(',').slice(0, 2).join(', ').trim() || '');
-                const city = townPart || addr.county || addr.state_district || '';
-                const zip = addr.postcode || '';
-
-                return {
-                    street,
-                    city,
-                    zip,
-                    fullAddress: data.display_name || street
-                };
-            }
-        }
-    } catch (err) {
-        console.warn('Nominatim reverse geocode error:', err);
     }
 
     return null;

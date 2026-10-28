@@ -3,7 +3,7 @@ import { X, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 
-const CancelOrderModal = ({ isOpen, onClose, onConfirm }) => {
+const CancelOrderModal = ({ isOpen, onClose, onConfirm, isCancelling = false }) => {
     const { t } = useLanguage();
 
     return (
@@ -56,9 +56,10 @@ const CancelOrderModal = ({ isOpen, onClose, onConfirm }) => {
                             <div className="flex flex-col gap-3 w-full">
                                 <button
                                     onClick={onConfirm}
-                                    className="w-full py-4 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all"
+                                    disabled={isCancelling}
+                                    className="w-full py-4 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {t('Yes, Cancel')}
+                                    {isCancelling ? t('Cancelling...') : t('Yes, Cancel')}
                                 </button>
                                 <button
                                     onClick={onClose}

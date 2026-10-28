@@ -1,3 +1,6 @@
+// Cache to prevent duplicate cancel alerts within 30 seconds
+const recentCancelledOrderAlerts = new Set();
+
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import { sendOrderNotificationEmail, sendCustomerOrderConfirmationEmail } from '../services/emailService.js';
@@ -397,15 +400,28 @@ export const updateOrderStatus = async (req, res, next) => {
 
         const updatedOrder = await order.save();
 
-        // Send Green-API WhatsApp notification for status update (non-blocking)
-        const waEventType = updatedOrder.status === 'Cancelled' ? 'cancelled' : 'status_updated';
-        sendOrderWhatsAppNotification(updatedOrder, waEventType)
-            .catch(err => console.error('❌ Failed to send WhatsApp status update notification:', err));
+        // Send notifications (with deduplication for Cancellations)
+        if (updatedOrder.status === 'Cancelled') {
+            const orderKey = updatedOrder._id.toString();
+            if (recentCancelledOrderAlerts.has(orderKey)) {
+                console.log(`⚠️ Skipping duplicate WhatsApp cancel notification for order ${orderKey}`);
+            } else {
+                recentCancelledOrderAlerts.add(orderKey);
+                setTimeout(() => recentCancelledOrderAlerts.delete(orderKey), 30000);
 
-        // Send n8n webhook notification for status update (non-blocking)
-        const eventType = updatedOrder.status === 'Cancelled' ? 'order.cancelled' : 'order.status_updated';
-        sendN8nOrderEvent(updatedOrder, eventType)
-            .catch(err => console.error('❌ Failed to send n8n order status webhook:', err));
+                sendOrderWhatsAppNotification(updatedOrder, 'cancelled')
+                    .catch(err => console.error('❌ Failed to send WhatsApp status update notification:', err));
+
+                sendN8nOrderEvent(updatedOrder, 'order.cancelled')
+                    .catch(err => console.error('❌ Failed to send n8n order status webhook:', err));
+            }
+        } else {
+            sendOrderWhatsAppNotification(updatedOrder, 'status_updated')
+                .catch(err => console.error('❌ Failed to send WhatsApp status update notification:', err));
+
+            sendN8nOrderEvent(updatedOrder, 'order.status_updated')
+                .catch(err => console.error('❌ Failed to send n8n order status webhook:', err));
+        }
 
         // Emit real-time event for user
         getIO().emit('order:updated', updatedOrder);

@@ -474,7 +474,9 @@ const Checkout = () => {
                                                         setFormData(prev => {
                                                             const next = { ...prev, location: result.mapsLink };
                                                             if (!result.isIPFallback && result.addressDetails) {
-                                                                if (result.addressDetails.street && !prev.address) {
+                                                                const isRealStreet = result.addressDetails.street && 
+                                                                    result.addressDetails.street.trim().toLowerCase() !== (result.addressDetails.city || '').trim().toLowerCase();
+                                                                if (isRealStreet && !prev.address) {
                                                                     next.address = result.addressDetails.street;
                                                                 }
                                                                 if (result.addressDetails.city && !prev.city) {

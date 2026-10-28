@@ -164,7 +164,11 @@ const OrderDetails = () => {
         }
     };
 
+    const [isCancelling, setIsCancelling] = useState(false);
+
     const confirmCancelOrder = async () => {
+        if (isCancelling) return;
+        setIsCancelling(true);
         try {
             // Use context method to update global state without reload
             const updatedOrder = await cancelOrder(order._id || order.id);
@@ -183,6 +187,8 @@ const OrderDetails = () => {
             console.error('Failed to cancel order:', error);
             alert(t('Failed to cancel order. Please try again.'));
             setCancelConfirmation(false);
+        } finally {
+            setIsCancelling(false);
         }
     };
 
@@ -515,8 +521,9 @@ const OrderDetails = () => {
 
             <CancelOrderModal 
                 isOpen={cancelConfirmation} 
-                onClose={() => setCancelConfirmation(false)} 
-                onConfirm={confirmCancelOrder} 
+                onClose={() => !isCancelling && setCancelConfirmation(false)} 
+                onConfirm={confirmCancelOrder}
+                isCancelling={isCancelling}
             />
         </div>
     );

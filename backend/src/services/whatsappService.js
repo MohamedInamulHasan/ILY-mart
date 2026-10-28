@@ -232,12 +232,21 @@ ${itemsList}
 _ILY-mart Real-Time WhatsApp Alert_
 `.trim();
 
-        // Send to Admin
-        await sendGreenApiMessage(targetPhone, messageText);
+        // Clean both numbers to strictly prevent duplicate alerts to the same phone
+        const cleanTarget = String(targetPhone || '').replace(/\D/g, '');
+        const normTarget = cleanTarget.length === 10 ? `91${cleanTarget}` : cleanTarget;
 
-        // Send confirmation to Customer if valid mobile exists and is different from admin phone
-        if (customerMobile && customerMobile !== 'N/A' && customerMobile !== targetPhone) {
-            await sendGreenApiMessage(customerMobile, messageText);
+        const cleanCustomer = String(customerMobile || '').replace(/\D/g, '');
+        const normCustomer = cleanCustomer.length === 10 ? `91${cleanCustomer}` : cleanCustomer;
+
+        // Send exactly ONE alert to Admin
+        if (normTarget) {
+            await sendGreenApiMessage(normTarget, messageText);
+        }
+
+        // Send confirmation to Customer ONLY if different from admin
+        if (normCustomer && normCustomer !== 'N/A' && normCustomer !== normTarget) {
+            await sendGreenApiMessage(normCustomer, messageText);
         }
 
         return { success: true };

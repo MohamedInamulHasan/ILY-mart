@@ -122,7 +122,9 @@ const EditAddress = () => {
                     const next = { ...prev, location: result.mapsLink };
                     // Only autofill address fields if genuine GPS (not IP fallback) and user has not typed them
                     if (!result.isIPFallback && result.addressDetails) {
-                        if (result.addressDetails.street && !prev.street) {
+                        const isRealStreet = result.addressDetails.street && 
+                            result.addressDetails.street.trim().toLowerCase() !== (result.addressDetails.city || '').trim().toLowerCase();
+                        if (isRealStreet && !prev.street) {
                             next.street = result.addressDetails.street;
                         }
                         if (result.addressDetails.city && !prev.city) {
@@ -163,16 +165,11 @@ const EditAddress = () => {
         if (!formData.city || !formData.city.trim()) {
             errors.city = true;
         }
-        if (!formData.location) {
-            errors.location = true;
-            setShowLocationError(true);
-        }
 
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
             // Scroll to first error
-            if (errors.location) locationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            else if (errors.fullName) fullNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (errors.fullName) fullNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             else if (errors.mobile) mobileRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             else if (errors.street) streetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             else if (errors.city) cityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -275,7 +272,6 @@ const EditAddress = () => {
                     <div ref={locationRef}>
                         <div className="flex items-center justify-between mb-2 px-1">
                             <span className="text-[11px] font-bold text-gray-500 dark:text-gray-300 uppercase tracking-widest">{t('GPS Location')}</span>
-                            <span className="text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full">* {t('Required')}</span>
                         </div>
 
                         <button
@@ -368,12 +364,7 @@ const EditAddress = () => {
                             }`} />
                         </button>
 
-                        {fieldErrors.location && (
-                            <div className="relative mt-2 bg-white dark:bg-gray-855 border border-red-300 dark:border-red-600 rounded-lg px-3 py-2 text-red-600 dark:text-red-400 text-[13px] font-medium flex items-center gap-2.5 w-fit shadow-md z-10 animate-in fade-in">
-                                <div className="w-5 h-5 rounded bg-red-600 text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
-                                <span>{t('GPS Location is required')}</span>
-                            </div>
-                        )}
+
 
                         {/* Remove link when attached */}
                         {formData.location && !isDetecting && (
