@@ -8,6 +8,7 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [loadedImages, setLoadedImages] = useState({});
     const scrollRef = useRef(null);
 
     // Auto-slide logic
@@ -85,9 +86,32 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
 
     if (isLoading) {
         return (
-            <div className="px-4 py-2">
-                <div className="w-full h-44 md:h-64 lg:h-80 xl:h-[400px] bg-gray-200 dark:bg-gray-800 rounded-3xl animate-pulse"></div>
-            </div>
+            <section className="px-4 py-2 relative">
+                {/* Blinkit-style Ads Card Skeleton Loader */}
+                <div className="relative rounded-3xl overflow-hidden shadow-sm h-44 md:h-64 lg:h-80 xl:h-[400px] blinkit-shimmer border border-gray-100 dark:border-gray-800/60">
+                    <div className="absolute inset-0 p-5 md:p-8 flex flex-col justify-between pointer-events-none z-10">
+                        {/* Top: Store Tag & Offer Badge */}
+                        <div className="flex items-center justify-between">
+                            <div className="h-5 w-24 rounded-full bg-white/80 dark:bg-gray-700/80 shadow-sm" />
+                            <div className="h-5 w-16 rounded-full bg-white/50 dark:bg-gray-700/50" />
+                        </div>
+
+                        {/* Center: Headline & CTA Button */}
+                        <div className="space-y-2.5 max-w-[75%]">
+                            <div className="h-6 md:h-8 w-4/5 rounded-xl bg-white/80 dark:bg-gray-700/80 shadow-sm" />
+                            <div className="h-3.5 md:h-5 w-3/5 rounded-lg bg-white/50 dark:bg-gray-700/50" />
+                            <div className="h-8 md:h-10 w-28 md:w-36 rounded-full bg-white/90 dark:bg-gray-700/90 mt-3 shadow-sm" />
+                        </div>
+
+                        {/* Bottom: Carousel Pagination Dots Skeleton */}
+                        <div className="flex justify-center gap-1.5 self-center mt-auto pt-2">
+                            <div className="w-4 h-1.5 rounded-full bg-white/90 dark:bg-gray-500" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/40 dark:bg-gray-600" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/40 dark:bg-gray-600" />
+                        </div>
+                    </div>
+                </div>
+            </section>
         );
     }
 
@@ -105,17 +129,29 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                     className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar h-full w-full touch-pan-x"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {slides.map((slide, index) => (
+                    {slides.map((slide, index) => {
+                        const slideKey = slide._id || slide.id || index;
+                        const isLoaded = !!loadedImages[slideKey];
+                        return (
                         <div
-                            key={slide._id || slide.id || index}
+                            key={slideKey}
                             onClick={() => handleBuy(null, slide)}
-                            className="w-full h-full flex-shrink-0 snap-center cursor-pointer relative group"
+                            className="w-full h-full flex-shrink-0 snap-center cursor-pointer relative group bg-gray-100 dark:bg-gray-800 overflow-hidden"
                         >
+                            {/* Blinkit shimmer placeholder until image finishes downloading */}
+                            {!isLoaded && (
+                                <div className="absolute inset-0 blinkit-shimmer z-0" />
+                            )}
                             <img
                                 src={slide.image || `${API_BASE_URL}/ads/${slide._id || slide.id}/image`}
                                 alt={slide.title}
-                                className="w-full h-full object-cover pointer-events-none"
-                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://atlas-content-cdn.pixelbin.io/ast/feed_v2/static_assets/common/vegetable_basket.png'; }}
+                                onLoad={() => setLoadedImages(prev => ({ ...prev, [slideKey]: true }))}
+                                className={`w-full h-full object-cover pointer-events-none transition-opacity duration-300 relative z-[1] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                onError={(e) => { 
+                                    e.target.onerror = null; 
+                                    e.target.src = 'https://atlas-content-cdn.pixelbin.io/ast/feed_v2/static_assets/common/vegetable_basket.png';
+                                    setLoadedImages(prev => ({ ...prev, [slideKey]: true }));
+                                }}
                             />
 
 
@@ -126,7 +162,7 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                                 </div>
                             )}
                         </div>
-                    ))}
+                    );})}
                 </div>
                 
                 {/* Dots indicator */}
