@@ -45,10 +45,10 @@ export const checkLocationPermission = async () => {
 };
 
 export const reverseGeocode = async (latitude, longitude) => {
-    // 1. Try Nominatim OpenStreetMap first (accurate road & street level detail)
+    // 1. Try Nominatim OpenStreetMap (Zepto-style road/building/area parsing)
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const timeoutId = setTimeout(() => controller.abort(), 4500);
         const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
             {
@@ -64,20 +64,31 @@ export const reverseGeocode = async (latitude, longitude) => {
             const data = await res.json();
             if (data && data.address) {
                 const addr = data.address;
-                const roadPart = [addr.house_number, addr.road || addr.street || addr.pedestrian || addr.footway || addr.path].filter(Boolean).join(' ').trim();
-                const areaPart = (addr.neighbourhood || addr.suburb || addr.residential || addr.hamlet || addr.quarter || '').trim();
-                const city = (addr.town || addr.city || addr.municipality || addr.village || addr.county || '').trim();
-                const zip = addr.postcode || '';
+                const building = (addr.house_number || addr.building || addr.flats || addr.office || '').trim();
+                const road = (addr.road || addr.street || addr.pedestrian || addr.footway || addr.path || addr.highway || addr.lane || '').trim();
+                const roadPart = [building, road].filter(Boolean).join(' ').trim();
 
-                // Extract genuine street: ONLY use road/area if distinct from city
-                let street = '';
-                if (roadPart) {
-                    street = [roadPart, areaPart].filter(Boolean).join(', ');
-                } else if (areaPart && areaPart.toLowerCase() !== city.toLowerCase()) {
-                    street = areaPart;
+                const areaPart = (addr.neighbourhood || addr.suburb || addr.residential || addr.quarter || addr.subdivision || addr.colony || addr.sector || addr.hamlet || addr.village || '').trim();
+                const city = (addr.town || addr.city || addr.municipality || addr.city_district || addr.county || '').trim();
+                const zip = (addr.postcode || '').trim();
+
+                // Zepto style: combine house/road + area (never duplicate city into street)
+                const streetParts = [];
+                if (roadPart) streetParts.push(roadPart);
+                if (areaPart && areaPart.toLowerCase() !== city.toLowerCase() && !roadPart.toLowerCase().includes(areaPart.toLowerCase())) {
+                    streetParts.push(areaPart);
+                }
+                let street = streetParts.join(', ').trim();
+
+                // Fallback: If no road or area, extract first segment from display_name if distinct from city
+                if (!street && data.display_name) {
+                    const firstSeg = data.display_name.split(',')[0]?.trim();
+                    if (firstSeg && firstSeg.toLowerCase() !== city.toLowerCase()) {
+                        street = firstSeg;
+                    }
                 }
 
-                // Never return city as street
+                // Strict sanity check: Street can NEVER be identical to city
                 if (street.toLowerCase() === city.toLowerCase()) {
                     street = '';
                 }
@@ -160,9 +171,9 @@ export const getCurrentLocation = async () => {
         const buildResult = async (lat, lon, extra = {}) => {
         let addressDetails = null;
         try {
-            // Race reverseGeocode with a 1.5s maximum timeout so location NEVER hangs
+            // Race reverseGeocode with a 4.5s timeout for complete Nominatim resolution
             const geocodePromise = reverseGeocode(lat, lon);
-            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 1500));
+            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 4500));
             addressDetails = await Promise.race([geocodePromise, timeoutPromise]);
         } catch (e) {
             console.warn('Failed to reverse geocode in getCurrentLocation', e);
@@ -171,7 +182,7 @@ export const getCurrentLocation = async () => {
         // If reverse geocoding didn't get details but an initialCity was provided by IP
         if (!addressDetails && extra.initialCity) {
             addressDetails = {
-                street: extra.initialCity,
+                street: '', // NEVER fake city as street
                 city: extra.initialCity,
                 zip: extra.initialZip || '',
                 fullAddress: extra.initialCity
@@ -277,16 +288,16 @@ export const getCurrentLocation = async () => {
                         navigator.geolocation.getCurrentPosition(
                             pos => done(resolve, pos),
                             e => done(reject, e),
-                            { enableHighAccuracy: false, timeout: 2000, maximumAge: 60000 }
+                            { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
                         );
                     },
-                    { enableHighAccuracy: true, timeout: 2000, maximumAge: 60000 }
+                    { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 }
                 );
             });
 
-            // Hard 3.5s timeout so GPS acquisition NEVER hangs indefinitely
+            // Hard 8.5s timeout so real GPS has time to lock onto satellites
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('GPS_TIMEOUT')), 3500)
+                setTimeout(() => reject(new Error('GPS_TIMEOUT')), 8500)
             );
 
             const position = await Promise.race([getBrowserPosition(), timeoutPromise]);

@@ -144,15 +144,19 @@ const Checkout = () => {
                 const userDisplayName = user.fullName || user.name || '';
                 const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
 
+                let initAddress = (isAddressObject ? addressObj.street : user.address) || prev.address;
+                let initCity = (isAddressObject ? addressObj.city : user.city) || prev.city;
+                if (initAddress && initCity && initAddress.trim().toLowerCase() === initCity.trim().toLowerCase()) {
+                    initAddress = '';
+                }
                 setFormData(prev => ({
                     ...prev,
                     fullName: isGuestName ? '' : userDisplayName,
                     mobile: user.mobile || user.phone || prev.mobile,
-                    // If user.address is an object, use .street, otherwise use it directly if string
-                    address: (isAddressObject ? addressObj.street : user.address) || prev.address,
-                    city: (isAddressObject ? addressObj.city : user.city) || prev.city,
-                    zip: '630702', // Default if missing
-                    location: user.location || prev.location // Auto-fill saved location from profile
+                    address: initAddress,
+                    city: initCity,
+                    zip: '630702',
+                    location: user.location || prev.location
                 }));
 
                 // Auto-switch to card view if address exists
@@ -473,18 +477,19 @@ const Checkout = () => {
                                                     if (result && result.success) {
                                                         setFormData(prev => {
                                                             const next = { ...prev, location: result.mapsLink };
-                                                            if (!result.isIPFallback && result.addressDetails) {
-                                                                const isRealStreet = result.addressDetails.street && 
-                                                                    result.addressDetails.street.trim().toLowerCase() !== (result.addressDetails.city || '').trim().toLowerCase();
-                                                                if (isRealStreet && !prev.address) {
+                                                            if (result.addressDetails) {
+                                                                if (result.addressDetails.street) {
                                                                     next.address = result.addressDetails.street;
                                                                 }
-                                                                if (result.addressDetails.city && !prev.city) {
+                                                                if (result.addressDetails.city) {
                                                                     next.city = result.addressDetails.city;
                                                                 }
-                                                                if (result.addressDetails.zip && !prev.zip) {
+                                                                if (result.addressDetails.zip) {
                                                                     next.zip = result.addressDetails.zip;
                                                                 }
+                                                            }
+                                                            if (next.address && next.city && next.address.trim().toLowerCase() === next.city.trim().toLowerCase()) {
+                                                                next.address = '';
                                                             }
                                                             return next;
                                                         });

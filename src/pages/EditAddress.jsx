@@ -86,12 +86,18 @@ const EditAddress = () => {
         if (user) {
             const userDisplayName = user.fullName || user.name || '';
             const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
+            let loadedStreet = user.address?.street || '';
+            let loadedCity = user.address?.city || '';
+            // If street was erroneously saved identical to city (e.g. Chennai / Chennai), clear it
+            if (loadedStreet && loadedCity && loadedStreet.trim().toLowerCase() === loadedCity.trim().toLowerCase()) {
+                loadedStreet = '';
+            }
             setFormData({
                 fullName: isGuestName ? '' : userDisplayName,
                 mobile: user.mobile || user.phone || '',
-                street: user.address?.street || '',
-                city: user.address?.city || '',
-                zip: '630702',
+                street: loadedStreet,
+                city: loadedCity,
+                zip: user.address?.zip || '630702',
                 location: user.location || ''
             });
         }
@@ -120,19 +126,20 @@ const EditAddress = () => {
             if (result.success) {
                 setFormData(prev => {
                     const next = { ...prev, location: result.mapsLink };
-                    // Only autofill address fields if genuine GPS (not IP fallback) and user has not typed them
-                    if (!result.isIPFallback && result.addressDetails) {
-                        const isRealStreet = result.addressDetails.street &&
-                            result.addressDetails.street.trim().toLowerCase() !== (result.addressDetails.city || '').trim().toLowerCase();
-                        if (isRealStreet && !prev.street) {
+                    if (result.addressDetails) {
+                        if (result.addressDetails.street) {
                             next.street = result.addressDetails.street;
                         }
-                        if (result.addressDetails.city && !prev.city) {
+                        if (result.addressDetails.city) {
                             next.city = result.addressDetails.city;
                         }
-                        if (result.addressDetails.zip && !prev.zip) {
+                        if (result.addressDetails.zip) {
                             next.zip = result.addressDetails.zip;
                         }
+                    }
+                    // Strict sanity check: Street can NEVER equal city
+                    if (next.street && next.city && next.street.trim().toLowerCase() === next.city.trim().toLowerCase()) {
+                        next.street = '';
                     }
                     return next;
                 });
@@ -143,6 +150,12 @@ const EditAddress = () => {
                     ...(result.addressDetails?.city ? { city: false } : {})
                 }));
                 setShowLocationError(false);
+
+                // Zepto-style confirmation message
+                const detectedParts = [result.addressDetails?.street, result.addressDetails?.city].filter(Boolean);
+                if (detectedParts.length > 0) {
+                    setMessage({ type: 'success', text: `📍 Location detected: ${detectedParts.join(', ')}` });
+                }
             } else {
                 console.error('📍 EditAddress: Detection failed:', result.message);
                 setMessage({ type: 'error', text: t(result.message) });
