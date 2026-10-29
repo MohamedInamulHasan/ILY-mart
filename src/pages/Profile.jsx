@@ -197,7 +197,7 @@ const Profile = () => {
                                         {user?.name || 'Guest User'}
                                     </h2>
                                     {Number(user?.coins || 0) > 0 && (
-                                        <CartoonCoinBadge count={user?.coins} size={22} />
+                                        <CartoonCoin count={user?.coins} size={28} />
                                     )}
                                 </div>
                                 {/* Mobile number */}

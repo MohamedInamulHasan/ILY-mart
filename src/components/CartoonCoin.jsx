@@ -96,21 +96,38 @@ export const CartoonCoin = ({
 
             {/* 5. Center Motif: Either Stamped Number or Chubby Cartoon Star */}
             {count !== null && count !== undefined ? (
-                <text 
-                    x="50" 
-                    y={typeof count === 'string' && count.length > 2 ? '54' : '56'} 
-                    textAnchor="middle" 
-                    fontSize={typeof count === 'number' && count > 99 ? '22' : typeof count === 'number' && count > 9 ? '26' : '30'} 
-                    fontWeight="900" 
-                    fontFamily="system-ui, -apple-system, sans-serif"
-                    fill="#78350F" 
-                    stroke="#FFFBEB"
-                    strokeWidth="1.5"
-                    paintOrder="stroke fill"
-                    style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' }}
-                >
-                    {count}
-                </text>
+                <g>
+                    {/* Bottom 3D bevel / golden edge */}
+                    <text 
+                        x="50" 
+                        y="49.5" 
+                        textAnchor="middle" 
+                        dominantBaseline="central"
+                        fontSize={Number(count) > 99 ? '24' : Number(count) > 9 ? '30' : '36'} 
+                        fontWeight="900" 
+                        fontFamily="'Arial Rounded MT Bold', 'Fredoka', 'Nunito', 'Segoe UI', system-ui, sans-serif"
+                        fill="#FFFBEB"
+                        opacity="0.85"
+                    >
+                        {count}
+                    </text>
+                    {/* Chunky Cartoon Number */}
+                    <text 
+                        x="50" 
+                        y="48" 
+                        textAnchor="middle" 
+                        dominantBaseline="central"
+                        fontSize={Number(count) > 99 ? '24' : Number(count) > 9 ? '30' : '36'} 
+                        fontWeight="900" 
+                        fontFamily="'Arial Rounded MT Bold', 'Fredoka', 'Nunito', 'Segoe UI', system-ui, sans-serif"
+                        fill="#542A06" 
+                        stroke="#3A1700"
+                        strokeWidth="1.2"
+                        paintOrder="stroke fill"
+                    >
+                        {count}
+                    </text>
+                </g>
             ) : (
                 /* Chubby 5-pointed Cartoon Star */
                 <polygon 
@@ -180,3 +197,4 @@ export const CartoonCoinBadge = ({
 };
 
 export default CartoonCoin;
+
