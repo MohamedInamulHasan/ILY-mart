@@ -1,3 +1,4 @@
+import { CartoonCoin } from '../components/CartoonCoin';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, Truck, CheckCircle, Clock, MapPin, CreditCard, RotateCcw, Store, ChevronLeft } from 'lucide-react';
@@ -474,8 +475,8 @@ const OrderDetails = () => {
                                 ) : (
                                     <div className="text-right">
                                         <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">{t('FREE')}</span>
-                                        <p className="text-[10px] text-yellow-600 dark:text-yellow-500 font-medium flex items-center justify-end gap-1">
-                                            <span>🪙</span> {t('Coin Applied')}
+                                        <p className="text-[11px] text-amber-700 dark:text-amber-400 font-bold flex items-center justify-end gap-1.5">
+                                            <CartoonCoin size={17} /> <span>{t('Coin Applied')}</span>
                                         </p>
                                     </div>
                                 )

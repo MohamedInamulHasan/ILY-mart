@@ -1,3 +1,4 @@
+import { CartoonCoin } from '../components/CartoonCoin';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Trophy, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -260,7 +261,7 @@ const Games = () => {
                                 <div className="mt-5 flex flex-col items-center gap-1.5">
                                     <div className="flex items-center gap-1.5">
                                         <span className="w-1.5 h-1.5 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] animate-pulse"></span>
-                                        <span className="text-[11px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-wider">Top players win 1 Coin daily</span>
+                                        <span className="text-[11px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-wider flex items-center gap-1.5"><CartoonCoin size={18} /> Top players win 1 Coin daily</span>
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className="text-[10px] text-gray-400 uppercase tracking-widest">Reward given at 5:00 PM IST daily</span>

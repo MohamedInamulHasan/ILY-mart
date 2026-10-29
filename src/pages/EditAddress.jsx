@@ -102,13 +102,13 @@ const EditAddress = () => {
         if ((name === 'mobile' || name === 'zip') && !/^\d*$/.test(value)) return;
         if (name === 'mobile' && value.length > 10) return;
         if (name === 'zip' && value.length > 6) return;
-        
+
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleDetectLocation = async () => {
         if (isDetecting) return;
-        
+
         setIsDetecting(true);
         setMessage({ type: '', text: '' });
         console.log('📍 EditAddress: Starting location detection...');
@@ -122,7 +122,7 @@ const EditAddress = () => {
                     const next = { ...prev, location: result.mapsLink };
                     // Only autofill address fields if genuine GPS (not IP fallback) and user has not typed them
                     if (!result.isIPFallback && result.addressDetails) {
-                        const isRealStreet = result.addressDetails.street && 
+                        const isRealStreet = result.addressDetails.street &&
                             result.addressDetails.street.trim().toLowerCase() !== (result.addressDetails.city || '').trim().toLowerCase();
                         if (isRealStreet && !prev.street) {
                             next.street = result.addressDetails.street;
@@ -157,7 +157,7 @@ const EditAddress = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         const errors = {};
         if (!formData.fullName) errors.fullName = true;
         if (!formData.mobile) errors.mobile = true;
@@ -243,8 +243,8 @@ const EditAddress = () => {
                 <div className="relative z-10">
                     <div className="max-w-7xl mx-auto px-2 relative min-h-[42px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                            <button 
-                                onClick={() => navigate(-1)} 
+                            <button
+                                onClick={() => navigate(-1)}
                                 className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-900 dark:text-white transition-transform active:scale-95 border border-gray-100/50 dark:border-gray-700/50"
                             >
                                 <ArrowLeft size={22} />
@@ -272,19 +272,19 @@ const EditAddress = () => {
                     <div ref={locationRef}>
                         <div className="flex items-center justify-between mb-2 px-1">
                             <span className="text-[11px] font-bold text-gray-500 dark:text-gray-300 uppercase tracking-widest">{t('GPS Location')}</span>
+
                         </div>
 
                         <button
                             type="button"
                             onClick={handleDetectLocation}
                             disabled={isDetecting}
-                            className={`w-full border rounded-2xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] ${
-                                isDetecting
+                            className={`w-full border rounded-2xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] ${isDetecting
                                     ? 'bg-black/70 dark:bg-black/70 border border-black/30 text-white backdrop-blur-sm shadow-md'
                                     : formData.location
-                                    ? 'bg-black dark:bg-black border-black text-white shadow-md'
-                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                            }`}
+                                        ? 'bg-black dark:bg-black border-black text-white shadow-md'
+                                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
+                                }`}
                         >
                             {/* Icon Container: Round with low opacity white color */}
                             <div className="relative flex-shrink-0 flex items-center justify-center w-11 h-11">
@@ -338,33 +338,28 @@ const EditAddress = () => {
 
                             {/* Text */}
                             <div className="flex-1 text-left min-w-0">
-                                <p className={`text-[13px] font-bold truncate ${
-                                    isDetecting || formData.location ? 'text-white' : 'text-gray-800 dark:text-gray-200'
-                                }`}>
-                                    {isDetecting 
-                                        ? t('Finding location...') 
-                                        : formData.location 
-                                        ? 'GPS Attached' 
-                                        : t('Tap to attach GPS location')}
+                                <p className={`text-[13px] font-bold truncate ${isDetecting || formData.location ? 'text-white' : 'text-gray-800 dark:text-gray-200'
+                                    }`}>
+                                    {isDetecting
+                                        ? t('Finding location...')
+                                        : formData.location
+                                            ? 'GPS Attached'
+                                            : t('Tap to attach GPS location')}
                                 </p>
-                                <p className={`text-[11px] truncate ${
-                                    isDetecting || formData.location ? 'text-white/80' : 'text-gray-400'
-                                }`}>
-                                    {isDetecting 
-                                        ? t('Accessing GPS coordinates...') 
-                                        : formData.location 
-                                        ? t('Tap to update location') 
-                                        : t('Helps us deliver faster')}
+                                <p className={`text-[11px] truncate ${isDetecting || formData.location ? 'text-white/80' : 'text-gray-400'
+                                    }`}>
+                                    {isDetecting
+                                        ? t('Accessing GPS coordinates...')
+                                        : formData.location
+                                            ? t('Tap to update location')
+                                            : t('Helps us deliver faster')}
                                 </p>
                             </div>
 
                             {/* Arrow */}
-                            <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
-                                isDetecting || formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
-                            }`} />
+                            <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${isDetecting || formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
+                                }`} />
                         </button>
-
-
 
                         {/* Remove link when attached */}
                         {formData.location && !isDetecting && (
@@ -387,7 +382,7 @@ const EditAddress = () => {
                                 type="text"
                                 name="fullName"
                                 value={formData.fullName}
-                                onChange={e => { handleChange(e); setFieldErrors(p => ({...p, fullName: false})); }}
+                                onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, fullName: false })); }}
                                 placeholder="Enter full name"
                                 className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
                             />
@@ -407,7 +402,7 @@ const EditAddress = () => {
                                 type="tel"
                                 name="mobile"
                                 value={formData.mobile}
-                                onChange={e => { handleChange(e); setFieldErrors(p => ({...p, mobile: false})); }}
+                                onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, mobile: false })); }}
                                 placeholder="10-digit mobile number"
                                 className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
                             />
@@ -427,7 +422,7 @@ const EditAddress = () => {
                                 name="street"
                                 rows="3"
                                 value={formData.street}
-                                onChange={e => { handleChange(e); setFieldErrors(p => ({...p, street: false})); }}
+                                onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, street: false })); }}
                                 placeholder="House no, Street name, Landmark"
                                 className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm resize-none shadow-none"
                             />
@@ -475,7 +470,7 @@ const EditAddress = () => {
                             </div>
                         </div>
 
-                    <div className="pt-4">
+                        <div className="pt-4">
                             <button
                                 type="submit"
                                 className="w-full bg-black text-white py-4 rounded-full font-bold text-[15px] active:scale-[0.98] transition-all"
@@ -491,7 +486,7 @@ const EditAddress = () => {
             <AnimatePresence>
                 {showSecurityModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
@@ -504,7 +499,7 @@ const EditAddress = () => {
                                 {language === 'ta' ? 'பாதுகாப்பு சரிபார்ப்பு' : 'Security Verification'}
                             </h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
-                                {language === 'ta' 
+                                {language === 'ta'
                                     ? '9500171980 எண்ணிற்கு முகவரியை மாற்ற கடவுச்சொல்லை உள்ளிடவும்.'
                                     : 'Security verification required for 9500171980 to add/update address.'}
                             </p>

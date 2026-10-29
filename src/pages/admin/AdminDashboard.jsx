@@ -1,3 +1,4 @@
+import { CartoonCoin } from '../../components/CartoonCoin';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -3101,8 +3102,9 @@ const UserManagement = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-2 justify-end items-center">
-                                                    <div className="inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium border border-yellow-200 dark:border-yellow-700 mr-2">
-                                                        <span className="mr-1">🪙</span> {user.coins || 0}
+                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 shadow-sm mr-2">
+                                                        <CartoonCoin size={18} />
+                                                        <span className="font-extrabold text-amber-900 dark:text-amber-300 text-xs">{user.coins || 0}</span>
                                                     </div>
                                                     <button
                                                         onClick={() => handleEdit(user)}

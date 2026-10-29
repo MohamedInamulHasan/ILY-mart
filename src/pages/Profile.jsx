@@ -15,6 +15,7 @@ import { useUserProfile, useUpdateProfile } from '../hooks/queries/useUsers';
 import { useData } from '../context/DataContext';
 import { useOrders } from '../hooks/queries/useOrders';
 import LogoutModal from '../components/LogoutModal';
+import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
 import api from '../utils/api';
 
 const MenuLink = ({ icon, title, to, onClick, isRed = false }) => {
@@ -196,11 +197,7 @@ const Profile = () => {
                                         {user?.name || 'Guest User'}
                                     </h2>
                                     {Number(user?.coins || 0) > 0 && (
-                                        <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] border border-[#AA8A2E] flex items-center justify-center shadow-sm">
-                                            <span className="text-[10px] font-black text-[#5C4033] leading-none">
-                                                {user?.coins}
-                                            </span>
-                                        </div>
+                                        <CartoonCoinBadge count={user?.coins} size={22} />
                                     )}
                                 </div>
                                 {/* Mobile number */}
