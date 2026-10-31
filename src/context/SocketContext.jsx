@@ -37,6 +37,18 @@ export const SocketProvider = ({ children }) => {
         newSocket.on('system:maintenance', (status) => {
             console.log('⚠️ Maintenance mode update:', status);
             setIsMaintenance(!!status);
+            window.dispatchEvent(new CustomEvent('settings:sync', { detail: { maintenanceMode: !!status } }));
+        });
+
+        newSocket.on('system:maintenance_message', (msg) => {
+            console.log('⚠️ Maintenance message update:', msg);
+            window.dispatchEvent(new CustomEvent('settings:sync', { detail: { maintenanceMessage: msg } }));
+        });
+
+        newSocket.on('settings:updated', (setting) => {
+            if (setting?.key) {
+                window.dispatchEvent(new CustomEvent('settings:sync', { detail: { [setting.key]: setting.value } }));
+            }
         });
 
         // Data Update Events

@@ -896,6 +896,22 @@ export const DataProvider = ({ children }) => {
     useEffect(() => {
         fetchSavedProducts();
         fetchSettings();
+
+        const handleSettingsSync = (e) => {
+            const detail = e.detail;
+            if (!detail) return;
+            setSettings(prev => {
+                const next = { ...prev };
+                if (detail.maintenanceMode !== undefined) next.maintenanceMode = detail.maintenanceMode;
+                if (detail.maintenance_mode !== undefined) next.maintenanceMode = detail.maintenance_mode;
+                if (detail.maintenanceMessage !== undefined) next.maintenanceMessage = detail.maintenanceMessage;
+                if (detail.maintenance_message !== undefined) next.maintenanceMessage = detail.maintenance_message;
+                return next;
+            });
+        };
+
+        window.addEventListener('settings:sync', handleSettingsSync);
+        return () => window.removeEventListener('settings:sync', handleSettingsSync);
     }, []);
 
     // Settings Management

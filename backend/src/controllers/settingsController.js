@@ -95,9 +95,12 @@ export const updateSettings = async (req, res) => {
         // Emit real-time event
         getIO().emit('settings:updated', setting);
         
-        // Specifically for maintenance mode
+        // Specifically for maintenance mode & message
         if (key === 'maintenance_mode') {
             getIO().emit('system:maintenance', value);
+        }
+        if (key === 'maintenance_message') {
+            getIO().emit('system:maintenance_message', value);
         }
 
         res.json({ success: true, data: setting });

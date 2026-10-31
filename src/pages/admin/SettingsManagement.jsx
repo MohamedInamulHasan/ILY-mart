@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatDeliveryRange } from '../../utils/storeHelpers';
 import { apiService } from '../../utils/api';
+import MaintenanceScreen from '../../components/MaintenanceScreen';
 
 const SettingsManagement = () => {
     const { settings, updateDeliverySettings, updateMaintenanceMode, updateDeliveryTimingType, updateMaintenanceMessage } = useData();
@@ -43,6 +44,8 @@ const SettingsManagement = () => {
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
     const [hasInitialized, setHasInitialized] = useState(false);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [savingMessage, setSavingMessage] = useState(false);
 
     useEffect(() => {
         if (settings && !hasInitialized) {
@@ -72,13 +75,37 @@ const SettingsManagement = () => {
         setLoading(true);
         try {
             const newState = !maintenanceMode;
-            await updateMaintenanceMode(newState);
+            // Save BOTH maintenance state and message together so what is typed is immediately applied
+            await Promise.all([
+                updateMaintenanceMode(newState),
+                updateMaintenanceMessage(maintenanceMessage)
+            ]);
             setMaintenanceMode(newState);
-            setMessage({ type: 'success', text: t(`Store is now ${newState ? 'CLOSED (Maintenance)' : 'OPEN & LIVE'}`) });
+            setMessage({
+                type: 'success',
+                text: newState
+                    ? t('Store is now CLOSED (Maintenance Mode Active). Customers see your message.')
+                    : t('Store is now OPEN & LIVE taking orders!')
+            });
         } catch (error) {
-            setMessage({ type: 'error', text: t('Failed to update status.') });
+            console.error('Error toggling maintenance mode:', error);
+            setMessage({ type: 'error', text: t('Failed to update maintenance status.') });
         } finally {
             setLoading(false);
+            setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+        }
+    };
+
+    const handleSaveMaintenanceMessage = async () => {
+        setSavingMessage(true);
+        try {
+            await updateMaintenanceMessage(maintenanceMessage);
+            setMessage({ type: 'success', text: t('Maintenance message updated successfully!') });
+        } catch (error) {
+            console.error('Error updating maintenance message:', error);
+            setMessage({ type: 'error', text: t('Failed to update maintenance message.') });
+        } finally {
+            setSavingMessage(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         }
     };
@@ -110,6 +137,7 @@ const SettingsManagement = () => {
             await Promise.all([
                 updateDeliverySettings(allowedSlots),
                 updateDeliveryTimingType(deliveryTimingMode),
+                updateMaintenanceMode(maintenanceMode),
                 updateMaintenanceMessage(maintenanceMessage)
             ]);
             setMessage({ type: 'success', text: t('Settings saved instantly!') });
@@ -191,27 +219,72 @@ const SettingsManagement = () => {
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={toggleMaintenanceMode}
-                        disabled={loading}
-                        className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 ${
-                            maintenanceMode ? 'bg-amber-100 text-amber-900 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200'
-                        }`}
-                    >
-                        {maintenanceMode ? t('Turn Online') : t('Turn Maintenance On')}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowPreviewModal(true)}
+                            className="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors flex items-center gap-1.5"
+                            title={t('Preview customer view')}
+                        >
+                            <Eye size={16} />
+                            <span>{t('Preview')}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={toggleMaintenanceMode}
+                            disabled={loading}
+                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-2 shadow-sm ${
+                                maintenanceMode
+                                    ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                            }`}
+                        >
+                            {loading && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                            <span>{maintenanceMode ? t('Turn Online (Open Store)') : t('Turn Maintenance On')}</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div>
                     <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">{t('Maintenance Message')}</label>
-                    <input
-                        type="text"
-                        value={maintenanceMessage}
-                        onChange={(e) => setMaintenanceMessage(e.target.value)}
-                        placeholder={t('e.g., We are closed for maintenance. Reopening at 5 PM.')}
-                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2E5A2E]"
-                    />
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={maintenanceMessage}
+                            onChange={(e) => setMaintenanceMessage(e.target.value)}
+                            placeholder={t('e.g., We are closed for maintenance. Reopening at 5 PM.')}
+                            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2E5A2E]"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleSaveMaintenanceMessage}
+                            disabled={savingMessage}
+                            className="px-4 py-3 bg-[#2E5A2E] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#1a3d1a] transition-all flex items-center gap-1.5 disabled:opacity-50 shrink-0 shadow-sm"
+                        >
+                            {savingMessage ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={15} />}
+                            <span>{t('Save Message')}</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Helpful status note for Admin */}
+                <div className={`p-3.5 rounded-2xl flex items-start gap-2.5 text-xs ${
+                    maintenanceMode 
+                        ? 'bg-amber-50 text-amber-900 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-800' 
+                        : 'bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-200 dark:border-emerald-800'
+                }`}>
+                    <AlertCircle size={16} className={`shrink-0 mt-0.5 ${maintenanceMode ? 'text-amber-600' : 'text-emerald-600'}`} />
+                    <div className="space-y-0.5">
+                        <p className="font-bold">
+                            {maintenanceMode 
+                                ? t('Maintenance Mode is CURRENTLY ACTIVE for regular customers and guests.') 
+                                : t('Store is currently ONLINE and accepting customer orders.')}
+                        </p>
+                        <p className="opacity-80">
+                            {t('Note: As an Admin, you can still navigate the entire app and admin panel without being blocked. Click "Preview" to see what customers see.')}
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -389,6 +462,15 @@ const SettingsManagement = () => {
                     <span>{t('Save All Settings')}</span>
                 </button>
             </div>
+
+            {/* Maintenance Screen Preview Modal */}
+            {showPreviewModal && (
+                <MaintenanceScreen
+                    isPreview={true}
+                    previewMessage={maintenanceMessage}
+                    onClose={() => setShowPreviewModal(false)}
+                />
+            )}
         </div>
     );
 };

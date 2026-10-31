@@ -36,6 +36,20 @@ export const createOrder = async (req, res, next) => {
             throw new Error('No order items');
         }
 
+        // Check maintenance mode
+        const Settings = (await import('../models/Settings.js')).default;
+        const maintenanceSetting = await Settings.findOne({ key: 'maintenance_mode' });
+        if (maintenanceSetting?.value === true) {
+            const isAdmin = req.user?.role === 'admin' || (Array.isArray(req.user?.role) && req.user?.role.includes('admin'));
+            if (!isAdmin) {
+                const messageSetting = await Settings.findOne({ key: 'maintenance_message' });
+                return res.status(503).json({
+                    success: false,
+                    message: messageSetting?.value || 'Store is currently under maintenance. Please try again later.'
+                });
+            }
+        }
+
         console.log('📦 Creating new order for user:', req.user?._id);
 
         // Check for bonus coins (Free Delivery)

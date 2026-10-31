@@ -1,18 +1,36 @@
 import React from 'react';
-import { AlertTriangle, Clock, Hammer } from 'lucide-react';
+import { AlertTriangle, Clock, Hammer, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
-const MaintenanceScreen = () => {
+const MaintenanceScreen = ({ isPreview = false, onClose, previewMessage }) => {
     const { settings } = useData();
-    const customMessage = settings?.maintenanceMessage;
+    const customMessage = previewMessage !== undefined ? previewMessage : settings?.maintenanceMessage;
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
             {/* Elegant Blurred Backdrop */}
-            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in" />
+            <div 
+                className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in"
+                onClick={isPreview ? onClose : undefined} 
+            />
 
             {/* Premium Dialog Box */}
             <div className="relative bg-white dark:bg-gray-900 w-full max-w-md rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 dark:border-gray-800 p-8 sm:p-10 transform animate-scale-up text-center overflow-hidden">
+                {isPreview && (
+                    <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+                        <span className="px-3 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
+                            Preview Mode
+                        </span>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                            aria-label="Close Preview"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
+                )}
                 
                 {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-amber-50 dark:from-amber-900/10 to-transparent pointer-events-none" />
