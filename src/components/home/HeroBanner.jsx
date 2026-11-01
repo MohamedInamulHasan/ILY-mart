@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ShoppingBag, Plus } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { API_BASE_URL } from '../../utils/api';
@@ -11,13 +12,13 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
     const [loadedImages, setLoadedImages] = useState({});
     const scrollRef = useRef(null);
 
-    // Auto-slide logic
+    // Auto-slide logic: auto scroll every 5 seconds
     useEffect(() => {
         if (slides.length <= 1) return;
         const timer = setInterval(() => {
             const nextSlide = (currentSlide + 1) % slides.length;
             scrollToSlide(nextSlide);
-        }, 60000);
+        }, 5000);
         return () => clearInterval(timer);
     }, [slides.length, currentSlide]);
 
@@ -87,30 +88,8 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
     if (isLoading) {
         return (
             <section className="px-4 py-2 relative">
-                {/* Blinkit-style Ads Card Skeleton Loader */}
-                <div className="relative rounded-3xl overflow-hidden shadow-sm h-44 md:h-64 lg:h-80 xl:h-[400px] blinkit-shimmer border border-gray-100 dark:border-gray-800/60">
-                    <div className="absolute inset-0 p-5 md:p-8 flex flex-col justify-between pointer-events-none z-10">
-                        {/* Top: Store Tag & Offer Badge */}
-                        <div className="flex items-center justify-between">
-                            <div className="h-5 w-24 rounded-full bg-white/80 dark:bg-gray-700/80 shadow-sm" />
-                            <div className="h-5 w-16 rounded-full bg-white/50 dark:bg-gray-700/50" />
-                        </div>
-
-                        {/* Center: Headline & CTA Button */}
-                        <div className="space-y-2.5 max-w-[75%]">
-                            <div className="h-6 md:h-8 w-4/5 rounded-xl bg-white/80 dark:bg-gray-700/80 shadow-sm" />
-                            <div className="h-3.5 md:h-5 w-3/5 rounded-lg bg-white/50 dark:bg-gray-700/50" />
-                            <div className="h-8 md:h-10 w-28 md:w-36 rounded-full bg-white/90 dark:bg-gray-700/90 mt-3 shadow-sm" />
-                        </div>
-
-                        {/* Bottom: Carousel Pagination Dots Skeleton */}
-                        <div className="flex justify-center gap-1.5 self-center mt-auto pt-2">
-                            <div className="w-4 h-1.5 rounded-full bg-white/90 dark:bg-gray-500" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/40 dark:bg-gray-600" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/40 dark:bg-gray-600" />
-                        </div>
-                    </div>
-                </div>
+                {/* Clean Ads Card Skeleton Loader without inner skeleton */}
+                <div className="relative rounded-3xl overflow-hidden shadow-sm h-44 md:h-64 lg:h-80 xl:h-[400px] blinkit-shimmer border border-gray-100 dark:border-gray-800/60" />
             </section>
         );
     }
@@ -155,9 +134,27 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                             />
 
 
+                            {/* Diagonal light sheen shine effect: top-left corner to bottom-right */}
+                            <motion.div
+                                className="absolute -top-[100%] -left-[100%] w-[250%] h-[250%] pointer-events-none z-[2]"
+                                style={{
+                                    background: 'linear-gradient(135deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.38) 50%, rgba(255,255,255,0) 65%)'
+                                }}
+                                animate={{
+                                    x: ['-70%', '70%'],
+                                    y: ['-70%', '70%']
+                                }}
+                                transition={{
+                                    repeat: Infinity,
+                                    repeatDelay: 1.2,
+                                    duration: 2.2,
+                                    ease: 'easeInOut'
+                                }}
+                            />
+
                             {/* Store Name Badge - Now Very Small */}
                             {slide.storeName && (
-                                <div className="absolute top-3 left-3 bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20">
+                                <div className="absolute top-3 left-3 bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 z-10">
                                     <p className="text-white text-[8px] font-bold tracking-widest uppercase opacity-80">{slide.storeName}</p>
                                 </div>
                             )}

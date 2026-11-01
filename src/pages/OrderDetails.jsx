@@ -197,7 +197,7 @@ const OrderDetails = () => {
     const getTimelineSteps = (status) => {
         const steps = [
             { id: 'Processing', label: 'Order Placed', icon: Package },
-            { id: 'Out for Delivery', id2: 'Shipped', label: 'Out for Delivery', icon: Truck },
+            { id: 'Out for Delivery', id2: 'Shipped', label: 'Accepted', icon: Truck },
             { id: 'Delivered', label: 'Delivered', icon: CheckCircle },
         ];
 

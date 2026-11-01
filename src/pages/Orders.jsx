@@ -66,25 +66,48 @@ const Orders = () => {
         return matchesTab;
     });
 
+    const getStatusText = (status) => {
+        if (status === 'Out for Delivery' || status === 'Shipped') {
+            return t('Accepted');
+        }
+        return t(status);
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
-            case 'Delivered': return 'text-[#2E5A2E] dark:text-[#CBF9B2] bg-green-50 dark:bg-[#CBF9B2]/10 border-green-100 dark:border-[#CBF9B2]/20';
+            case 'Delivered':
+            case 'Completed':
+                return 'bg-emerald-100 dark:bg-emerald-950/60 text-[#2E5A2E] dark:text-[#CBF9B2]';
             case 'Shipped':
-            case 'Out for Delivery': return 'text-[#0284c7] dark:text-[#38bdf8] bg-[#f0f9ff] dark:bg-blue-900/20 border-[#bae6fd] dark:border-blue-800';
-            case 'Processing': return 'text-[#b45309] dark:text-[#fbbf24] bg-[#fffbeb] dark:bg-amber-900/20 border-[#fde68a] dark:border-amber-800';
-            case 'Cancelled': return 'text-[#dc2626] dark:text-[#f87171] bg-[#fef2f2] dark:bg-red-900/20 border-[#fecaca] dark:border-red-800';
-            default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+            case 'Out for Delivery':
+            case 'Accepted':
+                return 'bg-sky-100 dark:bg-sky-950/60 text-[#0284c7] dark:text-[#38bdf8]';
+            case 'Processing':
+            case 'Pending':
+                return 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300';
+            case 'Cancelled':
+                return 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300';
+            default:
+                return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
         }
     };
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'Delivered': return <CheckCircle size={16} className="mr-1.5" />;
+            case 'Delivered':
+            case 'Completed':
+                return <CheckCircle size={14} className="mr-1 stroke-[2.5]" />;
             case 'Shipped':
-            case 'Out for Delivery': return <Truck size={16} className="mr-1.5" />;
-            case 'Processing': return <Clock size={16} className="mr-1.5" />;
-            case 'Cancelled': return <RotateCcw size={16} className="mr-1.5" />;
-            default: return null;
+            case 'Out for Delivery':
+            case 'Accepted':
+                return <Truck size={14} className="mr-1 stroke-[2.5]" />;
+            case 'Processing':
+            case 'Pending':
+                return <Clock size={14} className="mr-1 stroke-[2.5]" />;
+            case 'Cancelled':
+                return <RotateCcw size={14} className="mr-1 stroke-[2.5]" />;
+            default:
+                return null;
         }
     };
 
@@ -262,9 +285,9 @@ const Orders = () => {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 flex-shrink-0">
-                                                <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] md:text-xs font-medium border ${getStatusColor(order.status)}`}>
+                                                <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] md:text-xs font-bold border-0 shadow-none select-none ${getStatusColor(order.status)}`}>
                                                     {getStatusIcon(order.status)}
-                                                    <span className="ml-1">{t(order.status)}</span>
+                                                    <span className="font-bold">{getStatusText(order.status)}</span>
                                                 </div>
                                                 {!['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) && (
                                                     <button
