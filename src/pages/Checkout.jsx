@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
 import { getStoreName, calculateDeliveryCharge, formatDeliveryRange, getAvailableDeliverySlots } from '../utils/storeHelpers';
-import { ArrowLeft, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar } from 'lucide-react';
+import { ArrowLeft, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar, ChevronDown } from 'lucide-react';
 import { checkLocationPermission, requestLocationPermission, getCurrentLocation } from '../utils/locationHelpers';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -144,20 +144,22 @@ const Checkout = () => {
                 const userDisplayName = user.fullName || user.name || '';
                 const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
 
-                let initAddress = (isAddressObject ? addressObj.street : user.address) || prev.address;
-                let initCity = (isAddressObject ? addressObj.city : user.city) || prev.city;
-                if (initAddress && initCity && initAddress.trim().toLowerCase() === initCity.trim().toLowerCase()) {
-                    initAddress = '';
-                }
-                setFormData(prev => ({
-                    ...prev,
-                    fullName: isGuestName ? '' : userDisplayName,
-                    mobile: user.mobile || user.phone || prev.mobile,
-                    address: initAddress,
-                    city: initCity,
-                    zip: '630702',
-                    location: user.location || prev.location
-                }));
+                setFormData(prev => {
+                    let initAddress = (isAddressObject ? addressObj.street : user.address) || prev.address || '';
+                    let initCity = (isAddressObject ? addressObj.city : user.city) || prev.city || '';
+                    if (initAddress && initCity && initAddress.trim().toLowerCase() === initCity.trim().toLowerCase()) {
+                        initAddress = '';
+                    }
+                    return {
+                        ...prev,
+                        fullName: isGuestName ? '' : userDisplayName,
+                        mobile: user.mobile || user.phone || prev.mobile,
+                        address: initAddress,
+                        city: initCity,
+                        zip: '630702',
+                        location: user.location || prev.location
+                    };
+                });
 
                 // Auto-switch to card view if address exists
                 if (hasValidAddress) {
@@ -475,19 +477,15 @@ const Checkout = () => {
                                                     const result = await getCurrentLocation();
                                                     
                                                     if (result && result.success) {
+                                                        const resolvedStreet = result.addressDetails?.street || '';
+                                                        const resolvedCity = result.addressDetails?.city || 'Ilayangudi';
+                                                        const resolvedZip = result.addressDetails?.zip || '630702';
+
                                                         setFormData(prev => {
                                                             const next = { ...prev, location: result.mapsLink };
-                                                            if (result.addressDetails) {
-                                                                if (result.addressDetails.street) {
-                                                                    next.address = result.addressDetails.street;
-                                                                }
-                                                                if (result.addressDetails.city) {
-                                                                    next.city = result.addressDetails.city;
-                                                                }
-                                                                if (result.addressDetails.zip) {
-                                                                    next.zip = result.addressDetails.zip;
-                                                                }
-                                                            }
+                                                            if (resolvedStreet) next.address = resolvedStreet;
+                                                            if (resolvedCity) next.city = resolvedCity;
+                                                            if (resolvedZip) next.zip = resolvedZip;
                                                             if (next.address && next.city && next.address.trim().toLowerCase() === next.city.trim().toLowerCase()) {
                                                                 next.address = '';
                                                             }
@@ -496,8 +494,8 @@ const Checkout = () => {
                                                         setFieldErrors(prev => ({
                                                             ...prev,
                                                             location: false,
-                                                            ...(result.addressDetails?.street ? { address: false } : {}),
-                                                            ...(result.addressDetails?.city ? { city: false } : {})
+                                                            ...(resolvedStreet ? { address: false } : {}),
+                                                            ...(resolvedCity ? { city: false } : {})
                                                         }));
                                                     } else {
                                                         setLocationMessage({ show: true, type: 'error', text: t(result?.message || 'Unable to get location') });
@@ -574,7 +572,7 @@ const Checkout = () => {
                                                     {isLocationSearching 
                                                         ? t('Finding location...') 
                                                         : formData.location 
-                                                        ? 'GPS Attached' 
+                                                        ? (formData.address && formData.city ? t('GPS & Address Attached') : t('GPS Coordinates Attached'))
                                                         : t('Tap to attach GPS location')}
                                                 </p>
                                                 <p className={`text-[11px] truncate ${
@@ -583,7 +581,7 @@ const Checkout = () => {
                                                     {isLocationSearching 
                                                         ? t('Accessing GPS coordinates...') 
                                                         : formData.location 
-                                                        ? t('Tap to update location') 
+                                                        ? (formData.address && formData.city ? t('Tap to update location') : t('Enter street name & city below'))
                                                         : t('Helps us deliver faster')}
                                                 </p>
                                             </div>
@@ -636,7 +634,7 @@ const Checkout = () => {
                                         </div>
 
                                         <div className="md:col-span-2">
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('Full Address')}</label>
+                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('Street Name')}</label>
                                             <textarea
                                                 ref={addressRef}
                                                 name="address"
@@ -715,7 +713,7 @@ const Checkout = () => {
                             )}
                         </div>
 
-                        {/* Preferred Order Timing & Delivery Slot Selection - Next 4 Real-time Options */}
+                        {/* Preferred Order Timing & Delivery Slot Selection - Dropdown */}
                         {settings?.deliveryTimingType !== 'instant' && (
                             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3">
                                 <div className="flex items-center gap-2">
@@ -723,25 +721,28 @@ const Checkout = () => {
                                     <span className="font-bold text-xs text-gray-900 dark:text-white">{t('Delivery Timing')}</span>
                                 </div>
 
-                                {/* Next 4 Real-Time Available Time Slots */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    {availableDeliverySlots.map(slotId => {
-                                        const isSelected = selectedTimeSlot === slotId;
-                                        return (
-                                            <button
-                                                key={slotId}
-                                                type="button"
-                                                onClick={() => setSelectedTimeSlot(slotId)}
-                                                className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold transition-all text-center ${
-                                                    isSelected
-                                                        ? 'bg-[#2E5A2E] border-[#2E5A2E] text-white shadow-sm scale-[1.02]'
-                                                        : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#2E5A2E]'
-                                                }`}
-                                            >
-                                                {formatDeliveryRange(slotId)}
-                                            </button>
-                                        );
-                                    })}
+                                {/* Delivery Time Slot Dropdown */}
+                                <div className="relative">
+                                    <select
+                                        value={selectedTimeSlot || ''}
+                                        onChange={(e) => setSelectedTimeSlot(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-0 focus:border-[#2E5A2E] appearance-none cursor-pointer pr-10 transition-colors shadow-none outline-none"
+                                    >
+                                        {availableDeliverySlots && availableDeliverySlots.length > 0 ? (
+                                            availableDeliverySlots.map(slotId => (
+                                                <option key={slotId} value={slotId} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white py-2">
+                                                    {formatDeliveryRange(slotId)}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled className="bg-white dark:bg-gray-800 text-gray-400">
+                                                {t('No delivery slots available')}
+                                            </option>
+                                        )}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-500 dark:text-gray-400">
+                                        <ChevronDown size={18} />
+                                    </div>
                                 </div>
                             </div>
                         )}

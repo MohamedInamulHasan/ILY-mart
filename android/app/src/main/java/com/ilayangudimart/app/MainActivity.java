@@ -23,6 +23,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(FloatingOverlayPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Enable edge-to-edge display

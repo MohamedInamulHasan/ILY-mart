@@ -124,19 +124,15 @@ const EditAddress = () => {
             console.log('📍 EditAddress: Detection result:', result);
 
             if (result.success) {
+                const resolvedStreet = result.addressDetails?.street || '';
+                const resolvedCity = result.addressDetails?.city || 'Ilayangudi';
+                const resolvedZip = result.addressDetails?.zip || '630702';
+
                 setFormData(prev => {
                     const next = { ...prev, location: result.mapsLink };
-                    if (result.addressDetails) {
-                        if (result.addressDetails.street) {
-                            next.street = result.addressDetails.street;
-                        }
-                        if (result.addressDetails.city) {
-                            next.city = result.addressDetails.city;
-                        }
-                        if (result.addressDetails.zip) {
-                            next.zip = result.addressDetails.zip;
-                        }
-                    }
+                    if (resolvedStreet) next.street = resolvedStreet;
+                    if (resolvedCity) next.city = resolvedCity;
+                    if (resolvedZip) next.zip = resolvedZip;
                     // Strict sanity check: Street can NEVER equal city
                     if (next.street && next.city && next.street.trim().toLowerCase() === next.city.trim().toLowerCase()) {
                         next.street = '';
@@ -146,15 +142,17 @@ const EditAddress = () => {
                 setFieldErrors(prev => ({
                     ...prev,
                     location: false,
-                    ...(result.addressDetails?.street ? { street: false } : {}),
-                    ...(result.addressDetails?.city ? { city: false } : {})
+                    ...(resolvedStreet ? { street: false } : {}),
+                    ...(resolvedCity ? { city: false } : {})
                 }));
                 setShowLocationError(false);
 
                 // Zepto-style confirmation message
-                const detectedParts = [result.addressDetails?.street, result.addressDetails?.city].filter(Boolean);
+                const detectedParts = [resolvedStreet, resolvedCity].filter(Boolean);
                 if (detectedParts.length > 0) {
                     setMessage({ type: 'success', text: `📍 Location detected: ${detectedParts.join(', ')}` });
+                } else {
+                    setMessage({ type: 'info', text: t('GPS coordinates attached. Please enter your street name.') });
                 }
             } else {
                 console.error('📍 EditAddress: Detection failed:', result.message);
@@ -356,7 +354,7 @@ const EditAddress = () => {
                                     {isDetecting
                                         ? t('Finding location...')
                                         : formData.location
-                                            ? 'GPS Attached'
+                                            ? (formData.street && formData.city ? t('GPS & Address Attached') : t('GPS Coordinates Attached'))
                                             : t('Tap to attach GPS location')}
                                 </p>
                                 <p className={`text-[11px] truncate ${isDetecting || formData.location ? 'text-white/80' : 'text-gray-400'
@@ -364,7 +362,7 @@ const EditAddress = () => {
                                     {isDetecting
                                         ? t('Accessing GPS coordinates...')
                                         : formData.location
-                                            ? t('Tap to update location')
+                                            ? (formData.street && formData.city ? t('Tap to update location') : t('Enter street name & city below'))
                                             : t('Helps us deliver faster')}
                                 </p>
                             </div>

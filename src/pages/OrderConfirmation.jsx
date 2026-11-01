@@ -48,6 +48,14 @@ const OrderConfirmation = () => {
         if (isSubmitting) return;
         setIsSubmitting(true);
 
+        // Pre-generate instant Order ID so it displays immediately without `#000` lag
+        const instantOrderId = (() => {
+            const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+            const random = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+            return (timestamp + random).toLowerCase();
+        })();
+        setCreatedOrderId(instantOrderId);
+
         // Use provided delivery charge or default to 20
         const finalDeliveryCharge = deliveryCharge !== undefined ? deliveryCharge : 20;
 
@@ -56,6 +64,7 @@ const OrderConfirmation = () => {
 
         // Create order object matching backend schema
         const newOrder = {
+            _id: instantOrderId,
             items: cartItems.map(item => ({
                 product: item._id || item.id,
                 name: item.title || item.name || 'Product', // Fallback for safety
@@ -101,7 +110,7 @@ const OrderConfirmation = () => {
             deliveryTime: formData.deliveryTime,
             scheduledDeliveryTime: formData.deliveryTime ? (() => {
                 const deliveryDate = new Date();
-                
+
                 // Handle "period|time" format (e.g., "today|10:00" or "tomorrow|10:00")
                 let timeStr = formData.deliveryTime;
                 if (formData.deliveryTime.includes('|')) {
@@ -132,8 +141,8 @@ const OrderConfirmation = () => {
 
         const hasGoldProduct = cartItems.some(item => item.isGold);
         if (finalDeliveryCharge === 0 && deliveryCharge === 0 && !hasGoldProduct) {
-            setUser(prev => ({ 
-                ...prev, 
+            setUser(prev => ({
+                ...prev,
                 coins: Math.max((prev?.coins || 0) - 1, 0),
                 location: newOrder.shippingAddress.location || prev.location
             }));
@@ -145,7 +154,8 @@ const OrderConfirmation = () => {
         try {
             const createdOrder = await addOrder(newOrder);
             console.log('✅ Order created successfully:', createdOrder);
-            setCreatedOrderId(createdOrderId || createdOrder?._id || 'NEW');
+            const finalId = createdOrder?._id || createdOrder?.id || instantOrderId;
+            setCreatedOrderId(finalId);
         } catch (error) {
             console.error('❌ Failed to create order:', error);
             let errorMessage = t('Failed to place order. Please try again.');
@@ -221,11 +231,11 @@ const OrderConfirmation = () => {
             {/* Simple Header */}
             <div className="w-full px-5 py-4">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                     <button onClick={() => navigate(-1)} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-900 dark:text-white transition-transform active:scale-95 border border-gray-100/50">
-                         <ArrowLeft size={22} />
-                     </button>
-                     <h1 className="text-[17px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Confirmation')}</h1>
-                     <div className="w-[42px]" />
+                    <button onClick={() => navigate(-1)} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-900 dark:text-white transition-transform active:scale-95 border border-gray-100/50">
+                        <ArrowLeft size={22} />
+                    </button>
+                    <h1 className="text-[17px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Confirmation')}</h1>
+                    <div className="w-[42px]" />
                 </div>
             </div>
 
@@ -240,70 +250,70 @@ const OrderConfirmation = () => {
 
                     <div className="p-4 sm:p-6">
                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                                {cartItems.map((item) => (
-                                    <div key={item.id} className="py-4 flex gap-4 first:pt-0">
-                                        <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden flex-shrink-0 relative">
-                                            <img
-                                                src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
-                                                alt={item.adTitle || item.title}
-                                                className="h-full w-full object-cover"
-                                                loading="lazy"
-                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
-                                            />
-                                            <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
-                                                {item.isGold && (
-                                                    <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
-                                                        {t('Free Delivery')}
-                                                    </span>
-                                                )}
-                                                {item.isFromAd && (
-                                                    <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
-                                                        {t('Special Offer')}
-                                                    </span>
+                            {cartItems.map((item) => (
+                                <div key={item.id} className="py-4 flex gap-4 first:pt-0">
+                                    <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden flex-shrink-0 relative">
+                                        <img
+                                            src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
+                                            alt={item.adTitle || item.title}
+                                            className="h-full w-full object-cover"
+                                            loading="lazy"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
+                                        />
+                                        <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
+                                            {item.isGold && (
+                                                <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
+                                                    {t('Free Delivery')}
+                                                </span>
+                                            )}
+                                            {item.isFromAd && (
+                                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
+                                                    {t('Special Offer')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                        <h4 className={`text-sm font-medium text-gray-900 dark:text-white mb-0.5 ${item.isFromAd ? '' : 'truncate'}`} title={item.adTitle || item.title}>
+                                            {(() => {
+                                                const fullTitle = t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name;
+                                                if (language !== 'ta') return fullTitle;
+
+                                                const bracketIndex = fullTitle.indexOf('(');
+                                                if (bracketIndex === -1) return fullTitle;
+
+                                                const part1 = fullTitle.substring(0, bracketIndex).trim();
+                                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
+
+                                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
+                                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
+
+                                                if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
+                                                if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
+                                                return fullTitle;
+                                            })()}
+                                        </h4>
+                                        {(item.storeId || item.storeName) && (
+                                            <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate">
+                                                {getStoreName(item.storeId, stores) || item.storeName}
+                                            </p>
+                                        )}
+                                        <div className="flex items-center justify-between mt-1">
+                                            <div>
+                                                <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
+                                                {item.unit && (
+                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                                                        {item.unit}
+                                                    </p>
                                                 )}
                                             </div>
-                                        </div>
-                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                            <h4 className={`text-sm font-medium text-gray-900 dark:text-white mb-0.5 ${item.isFromAd ? '' : 'truncate'}`} title={item.adTitle || item.title}>
-                                                {(() => {
-                                                    const fullTitle = t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name;
-                                                    if (language !== 'ta') return fullTitle;
-                                                    
-                                                    const bracketIndex = fullTitle.indexOf('(');
-                                                    if (bracketIndex === -1) return fullTitle;
-
-                                                    const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                    const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                                    
-                                                    const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                    const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                                    
-                                                    if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                                    if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                                    return fullTitle;
-                                                })()}
-                                            </h4>
-                                            {(item.storeId || item.storeName) && (
-                                                <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate">
-                                                    {getStoreName(item.storeId, stores) || item.storeName}
-                                                </p>
-                                            )}
-                                            <div className="flex items-center justify-between mt-1">
-                                                <div>
-                                                    <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
-                                                    {item.unit && (
-                                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                                                            {item.unit}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
-                                                    x{item.quantity}
-                                                </div>
+                                            <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                x{item.quantity}
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -467,7 +477,7 @@ const OrderConfirmation = () => {
                             className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 relative overflow-hidden"
                         >
                             <div className="text-center">
-                                <div className="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+                                <div className="relative w-40 h-40 sm:w-44 sm:h-44 mx-auto mb-5 flex items-center justify-center">
                                     {/* Green star burst rotating ONLY during the entrance movement like GPay */}
                                     <motion.div
                                         initial={{ rotate: -40, scale: 0.2, opacity: 0 }}
@@ -482,13 +492,13 @@ const OrderConfirmation = () => {
                                                 animate={{ scale: [0, 1.25, 1], opacity: [0, 1, 0.95] }}
                                                 transition={{ duration: 0.5, delay: 0.1 + i * 0.02, ease: "easeOut" }}
                                                 style={{
-                                                    transform: `rotate(${angle}deg) translateY(-54px)`,
+                                                    transform: `rotate(${angle}deg) translateY(-86px)`,
                                                     transformOrigin: 'center center'
                                                 }}
                                                 className="absolute"
                                             >
                                                 {/* 4-point green star (GPay style) */}
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="#22C55E" className="drop-shadow-sm">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#22C55E">
                                                     <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
                                                 </svg>
                                             </motion.div>
@@ -500,28 +510,34 @@ const OrderConfirmation = () => {
                                         initial={{ scale: 0.8, opacity: 0.8 }}
                                         animate={{ scale: 1.45, opacity: 0 }}
                                         transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-                                        className="absolute w-20 h-20 rounded-full border-2 border-green-500/60 pointer-events-none"
+                                        className="absolute w-36 h-36 sm:w-40 sm:h-40 rounded-full border-2 border-green-500/40 pointer-events-none"
                                     />
 
-                                    {/* Green Circle Base */}
+                                    {/* GPay Scalloped Flower Badge (Large, Bold, No Shadow) */}
                                     <motion.div
                                         initial={{ scale: 0 }}
                                         animate={{ scale: [0, 1.15, 1] }}
                                         transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1], delay: 0.05 }}
-                                        className="w-20 h-20 rounded-full bg-[#1EA34B] dark:bg-[#22C55E] flex items-center justify-center shadow-xl shadow-green-500/30 relative z-10"
+                                        className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center relative z-10"
                                     >
-                                        {/* Animated GPay Checkmark SVG */}
                                         <svg
-                                            className="w-10 h-10 text-white"
-                                            viewBox="0 0 24 24"
+                                            viewBox="0 0 100 100"
+                                            className="w-full h-full"
                                             fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="3.2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
+                                            xmlns="http://www.w3.org/2000/svg"
                                         >
+                                            {/* Large Scalloped Flower Base */}
+                                            <path
+                                                d="M 79.70 42.04 A 11.5 11.5 0 0 1 79.70 57.96 A 11.5 11.5 0 0 1 71.74 71.74 A 11.5 11.5 0 0 1 57.96 79.70 A 11.5 11.5 0 0 1 42.04 79.70 A 11.5 11.5 0 0 1 28.26 71.74 A 11.5 11.5 0 0 1 20.30 57.96 A 11.5 11.5 0 0 1 20.30 42.04 A 11.5 11.5 0 0 1 28.26 28.26 A 11.5 11.5 0 0 1 42.04 20.30 A 11.5 11.5 0 0 1 57.96 20.30 A 11.5 11.5 0 0 1 71.74 28.26 A 11.5 11.5 0 0 1 79.70 42.04 Z"
+                                                fill="#1EA34B"
+                                            />
+                                            {/* Animated Checkmark Tick */}
                                             <motion.path
-                                                d="M5 13l4 4L19 7"
+                                                d="M 31 50 L 44 63 L 69 38"
+                                                stroke="#FFFFFF"
+                                                strokeWidth="8"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
                                                 initial={{ pathLength: 0, opacity: 0 }}
                                                 animate={{ pathLength: 1, opacity: 1 }}
                                                 transition={{ duration: 0.45, delay: 0.25, ease: "easeOut" }}

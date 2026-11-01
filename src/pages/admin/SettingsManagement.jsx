@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Clock, CheckCircle, AlertCircle, ShieldAlert, Zap, Calendar, Check, KeyRound, Eye, EyeOff, Lock } from 'lucide-react';
+import { Save, Clock, CheckCircle, AlertCircle, ShieldAlert, Zap, Calendar, Check, KeyRound, Eye, EyeOff, Lock, Bell, Volume2 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -248,22 +248,22 @@ const SettingsManagement = () => {
 
                 <div>
                     <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">{t('Maintenance Message')}</label>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                         <input
                             type="text"
                             value={maintenanceMessage}
                             onChange={(e) => setMaintenanceMessage(e.target.value)}
                             placeholder={t('e.g., We are closed for maintenance. Reopening at 5 PM.')}
-                            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2E5A2E]"
+                            className="flex-1 min-w-0 px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2E5A2E]"
                         />
                         <button
                             type="button"
                             onClick={handleSaveMaintenanceMessage}
                             disabled={savingMessage}
-                            className="px-4 py-3 bg-[#2E5A2E] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#1a3d1a] transition-all flex items-center gap-1.5 disabled:opacity-50 shrink-0 shadow-sm"
+                            className="px-3 py-2 sm:px-3.5 sm:py-2.5 bg-[#2E5A2E] text-white text-xs font-bold rounded-xl hover:bg-[#1a3d1a] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0 shadow-sm"
                         >
-                            {savingMessage ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={15} />}
-                            <span>{t('Save Message')}</span>
+                            {savingMessage ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={14} />}
+                            <span>{t('Save')}</span>
                         </button>
                     </div>
                 </div>
@@ -285,6 +285,35 @@ const SettingsManagement = () => {
                             {t('Note: As an Admin, you can still navigate the entire app and admin panel without being blocked. Click "Preview" to see what customers see.')}
                         </p>
                     </div>
+                </div>
+            </div>
+
+            {/* CARD: Porter-style Realtime Order Alert */}
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 border border-gray-100 dark:border-gray-700 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+                    <div>
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('Order Alerts')}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                            <h3 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg">
+                                {t('Porter-Style Accept Order Popup')}
+                            </h3>
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
+                                {t('Active')}
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xl">
+                            {t('When a customer places an order, a repeating audio chime will sound and a Porter-style screen will pop up with live customer details, GPS map, and an "ACCEPT ORDER" button.')}
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('test-incoming-order'))}
+                        className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#16A34A] hover:bg-[#15803D] text-white transition-all flex items-center gap-2 shadow-md shadow-green-600/20 active:scale-95 shrink-0"
+                    >
+                        <Volume2 size={16} />
+                        <span>{t('Test Porter Alert')}</span>
+                    </button>
                 </div>
             </div>
 

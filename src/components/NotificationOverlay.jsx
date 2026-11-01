@@ -5,15 +5,103 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Bell, CheckCircle, Truck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import IncomingOrderModal from './IncomingOrderModal';
 
 const NotificationOverlay = () => {
     const { socket } = useSocket();
     const { t } = useLanguage();
     const { user } = useAuth();
     const [notifications, setNotifications] = useState([]);
+    const [incomingOrder, setIncomingOrder] = useState(null);
     const navigate = useNavigate();
 
-    const isAdmin = Array.isArray(user?.role) ? user?.role.includes('admin') : user?.role === 'admin';
+    const roles = Array.isArray(user?.role) ? user.role : [user?.role];
+    const isDeliveryBoy = roles.some(r => {
+        const normalized = String(r || '').toLowerCase().trim();
+        return normalized === 'delivery_boy' || normalized === 'deliveryboy';
+    });
+    const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
+
+    useEffect(() => {
+        // Request system notification permission for delivery boys
+        if (isDeliveryBoy && typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+        }
+    }, [isDeliveryBoy]);
+
+    useEffect(() => {
+        // Allows testing the Porter-style incoming order modal
+        const handleTestIncomingOrder = (e) => {
+            const testOrder = e.detail || {
+                _id: '672000000000000000a0e25d',
+                shippingAddress: {
+                    name: 'Hasan',
+                    mobile: '9500171980',
+                    street: 'Vijayan Street',
+                    city: 'Ilayangudi',
+                    location: '9.6456,78.6321',
+                    deliveryTime: '10 AM - 11 AM'
+                },
+                items: [
+                    { 
+                        name: 'Aachi Pepper Powder (ஆச்சி மிளகுத் தூள் 50g)', 
+                        quantity: 1, 
+                        price: 35,
+                        storeName: 'Ilayangudi Maligai Store',
+                        image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=120'
+                    },
+                    { 
+                        name: 'Aavin Fresh Milk (500ml)', 
+                        quantity: 2, 
+                        price: 30,
+                        storeName: 'A1 Milk Depot',
+                        image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=120'
+                    },
+                    { 
+                        name: 'Aashirvaad Whole Wheat Atta (5kg)', 
+                        quantity: 1, 
+                        price: 260,
+                        storeName: 'City Supermarket',
+                        image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=120'
+                    },
+                    { 
+                        name: 'Pure White Sugar (1kg)', 
+                        quantity: 1, 
+                        price: 60,
+                        storeName: 'City Supermarket',
+                        image: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=120'
+                    }
+                ],
+                total: 415,
+                subtotal: 385,
+                shipping: 30,
+                paymentMethod: { type: 'Cash on Delivery' },
+                deliveryTime: '10 AM - 11 AM',
+                createdAt: new Date().toISOString()
+            };
+            setIncomingOrder(testOrder);
+
+            // Show native OS notification test
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                try {
+                    const notif = new Notification('🚨 New Order Alert! #A0BC8A - ₹320', {
+                        body: 'Mohamed placed an order. Tap to Accept!',
+                        icon: '/favicon.ico',
+                        tag: 'test-order'
+                    });
+                    notif.onclick = () => {
+                        window.focus();
+                        setIncomingOrder(testOrder);
+                    };
+                } catch (err) {}
+            }
+        };
+
+        window.addEventListener('test-incoming-order', handleTestIncomingOrder);
+        return () => window.removeEventListener('test-incoming-order', handleTestIncomingOrder);
+    }, []);
 
     useEffect(() => {
         if (!socket) return;
@@ -33,13 +121,35 @@ const NotificationOverlay = () => {
         };
 
         const handleOrderCreated = (order) => {
-            // Show to admin only
-            if (isAdmin) {
+            // Show Porter-style full incoming order alert ONLY to Delivery Boys
+            if (isDeliveryBoy) {
+                setIncomingOrder(order);
+
+                // Show Native System Notification (pops up outside browser if minimized)
+                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                    try {
+                        const orderIdShort = String(order._id || order.id || '000').slice(-6).toUpperCase();
+                        const notif = new Notification(`🚨 New Delivery Order #${orderIdShort} - ₹${order.total || order.subtotal || 0}`, {
+                            body: `Pickup: ${order.items?.[0]?.storeName || 'Store'} → Drop: ${order.shippingAddress?.street || 'Customer'}`,
+                            icon: '/favicon.ico',
+                            requireInteraction: true,
+                            tag: `delivery-${order._id}`
+                        });
+                        notif.onclick = () => {
+                            window.focus();
+                            setIncomingOrder(order);
+                        };
+                    } catch (err) {
+                        console.warn('System notification error:', err);
+                    }
+                }
+            } else if (isAdmin) {
+                // Admins who are not delivery boys receive a standard quiet notification toast
                 addNotification({
                     id: Date.now(),
                     type: 'new_order',
                     title: t('New Order Received!'),
-                    message: `${t('Order')} #${order._id.slice(-6)} ${t('from')} ${order.shippingAddress?.name || t('Guest')}`,
+                    message: `${t('Order')} #${String(order._id || order.id).slice(-6).toUpperCase()} ${t('from')} ${order.shippingAddress?.name || t('Guest')}`,
                     icon: <Bell className="text-orange-500" />,
                     onClick: () => navigate('/admin')
                 });
@@ -53,7 +163,7 @@ const NotificationOverlay = () => {
             socket.off('order:updated', handleOrderUpdated);
             socket.off('order:created', handleOrderCreated);
         };
-    }, [socket, user, isAdmin, t, navigate]);
+    }, [socket, user, isDeliveryBoy, isAdmin, t, navigate]);
 
     const addNotification = (notif) => {
         setNotifications(prev => [...prev, notif]);
@@ -67,41 +177,50 @@ const NotificationOverlay = () => {
     };
 
     return (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-sm px-4 pointer-events-none">
-            <AnimatePresence>
-                {notifications.map((notif) => (
-                    <motion.div
-                        key={notif.id}
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        onClick={() => {
-                            notif.onClick();
-                            removeNotification(notif.id);
-                        }}
-                        className="mb-3 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-4 pointer-events-auto cursor-pointer flex items-center gap-4 relative overflow-hidden group active:scale-[0.98] transition-transform"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-700 flex items-center justify-center shrink-0">
-                            {notif.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">{notif.title}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{notif.message}</p>
-                        </div>
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
+        <>
+            {incomingOrder && (
+                <IncomingOrderModal
+                    order={incomingOrder}
+                    onClose={() => setIncomingOrder(null)}
+                />
+            )}
+
+            <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-sm px-4 pointer-events-none">
+                <AnimatePresence>
+                    {notifications.map((notif) => (
+                        <motion.div
+                            key={notif.id}
+                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={() => {
+                                notif.onClick();
                                 removeNotification(notif.id);
                             }}
-                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 transition-colors"
+                            className="mb-3 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-4 pointer-events-auto cursor-pointer flex items-center gap-4 relative overflow-hidden group active:scale-[0.98] transition-transform"
                         >
-                            <X size={16} />
-                        </button>
-                        <div className="absolute bottom-0 left-0 h-1 bg-[#2E5A2E] dark:bg-[#CBF9B2] animate-progress" style={{ animationDuration: '5000ms' }} />
-                    </motion.div>
-                ))}
-            </AnimatePresence>
-        </div>
+                            <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                                {notif.icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">{notif.title}</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{notif.message}</p>
+                            </div>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeNotification(notif.id);
+                                }}
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+                            <div className="absolute bottom-0 left-0 h-1 bg-[#2E5A2E] dark:bg-[#CBF9B2] animate-progress" style={{ animationDuration: '5000ms' }} />
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+        </>
     );
 };
 

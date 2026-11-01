@@ -97,7 +97,7 @@ export const createOrder = async (req, res, next) => {
             }
         }
 
-        const order = await Order.create({
+        const orderData = {
             user: req.user?._id, // Optional for guest checkout
             items: finalItems,
             shippingAddress,
@@ -111,7 +111,12 @@ export const createOrder = async (req, res, next) => {
             isPaid: paymentMethod === 'Online',
             paidAt: paymentMethod === 'Online' ? Date.now() : null,
             orderType: orderType || 'Store'
-        });
+        };
+        if (req.body._id && /^[0-9a-fA-F]{24}$/.test(req.body._id)) {
+            orderData._id = req.body._id;
+        }
+
+        const order = await Order.create(orderData);
 
         // PERSISTENCE FIX: Save the location to the user's profile for future orders
         if (req.user?._id && shippingAddress?.location) {

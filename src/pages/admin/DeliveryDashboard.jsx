@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-    Package, 
-    Search, 
-    Truck, 
-    CheckCircle, 
-    Clock, 
-    RotateCcw, 
-    MapPin, 
-    RefreshCw, 
-    LogOut, 
-    Menu, 
+import {
+    Package,
+    Search,
+    Truck,
+    CheckCircle,
+    Clock,
+    RotateCcw,
+    MapPin,
+    RefreshCw,
+    LogOut,
+    Menu,
     X,
     ChevronRight,
     ChevronDown,
@@ -18,7 +18,12 @@ import {
     ShoppingBag,
     ShoppingCart,
     Wrench,
-    ClipboardList
+    ClipboardList,
+    Bell,
+    Phone,
+    Navigation,
+    Store,
+    CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -30,7 +35,20 @@ import { formatOrderDateTime, formatDeliveryTime } from '../../utils/dateUtils';
 import { openExternalLink } from '../../utils/linkHelper';
 import { API_BASE_URL } from '../../utils/api';
 import LogoutModal from '../../components/LogoutModal';
+import { CartoonCoin } from '../../components/CartoonCoin';
+import ShineActionButton from '../../components/ShineActionButton';
+import { playSuccessSound } from '../../utils/soundHelper';
+import { motion, AnimatePresence } from 'framer-motion';
 import PullToRefreshLayout from '../../components/PullToRefreshLayout';
+import DeliveryOrdersFeedModal from '../../components/DeliveryOrdersFeedModal';
+import IncomingOrderModal from '../../components/IncomingOrderModal';
+import { 
+    isNativeAndroid, 
+    checkOverlayPermission, 
+    requestOverlayPermission, 
+    showFloatingOverlay, 
+    hideFloatingOverlay 
+} from '../../utils/floatingOverlay';
 
 const DeliveryDashboard = () => {
     const navigate = useNavigate();
@@ -41,10 +59,10 @@ const DeliveryDashboard = () => {
     const { data: stores = [] } = useStores();
     const { mutateAsync: updateOrderStatus } = useUpdateOrderStatus();
     const { mutateAsync: updateServiceRequestStatus } = useUpdateServiceRequestStatus();
-    
+
     const [dashboardType, setDashboardType] = useState('Orders'); // 'Orders' | 'Services'
     const [activeTab, setActiveTab] = useState(() => {
-        return localStorage.getItem('delivery_dashboard_tab') || 'Active';
+        return localStorage.getItem('delivery_dashboard_tab') || 'Out for Delivery';
     });
 
     useEffect(() => {
@@ -53,53 +71,177 @@ const DeliveryDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [showOrdersFeed, setShowOrdersFeed] = useState(false);
+    const [selectedOrderForAccept, setSelectedOrderForAccept] = useState(null);
+    const [updatingOrderId, setUpdatingOrderId] = useState(null);
+    const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
 
-    const tabs = ['All', 'Active', 'Completed', 'Cancelled'];
+    // Porter Partner Style Floating Logo: check permission & listen to app state change
+    useEffect(() => {
+        let isMounted = true;
+        let appStateListener = null;
 
-    const filteredOrders = orders.filter(order => {
-        const matchesTab =
-            activeTab === 'All' ? true :
-                activeTab === 'Active' ? ['Processing', 'Shipped', 'Out for Delivery'].includes(order.status) :
-                    activeTab === 'Completed' ? order.status === 'Delivered' :
-                        activeTab === 'Cancelled' ? order.status === 'Cancelled' : 
-                            order.status === activeTab;
+        const initOverlay = async () => {
+            if (!isNativeAndroid()) return;
 
-        if (!matchesTab) return false;
+            const granted = await checkOverlayPermission();
+            if (isMounted) {
+                setHasOverlayPermission(granted);
+            }
 
-        if (searchQuery === '') return true;
+            try {
+                const { App } = await import('@capacitor/app');
+                appStateListener = await App.addListener('appStateChange', ({ isActive }) => {
+                    if (!isActive) {
+                        // When app is closed/minimized -> show floating Porter-style logo on screen
+                        showFloatingOverlay();
+                    } else {
+                        // When app is reopened -> hide floating logo
+                        hideFloatingOverlay();
+                    }
+                });
+            } catch (err) {
+                console.warn('Error setting up overlay appStateListener:', err);
+            }
+        };
 
-        const q = searchQuery.toLowerCase();
-        const orderId = String(order._id || order.id).toLowerCase();
-        const customerName = (order.shippingAddress?.name || order.user || '').toLowerCase();
-        const customerMobile = (order.shippingAddress?.mobile || '').toLowerCase();
-        
-        return orderId.includes(q) || customerName.includes(q) || customerMobile.includes(q) ||
-               order.items?.some(item => (item.name || '').toLowerCase().includes(q));
-    });
+        initOverlay();
 
-    const filteredServices = serviceRequests.filter(request => {
-        const matchesTab = 
-            activeTab === 'All' ? true :
-                activeTab === 'Active' ? ['Pending', 'In Progress'].includes(request.status) :
-                    activeTab === 'Completed' ? request.status === 'Completed' :
-                        activeTab === 'Cancelled' ? request.status === 'Cancelled' :
-                            request.status === activeTab;
+        return () => {
+            isMounted = false;
+            if (appStateListener && appStateListener.remove) {
+                appStateListener.remove();
+            }
+            hideFloatingOverlay();
+        };
+    }, []);
 
-        if (!matchesTab) return false;
+    const getItemImage = (item) => {
+        if (item.image && typeof item.image === 'string' && (item.image.startsWith('http') || item.image.startsWith('/') || item.image.startsWith('data:'))) {
+            return item.image;
+        }
+        const id = item.product?._id || item.product || item._id || item.id;
+        if (id) {
+            return `${API_BASE_URL}/products/${id}/image`;
+        }
+        return 'https://via.placeholder.com/150?text=Product';
+    };
 
-        if (searchQuery === '') return true;
+    const getItemStoreName = (item, order) => {
+        if (item.storeName) return item.storeName;
+        if (item.storeId) {
+            const found = getStoreName(item.storeId, stores);
+            if (found && found !== 'Unknown Store') return found;
+        }
+        if (item.storeId?.name) return item.storeId.name;
+        if (order?.storeName) return order.storeName;
+        return t('Ilayangudi Store');
+    };
+    const pendingOrdersCount = orders.filter(o => ['Processing', 'Pending'].includes(o.status)).length;
 
-        const q = searchQuery.toLowerCase();
-        const serviceName = (request.service?.name || '').toLowerCase();
-        const customerName = (request.user?.name || request.address?.name || '').toLowerCase();
-        const customerMobile = (request.user?.mobile || '').toLowerCase();
-        const address = (request.address?.street || '').toLowerCase();
+    // Helper to get reliable order timestamp
+    const getOrderTimeMs = (order) => {
+        if (!order) return 0;
+        if (order.createdAt) {
+            const time = new Date(order.createdAt).getTime();
+            if (!isNaN(time) && time > 0) return time;
+        }
+        if (order.date) {
+            const time = new Date(order.date).getTime();
+            if (!isNaN(time) && time > 0) return time;
+        }
+        if (order.timestamp) {
+            const time = new Date(order.timestamp).getTime();
+            if (!isNaN(time) && time > 0) return time;
+        }
+        if (order._id && typeof order._id === 'string' && order._id.length >= 8) {
+            try {
+                const ts = parseInt(order._id.substring(0, 8), 16) * 1000;
+                if (!isNaN(ts) && ts > 0) return ts;
+            } catch { }
+        }
+        return 0;
+    };
 
-        return serviceName.includes(q) || customerName.includes(q) || customerMobile.includes(q) || address.includes(q);
-    });
+    const getStatusRank = (status) => {
+        switch (status) {
+            case 'Out for Delivery':
+            case 'Shipped':
+                return 1;
+            case 'Processing':
+            case 'Pending':
+                return 2;
+            case 'Delivered':
+            case 'Completed':
+                return 3;
+            case 'Cancelled':
+                return 4;
+            default:
+                return 5;
+        }
+    };
 
-    const displayData = dashboardType === 'Orders' ? filteredOrders : filteredServices;
-    const isLoading = dashboardType === 'Orders' ? loadingOrders : loadingServices;
+    // Filter to Out for Delivery order cards in delivery panel
+    const displayOrders = orders
+        .filter(order => {
+            // "only put the out for delivery order cards in the delivery panel"
+            if (!['Out for Delivery', 'Shipped'].includes(order.status)) return false;
+
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            const orderId = String(order._id || order.id).toLowerCase();
+            const customerName = (order.shippingAddress?.name || order.user || '').toLowerCase();
+            const customerMobile = (order.shippingAddress?.mobile || '').toLowerCase();
+            return orderId.includes(q) || customerName.includes(q) || customerMobile.includes(q) ||
+                order.items?.some(item => (item.name || '').toLowerCase().includes(q));
+        })
+        .slice()
+        .sort((a, b) => getOrderTimeMs(a) - getOrderTimeMs(b));
+
+    const displayData = displayOrders;
+    const isLoading = loadingOrders;
+
+
+    const getCardTheme = (status) => {
+        switch (status) {
+            case 'Processing':
+            case 'Pending':
+                return {
+                    gradient: 'bg-gradient-to-b from-amber-400/25 via-amber-300/10 to-transparent dark:from-amber-600/20 dark:to-transparent',
+                    textColor: 'text-amber-600 dark:text-amber-400',
+                    labelColor: 'text-amber-700/70 dark:text-amber-300/70',
+                    iconColor: 'text-amber-500 dark:text-amber-400',
+                    buttonVariant: 'yellow'
+                };
+            case 'Out for Delivery':
+            case 'Shipped':
+                return {
+                    gradient: 'bg-gradient-to-b from-sky-400/25 via-sky-300/10 to-transparent dark:from-sky-600/20 dark:to-transparent',
+                    textColor: 'text-sky-600 dark:text-sky-400',
+                    labelColor: 'text-sky-700/70 dark:text-sky-300/70',
+                    iconColor: 'text-sky-500 dark:text-sky-400',
+                    buttonVariant: 'blue'
+                };
+            case 'Delivered':
+            case 'Completed':
+                return {
+                    gradient: 'bg-gradient-to-b from-emerald-400/25 via-emerald-300/10 to-transparent dark:from-emerald-600/20 dark:to-transparent',
+                    textColor: 'text-[#2E5A2E] dark:text-[#CBF9B2]',
+                    labelColor: 'text-[#2E5A2E]/70 dark:text-[#CBF9B2]/70',
+                    iconColor: 'text-[#2E5A2E] dark:text-[#CBF9B2]',
+                    buttonVariant: 'green'
+                };
+            case 'Cancelled':
+            default:
+                return {
+                    gradient: 'bg-gradient-to-b from-rose-400/25 via-rose-300/10 to-transparent dark:from-rose-600/20 dark:to-transparent',
+                    textColor: 'text-rose-600 dark:text-rose-400',
+                    labelColor: 'text-rose-700/70 dark:text-rose-300/70',
+                    iconColor: 'text-rose-500 dark:text-rose-400',
+                    buttonVariant: 'red'
+                };
+        }
+    };
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -155,31 +297,46 @@ const DeliveryDashboard = () => {
 
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-48">
-            <LogoutModal 
-                isOpen={showLogoutModal} 
-                onClose={() => setShowLogoutModal(false)} 
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
                 onConfirm={() => {
                     logout();
                     navigate('/login');
-                }} 
+                }}
             />
 
             {/* Header */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#2E5A2E]/20 rounded-full blur-3xl pointer-events-none"></div>
-                
+
                 <div className="relative z-10">
                     <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                            <button
+                                type="button"
+                                onClick={() => setShowOrdersFeed(true)}
+                                title={t('Orders List')}
+                                className="relative w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/90 rounded-full text-black transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50"
+                            >
+                                <Bell size={20} className="text-black stroke-[2.2]" />
+                                {pendingOrdersCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-5 h-5 min-w-[20px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
+                                        {pendingOrdersCount}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
                         <div className="flex flex-col text-center">
                             <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight">
-                                {dashboardType === 'Orders' ? t('Delivery Panel') : t('Service Requests')}
+                                {t('Delivery Panel')}
                             </h1>
                             <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600 mt-0.5">
-                                {dashboardType === 'Orders' ? t('Manage Deliveries') : t('Manage Service Bookings')}
+                                {t('Manage Deliveries')}
                             </p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <button 
+                            <button
                                 onClick={() => setShowLogoutModal(true)}
                                 className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-red-600 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50"
                             >
@@ -192,391 +349,222 @@ const DeliveryDashboard = () => {
 
             <PullToRefreshLayout>
                 <div className="pt-[95px]">
-                <div className="px-5 mt-2 max-w-3xl mx-auto">
-                    {/* Mode Switcher - In Line like before */}
-                    <div className="flex items-center mb-6 border-b-2 border-gray-200 dark:border-gray-700/60">
-                        <button 
-                            type="button"
-                            onClick={() => { setDashboardType('Orders'); setActiveTab('Processing'); }}
-                            className={`flex-1 pb-3 text-[17px] font-black transition-all relative flex items-center justify-center gap-2 ${
-                                dashboardType === 'Orders'
-                                    ? 'text-gray-900 dark:text-white'
-                                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-                            }`}
-                        >
-                            <span>{t('Orders')}</span>
-                            {orders.filter(o => o.status === 'Processing').length > 0 && (
-                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-[11px] bg-rose-500 text-white rounded-full font-black">
-                                    {orders.filter(o => o.status === 'Processing').length}
-                                </span>
-                            )}
-                            {dashboardType === 'Orders' && (
-                                <div className="absolute bottom-[-2px] left-0 right-0 h-[3.5px] bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full" />
-                            )}
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => { setDashboardType('Services'); setActiveTab('Pending'); }}
-                            className={`flex-1 pb-3 text-[17px] font-black transition-all relative flex items-center justify-center gap-2 ${
-                                dashboardType === 'Services'
-                                    ? 'text-gray-900 dark:text-white'
-                                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-                            }`}
-                        >
-                            <span>{t('Services')}</span>
-                            {serviceRequests.filter(s => s.status === 'Pending').length > 0 && (
-                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-[11px] bg-rose-500 text-white rounded-full font-black">
-                                    {serviceRequests.filter(s => s.status === 'Pending').length}
-                                </span>
-                            )}
-                            {dashboardType === 'Services' && (
-                                <div className="absolute bottom-[-2px] left-0 right-0 h-[3.5px] bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full" />
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Rectangular Cards - Card Color Highlight (No outline/ring) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                        {(dashboardType === 'Orders' ? [
-                            { 
-                                id: 'Processing', 
-                                label: 'Processing', 
-                                count: orders.filter(o => o.status === 'Processing').length, 
-                                activeCardBg: 'bg-amber-500 dark:bg-amber-500 text-white shadow-sm',
-                                inactiveBadge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300',
-                                activeNumberColor: 'text-amber-600'
-                            },
-                            { 
-                                id: 'Out for Delivery', 
-                                label: 'Out for Delivery', 
-                                count: orders.filter(o => o.status === 'Out for Delivery').length, 
-                                activeCardBg: 'bg-sky-500 dark:bg-sky-500 text-white shadow-sm',
-                                inactiveBadge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300',
-                                activeNumberColor: 'text-sky-600'
-                            },
-                            { 
-                                id: 'Delivered', 
-                                label: 'Delivered', 
-                                count: orders.filter(o => o.status === 'Delivered').length, 
-                                activeCardBg: 'bg-emerald-600 dark:bg-emerald-600 text-white shadow-sm',
-                                inactiveBadge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
-                                activeNumberColor: 'text-emerald-600'
-                            },
-                            { 
-                                id: 'Cancelled', 
-                                label: 'Cancelled', 
-                                count: orders.filter(o => o.status === 'Cancelled').length, 
-                                activeCardBg: 'bg-rose-500 dark:bg-rose-500 text-white shadow-sm',
-                                inactiveBadge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300',
-                                activeNumberColor: 'text-rose-600'
-                            }
-                        ] : [
-                            { 
-                                id: 'Pending', 
-                                label: 'Requested', 
-                                count: serviceRequests.filter(s => s.status === 'Pending').length, 
-                                activeCardBg: 'bg-amber-500 dark:bg-amber-500 text-white shadow-sm',
-                                inactiveBadge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300',
-                                activeNumberColor: 'text-amber-600'
-                            },
-                            { 
-                                id: 'In Progress', 
-                                label: 'Accepted', 
-                                count: serviceRequests.filter(s => s.status === 'In Progress').length, 
-                                activeCardBg: 'bg-sky-500 dark:bg-sky-500 text-white shadow-sm',
-                                inactiveBadge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300',
-                                activeNumberColor: 'text-sky-600'
-                            },
-                            { 
-                                id: 'Completed', 
-                                label: 'Completed', 
-                                count: serviceRequests.filter(s => s.status === 'Completed').length, 
-                                activeCardBg: 'bg-emerald-600 dark:bg-emerald-600 text-white shadow-sm',
-                                inactiveBadge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
-                                activeNumberColor: 'text-emerald-600'
-                            },
-                            { 
-                                id: 'Cancelled', 
-                                label: 'Cancelled', 
-                                count: serviceRequests.filter(s => s.status === 'Cancelled').length, 
-                                activeCardBg: 'bg-rose-500 dark:bg-rose-500 text-white shadow-sm',
-                                inactiveBadge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300',
-                                activeNumberColor: 'text-rose-600'
-                            }
-                        ]).map((stat) => {
-                            const isSelected = String(activeTab).toLowerCase() === String(stat.id).toLowerCase();
-                            return (
-                                <button 
-                                    key={stat.id} 
-                                    type="button"
-                                    onClick={() => setActiveTab(stat.id)}
-                                    className={`p-4 rounded-2xl transition-all duration-200 active:scale-95 flex flex-col items-center justify-center text-center select-none outline-none border-0 ${
-                                        isSelected
-                                            ? `${stat.activeCardBg} scale-[1.02]`
-                                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-sm border border-gray-100 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-750'
-                                    }`}
-                                >
-                                    <p className={`text-[11px] font-black uppercase tracking-tight mb-2.5 truncate w-full ${
-                                        isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-                                    }`}>
-                                        {t(stat.label)}
-                                    </p>
-                                    <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg font-black transition-colors ${
-                                        isSelected ? `bg-white ${stat.activeNumberColor} shadow-md` : stat.inactiveBadge
-                                    }`}>
-                                        {stat.count}
+                    <div className="px-5 mt-2 max-w-3xl mx-auto">
+                        {/* Porter-style Floating Logo Banner (when permission not yet granted on Android) */}
+                        {isNativeAndroid() && !hasOverlayPermission && (
+                            <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-center justify-between shadow-xs">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-xl">🔘</span>
+                                    <div className="text-left">
+                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                                            {t('Enable Floating Screen Logo')}
+                                        </p>
+                                        <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                                            {t('Show app logo on screen when closed, like Porter Partner')}
+                                        </p>
                                     </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        await requestOverlayPermission();
+                                        setTimeout(async () => {
+                                            const g = await checkOverlayPermission();
+                                            setHasOverlayPermission(g);
+                                        }, 1000);
+                                    }}
+                                    className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-black rounded-xl shadow-xs transition-transform"
+                                >
+                                    {t('Enable')}
                                 </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* Search Pill */}
-                    <div className="relative mb-6">
-                        <input
-                            type="text"
-                            placeholder={t('Search ID, customer, item...')}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-10 py-3.5 rounded-full border border-gray-100/50 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] text-gray-900 dark:text-white focus:outline-none shadow-sm dark:placeholder-gray-500 transition-all duration-300"
-                        />
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                <X size={16} />
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="mb-6"></div>
-
-                    {/* Orders List */}
-                    <div className="space-y-4">
-                        {isLoading ? (
-                            <div className="space-y-4">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 animate-pulse border border-gray-100 dark:border-gray-700 h-48" />
-                                ))}
                             </div>
-                        ) : displayData.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
-                                {dashboardType === 'Orders' ? (
-                                    displayData.map(order => (
+                        )}
+
+                        {/* Search Pill */}
+                        <div className="relative mb-6">
+                            <input
+                                type="text"
+                                placeholder={t('Search ID, customer, item...')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-10 py-3.5 rounded-full border border-gray-100/50 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] text-gray-900 dark:text-white focus:outline-none shadow-sm dark:placeholder-gray-500 transition-all duration-300"
+                            />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Orders List */}
+                        <div className="space-y-4">
+                            {isLoading ? (
+                                <div className="space-y-4">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 animate-pulse border border-gray-100 dark:border-gray-700 h-48" />
+                                    ))}
+                                </div>
+                            ) : displayData.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
+                                    {displayData.map(order => {
+                                        const orderIdShort = String(order._id || order.id || '000000').slice(-6).toUpperCase();
+                                        const customerName = order.shippingAddress?.name || order.user || '';
+                                        const city = order.shippingAddress?.city || 'Ilayangudi';
+                                        const deliveryCharge = order.shipping !== undefined && order.shipping !== null
+                                            ? order.shipping
+                                            : (order.deliveryCharge !== undefined ? order.deliveryCharge : 20);
+                                        const isFreeDelivery = Number(deliveryCharge) <= 0;
+                                        const orderTimeStr = formatOrderDateTime(order.createdAt || order.date);
+                                        const isCancelled = order.status === 'Cancelled';
+                                        const isDelivered = order.status === 'Delivered' || order.status === 'Completed';
+                                        const isOutForDelivery = order.status === 'Out for Delivery' || order.status === 'Shipped';
+
+                                        const shineVariant = isCancelled
+                                            ? 'cancelled'
+                                            : isOutForDelivery
+                                                ? 'blue'
+                                                : isDelivered
+                                                    ? 'green'
+                                                    : 'yellow';
+
+                                    return (
                                         <div
                                             key={order._id || order.id}
-                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 group relative shadow-sm hover:shadow-md"
+                                            className={`${
+                                                isCancelled
+                                                    ? 'bg-gray-100/90 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700/80'
+                                                    : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                                            } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
                                         >
-                                            <div className="p-6">
-                                                {/* Order ID & Date Header */}
-                                                <div 
-                                                    className="flex justify-between items-start gap-2 mb-4 cursor-pointer group/header"
-                                                    onClick={() => navigate(`/orders/${order._id || order.id}`)}
-                                                >
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-[#2E5A2E] dark:text-[#8bc910] flex-shrink-0 group-hover/header:scale-110 transition-transform">
-                                                            <Package size={18} />
+                                            {/* Card Top: Solid Clean Header with Centered Content */}
+                                            <div className="pt-5 pb-3 px-5 text-center">
+                                                {/* Delivery Charge in Dark Grey */}
+                                                <div className="text-center py-1">
+                                                    <span className="text-[11px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-300 block mb-0.5">
+                                                        {t('Delivery Charge')}
+                                                    </span>
+                                                    {isFreeDelivery ? (
+                                                        <div className="flex items-center justify-center gap-2 py-1">
+                                                            <span className="text-3xl sm:text-4xl font-black text-black dark:text-white tracking-tight uppercase">
+                                                                {t('Free Delivery')}
+                                                            </span>
+                                                            <CartoonCoin size={30} />
                                                         </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate group-hover/header:text-[#2E5A2E] transition-colors">
-                                                                #{String(order._id || order.id).slice(-6).toUpperCase()}
-                                                            </p>
-                                                            <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                                {formatOrderDateTime(order.createdAt || order.date)}
-                                                                {(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime) && (
-                                                                    <span className="text-[#2E5A2E] dark:text-[#8bc910] ml-1 font-bold">
-                                                                        • ⏰ {formatDeliveryRangeFromDate(order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime)}
-                                                                    </span>
-                                                                )}
-                                                            </p>
+                                                    ) : (
+                                                        <div className="text-4xl sm:text-5xl font-black text-black dark:text-white tracking-tight font-sans">
+                                                            ₹{deliveryCharge}
                                                         </div>
-                                                    </div>
-                                                    
-                                                    <div className="flex-shrink-0 min-w-[130px] flex justify-end" onClick={(e) => e.stopPropagation()}>
-                                                        {['Delivered', 'Completed', 'Cancelled'].includes(order.status) ? (
-                                                            <div className={`inline-flex items-center justify-center w-full px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold border transition-all shadow-sm ${getStatusColor(order.status)}`}>
-                                                                {getStatusIcon(order.status)}
-                                                                <span className="uppercase tracking-wider">{t(order.status)}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="relative w-full">
-                                                                <select
-                                                                    value={order.status}
-                                                                    onChange={(e) => updateStatus(order._id || order.id, e.target.value)}
-                                                                    className={`w-full px-3 py-1.5 pr-8 rounded-full border text-[10px] md:text-xs font-bold transition-all outline-none shadow-sm cursor-pointer text-center appearance-none ${getStatusColor(order.status)}`}
-                                                                >
-                                                                    <option value="Processing" disabled={order.status === 'Out for Delivery'}>{t('Processing')}</option>
-                                                                    <option value="Out for Delivery">{t('Out for Delivery')}</option>
-                                                                    <option value="Delivered">{t('Delivered')}</option>
-                                                                    <option value="Cancelled" disabled={order.status !== 'Processing'}>{t('Cancelled')}</option>
-                                                                </select>
-                                                                <div className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${getStatusColor(order.status).split(' ')[0]}`}>
-                                                                    <ChevronDown size={12} />
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Customer & Location */}
-                                                <div className="mb-4">
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                                                        {order.shippingAddress?.name || order.user}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                        {order.shippingAddress?.mobile || 'N/A'}
-                                                    </p>
-                                                </div>
-
-                                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-4 mb-4">
-                                                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
-                                                        {order.shippingAddress ? `${order.shippingAddress.street}, ${order.shippingAddress.city}` : t('No address provided')}
-                                                    </p>
-                                                    {order.shippingAddress?.location && (
-                                                        <button
-                                                            onClick={() => openExternalLink(order.shippingAddress.location)}
-                                                            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#2E5A2E] dark:text-[#7CA90E] hover:underline"
-                                                        >
-                                                            <MapPin size={12} />
-                                                            {t('View Map')}
-                                                        </button>
                                                     )}
                                                 </div>
 
-                                                <button
-                                                    onClick={() => navigate(`/orders/${order._id || order.id}`)}
-                                                    className="w-full py-3.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-[13px] font-bold text-[#2E5A2E] dark:text-[#7CA90E] flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-sm"
-                                                >
-                                                    {t('View Details')}
-                                                    <ChevronRight size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    displayData.map(request => (
-                                        <div
-                                            key={request._id || request.id}
-                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 group relative shadow-sm hover:shadow-md"
-                                        >
-                                            <div className="p-6">
-                                                <div className="flex justify-between items-start gap-2 mb-4">
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <div className="p-2 bg-[#2E5A2E]/10 dark:bg-[#2E5A2E]/20 rounded-lg text-[#2E5A2E] dark:text-[#8bc910] flex-shrink-0 transition-transform">
-                                                            <Wrench size={18} />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">
-                                                                {request.items?.length === 1 
-                                                                    ? request.items[0].name 
-                                                                    : request.service?.name || t('Service')}
-                                                            </p>
-                                                            <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                                {formatOrderDateTime(request.createdAt)}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex-shrink-0 min-w-[130px] flex justify-end" onClick={(e) => e.stopPropagation()}>
-                                                        {['Completed', 'Cancelled'].includes(request.status) ? (
-                                                            <div className={`inline-flex items-center justify-center w-full px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold border transition-all shadow-sm ${getStatusColor(request.status)}`}>
-                                                                {getStatusIcon(request.status)}
-                                                                <span className="uppercase tracking-wider">
-                                                                    {request.status === 'Pending' ? t('Requested') : 
-                                                                     request.status === 'In Progress' ? t('Accepted') : 
-                                                                     t(request.status)}
-                                                                </span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="relative w-full">
-                                                                <select
-                                                                    value={request.status}
-                                                                    onChange={(e) => handleUpdateServiceStatus(request._id || request.id, e.target.value)}
-                                                                    className={`w-full px-3 py-1.5 pr-8 rounded-full border text-[10px] md:text-xs font-bold transition-all outline-none shadow-sm cursor-pointer text-center appearance-none ${getStatusColor(request.status)}`}
-                                                                >
-                                                                    <option value="Pending" disabled={request.status === 'In Progress'}>{t('Requested')}</option>
-                                                                    <option value="In Progress">{t('Accepted')}</option>
-                                                                </select>
-                                                                <div className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${getStatusColor(request.status).split(' ')[0]}`}>
-                                                                    <ChevronDown size={12} />
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="mb-4">
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                                                        {request.user?.name || request.address?.name || t('Customer')}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                        {request.user?.mobile || request.address?.mobile || 'N/A'}
-                                                    </p>
-                                                </div>
-
-                                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-4 mb-4">
-                                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('Address')}</p>
-                                                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-2 font-medium">
-                                                        {request.user?.address?.street 
-                                                            ? `${request.user.address.street}, ${request.user.address.city}` 
-                                                            : request.location || t('No address provided')}
-                                                    </p>
-                                                    {(request.coordinates || request.user?.location) && (
-                                                        <button
-                                                            onClick={() => openExternalLink(request.coordinates || request.user?.location)}
-                                                            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#2E5A2E] dark:text-[#7CA90E] hover:underline"
-                                                        >
-                                                            <MapPin size={12} />
-                                                            {t('View Map')}
-                                                        </button>
-                                                    )}
-
-                                                    {/* Service Type - Centered below map */}
-                                                    <div className="mt-4 pt-4 border-t border-gray-200/50 dark:border-gray-600/50 text-center">
-                                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('Work Type')}</p>
-                                                        <p className="text-[15px] font-black text-[#2E5A2E] dark:text-[#8bc910] uppercase tracking-wide">
-                                                            {request.items?.length === 1 
-                                                                ? `${request.items[0].name}${request.items[0].quantity > 1 ? ` x${request.items[0].quantity}` : ''}`
-                                                                : `${!request.items?.length ? t('General') : t('Specific Tasks')}`}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {request.items && request.items.length > 0 && (
-                                                    <div className="mt-4">
-                                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('Items Requested')}</p>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {request.items.map((item, idx) => (
-                                                                <span key={idx} className="px-2.5 py-1 bg-[#2E5A2E]/5 dark:bg-[#2E5A2E]/20 text-[#2E5A2E] dark:text-[#8bc910] rounded-lg text-[10px] font-bold border border-[#2E5A2E]/10">
-                                                                    {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
-                                                                </span>
-                                                            ))}
-                                                        </div>
+                                                {/* Ordered Time with Clock in Dark Grey */}
+                                                {orderTimeStr && (
+                                                    <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">
+                                                        <Clock size={13} className="text-gray-600 dark:text-gray-400" />
+                                                        <span>{orderTimeStr}</span>
                                                     </div>
                                                 )}
+
+                                                {/* Customer Name • City (items count) in Dark Grey */}
+                                                {customerName && (
+                                                    <p className="text-center text-xs text-gray-800 dark:text-gray-100 mt-2 truncate font-bold">
+                                                        {customerName} • {city} {order.items?.length > 0 ? `(${order.items.length} items)` : ''}
+                                                    </p>
+                                                )}
+
+                                                {/* Scheduled Delivery Time like in OrderDetails.jsx in Dark Grey */}
+                                                {(() => {
+                                                    const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
+                                                    if (!rawTime) return null;
+                                                    const strTime = String(rawTime).toLowerCase();
+                                                    if (strTime.includes('instant')) return null;
+
+                                                    const formattedRange = formatDeliveryRangeFromDate(rawTime);
+                                                    if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
+
+                                                    return (
+                                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-center gap-2 text-gray-700 dark:text-gray-300">
+                                                            <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700/60 flex items-center justify-center shrink-0">
+                                                                <Clock size={15} className="text-gray-600 dark:text-gray-300" />
+                                                            </div>
+                                                            <div className="text-left">
+                                                                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 leading-tight">
+                                                                    {t('Scheduled Delivery')}
+                                                                </p>
+                                                                <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                                                                    {formattedRange}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        ) : (
-                            <div className="text-center py-12">
-                                <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                                    {dashboardType === 'Orders' ? <ShoppingBag size={24} className="text-gray-300" /> : <ClipboardList size={24} className="text-gray-300" />}
+
+                                                {/* View Order: Green Shine Button without arrow */}
+                                                <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
+                                                    <ShineActionButton
+                                                        variant="green"
+                                                        label={t('View Order')}
+                                                        onClick={() => setSelectedOrderForAccept(order)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                                    {dashboardType === 'Orders' ? t('No orders found') : t('No service requests found')}
-                                </h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {t('No tasks in this category.')}
-                                </p>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="text-center py-12">
+                                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                                        <ShoppingBag size={24} className="text-gray-300" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                                        {t("No orders found")}
+                                    </h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        {t('No tasks in this category.')}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-                </div>
+                {/* Available Orders Feed Modal (triggered by Bell icon, sorted Oldest to Newest) */}
+                <DeliveryOrdersFeedModal
+                    isOpen={showOrdersFeed}
+                    onClose={() => setShowOrdersFeed(false)}
+                    orders={orders}
+                    onSelectOrder={(order) => {
+                        setSelectedOrderForAccept(order);
+                    }}
+                />
+
+                {/* Incoming Order Accept Modal (opened when clicking View on any card) */}
+                <AnimatePresence>
+                    {selectedOrderForAccept && (
+                        <IncomingOrderModal
+                            key={selectedOrderForAccept._id || selectedOrderForAccept.id}
+                            order={selectedOrderForAccept}
+                            onClose={() => setSelectedOrderForAccept(null)}
+                            onAccepted={(order) => {
+                                setSelectedOrderForAccept(null);
+                                setActiveTab('Out for Delivery');
+                            }}
+                            onDelivered={(order) => {
+                                setSelectedOrderForAccept(null);
+                                setActiveTab('Delivered');
+                            }}
+                            onCancelled={(order) => {
+                                setSelectedOrderForAccept(null);
+                                setActiveTab('Cancelled');
+                            }}
+                        />
+                    )}
+                </AnimatePresence>
+
             </PullToRefreshLayout>
         </div>
     );

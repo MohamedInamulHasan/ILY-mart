@@ -45,10 +45,72 @@ export const checkLocationPermission = async () => {
 };
 
 export const reverseGeocode = async (latitude, longitude) => {
-    // 1. Try Nominatim OpenStreetMap (Zepto-style road/building/area parsing)
+    const isHighway = (s) => s && (s.split('-').length >= 3 || (s.length > 35 && s.includes(' - ')));
+
+    const normalizeCity = (c) => {
+        if (!c) return 'Ilayangudi';
+        const lower = c.trim().toLowerCase();
+        if (lower.startsWith('ilai') || lower.startsWith('ilay')) return 'Ilayangudi';
+        if (lower.includes('saalai') || lower.includes('salai')) return 'Saalai';
+        if (lower.includes('pudur')) return 'Pudur';
+        return c.trim();
+    };
+
+    // 1. Primary: Photon (Komoot OSM) - High speed, 0 CORS issues, rich street/district detail
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4500);
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(
+            `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}`,
+            { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.features && data.features.length > 0) {
+                const props = data.features[0].properties || {};
+                
+                let rawStreet = props.street && !isHighway(props.street) ? props.street.trim() : '';
+                const area = props.district || props.locality || props.suburb || props.name || '';
+                const cleanArea = area && !isHighway(area) ? area.trim() : '';
+
+                let street = rawStreet;
+                if (!street && cleanArea) {
+                    street = cleanArea;
+                } else if (street && cleanArea && !street.toLowerCase().includes(cleanArea.toLowerCase())) {
+                    street = `${street}, ${cleanArea}`;
+                }
+
+                if (props.housenumber && street && !street.includes(props.housenumber)) {
+                    street = `${props.housenumber}, ${street}`;
+                }
+
+                let city = normalizeCity(props.city || props.town || props.county || props.village || '');
+                if (street.toLowerCase() === city.toLowerCase()) {
+                    street = cleanArea && cleanArea.toLowerCase() !== city.toLowerCase() ? cleanArea : '';
+                }
+
+                const zip = props.postcode || '630702';
+
+                if (street || city) {
+                    return {
+                        street,
+                        city: city || 'Ilayangudi',
+                        zip,
+                        fullAddress: [street, city].filter(Boolean).join(', ')
+                    };
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('Photon reverse geocode error:', err);
+    }
+
+    // 2. Secondary: Nominatim OpenStreetMap (Works in native Capacitor & node environments)
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
         const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
             {
@@ -65,14 +127,15 @@ export const reverseGeocode = async (latitude, longitude) => {
             if (data && data.address) {
                 const addr = data.address;
                 const building = (addr.house_number || addr.building || addr.flats || addr.office || '').trim();
-                const road = (addr.road || addr.street || addr.pedestrian || addr.footway || addr.path || addr.highway || addr.lane || '').trim();
+                const rawRoad = (addr.road || addr.street || addr.pedestrian || addr.footway || addr.path || addr.highway || addr.lane || '').trim();
+                
+                const road = isHighway(rawRoad) ? '' : rawRoad;
                 const roadPart = [building, road].filter(Boolean).join(' ').trim();
 
                 const areaPart = (addr.neighbourhood || addr.suburb || addr.residential || addr.quarter || addr.subdivision || addr.colony || addr.sector || addr.hamlet || addr.village || '').trim();
-                const city = (addr.town || addr.city || addr.municipality || addr.city_district || addr.county || '').trim();
-                const zip = (addr.postcode || '').trim();
+                let city = normalizeCity(addr.town || addr.city || addr.municipality || addr.city_district || addr.county || '');
+                const zip = (addr.postcode || '630702').trim();
 
-                // Zepto style: combine house/road + area (never duplicate city into street)
                 const streetParts = [];
                 if (roadPart) streetParts.push(roadPart);
                 if (areaPart && areaPart.toLowerCase() !== city.toLowerCase() && !roadPart.toLowerCase().includes(areaPart.toLowerCase())) {
@@ -80,22 +143,27 @@ export const reverseGeocode = async (latitude, longitude) => {
                 }
                 let street = streetParts.join(', ').trim();
 
-                // Fallback: If no road or area, extract first segment from display_name if distinct from city
+                // Candidate extraction from display_name
                 if (!street && data.display_name) {
-                    const firstSeg = data.display_name.split(',')[0]?.trim();
-                    if (firstSeg && firstSeg.toLowerCase() !== city.toLowerCase()) {
-                        street = firstSeg;
+                    const segments = data.display_name.split(',').map(s => s.trim());
+                    const candidate = segments.find(s => 
+                        !isHighway(s) && 
+                        s.toLowerCase() !== city.toLowerCase() && 
+                        !['india', 'tamil nadu', 'sivagangai', 'sivaganga'].includes(s.toLowerCase()) &&
+                        !/^\d{6}$/.test(s)
+                    );
+                    if (candidate) {
+                        street = candidate;
                     }
                 }
 
-                // Strict sanity check: Street can NEVER be identical to city
                 if (street.toLowerCase() === city.toLowerCase()) {
                     street = '';
                 }
 
                 return {
                     street,
-                    city,
+                    city: city || 'Ilayangudi',
                     zip,
                     fullAddress: data.display_name || [street, city].filter(Boolean).join(', ')
                 };
@@ -105,10 +173,10 @@ export const reverseGeocode = async (latitude, longitude) => {
         console.warn('Nominatim reverse geocode error:', err);
     }
 
-    // 2. Fallback to BigDataCloud (Administrative level: locality & city)
+    // 3. Fallback: BigDataCloud (Administrative level: locality & city)
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
         const res = await fetch(
             `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
             { signal: controller.signal }
@@ -116,14 +184,16 @@ export const reverseGeocode = async (latitude, longitude) => {
         clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
-            const city = data.city || data.locality || data.principalSubdivision || '';
-            const zip = data.postcode || '';
-            // BigDataCloud free tier only provides city/state, never fake it as a street
+            const city = normalizeCity(data.city || data.locality || data.principalSubdivision || '');
+            const zip = data.postcode || '630702';
+            const area = data.localityInfo?.administrative?.find(a => a.adminLevel === 8 || a.adminLevel === 7)?.name || '';
+            const street = area && area.toLowerCase() !== city.toLowerCase() ? area : '';
+
             return {
-                street: '',
-                city,
+                street,
+                city: city || 'Ilayangudi',
                 zip,
-                fullAddress: [city, data.principalSubdivision].filter(Boolean).join(', ')
+                fullAddress: [street, city, data.principalSubdivision].filter(Boolean).join(', ')
             };
         }
     } catch (err) {
@@ -168,12 +238,12 @@ export const requestLocationPermission = async () => {
 export const getCurrentLocation = async () => {
     const isNative = window.Capacitor?.isNativePlatform?.() ?? false;
     
-        const buildResult = async (lat, lon, extra = {}) => {
+    const buildResult = async (lat, lon, extra = {}) => {
         let addressDetails = null;
         try {
-            // Race reverseGeocode with a 4.5s timeout for complete Nominatim resolution
+            // Race reverseGeocode with a 6s timeout for complete resolution
             const geocodePromise = reverseGeocode(lat, lon);
-            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 4500));
+            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 6000));
             addressDetails = await Promise.race([geocodePromise, timeoutPromise]);
         } catch (e) {
             console.warn('Failed to reverse geocode in getCurrentLocation', e);
@@ -182,9 +252,9 @@ export const getCurrentLocation = async () => {
         // If reverse geocoding didn't get details but an initialCity was provided by IP
         if (!addressDetails && extra.initialCity) {
             addressDetails = {
-                street: '', // NEVER fake city as street
+                street: '',
                 city: extra.initialCity,
-                zip: extra.initialZip || '',
+                zip: extra.initialZip || '630702',
                 fullAddress: extra.initialCity
             };
         }
@@ -194,8 +264,8 @@ export const getCurrentLocation = async () => {
             longitude: lon,
             mapsLink: `https://www.google.com/maps/place/${lat}+${lon}/@${lat},${lon},17z`,
             success: true,
-            addressDetails,
-            ...extra
+            ...extra,
+            addressDetails: addressDetails || extra.addressDetails || null
         };
     };
 
@@ -329,7 +399,11 @@ export const getCurrentLocation = async () => {
 
                 if (lat && lon) {
                     console.log(`✅ IP-based geolocation successful using ${provider.url}:`, lat, lon);
-                    return await buildResult(lat, lon, { isIPFallback: true, addressDetails: null });
+                    return await buildResult(lat, lon, { 
+                        isIPFallback: true, 
+                        initialCity: data[provider.cityKey] || 'Ilayangudi', 
+                        initialZip: data[provider.zipKey] || '630702' 
+                    });
                 }
             } catch (ipError) {
                 console.warn(`❌ IP Fallback failed for ${provider.url}:`, ipError.message);

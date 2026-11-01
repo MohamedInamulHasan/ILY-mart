@@ -98,3 +98,74 @@ export const playWebAudioChime = () => {
         console.warn('Web Audio playback failed:', e);
     }
 };
+
+let incomingOrderInterval = null;
+let activeAudioCtx = null;
+
+// Urgent repeating chime alert for incoming orders (Porter / Swiggy / Zomato merchant style)
+export const startIncomingOrderAlertSound = () => {
+    stopIncomingOrderAlertSound();
+
+    const playToneBurst = () => {
+        try {
+            const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtxClass) return;
+
+            if (!activeAudioCtx || activeAudioCtx.state === 'closed') {
+                activeAudioCtx = new AudioCtxClass();
+            }
+            if (activeAudioCtx.state === 'suspended') {
+                activeAudioCtx.resume();
+            }
+
+            const ctx = activeAudioCtx;
+            const now = ctx.currentTime;
+
+            // Melodic Porter/Zomato style attention chime (A5 -> D6 -> A5 -> E6)
+            const pattern = [
+                { freq: 880, time: 0, duration: 0.12 },
+                { freq: 1174.66, time: 0.14, duration: 0.20 },
+                { freq: 880, time: 0.38, duration: 0.12 },
+                { freq: 1318.51, time: 0.52, duration: 0.30 }
+            ];
+
+            pattern.forEach(({ freq, time, duration }) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'triangle'; // Rich, crisp bell timbre
+                osc.frequency.setValueAtTime(freq, now + time);
+
+                gain.gain.setValueAtTime(0, now + time);
+                gain.gain.linearRampToValueAtTime(0.5, now + time + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + time + duration);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(now + time);
+                osc.stop(now + time + duration);
+            });
+
+            // Vibrate device (if mobile)
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate([250, 100, 250, 100, 400]);
+            }
+        } catch (e) {
+            console.warn('Incoming order sound error:', e);
+        }
+    };
+
+    playToneBurst();
+    incomingOrderInterval = setInterval(playToneBurst, 1500);
+};
+
+export const stopIncomingOrderAlertSound = () => {
+    if (incomingOrderInterval) {
+        clearInterval(incomingOrderInterval);
+        incomingOrderInterval = null;
+    }
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(0);
+    }
+};

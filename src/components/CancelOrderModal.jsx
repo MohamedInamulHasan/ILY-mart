@@ -1,80 +1,83 @@
 import React from 'react';
-import { X, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import SwipeActionButton from './SwipeActionButton';
 
-const CancelOrderModal = ({ isOpen, onClose, onConfirm, isCancelling = false }) => {
+const CancelOrderModal = ({
+    order,
+    isOpen,
+    onClose,
+    onConfirmCancel,
+    isLoading = false
+}) => {
     const { t } = useLanguage();
+    if (!isOpen || !order) return null;
+
+    const orderIdShort = String(order._id || order.id || '000000').slice(-6).toUpperCase();
+    const customerName = order.shippingAddress?.name || order.user || t('Customer');
+    const street = order.shippingAddress?.street || '';
+    const city = order.shippingAddress?.city || 'Ilayangudi';
 
     return (
         <AnimatePresence>
-            {isOpen && (
-                <>
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="fixed inset-0 z-[100020] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm select-none"
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-4"
+                >
+                    <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
+                        <AlertTriangle size={32} />
+                    </div>
+
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                            {t('Cancel Order')} #{orderIdShort}?
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+                            {t('Are you sure you want to cancel this order?')}
+                        </p>
+                    </div>
+
+                    {/* Customer snippet */}
+                    <div className="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-3 text-xs text-gray-600 dark:text-gray-300">
+                        <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{customerName}</p>
+                        <p className="text-[11px] text-gray-400 truncate">{street}{city ? `, ${city}` : ''}</p>
+                    </div>
+
+                    {/* RED Swipe to Cancel Button */}
+                    <div className="pt-2">
+                        <SwipeActionButton
+                            variant="red"
+                            label={t('Swipe to Cancel')}
+                            loadingLabel={t('Cancelling...')}
+                            isLoading={isLoading}
+                            heightClass="h-[60px] sm:h-[64px]"
+                            knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                            onSuccess={onConfirmCancel}
+                        />
+                    </div>
+
+                    <button
+                        type="button"
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-[999] transition-all"
-                    />
-
-                    {/* Slide-up Container */}
-                    <motion.div
-                        initial={{ y: '100%' }}
-                        animate={{ y: 0 }}
-                        exit={{ y: '100%' }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed bottom-0 left-0 right-0 z-[1000] bg-white dark:bg-gray-900 rounded-t-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] overflow-hidden max-w-md mx-auto"
+                        disabled={isLoading}
+                        className="w-full py-2 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors uppercase tracking-wider"
                     >
-                        {/* Header */}
-                        <div className="px-6 pt-6 pb-4 flex items-center justify-between border-b border-gray-50 dark:border-gray-800">
-                            <h3 className="text-xl font-bold text-red-500 tracking-tight ml-auto mr-auto pl-6">
-                                {t('Cancel Order')}
-                            </h3>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-8 flex flex-col items-center">
-                            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-6">
-                                <RotateCcw size={32} className="text-red-600 dark:text-red-400" />
-                            </div>
-                            <h2 className="text-[22px] font-bold text-gray-900 dark:text-white text-center mb-3 leading-tight">
-                                {t('Are you sure want to cancel?')}
-                            </h2>
-                            <p className="text-sm font-medium text-gray-400 dark:text-gray-500 text-center mb-8">
-                                {t('This action cannot be undone.')}
-                            </p>
-
-                            {/* Buttons */}
-                            <div className="flex flex-col gap-3 w-full">
-                                <button
-                                    onClick={onConfirm}
-                                    disabled={isCancelling}
-                                    className="w-full py-4 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isCancelling ? t('Cancelling...') : t('Yes, Cancel')}
-                                </button>
-                                <button
-                                    onClick={onClose}
-                                    className="w-full py-4 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 rounded-full font-bold text-base border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
-                                >
-                                    {t('No, Keep')}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Safe Area spacing for mobile */}
-                        <div className="h-4" />
-                    </motion.div>
-                </>
-            )}
+                        {t('Keep Order')}
+                    </button>
+                </motion.div>
+            </motion.div>
         </AnimatePresence>
     );
 };

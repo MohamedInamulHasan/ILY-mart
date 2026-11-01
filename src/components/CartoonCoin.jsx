@@ -28,7 +28,6 @@ export const CartoonCoin = ({
             xmlns="http://www.w3.org/2000/svg"
             className={`inline-block select-none flex-shrink-0 transition-transform active:scale-95 ${className}`}
             style={{ 
-                filter: 'drop-shadow(0 2px 3px rgba(120, 53, 15, 0.28)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15))',
                 ...style 
             }}
         >
@@ -136,7 +135,6 @@ export const CartoonCoin = ({
                     stroke="#78350F" 
                     strokeWidth="2.2" 
                     strokeLinejoin="round" 
-                    style={{ filter: 'drop-shadow(0 1px 2px rgba(120, 53, 15, 0.35))' }}
                 />
             )}
 
@@ -186,10 +184,10 @@ export const CartoonCoinBadge = ({
     return (
         <div 
             onClick={onClick}
-            className={`inline-flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 dark:from-amber-500 dark:via-amber-600 dark:to-yellow-600 border-2 border-amber-600/70 dark:border-amber-400/60 shadow-[0_2px_6px_rgba(217,119,6,0.35),inset_0_1px_1px_rgba(255,255,255,0.7)] active:scale-95 transition-all select-none ${onClick ? 'cursor-pointer' : ''} ${className}`}
+            className={`inline-flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 dark:from-amber-500 dark:via-amber-600 dark:to-yellow-600 border-2 border-amber-600/70 dark:border-amber-400/60 active:scale-95 transition-all select-none ${onClick ? 'cursor-pointer' : ''} ${className}`}
         >
             <CartoonCoin size={size} showSparkle={true} />
-            <span className="text-[12px] font-black text-[#5C2B05] dark:text-white leading-none tracking-tight drop-shadow-[0_1px_0_rgba(255,255,255,0.5)] dark:drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
+            <span className="text-[12px] font-black text-[#5C2B05] dark:text-white leading-none tracking-tight">
                 {count} {showLabel && <span className="text-[10px] font-bold opacity-90">{label}</span>}
             </span>
         </div>
