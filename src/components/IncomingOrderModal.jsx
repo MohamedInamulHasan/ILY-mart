@@ -22,8 +22,8 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
     const [showCancelPopup, setShowCancelPopup] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
 
-    const isOutForDelivery = order?.status === 'Out for Delivery';
-    const isProcessing = order?.status === 'Processing' || order?.status === 'Pending';
+    const isOutForDelivery = order?.status === 'Out for Delivery' || order?.status === 'Shipped';
+    const isProcessing = order?.status === 'Processing' || order?.status === 'Pending' || order?.status === 'Order Placed' || order?.status === 'Confirmed';
     const isDelivered = order?.status === 'Delivered';
     const isCancelled = order?.status === 'Cancelled';
 
@@ -255,7 +255,7 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                     <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden">
                         <div className="p-4 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
-                                <div className="p-2 bg-green-50 dark:bg-emerald-950/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+                                <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <MapPin size={18} />
                                 </div>
                                 <h3 className="font-bold text-gray-900 dark:text-white text-sm">
@@ -265,10 +265,16 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                             {customerPhone && (
                                 <a
                                     href={`tel:${customerPhone}`}
-                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold transition-transform shadow-xs"
+                                    className="relative overflow-hidden flex items-center gap-2 px-4 py-2 rounded-xl bg-black dark:bg-black text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-black/80"
                                 >
-                                    <Phone size={13} />
-                                    <span>{t('Call')}</span>
+                                    {/* Continuous sliding light sheen shine effect */}
+                                    <motion.div
+                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
+                                        animate={{ x: ['-100%', '150%'] }}
+                                        transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                                    />
+                                    <Phone size={14} className="stroke-[2.5] relative z-10 text-white" />
+                                    <span className="relative z-10">{t('Call')}</span>
                                 </a>
                             )}
                         </div>
@@ -291,9 +297,9 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                                     href={dropMapsUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 text-xs font-bold bg-green-50 dark:bg-emerald-950/30 px-3.5 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-emerald-900/40 transition-all border border-emerald-200/60 dark:border-emerald-800/40 shadow-xs"
+                                    className="inline-flex items-center gap-1.5 text-[#2E5A2E] dark:text-[#CBF9B2] text-[12px] font-bold bg-green-50 dark:bg-[#CBF9B2]/10 px-3.5 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-[#CBF9B2]/20 transition-all border border-[#2E5A2E]/10 dark:border-[#CBF9B2]/20 shadow-xs"
                                 >
-                                    <Navigation size={13} className="text-emerald-600 dark:text-emerald-400" />
+                                    <Navigation size={13} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
                                     <span>{t('View on Map')}</span>
                                 </a>
                             </div>
@@ -310,15 +316,15 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
 
                                 return (
                                     <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                        <div className="flex items-center gap-2.5 text-gray-700 dark:text-gray-300">
-                                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700/60 flex items-center justify-center shrink-0">
-                                                <Clock size={16} className="text-gray-600 dark:text-gray-300" />
+                                        <div className="flex items-center gap-2.5 text-[#2E5A2E] dark:text-[#CBF9B2]">
+                                            <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center shrink-0">
+                                                <Clock size={16} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
                                             </div>
                                             <div className="text-left">
-                                                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 leading-tight">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 leading-tight">
                                                     {t('Scheduled Delivery')}
                                                 </p>
-                                                <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white">
                                                     {formattedRange}
                                                 </p>
                                             </div>
@@ -333,7 +339,7 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                     <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden">
                         <div className="p-4 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <div className="p-2 bg-green-50 dark:bg-emerald-950/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+                                <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <Package size={18} />
                                 </div>
                                 <h3 className="font-bold text-gray-900 dark:text-white text-sm">
@@ -367,8 +373,8 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                                                 {item.name}
                                             </h4>
 
-                                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1 mt-0.5 truncate">
-                                                <Store size={12} className="shrink-0 text-emerald-700 dark:text-emerald-300" />
+                                            <p className="text-xs font-bold text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center gap-1 mt-0.5 truncate">
+                                                <Store size={12} className="shrink-0 text-[#2E5A2E] dark:text-[#CBF9B2]" />
                                                 <span className="truncate">{itemStore}</span>
                                             </p>
 
@@ -425,7 +431,7 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                 </div>
 
                 {/* Bottom Action Area with safe mobile footer padding */}
-                <div className="p-4 pb-12 sm:pb-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
+                <div className="p-4 pb-14 sm:pb-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
                     {isOutForDelivery ? (
                         <SwipeActionButton
                             variant="green"

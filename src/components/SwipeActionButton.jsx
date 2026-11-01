@@ -14,6 +14,7 @@ const SwipeActionButton = ({
     heightClass = 'h-[60px] sm:h-[64px]',
     knobSizeClass = 'w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]',
     variant = 'green', // 'yellow' | 'amber' | 'blue' | 'sky' | 'green' | 'red'
+    autoReset = false,
     className = ''
 }) => {
     const trackRef = useRef(null);
@@ -34,8 +35,8 @@ const SwipeActionButton = ({
             case 'blue':
             case 'sky':
                 return {
-                    track: 'bg-sky-500 hover:bg-sky-600 border-sky-500',
-                    knob: 'text-sky-600'
+                    track: 'bg-[#0284c7] hover:bg-[#0369a1] border-[#0284c7]',
+                    knob: 'text-[#0284c7]'
                 };
             case 'red':
             case 'rose':
@@ -59,7 +60,7 @@ const SwipeActionButton = ({
         const updateWidth = () => {
             if (trackRef.current) {
                 const trackWidth = trackRef.current.clientWidth;
-                const knobWidth = knobRef.current?.offsetWidth || (trackWidth < 380 ? 48 : 52);
+                const knobWidth = knobRef.current?.offsetWidth || (trackWidth < 380 ? 44 : 50);
                 // 14px accounts for container padding (p-1.5 = 6px on each side + 2px safety)
                 const available = Math.max(0, trackWidth - knobWidth - 14);
                 if (available > 0) {
@@ -93,11 +94,16 @@ const SwipeActionButton = ({
         setIsDragging(false);
         const traveled = info.offset.x;
 
-        // Trigger success if swiped past 55% of available track length
-        if (traveled >= maxDrag * 0.55 && maxDrag > 30) {
+        // Trigger success if swiped past 45% of available track length
+        if (traveled >= maxDrag * 0.45 && maxDrag > 30) {
             setIsCompleted(true);
             if (onSuccess) {
                 onSuccess();
+            }
+            if (autoReset) {
+                setTimeout(() => {
+                    setIsCompleted(false);
+                }, 500);
             }
         } else {
             setIsCompleted(false);
@@ -107,17 +113,17 @@ const SwipeActionButton = ({
     return (
         <div
             ref={trackRef}
-            className={`relative w-full ${heightClass} rounded-full ${colors.track} text-white flex items-center p-1.5 overflow-hidden select-none border ${className}`}
+            className={`relative w-full ${heightClass} rounded-full ${colors.track} text-white flex items-center p-1.5 overflow-hidden select-none border shadow-xs ${className}`}
             style={{ touchAction: 'none' }}
         >
             {/* Continuous sliding light sheen animation from left to right */}
             <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none"
                 animate={{ x: ['-100%', '150%'] }}
-                transition={{ repeat: Infinity, duration: 1.8, ease: 'linear' }}
+                transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
             />
 
-            {/* Draggable Porter White Round Knob */}
+            {/* Draggable Porter White Round Knob with idle nudge/shake like in Porter Partner */}
             <motion.div
                 ref={knobRef}
                 drag={!isLoading && !isCompleted ? 'x' : false}
@@ -131,35 +137,41 @@ const SwipeActionButton = ({
                 animate={
                     isLoading || isCompleted
                         ? { x: maxDrag }
-                        : undefined
+                        : isDragging
+                        ? undefined
+                        : {
+                            x: [0, 9, -2, 7, 0, 0, 0, 0]
+                        }
                 }
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className={`${knobSizeClass} rounded-full bg-white ${colors.knob} flex items-center justify-center shrink-0 z-20 cursor-grab active:cursor-grabbing select-none shadow-none`}
+                transition={
+                    isLoading || isCompleted
+                        ? { type: 'spring', damping: 25, stiffness: 200 }
+                        : isDragging
+                        ? undefined
+                        : {
+                            repeat: Infinity,
+                            repeatDelay: 1.8,
+                            duration: 1.1,
+                            ease: 'easeInOut'
+                        }
+                }
+                className={`${knobSizeClass} rounded-full bg-white ${colors.knob} flex items-center justify-center shrink-0 z-20 cursor-grab active:cursor-grabbing select-none shadow-md`}
                 style={{ touchAction: 'none' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <ChevronsRight size={26} className={`stroke-[3.5] ${colors.knob}`} />
+                <ChevronsRight size={24} className={`stroke-[3.5] ${colors.knob}`} />
             </motion.div>
 
-            {/* Centered Track Label */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
-                <span className="font-black text-lg sm:text-xl tracking-wider uppercase text-white flex items-center gap-1.5 drop-shadow-none">
+            {/* Centered Track Label - Exactly in the center of button for all */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-4">
+                <span className="font-black text-base sm:text-lg tracking-wider uppercase text-white text-center select-none truncate">
                     {isLoading ? (
-                        <>
-                            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        <span className="inline-flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" />
                             <span>{loadingLabel}</span>
-                        </>
+                        </span>
                     ) : (
-                        <>
-                            <span>{label}</span>
-                            <motion.div
-                                className="flex items-center text-white/70 ml-1"
-                                animate={{ x: [0, 5, 0], opacity: [0.4, 1, 0.4] }}
-                                transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
-                            >
-                                <ChevronsRight size={18} />
-                            </motion.div>
-                        </>
+                        label
                     )}
                 </span>
             </div>

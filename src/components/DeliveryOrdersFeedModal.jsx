@@ -109,46 +109,26 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                 transition={{ duration: 0.2 }}
                 className="fixed inset-0 z-[99998] bg-[#E8EAEF] dark:bg-gray-900 w-full h-full min-h-screen flex flex-col overflow-hidden"
             >
-                {/* Header: Rectangle and White */}
-                <div className="w-full bg-white dark:bg-gray-800 border-b border-gray-200/80 dark:border-gray-700 px-4 py-3.5 shadow-xs shrink-0 relative">
+                {/* Header: Light Orange with dark text */}
+                <div className="w-full bg-[#FFEDD5] dark:bg-orange-950/40 border-b border-orange-200 dark:border-orange-900/40 px-4 py-3.5 shadow-xs shrink-0 relative">
                     <div className="w-full flex items-center justify-between min-h-[42px]">
                         {/* Back button (black, no round) */}
                         <button
                             type="button"
                             onClick={onClose}
                             title={t('Back')}
-                            className="p-1.5 text-black dark:text-white hover:opacity-70 transition-opacity active:scale-95"
+                            className="p-1.5 text-gray-900 dark:text-white hover:opacity-70 transition-opacity active:scale-95"
                         >
                             <ArrowLeft size={22} className="stroke-[2.5]" />
                         </button>
 
-                        {/* Centered Title & Subtitle */}
-                        <div className="flex flex-col items-center text-center">
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
-                                    {t('Orders List')}
-                                </h1>
-                                {pendingOrdersCount > 0 && (
-                                    <span className="w-5 h-5 min-w-[20px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center shadow-xs">
-                                        {pendingOrdersCount}
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-[11px] font-medium text-gray-600 dark:text-gray-400 mt-0.5 flex items-center gap-1">
-                                <ArrowUpDown size={11} className="text-gray-600 dark:text-gray-400" />
-                                <span>{t('Oldest First')} ({t('Old to New')})</span>
-                            </p>
-                        </div>
+                        {/* Centered Title */}
+                        <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center">
+                            {t('Orders List')}
+                        </h1>
 
-                        {/* Close button: Black X, no round */}
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            title={t('Close')}
-                            className="p-1.5 text-black dark:text-white hover:opacity-70 transition-opacity active:scale-95"
-                        >
-                            <X size={22} className="stroke-[2.5]" />
-                        </button>
+                        {/* Spacer to keep title perfectly centered */}
+                        <div className="w-[34px] pointer-events-none" />
                     </div>
                 </div>
 
@@ -236,10 +216,17 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                             </div>
                                         )}
 
-                                        {/* Customer & Location snippet in Dark Grey */}
+                                        {/* Customer Name */}
                                         {customerName && (
-                                            <p className="text-center text-xs text-gray-800 dark:text-gray-100 mt-2 truncate font-bold">
-                                                {customerName} • {locationSnippet} {order.items?.length > 0 ? `(${order.items.length} items)` : ''}
+                                            <p className="text-center text-xs sm:text-sm text-gray-900 dark:text-white font-bold mt-2 truncate">
+                                                {customerName}
+                                            </p>
+                                        )}
+
+                                        {/* Address below Name */}
+                                        {(locationSnippet || order.items?.length > 0) && (
+                                            <p className="text-center text-[11px] sm:text-xs text-gray-600 dark:text-gray-300 font-medium mt-0.5 truncate">
+                                                {[locationSnippet, order.items?.length > 0 ? `(${order.items.length} items)` : ''].filter(Boolean).join(' ')}
                                             </p>
                                         )}
 
@@ -271,7 +258,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                         })()}
                                     </div>
 
-                                    {/* Action Button: Swipe to Accept with Big Letters */}
+                                    {/* Action Button: Swipe to View Order with incoming yellow theme */}
                                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                                         {isCancelled ? (
                                             <div className="w-full py-3.5 text-center text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-full">
@@ -279,13 +266,13 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                             </div>
                                         ) : (
                                             <SwipeActionButton
-                                                variant="green"
-                                                label={t('ACCEPT')}
-                                                loadingLabel={t('Opening...')}
-                                                heightClass="h-[60px] sm:h-[64px]"
-                                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                                variant="yellow"
+                                                label={t('VIEW ORDER')}
+                                                autoReset={true}
+                                                heightClass="h-[56px] sm:h-[60px]"
+                                                knobSizeClass="w-[44px] h-[44px] sm:w-[48px] sm:h-[48px]"
                                                 onSuccess={() => {
-                                                    onClose();
+                                                    if (onClose) onClose();
                                                     onSelectOrder(order);
                                                 }}
                                             />

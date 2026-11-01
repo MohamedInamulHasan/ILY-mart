@@ -307,49 +307,43 @@ const DeliveryDashboard = () => {
                 }}
             />
 
-            {/* Header */}
-            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#2E5A2E]/20 rounded-full blur-3xl pointer-events-none"></div>
+            {/* Header: Light Blue with dark text and icons */}
+            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#BAE6FD] dark:bg-sky-950/50 border-b border-sky-200 dark:border-sky-900/40 px-4 py-3.5 shadow-xs shrink-0">
+                <div className="w-full flex items-center justify-between min-h-[40px]">
+                    {/* Left: Bell button (opens Orders List feed) */}
+                    <button
+                        type="button"
+                        onClick={() => setShowOrdersFeed(true)}
+                        title={t('Orders List')}
+                        className="relative p-1.5 text-gray-900 dark:text-white hover:opacity-70 transition-opacity active:scale-95"
+                    >
+                        <Bell size={22} className="stroke-[2.5]" />
+                        {pendingOrdersCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 min-w-[20px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-[#BAE6FD] dark:border-sky-950 shadow-xs">
+                                {pendingOrdersCount}
+                            </span>
+                        )}
+                    </button>
 
-                <div className="relative z-10">
-                    <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                            <button
-                                type="button"
-                                onClick={() => setShowOrdersFeed(true)}
-                                title={t('Orders List')}
-                                className="relative w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/90 rounded-full text-black transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50"
-                            >
-                                <Bell size={20} className="text-black stroke-[2.2]" />
-                                {pendingOrdersCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 min-w-[20px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
-                                        {pendingOrdersCount}
-                                    </span>
-                                )}
-                            </button>
-                        </div>
-                        <div className="flex flex-col text-center">
-                            <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight">
-                                {t('Delivery Panel')}
-                            </h1>
-                            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600 mt-0.5">
-                                {t('Manage Deliveries')}
-                            </p>
-                        </div>
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <button
-                                onClick={() => setShowLogoutModal(true)}
-                                className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-red-600 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50"
-                            >
-                                <LogOut size={20} />
-                            </button>
-                        </div>
-                    </div>
+                    {/* Center: Title */}
+                    <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center">
+                        {t('Delivery Panel')}
+                    </h1>
+
+                    {/* Right: Logout button */}
+                    <button
+                        type="button"
+                        onClick={() => setShowLogoutModal(true)}
+                        title={t('Logout')}
+                        className="p-1.5 text-red-500 hover:opacity-70 transition-opacity active:scale-95"
+                    >
+                        <LogOut size={22} className="stroke-[2.5]" />
+                    </button>
                 </div>
             </div>
 
             <PullToRefreshLayout>
-                <div className="pt-[95px]">
+                <div className="pt-[72px]">
                     <div className="px-5 mt-2 max-w-3xl mx-auto">
                         {/* Porter-style Floating Logo Banner (when permission not yet granted on Android) */}
                         {isNativeAndroid() && !hasOverlayPermission && (
@@ -472,10 +466,17 @@ const DeliveryDashboard = () => {
                                                     </div>
                                                 )}
 
-                                                {/* Customer Name • City (items count) in Dark Grey */}
+                                                {/* Customer Name */}
                                                 {customerName && (
-                                                    <p className="text-center text-xs text-gray-800 dark:text-gray-100 mt-2 truncate font-bold">
-                                                        {customerName} • {locationSnippet} {order.items?.length > 0 ? `(${order.items.length} items)` : ''}
+                                                    <p className="text-center text-xs sm:text-sm text-gray-900 dark:text-white font-bold mt-2 truncate">
+                                                        {customerName}
+                                                    </p>
+                                                )}
+
+                                                {/* Address below Name */}
+                                                {(locationSnippet || order.items?.length > 0) && (
+                                                    <p className="text-center text-[11px] sm:text-xs text-gray-600 dark:text-gray-300 font-medium mt-0.5 truncate">
+                                                        {[locationSnippet, order.items?.length > 0 ? `(${order.items.length} items)` : ''].filter(Boolean).join(' ')}
                                                     </p>
                                                 )}
 
@@ -507,19 +508,9 @@ const DeliveryDashboard = () => {
                                                 })()}
                                             </div>
 
-                                                {/* Action Button: Swipe to Accept / Deliver with Big Bold Letters */}
+                                                {/* Action Button: Swipe to View Order with related status color */}
                                                 <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
-                                                    {isOutForDelivery ? (
-                                                        <SwipeActionButton
-                                                            variant="green"
-                                                            label={t('DELIVERED')}
-                                                            loadingLabel={t('Delivering...')}
-                                                            isLoading={updatingOrderId === (order._id || order.id)}
-                                                            heightClass="h-[60px] sm:h-[64px]"
-                                                            knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
-                                                            onSuccess={() => handleStatusUpdate(order._id || order.id, 'Delivered')}
-                                                        />
-                                                    ) : isDelivered ? (
+                                                    {isDelivered ? (
                                                         <div className="w-full py-3.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center gap-1.5 shadow-xs">
                                                             <CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
                                                             <span>{t('Delivered Successfully')}</span>
@@ -530,11 +521,11 @@ const DeliveryDashboard = () => {
                                                         </div>
                                                     ) : (
                                                         <SwipeActionButton
-                                                            variant="green"
-                                                            label={t('ACCEPT')}
-                                                            loadingLabel={t('Opening...')}
-                                                            heightClass="h-[60px] sm:h-[64px]"
-                                                            knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                                            variant={isOutForDelivery ? 'blue' : 'yellow'}
+                                                            label={t('VIEW ORDER')}
+                                                            autoReset={true}
+                                                            heightClass="h-[56px] sm:h-[60px]"
+                                                            knobSizeClass="w-[44px] h-[44px] sm:w-[48px] sm:h-[48px]"
                                                             onSuccess={() => setSelectedOrderForAccept(order)}
                                                         />
                                                     )}
