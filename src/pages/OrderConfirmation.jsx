@@ -28,20 +28,19 @@ const OrderConfirmation = () => {
         return <Navigate to="/" replace />;
     }
 
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [createdOrderId, setCreatedOrderId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Hide navbar when modals are open
     useEffect(() => {
-        setIsFooterHidden(showConfirmModal || showSuccessModal);
+        setIsFooterHidden(showSuccessModal);
         return () => setIsFooterHidden(false);
-    }, [showConfirmModal, showSuccessModal, setIsFooterHidden]);
+    }, [showSuccessModal, setIsFooterHidden]);
 
     const handleConfirmOrder = () => {
         unlockAudio();
-        setShowConfirmModal(true);
+        confirmOrderAction();
     };
 
     const confirmOrderAction = async () => {
@@ -131,9 +130,8 @@ const OrderConfirmation = () => {
         console.log('📦 Creating order with data:', newOrder);
         console.log('⏰ scheduledDeliveryTime in order:', newOrder.scheduledDeliveryTime);
 
-        // INSTANT UPDATE: Immediately update UI, play sound, close confirm modal, show success modal & clear cart
+        // INSTANT UPDATE: Immediately update UI, play sound, show success modal & clear cart
         playSuccessSound();
-        setShowConfirmModal(false);
         setShowSuccessModal(true);
         if (!isDirectPurchase) {
             clearCart();
@@ -415,51 +413,18 @@ const OrderConfirmation = () => {
 
                         <button
                             onClick={handleConfirmOrder}
-                            className="w-full bg-black text-white rounded-full py-4 flex items-center justify-center font-normal text-[15px] active:scale-[0.98] transition-transform"
+                            disabled={isSubmitting}
+                            className="w-full bg-black text-white rounded-full py-4 flex items-center justify-center font-normal text-[15px] active:scale-[0.98] transition-transform disabled:opacity-50"
                         >
-                            {t('Place Order')}
+                            {isSubmitting ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                t('Place Order')
+                            )}
                         </button>
                     </div>
                 </div>
             </div>
-
-
-
-            {showConfirmModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] max-w-sm w-full p-8 transform transition-all border border-gray-100 dark:border-gray-700">
-                        <div className="text-center">
-                            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-50 dark:bg-gray-700 mb-6 shadow-inner relative">
-                                <ShoppingBag className="h-10 w-10 text-black dark:text-white relative z-10" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                                {t('Ready to Wrap Up?')}
-                            </h3>
-                            <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                                {t('You are just one step away from confirming your order. Do you want to proceed?')}
-                            </p>
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    onClick={confirmOrderAction}
-                                    disabled={isSubmitting}
-                                    className="w-full px-4 py-4 text-sm font-normal text-white bg-black hover:bg-gray-900 rounded-full shadow-lg shadow-gray-200 dark:shadow-gray-900/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                                >
-                                    {isSubmitting ? (
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    ) : t('Confirm Order')}
-                                </button>
-                                <button
-                                    onClick={() => setShowConfirmModal(false)}
-                                    disabled={isSubmitting}
-                                    className="w-full px-4 py-3 text-sm font-normal text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
-                                >
-                                    {t('Cancel')}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <AnimatePresence>
                 {showSuccessModal && (
