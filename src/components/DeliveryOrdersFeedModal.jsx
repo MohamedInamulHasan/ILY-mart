@@ -348,7 +348,6 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    if (onClose) onClose();
                                                     onSelectOrder(order);
                                                 }}
                                                 className="relative overflow-hidden w-full py-3.5 rounded-full bg-[#00C988] hover:bg-[#00b57a] active:scale-95 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all select-none"
@@ -379,7 +378,6 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                                 heightClass="h-[56px] sm:h-[60px]"
                                                 knobSizeClass="w-[44px] h-[44px] sm:w-[48px] sm:h-[48px]"
                                                 onSuccess={() => {
-                                                    if (onClose) onClose();
                                                     onSelectOrder(order);
                                                 }}
                                             />

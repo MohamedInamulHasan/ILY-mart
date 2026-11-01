@@ -443,9 +443,20 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                             onSuccess={handleMainSwipeAction}
                         />
                     ) : isDelivered ? (
-                        <div className="w-full py-4 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-black text-sm flex items-center justify-center gap-2 shadow-xs">
-                            <CheckCircle size={20} className="text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
-                            <span>{t('Delivered Successfully')}</span>
+                        <div className="relative overflow-hidden w-full py-4 rounded-full bg-[#00C988] text-white font-black text-sm flex items-center justify-center gap-2 shadow-md select-none">
+                            {/* Animated sheen shine effect */}
+                            <motion.div
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"
+                                animate={{ x: ['-100%', '200%'] }}
+                                transition={{
+                                    repeat: Infinity,
+                                    duration: 2,
+                                    ease: 'easeInOut',
+                                    repeatDelay: 0.5
+                                }}
+                            />
+                            <CheckCircle size={20} className="text-white stroke-[2.8] relative z-10" />
+                            <span className="relative z-10">{t('Delivered Successfully')}</span>
                         </div>
                     ) : (
                         <div className="w-full py-3.5 rounded-full text-center text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
