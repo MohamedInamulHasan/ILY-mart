@@ -424,12 +424,12 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                     </div>
                 </div>
 
-                {/* Bottom Action Area */}
-                <div className="p-4 sm:p-5 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
+                {/* Bottom Action Area with safe mobile footer padding */}
+                <div className="p-4 pb-12 sm:pb-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
                     {isOutForDelivery ? (
                         <SwipeActionButton
                             variant="green"
-                            label={t('Swipe to Deliver')}
+                            label={t('DELIVERED')}
                             loadingLabel={t('Delivering...')}
                             isLoading={isActionLoading}
                             heightClass="h-[68px] sm:h-[72px]"
@@ -439,7 +439,7 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                     ) : isProcessing ? (
                         <SwipeActionButton
                             variant="yellow"
-                            label={t('Swipe to Accept')}
+                            label={t('ACCEPT')}
                             loadingLabel={t('Accepting...')}
                             isLoading={isActionLoading}
                             heightClass="h-[68px] sm:h-[72px]"

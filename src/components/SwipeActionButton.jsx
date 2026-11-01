@@ -143,7 +143,7 @@ const SwipeActionButton = ({
 
             {/* Centered Track Label */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
-                <span className="font-black text-base sm:text-lg tracking-wide text-white flex items-center gap-1.5 drop-shadow-none">
+                <span className="font-black text-lg sm:text-xl tracking-wider uppercase text-white flex items-center gap-1.5 drop-shadow-none">
                     {isLoading ? (
                         <>
                             <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />

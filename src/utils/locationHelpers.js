@@ -297,7 +297,7 @@ export const getCurrentLocation = async () => {
                 console.log('📍 Native: Attempting high accuracy getCurrentPosition...');
                 const position = await Geolocation.getCurrentPosition({
                     enableHighAccuracy: true,
-                    timeout: 8000, // 8 seconds timeout
+                    timeout: 15000, // 15 seconds for satellite lock
                     maximumAge: 30000
                 });
                 
@@ -361,13 +361,13 @@ export const getCurrentLocation = async () => {
                             { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
                         );
                     },
-                    { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 }
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
                 );
             });
 
             // Hard 8.5s timeout so real GPS has time to lock onto satellites
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('GPS_TIMEOUT')), 8500)
+                setTimeout(() => reject(new Error('GPS_TIMEOUT')), 16000)
             );
 
             const position = await Promise.race([getBrowserPosition(), timeoutPromise]);
@@ -398,6 +398,17 @@ export const getCurrentLocation = async () => {
                 const lon = data[provider.lonKey];
 
                 if (lat && lon) {
+                    // Check distance from Ilayangudi center (9.6456, 78.6321)
+                    const dLat = (lat - 9.6456) * 111;
+                    const dLon = (lon - 78.6321) * 111;
+                    const distKm = Math.sqrt(dLat * dLat + dLon * dLon);
+                    
+                    // If cellular IP maps to gateway city (Trichy/Chennai > 45km away), ignore remote IP
+                    if (distKm > 45) {
+                        console.warn(`⚠️ IP location is ${Math.round(distKm)}km away from service area (${data[provider.cityKey]}), rejecting remote IP.`);
+                        continue;
+                    }
+
                     console.log(`✅ IP-based geolocation successful using ${provider.url}:`, lat, lon);
                     return await buildResult(lat, lon, { 
                         isIPFallback: true, 

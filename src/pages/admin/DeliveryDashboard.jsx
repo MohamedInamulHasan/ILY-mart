@@ -37,6 +37,7 @@ import { API_BASE_URL } from '../../utils/api';
 import LogoutModal from '../../components/LogoutModal';
 import { CartoonCoin } from '../../components/CartoonCoin';
 import ShineActionButton from '../../components/ShineActionButton';
+import SwipeActionButton from '../../components/SwipeActionButton';
 import { playSuccessSound } from '../../utils/soundHelper';
 import { motion, AnimatePresence } from 'framer-motion';
 import PullToRefreshLayout from '../../components/PullToRefreshLayout';
@@ -413,7 +414,9 @@ const DeliveryDashboard = () => {
                                     {displayData.map(order => {
                                         const orderIdShort = String(order._id || order.id || '000000').slice(-6).toUpperCase();
                                         const customerName = order.shippingAddress?.name || order.user || '';
+                                        const street = order.shippingAddress?.street || '';
                                         const city = order.shippingAddress?.city || 'Ilayangudi';
+                                        const locationSnippet = street ? `${street}, ${city}` : city;
                                         const deliveryCharge = order.shipping !== undefined && order.shipping !== null
                                             ? order.shipping
                                             : (order.deliveryCharge !== undefined ? order.deliveryCharge : 20);
@@ -472,7 +475,7 @@ const DeliveryDashboard = () => {
                                                 {/* Customer Name • City (items count) in Dark Grey */}
                                                 {customerName && (
                                                     <p className="text-center text-xs text-gray-800 dark:text-gray-100 mt-2 truncate font-bold">
-                                                        {customerName} • {city} {order.items?.length > 0 ? `(${order.items.length} items)` : ''}
+                                                        {customerName} • {locationSnippet} {order.items?.length > 0 ? `(${order.items.length} items)` : ''}
                                                     </p>
                                                 )}
 
@@ -504,13 +507,37 @@ const DeliveryDashboard = () => {
                                                 })()}
                                             </div>
 
-                                                {/* View Order: Green Shine Button without arrow */}
+                                                {/* Action Button: Swipe to Accept / Deliver with Big Bold Letters */}
                                                 <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
-                                                    <ShineActionButton
-                                                        variant="green"
-                                                        label={t('View Order')}
-                                                        onClick={() => setSelectedOrderForAccept(order)}
-                                                    />
+                                                    {isOutForDelivery ? (
+                                                        <SwipeActionButton
+                                                            variant="green"
+                                                            label={t('DELIVERED')}
+                                                            loadingLabel={t('Delivering...')}
+                                                            isLoading={updatingOrderId === (order._id || order.id)}
+                                                            heightClass="h-[60px] sm:h-[64px]"
+                                                            knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                                            onSuccess={() => handleStatusUpdate(order._id || order.id, 'Delivered')}
+                                                        />
+                                                    ) : isDelivered ? (
+                                                        <div className="w-full py-3.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center gap-1.5 shadow-xs">
+                                                            <CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                                                            <span>{t('Delivered Successfully')}</span>
+                                                        </div>
+                                                    ) : isCancelled ? (
+                                                        <div className="w-full py-3.5 text-center text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-full">
+                                                            {t('Cancelled')}
+                                                        </div>
+                                                    ) : (
+                                                        <SwipeActionButton
+                                                            variant="green"
+                                                            label={t('ACCEPT')}
+                                                            loadingLabel={t('Opening...')}
+                                                            heightClass="h-[60px] sm:h-[64px]"
+                                                            knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                                            onSuccess={() => setSelectedOrderForAccept(order)}
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
                                         );

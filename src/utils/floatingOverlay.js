@@ -62,3 +62,14 @@ export const hideFloatingOverlay = async () => {
     }
 };
 
+/**
+ * Porter Partner style: wake up screen and display incoming order alert on screen
+ */
+export const triggerIncomingOrderAlert = async () => {
+    if (!isNativeAndroid()) return;
+    try {
+        await FloatingOverlay.triggerIncomingAlert();
+    } catch (err) {
+        console.warn('Error triggering incoming order alert:', err);
+    }
+};

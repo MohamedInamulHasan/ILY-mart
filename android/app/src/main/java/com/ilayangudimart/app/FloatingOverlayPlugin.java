@@ -1,8 +1,10 @@
 package com.ilayangudimart.app;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
 import android.provider.Settings;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -85,5 +87,34 @@ public class FloatingOverlayPlugin extends Plugin {
         ret.put("running", FloatingLogoService.isRunning);
         call.resolve(ret);
     }
-}
 
+    @PluginMethod
+    public void triggerIncomingAlert(PluginCall call) {
+        try {
+            Context context = getContext();
+            Intent intent = new Intent(context, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+            try {
+                PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                if (pm != null) {
+                    PowerManager.WakeLock wakeLock = pm.newWakeLock(
+                            PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                            "ILYMart:IncomingAlert"
+                    );
+                    wakeLock.acquire(10000);
+                }
+            } catch (Exception ignored) {}
+
+            context.startActivity(intent);
+
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("FAILED_ALERT", e.getMessage());
+        }
+    }
+}

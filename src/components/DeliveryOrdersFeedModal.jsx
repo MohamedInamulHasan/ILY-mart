@@ -174,7 +174,9 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                             const isFreeDelivery = Number(deliveryCharge) <= 0;
                             const orderTimeStr = formatOrderTime(order);
                             const customerName = order.shippingAddress?.name || '';
+                            const street = order.shippingAddress?.street || '';
                             const city = order.shippingAddress?.city || 'Ilayangudi';
+                            const locationSnippet = street ? `${street}, ${city}` : city;
                             const isCancelled = order.status === 'Cancelled';
                             const isProcessing = order.status === 'Processing' || order.status === 'Pending';
 
@@ -237,7 +239,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                         {/* Customer & Location snippet in Dark Grey */}
                                         {customerName && (
                                             <p className="text-center text-xs text-gray-800 dark:text-gray-100 mt-2 truncate font-bold">
-                                                {customerName} • {city} {order.items?.length > 0 ? `(${order.items.length} items)` : ''}
+                                                {customerName} • {locationSnippet} {order.items?.length > 0 ? `(${order.items.length} items)` : ''}
                                             </p>
                                         )}
 
@@ -269,16 +271,25 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                         })()}
                                     </div>
 
-                                    {/* Action Button: Yellow for Processing, Grey for Cancelled */}
+                                    {/* Action Button: Swipe to Accept with Big Letters */}
                                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
-                                        <ShineActionButton
-                                            variant={isCancelled ? 'cancelled' : isProcessing ? 'yellow' : 'green'}
-                                            label={t('View Order')}
-                                            onClick={() => {
-                                                onClose();
-                                                onSelectOrder(order);
-                                            }}
-                                        />
+                                        {isCancelled ? (
+                                            <div className="w-full py-3.5 text-center text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-full">
+                                                {t('Cancelled')}
+                                            </div>
+                                        ) : (
+                                            <SwipeActionButton
+                                                variant="green"
+                                                label={t('ACCEPT')}
+                                                loadingLabel={t('Opening...')}
+                                                heightClass="h-[60px] sm:h-[64px]"
+                                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                                onSuccess={() => {
+                                                    onClose();
+                                                    onSelectOrder(order);
+                                                }}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             );

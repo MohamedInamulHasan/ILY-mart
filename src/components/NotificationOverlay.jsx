@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Bell, CheckCircle, Truck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import IncomingOrderModal from './IncomingOrderModal';
+import { triggerIncomingOrderAlert } from '../utils/floatingOverlay';
 
 const NotificationOverlay = () => {
     const { socket } = useSocket();
@@ -82,6 +83,7 @@ const NotificationOverlay = () => {
                 createdAt: new Date().toISOString()
             };
             setIncomingOrder(testOrder);
+            triggerIncomingOrderAlert();
 
             // Show native OS notification test
             if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
@@ -94,6 +96,7 @@ const NotificationOverlay = () => {
                     notif.onclick = () => {
                         window.focus();
                         setIncomingOrder(testOrder);
+            triggerIncomingOrderAlert();
                     };
                 } catch (err) {}
             }
@@ -124,6 +127,7 @@ const NotificationOverlay = () => {
             // Show Porter-style full incoming order alert ONLY to Delivery Boys
             if (isDeliveryBoy) {
                 setIncomingOrder(order);
+                triggerIncomingOrderAlert();
 
                 // Show Native System Notification (pops up outside browser if minimized)
                 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
