@@ -23,7 +23,8 @@ import {
     Phone,
     Navigation,
     Store,
-    CreditCard
+    CreditCard,
+    Check
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -307,8 +308,8 @@ const DeliveryDashboard = () => {
                 }}
             />
 
-            {/* Header: Light Blue with dark text and icons */}
-            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#BAE6FD] dark:bg-sky-950/50 border-b border-sky-200 dark:border-sky-900/40 px-4 py-3.5 shadow-xs shrink-0">
+            {/* Header: Clean White Header */}
+            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-800 border-b border-gray-200/80 dark:border-gray-700 px-4 py-3.5 shadow-xs shrink-0">
                 <div className="w-full flex items-center justify-between min-h-[40px]">
                     {/* Left: Bell button (opens Orders List feed) */}
                     <button
@@ -319,7 +320,7 @@ const DeliveryDashboard = () => {
                     >
                         <Bell size={22} className="stroke-[2.5]" />
                         {pendingOrdersCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 min-w-[20px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-[#BAE6FD] dark:border-sky-950 shadow-xs">
+                            <span className="absolute -top-1 -right-1 w-5 h-5 min-w-[20px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-xs">
                                 {pendingOrdersCount}
                             </span>
                         )}
@@ -508,30 +509,41 @@ const DeliveryDashboard = () => {
                                                 })()}
                                             </div>
 
-                                                {/* Action Button: Swipe to View Order with related status color */}
-                                                <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
-                                                    {isDelivered ? (
-                                                        <div className="w-full py-3.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center gap-1.5 shadow-xs">
-                                                            <CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
-                                                            <span>{t('Delivered Successfully')}</span>
-                                                        </div>
-                                                    ) : isCancelled ? (
-                                                        <div className="w-full py-3.5 text-center text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-full">
-                                                            {t('Cancelled')}
-                                                        </div>
-                                                    ) : (
-                                                        <SwipeActionButton
-                                                            variant={isOutForDelivery ? 'blue' : 'yellow'}
-                                                            label={t('VIEW ORDER')}
-                                                            autoReset={true}
-                                                            heightClass="h-[56px] sm:h-[60px]"
-                                                            knobSizeClass="w-[44px] h-[44px] sm:w-[48px] sm:h-[48px]"
-                                                            onSuccess={() => setSelectedOrderForAccept(order)}
+                                            {/* Action Button: Swipe to View Order with related status color */}
+                                            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
+                                                {isDelivered ? (
+                                                    <div className="relative overflow-hidden w-full py-3.5 rounded-full bg-[#00C988] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md select-none">
+                                                        {/* Animated sheen shine effect */}
+                                                        <motion.div
+                                                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"
+                                                            animate={{ x: ['-100%', '200%'] }}
+                                                            transition={{
+                                                                repeat: Infinity,
+                                                                duration: 2,
+                                                                ease: 'easeInOut',
+                                                                repeatDelay: 0.5
+                                                            }}
                                                         />
-                                                    )}
-                                                </div>
+                                                        <CheckCircle size={17} className="text-white stroke-[2.8] relative z-10" />
+                                                        <span className="relative z-10">{t('Delivered Successfully')}</span>
+                                                    </div>
+                                                ) : isCancelled ? (
+                                                    <div className="w-full py-3.5 text-center text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-full">
+                                                        {t('Cancelled')}
+                                                    </div>
+                                                ) : (
+                                                    <SwipeActionButton
+                                                        variant={isOutForDelivery ? 'blue' : 'yellow'}
+                                                        label={t('VIEW ORDER')}
+                                                        autoReset={true}
+                                                        heightClass="h-[56px] sm:h-[60px]"
+                                                        knobSizeClass="w-[44px] h-[44px] sm:w-[48px] sm:h-[48px]"
+                                                        onSuccess={() => setSelectedOrderForAccept(order)}
+                                                    />
+                                                )}
                                             </div>
-                                        );
+                                        </div>
+                                    );
                                     })}
                                 </div>
                             ) : (

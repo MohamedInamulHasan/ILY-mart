@@ -134,22 +134,11 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                             />
 
 
-                            {/* Diagonal light sheen shine effect: top-left corner to bottom-right */}
+                            {/* Continuous light sheen shine effect */}
                             <motion.div
-                                className="absolute -top-[100%] -left-[100%] w-[250%] h-[250%] pointer-events-none z-[2]"
-                                style={{
-                                    background: 'linear-gradient(135deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.38) 50%, rgba(255,255,255,0) 65%)'
-                                }}
-                                animate={{
-                                    x: ['-70%', '70%'],
-                                    y: ['-70%', '70%']
-                                }}
-                                transition={{
-                                    repeat: Infinity,
-                                    repeatDelay: 1.2,
-                                    duration: 2.2,
-                                    ease: 'easeInOut'
-                                }}
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none z-[2]"
+                                animate={{ x: ['-100%', '150%'] }}
+                                transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
                             />
 
                             {/* Store Name Badge - Now Very Small */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, MapPin, Package, ChevronsRight, X, Volume2, VolumeX, Navigation, Clock, CreditCard, Store, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
+import { Phone, MapPin, Package, ChevronsRight, X, Volume2, VolumeX, Navigation, Clock, CreditCard, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
@@ -194,18 +194,7 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                 {/* Top Header Section - Clean Solid Background, Grey Texts & Green Price */}
                 <div className="bg-white dark:bg-gray-800 pt-7 pb-4 px-6 relative text-center shrink-0 border-b border-gray-100 dark:border-gray-750">
                     {/* Top right controls: Black X (no round background) */}
-                    <div className="absolute top-4 right-4 flex items-center gap-2">
-                        {isProcessing && (
-                            <button
-                                type="button"
-                                onClick={toggleMute}
-                                title={isMuted ? 'Unmute alert' : 'Mute alert'}
-                                className="p-1.5 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors"
-                            >
-                                {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} className="animate-pulse" />}
-                            </button>
-                        )}
-                        {/* Black X button with NO round background */}
+                    <div className="absolute top-4 right-4 flex items-center">
                         <button
                             type="button"
                             onClick={handleDismissView}
@@ -373,10 +362,11 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                                                 {item.name}
                                             </h4>
 
-                                            <p className="text-xs font-bold text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center gap-1 mt-0.5 truncate">
-                                                <Store size={12} className="shrink-0 text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                                                <span className="truncate">{itemStore}</span>
-                                            </p>
+                                            {itemStore && (
+                                                <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                    {itemStore}
+                                                </p>
+                                            )}
 
                                             <div className="flex items-center justify-between mt-1.5">
                                                 <div>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Clock, Package, ArrowUpDown, Trash2, X, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Clock, Package, ArrowUpDown, Trash2, X, AlertTriangle, Check, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { useUpdateOrderStatus } from '../hooks/queries/useOrders';
+import { useUpdateOrderStatus, useDeleteOrder } from '../hooks/queries/useOrders';
 import { playSuccessSound } from '../utils/soundHelper';
 import { CartoonCoin } from './CartoonCoin';
 import ShineActionButton from './ShineActionButton';
@@ -12,10 +12,16 @@ import { formatDeliveryRangeFromDate } from '../utils/storeHelpers';
 const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }) => {
     const { t } = useLanguage();
     const { mutateAsync: updateOrderStatus } = useUpdateOrderStatus();
+    const { mutateAsync: deleteOrder } = useDeleteOrder();
 
     const [orderToCancel, setOrderToCancel] = useState(null);
     const [showCancelPopup, setShowCancelPopup] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [showDeliveredOnly, setShowDeliveredOnly] = useState(false);
+
+    const [orderToDelete, setOrderToDelete] = useState(null);
+    const [showDeletePopup, setShowDeletePopup] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     if (!isOpen) return null;
 
@@ -55,11 +61,17 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
         }
     };
 
-    // "processing and cancelled are put in the bell"
+    // Feed orders: toggle between pending/cancelled orders and delivered orders
     const feedOrders = orders
-        .filter((o) => ['Processing', 'Pending', 'Cancelled'].includes(o.status))
+        .filter((o) => showDeliveredOnly
+            ? ['Delivered', 'Completed'].includes(o.status)
+            : ['Processing', 'Pending', 'Cancelled'].includes(o.status)
+        )
         .slice()
         .sort((a, b) => {
+            if (showDeliveredOnly) {
+                return getOrderTimeMs(b) - getOrderTimeMs(a);
+            }
             const rankA = getStatusRank(a.status);
             const rankB = getStatusRank(b.status);
             if (rankA !== rankB) return rankA - rankB;
@@ -99,6 +111,24 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
         }
     };
 
+    // Delete cancelled order action
+    const handleConfirmDelete = async () => {
+        if (!orderToDelete || isDeleting) return;
+        setIsDeleting(true);
+        try {
+            const id = orderToDelete._id || orderToDelete.id;
+            await deleteOrder(id);
+            playSuccessSound();
+            setShowDeletePopup(false);
+            setOrderToDelete(null);
+        } catch (error) {
+            console.error('Failed to delete order:', error);
+            alert(t('Failed to delete order'));
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <AnimatePresence>
             {/* FULL PAGE view with grey background matching Delivery Panel */}
@@ -109,8 +139,8 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                 transition={{ duration: 0.2 }}
                 className="fixed inset-0 z-[99998] bg-[#E8EAEF] dark:bg-gray-900 w-full h-full min-h-screen flex flex-col overflow-hidden"
             >
-                {/* Header: Light Orange with dark text */}
-                <div className="w-full bg-[#FFEDD5] dark:bg-orange-950/40 border-b border-orange-200 dark:border-orange-900/40 px-4 py-3.5 shadow-xs shrink-0 relative">
+                {/* Header: Clean White Header */}
+                <div className="w-full bg-white dark:bg-gray-800 border-b border-gray-200/80 dark:border-gray-700 px-4 py-3.5 shadow-xs shrink-0 relative">
                     <div className="w-full flex items-center justify-between min-h-[42px]">
                         {/* Back button (black, no round) */}
                         <button
@@ -124,11 +154,44 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
 
                         {/* Centered Title */}
                         <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center">
-                            {t('Orders List')}
+                            {showDeliveredOnly ? t('Delivered Orders') : t('Orders List')}
                         </h1>
 
-                        {/* Spacer to keep title perfectly centered */}
-                        <div className="w-[34px] pointer-events-none" />
+                        {/* Right: Pendings icon + Green squircle tick button */}
+                        <div className="flex items-center gap-2">
+                            {/* Pendings icon: click to show pending orders list */}
+                            <button
+                                type="button"
+                                onClick={() => setShowDeliveredOnly(false)}
+                                title={t('Show Pending Orders')}
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-xs transition-all active:scale-90 relative ${
+                                    !showDeliveredOnly
+                                        ? 'bg-[#F59E0B] text-white'
+                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-400 hover:bg-gray-300'
+                                }`}
+                            >
+                                <Clock size={19} className="stroke-[2.5]" />
+                                {pendingOrdersCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-xs">
+                                        {pendingOrdersCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Green squircle tick button: click to show delivered cards */}
+                            <button
+                                type="button"
+                                onClick={() => setShowDeliveredOnly(true)}
+                                title={t('Show Delivered Orders')}
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-xs transition-all active:scale-90 ${
+                                    showDeliveredOnly
+                                        ? 'bg-[#00C988] text-white'
+                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-400 hover:bg-gray-300'
+                                }`}
+                            >
+                                <Check size={20} className="stroke-[3]" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -137,13 +200,15 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                     {feedOrders.length === 0 ? (
                         <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
                             <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                <Package size={30} />
+                                {showDeliveredOnly ? <CheckCircle size={30} className="text-emerald-500" /> : <Package size={30} />}
                             </div>
                             <h3 className="font-bold text-gray-800 dark:text-gray-200 text-base">
-                                {t('No orders right now')}
+                                {showDeliveredOnly ? t('No delivered orders yet') : t('No orders right now')}
                             </h3>
                             <p className="text-xs text-gray-500 mt-1">
-                                New customer orders will automatically appear here.
+                                {showDeliveredOnly
+                                    ? t('Delivered customer orders will appear here.')
+                                    : t('New customer orders will automatically appear here.')}
                             </p>
                         </div>
                     ) : (
@@ -159,6 +224,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                             const locationSnippet = street ? `${street}, ${city}` : city;
                             const isCancelled = order.status === 'Cancelled';
                             const isProcessing = order.status === 'Processing' || order.status === 'Pending';
+                            const isDelivered = order.status === 'Delivered' || order.status === 'Completed';
 
                             return (
                                 <div
@@ -167,9 +233,9 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                         isCancelled
                                             ? 'bg-gray-100/90 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700/80'
                                             : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
-                                    } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-transform shadow-xs hover:shadow-sm relative`}
+                                    } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm relative`}
                                 >
-                                    {/* Black X symbol (no round) instead of delete icon */}
+                                    {/* Black X symbol (no round) instead of delete icon for processing */}
                                     {isProcessing && (
                                         <div className="absolute right-4 top-4 z-10">
                                             <button
@@ -187,9 +253,27 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                         </div>
                                     )}
 
+                                    {/* Red Trash2 delete icon for cancelled orders */}
+                                    {isCancelled && (
+                                        <div className="absolute right-4 top-4 z-10">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOrderToDelete(order);
+                                                    setShowDeletePopup(true);
+                                                }}
+                                                title={t('Delete Cancelled Order')}
+                                                className="p-1.5 text-red-500 hover:text-red-700 hover:opacity-70 transition-opacity active:scale-90"
+                                            >
+                                                <Trash2 size={20} className="stroke-[2.2]" />
+                                            </button>
+                                        </div>
+                                    )}
+
                                     {/* Card Body: Solid Clean Header with Centered Content */}
                                     <div className="pt-5 pb-3 px-5 text-center">
-                                        {/* Delivery Charge in Dark Grey */}
+                                        {/* Delivery Charge */}
                                         <div className="text-center py-1">
                                             <span className="text-[11px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-300 block mb-0.5">
                                                 {t('Delivery Charge')}
@@ -230,7 +314,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                             </p>
                                         )}
 
-                                        {/* Scheduled Delivery Time like in OrderDetails.jsx in Dark Grey */}
+                                        {/* Scheduled Delivery Time */}
                                         {(() => {
                                             const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
                                             if (!rawTime) return null;
@@ -258,9 +342,32 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                         })()}
                                     </div>
 
-                                    {/* Action Button: Swipe to View Order with incoming yellow theme */}
+                                    {/* Action Button: Swipe to View Order or Delivered Successfully */}
                                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
-                                        {isCancelled ? (
+                                        {isDelivered ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (onClose) onClose();
+                                                    onSelectOrder(order);
+                                                }}
+                                                className="relative overflow-hidden w-full py-3.5 rounded-full bg-[#00C988] hover:bg-[#00b57a] active:scale-95 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all select-none"
+                                            >
+                                                {/* Animated sheen shine effect */}
+                                                <motion.div
+                                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"
+                                                    animate={{ x: ['-100%', '200%'] }}
+                                                    transition={{
+                                                        repeat: Infinity,
+                                                        duration: 2,
+                                                        ease: 'easeInOut',
+                                                        repeatDelay: 0.5
+                                                    }}
+                                                />
+                                                <CheckCircle size={17} className="text-white stroke-[2.8] relative z-10" />
+                                                <span className="relative z-10">{t('Delivered Successfully')}</span>
+                                            </button>
+                                        ) : isCancelled ? (
                                             <div className="w-full py-3.5 text-center text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-full">
                                                 {t('Cancelled')}
                                             </div>
@@ -345,6 +452,73 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                     className="w-full py-2 text-xs font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors uppercase tracking-wider"
                                 >
                                     {t('Keep Order')}
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* POPUP: Delete Cancelled Order Confirmation with Red Swipe Button */}
+                <AnimatePresence>
+                    {showDeletePopup && orderToDelete && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowDeletePopup(false)}
+                            className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-4"
+                            >
+                                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
+                                    <Trash2 size={32} />
+                                </div>
+
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                        {t('Delete Order')} #{String(orderToDelete._id || orderToDelete.id || '000000').slice(-6).toUpperCase()}?
+                                    </h3>
+                                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1.5 leading-relaxed font-medium">
+                                        {t('Are you sure you want to delete this cancelled order?')}
+                                    </p>
+                                </div>
+
+                                {/* Customer snippet */}
+                                <div className="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-3 text-xs text-gray-700 dark:text-gray-200">
+                                    <p className="font-bold text-gray-900 dark:text-white truncate">
+                                        {orderToDelete.shippingAddress?.name || t('Customer')}
+                                    </p>
+                                    <p className="text-[11px] text-gray-600 dark:text-gray-300 truncate">
+                                        {orderToDelete.shippingAddress?.street || ''}, {orderToDelete.shippingAddress?.city || 'Ilayangudi'}
+                                    </p>
+                                </div>
+
+                                {/* RED Swipe to Delete Button */}
+                                <div className="pt-2">
+                                    <SwipeActionButton
+                                        variant="red"
+                                        label={t('Swipe to Delete')}
+                                        loadingLabel={t('Deleting...')}
+                                        isLoading={isDeleting}
+                                        heightClass="h-[60px] sm:h-[64px]"
+                                        knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                        onSuccess={handleConfirmDelete}
+                                    />
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDeletePopup(false)}
+                                    disabled={isDeleting}
+                                    className="w-full py-2 text-xs font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors uppercase tracking-wider"
+                                >
+                                    {t('Cancel')}
                                 </button>
                             </motion.div>
                         </motion.div>
