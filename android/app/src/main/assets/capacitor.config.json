@@ -1,0 +1,37 @@
+{
+	"appId": "com.ilayangudimart.app",
+	"appName": "ILY mart",
+	"webDir": "dist",
+	"server": {
+		"cleartext": true,
+		"allowNavigation": [
+			"*.google.com",
+			"*.googleapis.com",
+			"*.gstatic.com",
+			"*.googleusercontent.com"
+		]
+	},
+	"plugins": {
+		"StatusBar": {
+			"style": "DARK",
+			"overlaysWebView": false,
+			"backgroundColor": "#ffffff",
+			"visible": true
+		},
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#ffffff",
+			"showSpinner": false,
+			"androidSpinnerStyle": "small",
+			"spinnerColor": "#2563eb",
+			"splashFullScreen": true,
+			"splashImmersive": true
+		},
+		"Geolocation": {
+			"permissions": [
+				"location"
+			]
+		}
+	},
+	"androidUserAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36"
+}
