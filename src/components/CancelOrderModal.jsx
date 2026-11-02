@@ -2,7 +2,6 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import SwipeActionButton from './SwipeActionButton';
 
 const CancelOrderModal = ({
     order,
@@ -55,45 +54,33 @@ const CancelOrderModal = ({
                     </div>
 
                     {/* Customer snippet */}
-                    <div className="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-3 text-xs text-gray-600 dark:text-gray-300">
+                    <div className="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-3 text-xs text-gray-600 dark:text-gray-300 text-left">
                         <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{customerName}</p>
                         <p className="text-[11px] text-gray-400 truncate">{street}{city ? `, ${city}` : ''}</p>
                     </div>
 
-                    {/* RED Action Controls (Swipe or Tap to Cancel) */}
-                    <div className="pt-2 space-y-2">
-                        <SwipeActionButton
-                            variant="red"
-                            label={t('Swipe to Cancel')}
-                            loadingLabel={t('Cancelling...')}
-                            isLoading={loading}
-                            heightClass="h-[60px] sm:h-[64px]"
-                            knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
-                            onSuccess={handleConfirm}
-                        />
-
-                        {/* Direct Tap Button Fallback */}
+                    {/* Simple Yes or Cancel Buttons */}
+                    <div className="flex items-center gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={loading}
+                            className="flex-1 py-3.5 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 active:scale-[0.98] text-gray-700 dark:text-gray-200 rounded-2xl font-bold text-sm transition-all text-center"
+                        >
+                            {t('Cancel')}
+                        </button>
                         <button
                             type="button"
                             onClick={handleConfirm}
                             disabled={loading}
-                            className="w-full py-3.5 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white rounded-2xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                            className="flex-1 py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white rounded-2xl font-bold text-sm shadow-md shadow-red-500/20 transition-all flex items-center justify-center gap-2 text-center"
                         >
                             {loading ? (
                                 <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                             ) : null}
-                            <span>{loading ? t('Cancelling...') : t('Yes, Cancel Order')}</span>
+                            <span>{loading ? t('Cancelling...') : t('Yes')}</span>
                         </button>
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={loading}
-                        className="w-full py-2 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors uppercase tracking-wider"
-                    >
-                        {t('Keep Order')}
-                    </button>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
