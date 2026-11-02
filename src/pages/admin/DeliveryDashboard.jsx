@@ -399,9 +399,25 @@ const DeliveryDashboard = () => {
                         {/* Orders List */}
                         <div className="space-y-4">
                             {isLoading ? (
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
                                     {[1, 2, 3].map(i => (
-                                        <div key={i} className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 animate-pulse border border-gray-100 dark:border-gray-700 h-48" />
+                                        <div
+                                            key={i}
+                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700/60 overflow-hidden flex flex-col justify-between p-5 space-y-4 shadow-sm"
+                                        >
+                                            {/* Delivery charge & customer details skeleton */}
+                                            <div className="flex flex-col items-center space-y-2 py-2">
+                                                <div className="h-3 w-28 rounded-full blinkit-shimmer" />
+                                                <div className="h-10 w-24 rounded-xl blinkit-shimmer" />
+                                                <div className="h-3 w-36 rounded-full blinkit-shimmer mt-1" />
+                                                <div className="h-4 w-44 rounded-md blinkit-shimmer mt-2" />
+                                                <div className="h-3 w-56 rounded-md blinkit-shimmer" />
+                                            </div>
+                                            {/* Bottom action button skeleton */}
+                                            <div className="pt-3 border-t border-gray-100 dark:border-gray-700/60">
+                                                <div className="h-12 w-full rounded-full blinkit-shimmer" />
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             ) : displayData.length > 0 ? (

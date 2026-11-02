@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
 import { getStoreName, calculateDeliveryCharge, formatDeliveryRange, getAvailableDeliverySlots } from '../utils/storeHelpers';
-import { ArrowLeft, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Banknote, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar, ChevronDown } from 'lucide-react';
 import { checkLocationPermission, requestLocationPermission, getCurrentLocation } from '../utils/locationHelpers';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -29,8 +29,8 @@ const Checkout = () => {
     const availableDeliverySlots = getAvailableDeliverySlots(settings?.deliveryTimes, selectedDatePeriod);
 
     useEffect(() => {
-        if (availableDeliverySlots.length > 0 && (!selectedTimeSlot || !availableDeliverySlots.includes(selectedTimeSlot))) {
-            setSelectedTimeSlot(availableDeliverySlots[0]);
+        if (selectedTimeSlot && !availableDeliverySlots.includes(selectedTimeSlot)) {
+            setSelectedTimeSlot('');
         }
     }, [selectedDatePeriod, availableDeliverySlots, selectedTimeSlot]);
     const [formData, setFormData] = useState({
@@ -80,6 +80,7 @@ const Checkout = () => {
     const addressRef = useRef(null);
     const mobileRef = useRef(null);
     const cityRef = useRef(null);
+    const deliveryTimeRef = useRef(null);
 
     // PRE-FETCH LOCATION DISABLED - Causes crashes when permission dialog appears
     // User must manually click "Use Current Location" button
@@ -235,6 +236,9 @@ const Checkout = () => {
             }
         }
         if (!formData.location) errors.location = true;
+        if (settings?.deliveryTimingType !== 'instant' && !selectedTimeSlot) {
+            errors.deliveryTime = true;
+        }
 
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
@@ -245,6 +249,7 @@ const Checkout = () => {
                 else if (errors.mobile) mobileRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 else if (errors.city) cityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 else if (errors.location) locationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                else if (errors.deliveryTime) deliveryTimeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 150);
             return;
         }
@@ -442,7 +447,7 @@ const Checkout = () => {
 
                                         {/* 3. Address */}
                                         <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                                            {formData.address}{formData.city ? `, ${formData.city}` : ''}{formData.zip ? ` - ${formData.zip}` : ''}
+                                            {formData.address}{formData.city ? `, ${formData.city}` : ''}
                                         </p>
                                         
                                         {/* 4. Pin / View on Map */}
@@ -593,9 +598,9 @@ const Checkout = () => {
                                         </button>
 
                                         {fieldErrors.location && (
-                                            <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
+                                            <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
                                                 <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                 <span>{t('GPS Location is required')}</span>
                                             </div>
                                         )}
@@ -625,29 +630,9 @@ const Checkout = () => {
                                                 placeholder={t('Enter your full name')}
                                             />
                                             {fieldErrors.fullName && (
-                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
+                                                <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                    <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
-                                                    <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('Street Name')}</label>
-                                            <textarea
-                                                ref={addressRef}
-                                                name="address"
-                                                rows="3"
-                                                value={formData.address}
-                                                onChange={e => { handleChange(e); setFieldErrors(p => ({...p, address: false})); }}
-                                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
-                                                placeholder={t('House no, Flat, Street name, Landmark')}
-                                            />
-                                            {fieldErrors.address && (
-                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
-                                                    <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                    <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                     <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
                                                 </div>
                                             )}
@@ -665,15 +650,35 @@ const Checkout = () => {
                                                 placeholder={t('Enter 10-digit mobile number')}
                                             />
                                             {fieldErrors.mobile && (
-                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
+                                                <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                    <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                     <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('Address')}</label>
+                                            <textarea
+                                                ref={addressRef}
+                                                name="address"
+                                                rows="3"
+                                                value={formData.address}
+                                                onChange={e => { handleChange(e); setFieldErrors(p => ({...p, address: false})); }}
+                                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
+                                                placeholder={t('House no, Flat, Street name, Landmark')}
+                                            />
+                                            {fieldErrors.address && (
+                                                <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
+                                                    <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
+                                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                    <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="md:col-span-2">
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('City')}</label>
                                             <input
                                                 ref={cityRef}
@@ -688,25 +693,12 @@ const Checkout = () => {
                                                 className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
                                             />
                                             {fieldErrors.city && (
-                                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] italic font-medium flex items-center gap-2.5 w-fit shadow-md z-10">
+                                                <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                                    <div className="w-5 h-5 rounded bg-[#2E5A2E] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                     <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
                                                 </div>
                                             )}
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('ZIP Code')}</label>
-                                            <input 
-                                                type="text" 
-                                                name="zip" 
-                                                required 
-                                                value="630702" 
-                                                readOnly
-                                                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none text-sm cursor-not-allowed text-gray-500 font-medium" 
-                                                placeholder="630702"
-                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -715,7 +707,7 @@ const Checkout = () => {
 
                         {/* Preferred Order Timing & Delivery Slot Selection - Dropdown */}
                         {settings?.deliveryTimingType !== 'instant' && (
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+                            <div ref={deliveryTimeRef} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3">
                                 <div className="flex items-center gap-2">
                                     <Clock size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />
                                     <span className="font-bold text-xs text-gray-900 dark:text-white">{t('Delivery Timing')}</span>
@@ -725,9 +717,15 @@ const Checkout = () => {
                                 <div className="relative">
                                     <select
                                         value={selectedTimeSlot || ''}
-                                        onChange={(e) => setSelectedTimeSlot(e.target.value)}
+                                        onChange={(e) => {
+                                            setSelectedTimeSlot(e.target.value);
+                                            setFieldErrors(prev => ({ ...prev, deliveryTime: false }));
+                                        }}
                                         className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-0 focus:border-[#2E5A2E] appearance-none cursor-pointer pr-10 transition-colors shadow-none outline-none"
                                     >
+                                        <option value="" disabled className="bg-white dark:bg-gray-800 text-gray-400">
+                                            -- {t('Select Delivery Time Slot')} --
+                                        </option>
                                         {availableDeliverySlots && availableDeliverySlots.length > 0 ? (
                                             availableDeliverySlots.map(slotId => (
                                                 <option key={slotId} value={slotId} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white py-2">
@@ -744,6 +742,13 @@ const Checkout = () => {
                                         <ChevronDown size={18} />
                                     </div>
                                 </div>
+                                {fieldErrors.deliveryTime && (
+                                    <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
+                                        <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
+                                        <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                        <span>{language === 'ta' ? 'தயவுசெய்து டெலிவரி நேரத்தைத் தேர்ந்தெடுக்கவும்.' : 'Please select a delivery time slot.'}</span>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -844,7 +849,7 @@ const Checkout = () => {
                         {/* Payment Method */}
                         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sm:p-8">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-[#CBF9B2]/20 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <CreditCard size={20} />
                                 </div>
                                 <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">{t('Payment Method')}</h2>
@@ -852,8 +857,8 @@ const Checkout = () => {
 
                             <div className="space-y-4">
                                 <label className={`flex items-center p-4 rounded-3xl border-2 cursor-pointer transition-all ${formData.paymentMethod === 'cod' ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/5' : 'border-gray-100 dark:border-gray-700 hover:border-gray-200'}`}>
-                                    <div className="w-6 h-6 rounded-full border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center mr-4">
-                                        {formData.paymentMethod === 'cod' && <div className="w-3 h-3 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2]" />}
+                                    <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-[#CBF9B2]/20 border border-green-200/50 dark:border-[#CBF9B2]/20 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center mr-4 flex-shrink-0 shadow-xs">
+                                        <Banknote size={22} />
                                     </div>
                                     <input
                                         type="radio"
@@ -906,7 +911,7 @@ const Checkout = () => {
                             >
                                 {isNavigating ? (
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                ) : t('Place Order')}
+                                ) : t('Continue')}
                             </button>
                         </div>
                     </div>

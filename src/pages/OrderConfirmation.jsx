@@ -339,7 +339,7 @@ const OrderConfirmation = () => {
 
                             {/* 3. Address */}
                             <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                                {formData.address}{formData.city ? `, ${formData.city}` : ''}{formData.pincode ? ` - ${formData.pincode}` : ''}
+                                {formData.address}{formData.city ? `, ${formData.city}` : ''}
                             </p>
 
                             {/* 4. Pin / View on Map */}
@@ -419,7 +419,7 @@ const OrderConfirmation = () => {
                             {isSubmitting ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
-                                t('Place Order')
+                                t('Confirm Order')
                             )}
                         </button>
                     </div>

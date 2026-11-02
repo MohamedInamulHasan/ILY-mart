@@ -420,7 +420,7 @@ const EditAddress = () => {
                         </div>
 
                         <div>
-                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 px-1">{t('Street / Area')}</label>
+                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 px-1">{t('Address')}</label>
                             <textarea
                                 ref={streetRef}
                                 name="street"
@@ -439,39 +439,27 @@ const EditAddress = () => {
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 px-1">{t('City')}</label>
-                                <input
-                                    ref={cityRef}
-                                    type="text"
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={(e) => {
-                                        setFormData(prev => ({ ...prev, city: e.target.value }));
-                                        setFieldErrors(prev => ({ ...prev, city: false }));
-                                    }}
-                                    placeholder={t('Enter city name')}
-                                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
-                                />
-                                {fieldErrors.city && (
-                                    <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
-                                        <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
-                                        <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
-                                        <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 px-1">{t('Pincode')}</label>
-                                <input
-                                    type="text"
-                                    name="zip"
-                                    value="630702"
-                                    readOnly
-                                    className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600 text-gray-400 rounded-xl focus:outline-none text-sm cursor-not-allowed"
-                                />
-                            </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 px-1">{t('City')}</label>
+                            <input
+                                ref={cityRef}
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={(e) => {
+                                    setFormData(prev => ({ ...prev, city: e.target.value }));
+                                    setFieldErrors(prev => ({ ...prev, city: false }));
+                                }}
+                                placeholder={t('Enter city name')}
+                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-sm shadow-none"
+                            />
+                            {fieldErrors.city && (
+                                <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
+                                    <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
+                                    <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
+                                    <span>{language === 'ta' ? 'தயவுசெய்து இந்த புலத்தை நிரப்பவும்.' : 'Please fill out this field.'}</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-4">

@@ -205,24 +205,23 @@ const Layout = ({ children, onRefresh }) => {
             </main>
             {/* </PullToRefresh> */}
 
-            {/* Floating Delivery Charge Card - right side (Leaf Green) */}
+            {/* Floating Delivery Charge Card - right side (Solid Red - Showcase only, not clickable) */}
             {showFloatingDeliveryBadge && (
-                <Link
-                    to="/cart"
-                    className="fixed right-0 top-[25%] -translate-y-1/2 z-[90] active:scale-95 transition-transform"
-                    title={t('View Cart')}
+                <div
+                    className="fixed right-0 top-[25%] -translate-y-1/2 z-[90] select-none pointer-events-none"
+                    aria-hidden="true"
                 >
                     <div
-                        className="rounded-l-2xl py-2 px-3 flex flex-col items-center shadow-lg border-2 border-r-0 border-white text-center bg-[#2E5A2E]"
+                        className="rounded-l-2xl py-2 px-3 flex flex-col items-center shadow-lg border-2 border-r-0 border-white text-center bg-red-600"
                     >
-                        <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider mb-0.5 select-none leading-none">
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider mb-0.5 select-none leading-none">
                             {t('Delivery')}
                         </span>
                         <span className="text-[14px] font-black text-white select-none leading-none">
                             {deliveryCharge === 0 ? t('Free') : `₹${deliveryCharge}`}
                         </span>
                     </div>
-                </Link>
+                </div>
             )}
 
             {showMobileFooter && <MobileFooter />}
