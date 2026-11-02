@@ -26,6 +26,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
+import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
