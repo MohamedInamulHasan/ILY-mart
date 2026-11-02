@@ -53,7 +53,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
                             <div className="flex flex-col gap-3 w-full">
                                 <button
                                     onClick={onConfirm}
-                                    className="w-full py-4 bg-black text-white rounded-full font-bold text-base shadow-xl shadow-black/10 hover:bg-gray-800 active:scale-[0.98] transition-all"
+                                    className="w-full py-4 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all"
                                 >
                                     {t('Yes, Logout')}
                                 </button>

@@ -146,14 +146,7 @@ const EditAddress = () => {
                     ...(resolvedCity ? { city: false } : {})
                 }));
                 setShowLocationError(false);
-
-                // Zepto-style confirmation message
-                const detectedParts = [resolvedStreet, resolvedCity].filter(Boolean);
-                if (detectedParts.length > 0) {
-                    setMessage({ type: 'success', text: `📍 Location detected: ${detectedParts.join(', ')}` });
-                } else {
-                    setMessage({ type: 'info', text: t('GPS coordinates attached. Please enter your street name.') });
-                }
+                setMessage({ type: '', text: '' });
             } else {
                 console.error('📍 EditAddress: Detection failed:', result.message);
                 setMessage({ type: 'error', text: t(result.message) });
