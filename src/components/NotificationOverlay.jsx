@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import IncomingOrderModal from './IncomingOrderModal';
 import { triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
 import { apiService } from '../utils/api';
+import { registerModalBackHandler } from '../utils/useBackButton';
 
 const NotificationOverlay = () => {
     const { socket } = useSocket();
@@ -23,6 +24,11 @@ const NotificationOverlay = () => {
         return normalized === 'delivery_boy' || normalized === 'deliveryboy';
     });
     const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
+
+    useEffect(() => {
+        if (!incomingOrder) return;
+        return registerModalBackHandler(() => setIncomingOrder(null));
+    }, [incomingOrder]);
 
     useEffect(() => {
         // Request system notification permission for delivery boys
@@ -144,8 +150,8 @@ const NotificationOverlay = () => {
         };
 
         const handleOrderCreated = (order) => {
-            // Show Porter-style full incoming order alert ONLY to Delivery Boys
-            if (isDeliveryBoy) {
+            // Show Porter-style incoming order alert to Delivery Boys and Admins
+            if (isDeliveryBoy || isAdmin) {
                 setIncomingOrder(order);
                 const isFloatingAlertEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
                 if (isFloatingAlertEnabled) {
@@ -159,7 +165,7 @@ const NotificationOverlay = () => {
                         const orderIdShort = String(order._id || order.id || '000').slice(-6).toUpperCase();
                         const notif = new Notification(`🚨 New Delivery Order #${orderIdShort} - ₹${order.total || order.subtotal || 0}`, {
                             body: `Pickup: ${order.items?.[0]?.storeName || 'Store'} → Drop: ${order.shippingAddress?.street || 'Customer'}`,
-                            icon: '/favicon.ico',
+                            icon: '/floating-logo.jpg',
                             requireInteraction: true,
                             tag: `delivery-${order._id}`
                         });
@@ -171,16 +177,6 @@ const NotificationOverlay = () => {
                         console.warn('System notification error:', err);
                     }
                 }
-            } else if (isAdmin) {
-                // Admins who are not delivery boys receive a standard quiet notification toast
-                addNotification({
-                    id: Date.now(),
-                    type: 'new_order',
-                    title: t('New Order Received!'),
-                    message: `${t('Order')} #${String(order._id || order.id).slice(-6).toUpperCase()} ${t('from')} ${order.shippingAddress?.name || t('Guest')}`,
-                    icon: <Bell className="text-orange-500" />,
-                    onClick: () => navigate('/admin')
-                });
             }
         };
 

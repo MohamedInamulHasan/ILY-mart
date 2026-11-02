@@ -44,6 +44,7 @@ import { useData } from './context/DataContext';
 import { useAuth } from './context/AuthContext';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import useBackButton from './utils/useBackButton';
+import { setOverlayAuthToken } from './utils/floatingOverlay';
 import PrivateRoute from './components/PrivateRoute';
 import OfflineScreen from './components/OfflineScreen';
 import ConnectionStatus from './components/ConnectionStatus';
@@ -126,6 +127,13 @@ const Layout = ({ children, onRefresh }) => {
     const location = useLocation();
     // Use back button handler for Android navigation
     useBackButton();
+
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            setOverlayAuthToken(token);
+        }
+    }, [user]);
     // Only hide footer on order confirmation and auth pages
     const isAuthPage = location.pathname === '/forgot-password' ||
         location.pathname.startsWith('/reset-password');

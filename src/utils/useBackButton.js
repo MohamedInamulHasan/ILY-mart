@@ -3,86 +3,113 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 
+// Global stack for modal dismissal on Android hardware back button
+const modalBackStack = [];
+
 /**
- * Custom hook to handle Android hardware/gesture back button navigation
- * Prevents app from unexpectedly closing when navigating between pages,
- * and ensures placing an order navigates back to Home rather than Confirmation.
+ * Register a modal or popup to be closed when Android back button is clicked.
+ * Returns an unregister function to be called on cleanup.
+ */
+export const registerModalBackHandler = (fn) => {
+    if (typeof fn !== 'function') return () => {};
+    modalBackStack.push(fn);
+    return () => {
+        const index = modalBackStack.lastIndexOf(fn);
+        if (index > -1) {
+            modalBackStack.splice(index, 1);
+        }
+    };
+};
+
+/**
+ * Custom hook to handle Android hardware/gesture back button navigation.
+ * Prevents app from unexpectedly closing, navigates back through history,
+ * closes active modals first, and safely minimizes to background only at root.
  */
 export const useBackButton = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const locationRef = useRef(location);
 
-    // Update location ref whenever location changes
     useEffect(() => {
         locationRef.current = location;
     }, [location]);
 
     useEffect(() => {
-        // Only active on native Android / iOS
-        if (!Capacitor.isNativePlatform()) return;
+        // Core back button handler logic
+        const handleBack = () => {
+            // 1. If any modal / popup / feed is open, close the top modal first
+            if (modalBackStack.length > 0) {
+                const closeTopModal = modalBackStack.pop();
+                if (typeof closeTopModal === 'function') {
+                    try {
+                        closeTopModal();
+                        return true;
+                    } catch (e) {
+                        console.warn('Error closing modal on back:', e);
+                    }
+                }
+            }
+
+            const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
+
+            // 2. Order Confirmation: always navigate to Home
+            if (currentPath === '/order-confirmation') {
+                navigate('/', { replace: true });
+                return true;
+            }
+
+            // 3. Orders list: navigate to Home
+            if (currentPath === '/orders') {
+                navigate('/', { replace: true });
+                return true;
+            }
+
+            // 4. In-app history back (ProductDetails, CategoryProducts, Shop, Cart, Profile, etc.)
+            // If the user navigated here from another page within the app, go back!
+            if (window.history.state && window.history.state.idx > 0) {
+                navigate(-1);
+                return true;
+            }
+
+            // 5. Inner routes without prior history stack (e.g. direct link or fresh state)
+            // Fallback to Home rather than closing the app
+            if (currentPath !== '/' && currentPath !== '/home' && currentPath !== '/admin') {
+                navigate('/', { replace: true });
+                return true;
+            }
+
+            // 6. Already at root (Home / or Delivery Dashboard /admin):
+            // Return false so native Android can minimize to background without destroying process
+            return false;
+        };
+
+        // Expose to window so MainActivity.onBackPressed() evaluateJavascript can call it directly
+        window.__handleBackButton = handleBack;
 
         let listenerHandle = null;
         let isMounted = true;
 
-        const setupListener = async () => {
-            try {
-                const handle = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-                    const currentPath = locationRef.current?.pathname || '/';
-
-                    // 1. Root / Home screen: minimize app to background (do not destroy process)
-                    if (currentPath === '/' || currentPath === '/home') {
-                        CapacitorApp.minimizeApp();
-                        return;
-                    }
-
-                    // 2. Order Confirmation page: always go back to Home
-                    if (currentPath === '/order-confirmation') {
-                        navigate('/', { replace: true });
-                        return;
-                    }
-
-                    // 3. Orders page: return to Home screen instead of going back to Checkout/Confirmation
-                    if (currentPath === '/orders') {
-                        navigate('/', { replace: true });
-                        return;
-                    }
-
-                    // 4. Other top-level tabs (Cart, Profile, Categories, Store)
-                    if (
-                        currentPath === '/cart' ||
-                        currentPath === '/profile' ||
-                        currentPath === '/categories' ||
-                        currentPath === '/store' ||
-                        currentPath === '/shop'
-                    ) {
-                        navigate('/', { replace: true });
-                        return;
-                    }
-
-                    // 5. Nested / sub-pages (e.g. OrderDetails /orders/:id, ProductDetails, etc.)
-                    // Use history back if possible, fallback to Home
-                    if (window.history.length > 1) {
-                        navigate(-1);
-                    } else {
-                        navigate('/', { replace: true });
-                    }
-                });
-
-                if (isMounted) {
-                    listenerHandle = handle;
-                } else {
-                    handle.remove();
+        if (Capacitor.isNativePlatform()) {
+            CapacitorApp.addListener('backButton', () => {
+                const handled = handleBack();
+                if (!handled) {
+                    CapacitorApp.minimizeApp();
                 }
-            } catch (error) {
-                console.error('Failed to setup back button listener:', error);
-            }
-        };
-
-        setupListener();
+            }).then(h => {
+                if (isMounted) {
+                    listenerHandle = h;
+                } else {
+                    h.remove();
+                }
+            }).catch(err => {
+                console.warn('CapacitorApp backButton listener setup error:', err);
+            });
+        }
 
         return () => {
             isMounted = false;
+            window.__handleBackButton = null;
             if (listenerHandle) {
                 listenerHandle.remove();
             }

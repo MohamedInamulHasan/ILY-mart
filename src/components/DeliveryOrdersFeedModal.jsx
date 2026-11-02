@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Clock, Package, ArrowUpDown, Trash2, X, AlertTriangle, Check, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,6 +9,7 @@ import ShineActionButton from './ShineActionButton';
 import SwipeActionButton from './SwipeActionButton';
 import PullToRefreshLayout from './PullToRefreshLayout';
 import { formatDeliveryRangeFromDate } from '../utils/storeHelpers';
+import { registerModalBackHandler } from '../utils/useBackButton';
 
 const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }) => {
     const { t } = useLanguage();
@@ -23,6 +24,11 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
     const [orderToDelete, setOrderToDelete] = useState(null);
     const [showDeletePopup, setShowDeletePopup] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen || !onClose) return;
+        return registerModalBackHandler(onClose);
+    }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 

@@ -10,6 +10,7 @@ import { API_BASE_URL } from '../utils/api';
 import { startIncomingOrderAlertSound, stopIncomingOrderAlertSound, playSuccessSound } from '../utils/soundHelper';
 import { CartoonCoin } from './CartoonCoin';
 import SwipeActionButton from './SwipeActionButton';
+import { registerModalBackHandler } from '../utils/useBackButton';
 
 const IncomingOrderModal = ({
     order,
@@ -46,6 +47,11 @@ const IncomingOrderModal = ({
     }, [order?._id, order?.status, startWithViewCard, isProcessing]);
 
     // Only play alert sound for fresh pending/processing orders
+    useEffect(() => {
+        if (!order || !onClose) return;
+        return registerModalBackHandler(onClose);
+    }, [order, onClose]);
+
     useEffect(() => {
         if (!order || !isProcessing) return;
 

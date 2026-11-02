@@ -70,10 +70,12 @@ public class FloatingOverlayPlugin extends Plugin {
                 }
             }
 
+            SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            prefs.edit().putBoolean("floating_enabled", true).apply();
+
             // Save token if provided
             String token = call.getString("token");
             if (token != null && !token.isEmpty()) {
-                SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
                 prefs.edit().putString("authToken", token).apply();
             }
 
@@ -94,6 +96,9 @@ public class FloatingOverlayPlugin extends Plugin {
     @PluginMethod
     public void hide(PluginCall call) {
         try {
+            SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            prefs.edit().putBoolean("floating_enabled", false).apply();
+
             Intent intent = new Intent(getContext(), FloatingLogoService.class);
             getContext().stopService(intent);
             JSObject ret = new JSObject();

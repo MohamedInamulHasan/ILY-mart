@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { registerModalBackHandler } from '../utils/useBackButton';
 
 const CancelOrderModal = ({
     order,
@@ -15,6 +16,11 @@ const CancelOrderModal = ({
     const { t } = useLanguage();
     const handleConfirm = onConfirmCancel || onConfirm;
     const loading = isLoading || isCancelling;
+
+    useEffect(() => {
+        if (!isOpen || !onClose) return;
+        return registerModalBackHandler(onClose);
+    }, [isOpen, onClose]);
 
     if (!isOpen || !order) return null;
 

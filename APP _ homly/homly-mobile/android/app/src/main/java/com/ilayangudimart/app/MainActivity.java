@@ -1,7 +1,9 @@
 package com.ilayangudimart.app;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -42,20 +44,40 @@ public class MainActivity extends BridgeActivity {
         );
 
         checkAndRequestLocationPermissions();
+        startFloatingServiceIfPermitted();
         handleIncomingOrderIntent(getIntent());
+    }
+
+    private void startFloatingServiceIfPermitted() {
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("floating_enabled", true);
+        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+            try {
+                Intent serviceIntent = new Intent(this, FloatingLogoService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent);
+                } else {
+                    startService(serviceIntent);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        // Inform FloatingLogoService that app is in background / closed
+        // Start floating service & show floating bubble when app is in background / closed
+        startFloatingServiceIfPermitted();
         FloatingLogoService.setAppForegroundState(false);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Inform FloatingLogoService that app is in foreground
+        // Start floating service if enabled & hide circle bubble while inside the app
+        startFloatingServiceIfPermitted();
         FloatingLogoService.setAppForegroundState(true);
         handleIncomingOrderIntent(getIntent());
     }
@@ -87,8 +109,29 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onBackPressed() {
-        // Delegate to BridgeActivity so Capacitor's App.addListener('backButton') handles in-app navigation
-        super.onBackPressed();
+        // Safe in-app back navigation: close modals first, go back through history, or minimize at root
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().evaluateJavascript(
+                "(function() {" +
+                "  try {" +
+                "    if (window.__handleBackButton && window.__handleBackButton()) { return 'handled'; }" +
+                "    if (window.history.state && window.history.state.idx > 0) { window.history.back(); return 'navigated'; }" +
+                "    if (window.location.pathname !== '/' && window.location.pathname !== '/home' && window.location.pathname !== '/admin') {" +
+                "      window.location.href = '/';" +
+                "      return 'navigated';" +
+                "    }" +
+                "  } catch (e) {}" +
+                "  return 'exit';" +
+                "})();",
+                result -> {
+                    if (result != null && (result.contains("exit") || "false".equals(result))) {
+                        moveTaskToBack(true);
+                    }
+                }
+            );
+        } else {
+            moveTaskToBack(true);
+        }
     }
 
     private void checkAndRequestLocationPermissions() {
