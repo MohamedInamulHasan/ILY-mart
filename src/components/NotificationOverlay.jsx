@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Bell, CheckCircle, Truck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import IncomingOrderModal from './IncomingOrderModal';
-import { triggerIncomingOrderAlert } from '../utils/floatingOverlay';
+import { triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
+import { apiService } from '../utils/api';
 
 const NotificationOverlay = () => {
     const { socket } = useSocket();
@@ -31,6 +32,25 @@ const NotificationOverlay = () => {
             }
         }
     }, [isDeliveryBoy]);
+
+    // Listen for native intent/card clicks when app was closed/backgrounded
+    useEffect(() => {
+        const handleNativeOpenOrder = async (e) => {
+            const orderId = e.detail?.id;
+            if (!orderId) return;
+            try {
+                const res = await apiService.getOrder(orderId);
+                if (res.success && res.data) {
+                    setIncomingOrder(res.data);
+                }
+            } catch (err) {
+                console.warn('Failed to fetch order from native event:', err);
+            }
+        };
+
+        window.addEventListener('native:open-order', handleNativeOpenOrder);
+        return () => window.removeEventListener('native:open-order', handleNativeOpenOrder);
+    }, []);
 
     useEffect(() => {
         // Allows testing the Porter-style incoming order modal
@@ -128,6 +148,7 @@ const NotificationOverlay = () => {
             if (isDeliveryBoy) {
                 setIncomingOrder(order);
                 triggerIncomingOrderAlert();
+                showPorterOrderCard(order);
 
                 // Show Native System Notification (pops up outside browser if minimized)
                 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {

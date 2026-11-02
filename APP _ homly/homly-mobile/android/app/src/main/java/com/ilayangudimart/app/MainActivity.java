@@ -3,7 +3,6 @@ package com.ilayangudimart.app;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -43,42 +42,53 @@ public class MainActivity extends BridgeActivity {
         );
 
         checkAndRequestLocationPermissions();
+        handleIncomingOrderIntent(getIntent());
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        // Show Porter-style floating logo over the screen if permission is granted
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
-            try {
-                Intent serviceIntent = new Intent(this, FloatingLogoService.class);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(serviceIntent);
-                } else {
-                    startService(serviceIntent);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        // Inform FloatingLogoService that app is in background / closed
+        FloatingLogoService.setAppForegroundState(false);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Hide floating logo when app is in foreground
-        try {
-            Intent serviceIntent = new Intent(this, FloatingLogoService.class);
-            stopService(serviceIntent);
-        } catch (Exception e) {
-            e.printStackTrace();
+        // Inform FloatingLogoService that app is in foreground
+        FloatingLogoService.setAppForegroundState(true);
+        handleIncomingOrderIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIncomingOrderIntent(intent);
+    }
+
+    private void handleIncomingOrderIntent(Intent intent) {
+        if (intent != null && intent.getBooleanExtra("open_incoming_order", false)) {
+            String orderId = intent.getStringExtra("order_id");
+            if (orderId != null && getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().postDelayed(() -> {
+                    try {
+                        getBridge().getWebView().evaluateJavascript(
+                            "window.dispatchEvent(new CustomEvent('native:open-order', { detail: { id: '" + orderId + "' } }));",
+                            null
+                        );
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }, 400);
+            }
         }
     }
 
     @Override
     public void onBackPressed() {
-        // Porter partner style: Move task to background rather than destroying process
-        moveTaskToBack(true);
+        // Delegate to BridgeActivity so Capacitor's App.addListener('backButton') handles in-app navigation
+        super.onBackPressed();
     }
 
     private void checkAndRequestLocationPermissions() {

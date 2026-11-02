@@ -171,17 +171,17 @@ const OrderDetails = () => {
         if (isCancelling) return;
         setIsCancelling(true);
         try {
-            // Use context method to update global state without reload
-            const updatedOrder = await cancelOrder(order._id || order.id);
+            const targetOrderId = order?._id || order?.id || id;
+            const updatedOrder = await cancelOrder(targetOrderId);
 
             if (updatedOrder) {
                 if (singleOrder) {
                     setSingleOrder({ ...singleOrder, status: 'Cancelled' });
                 }
                 // Refresh user to update coin balance
-                refreshUser();
+                if (refreshUser) refreshUser();
                 setCancelConfirmation(false);
-                // Redirect to orders page as requested
+                // Redirect to orders page
                 navigate('/orders');
             }
         } catch (error) {
@@ -521,9 +521,12 @@ const OrderDetails = () => {
             </div>
 
             <CancelOrderModal 
+                order={order}
                 isOpen={cancelConfirmation} 
                 onClose={() => !isCancelling && setCancelConfirmation(false)} 
+                onConfirmCancel={confirmCancelOrder}
                 onConfirm={confirmCancelOrder}
+                isLoading={isCancelling}
                 isCancelling={isCancelling}
             />
         </div>

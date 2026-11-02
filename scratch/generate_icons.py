@@ -1,9 +1,9 @@
 import os
 import shutil
-from PIL import Image, ImageOps
+from PIL import Image
 
-APP_LOGO_SRC = r'C:/Users/moham/.gemini/antigravity/brain/9ef94f07-7162-4733-8ae9-9a51207e0439/.user_uploaded/media_1793598846173_f1867293.jpg'
-FLOATING_LOGO_SRC = r'C:/Users/moham/.gemini/antigravity/brain/9ef94f07-7162-4733-8ae9-9a51207e0439/.user_uploaded/media_1793598897786_5d05a3ca.jpg'
+APP_LOGO_SRC = r'C:/Users/moham/.gemini/antigravity/brain/9ef94f07-7162-4733-8ae9-9a51207e0439/.user_uploaded/media_1793605119563_46000ce3.jpg'
+FLOATING_LOGO_SRC = r'C:/Users/moham/.gemini/antigravity/brain/9ef94f07-7162-4733-8ae9-9a51207e0439/.user_uploaded/media_1793605142637_b0c0e85f.jpg'
 
 def main():
     print("Loading source images...")
@@ -43,8 +43,6 @@ def main():
         out.paste(img, (0, 0), mask=mask)
         return out
 
-    # Densities and sizes
-    # Legacy & Round sizes
     densities = {
         'mipmap-mdpi': 48,
         'mipmap-hdpi': 72,
@@ -53,7 +51,6 @@ def main():
         'mipmap-xxxhdpi': 192,
     }
 
-    # Adaptive background sizes (108dp canvas)
     adaptive_bg_sizes = {
         'mipmap-mdpi': 108,
         'mipmap-hdpi': 162,
@@ -68,39 +65,23 @@ def main():
             folder = os.path.join(base_res, density)
             os.makedirs(folder, exist_ok=True)
 
-            # ic_launcher.png (legacy square/adaptive base)
             resized = app_logo.resize((size, size), Image.Resampling.LANCZOS)
             launcher_path = os.path.join(folder, "ic_launcher.png")
             resized.save(launcher_path, "PNG")
 
-            # ic_launcher_round.png
             round_img = make_round(resized)
             round_path = os.path.join(folder, "ic_launcher_round.png")
             round_img.save(round_path, "PNG")
 
-            # ic_launcher_foreground.png
-            # Keep size as legacy size (48, 72, 96, 144, 192) to match capacitor setup
             fg_path = os.path.join(folder, "ic_launcher_foreground.png")
             resized.save(fg_path, "PNG")
 
-            # ic_launcher_background.png (pure white canvas with proper canvas size)
             bg_size = adaptive_bg_sizes.get(density, size)
             bg_img = Image.new("RGBA", (bg_size, bg_size), (255, 255, 255, 255))
             bg_path = os.path.join(folder, "ic_launcher_background.png")
             bg_img.save(bg_path, "PNG")
 
-            print(f"  [{density}] {size}x{size} saved to {folder}")
-
-    # Remove or update dummy vector cart icons if present in drawable-v24
-    for base_res in android_dirs:
-        v24_fg = os.path.join(base_res, "drawable-v24", "ic_launcher_foreground.xml")
-        if os.path.exists(v24_fg):
-            # Remove so Android uses @mipmap/ic_launcher_foreground
-            os.remove(v24_fg)
-            print(f"Removed unused vector drawable: {v24_fg}")
-
-    print("\nAll icons generated successfully!")
+    print("\nSuccessfully updated app logo and floating image in all targets!")
 
 if __name__ == "__main__":
     main()
-

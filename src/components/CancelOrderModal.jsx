@@ -9,13 +9,18 @@ const CancelOrderModal = ({
     isOpen,
     onClose,
     onConfirmCancel,
-    isLoading = false
+    onConfirm,
+    isLoading = false,
+    isCancelling = false
 }) => {
     const { t } = useLanguage();
+    const handleConfirm = onConfirmCancel || onConfirm;
+    const loading = isLoading || isCancelling;
+
     if (!isOpen || !order) return null;
 
     const orderIdShort = String(order._id || order.id || '000000').slice(-6).toUpperCase();
-    const customerName = order.shippingAddress?.name || order.user || t('Customer');
+    const customerName = order.shippingAddress?.name || order.user?.fullName || order.user?.name || order.user || t('Customer');
     const street = order.shippingAddress?.street || '';
     const city = order.shippingAddress?.city || 'Ilayangudi';
 
@@ -55,23 +60,36 @@ const CancelOrderModal = ({
                         <p className="text-[11px] text-gray-400 truncate">{street}{city ? `, ${city}` : ''}</p>
                     </div>
 
-                    {/* RED Swipe to Cancel Button */}
-                    <div className="pt-2">
+                    {/* RED Action Controls (Swipe or Tap to Cancel) */}
+                    <div className="pt-2 space-y-2">
                         <SwipeActionButton
                             variant="red"
                             label={t('Swipe to Cancel')}
                             loadingLabel={t('Cancelling...')}
-                            isLoading={isLoading}
+                            isLoading={loading}
                             heightClass="h-[60px] sm:h-[64px]"
                             knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
-                            onSuccess={onConfirmCancel}
+                            onSuccess={handleConfirm}
                         />
+
+                        {/* Direct Tap Button Fallback */}
+                        <button
+                            type="button"
+                            onClick={handleConfirm}
+                            disabled={loading}
+                            className="w-full py-3.5 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white rounded-2xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                        >
+                            {loading ? (
+                                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            ) : null}
+                            <span>{loading ? t('Cancelling...') : t('Yes, Cancel Order')}</span>
+                        </button>
                     </div>
 
                     <button
                         type="button"
                         onClick={onClose}
-                        disabled={isLoading}
+                        disabled={loading}
                         className="w-full py-2 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors uppercase tracking-wider"
                     >
                         {t('Keep Order')}

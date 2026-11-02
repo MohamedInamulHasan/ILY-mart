@@ -73,3 +73,40 @@ export const triggerIncomingOrderAlert = async () => {
         console.warn('Error triggering incoming order alert:', err);
     }
 };
+
+/**
+ * Save auth token to Android Native SharedPreferences so the background service
+ * can poll for new orders when the app is swiped away / closed.
+ */
+export const setOverlayAuthToken = async (token) => {
+    if (!isNativeAndroid() || !token) return;
+    try {
+        await FloatingOverlay.setAuthToken({ token });
+    } catch (err) {
+        console.warn('Error setting overlay auth token:', err);
+    }
+};
+
+/**
+ * Display the Porter-style floating alert card over other apps for a new order
+ */
+export const showPorterOrderCard = async (order) => {
+    if (!isNativeAndroid() || !order) return;
+    try {
+        await FloatingOverlay.showPorterOrderCard(order);
+    } catch (err) {
+        console.warn('Error showing Porter order card:', err);
+    }
+};
+
+/**
+ * Dismiss the floating Porter order card
+ */
+export const dismissPorterOrderCard = async () => {
+    if (!isNativeAndroid()) return;
+    try {
+        await FloatingOverlay.dismissPorterOrderCard();
+    } catch (err) {
+        console.warn('Error dismissing Porter order card:', err);
+    }
+};

@@ -34,3 +34,4 @@ else:
 with open('src/pages/Checkout.jsx', 'w', encoding='utf-8') as f:
     f.write(content)
 print("Updated Checkout.jsx successfully.")
+

@@ -7,30 +7,76 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.PixelFormat;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.PowerManager;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
 import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import androidx.core.app.NotificationCompat;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 public class FloatingLogoService extends Service {
+    public static FloatingLogoService instance;
+    public static boolean isRunning = false;
+    public static boolean isAppInForeground = false;
+
     private WindowManager windowManager;
-    private FrameLayout floatingView;
-    private WindowManager.LayoutParams params;
+    private FrameLayout floatingCircleView;
+    private WindowManager.LayoutParams circleParams;
+
+    private View orderCardView;
+    private WindowManager.LayoutParams cardParams;
+
     private int screenWidth;
     private int screenHeight;
 
-    public static boolean isRunning = false;
+    private MediaPlayer alertMediaPlayer;
+    private Vibrator vibrator;
+    private ScheduledExecutorService pollingExecutor;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Set<String> alertedOrderIds = new HashSet<>();
+
+    private static final String ORDERS_API_URL = "https://homly-backend-aash.onrender.com/api/orders";
+    private static final String NOTIFICATION_CHANNEL_ID = "ily_mart_delivery_partner_overlay";
+    private static final String ALERT_CHANNEL_ID = "ily_mart_delivery_high_priority_alert";
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -40,24 +86,92 @@ public class FloatingLogoService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
         isRunning = true;
-        startForegroundServiceNotification();
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
         DisplayMetrics metrics = new DisplayMetrics();
         windowManager.getDefaultDisplay().getMetrics(metrics);
         screenWidth = metrics.widthPixels;
         screenHeight = metrics.heightPixels;
 
-        // Container FrameLayout for round logo with elevation
-        floatingView = new FrameLayout(this);
-        int sizeInPx = (int) (65 * getResources().getDisplayMetrics().density);
+        startForegroundNotification();
+        createFloatingCircleView();
+        startOrderPolling();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null) {
+            String action = intent.getAction();
+            if ("SHOW_ORDER_CARD".equals(action)) {
+                String orderJsonStr = intent.getStringExtra("order_json");
+                if (orderJsonStr != null) {
+                    try {
+                        JSONObject orderObj = new JSONObject(orderJsonStr);
+                        mainHandler.post(() -> showPorterOrderCard(orderObj));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else if ("DISMISS_CARD".equals(action)) {
+                mainHandler.post(this::dismissPorterOrderCard);
+            }
+        }
+        return START_STICKY;
+    }
+
+    public static void setAppForegroundState(boolean inForeground) {
+        isAppInForeground = inForeground;
+        if (instance != null) {
+            instance.mainHandler.post(() -> {
+                if (inForeground) {
+                    // App is open: hide floating circle and any lingering overlay card
+                    instance.hideCircleBubble();
+                    instance.dismissPorterOrderCard();
+                } else {
+                    // App minimized/closed: restore floating circle bubble
+                    if (instance.orderCardView == null) {
+                        instance.showCircleBubble();
+                    }
+                }
+            });
+        }
+    }
+
+    public static void triggerCardFromJS(JSONObject orderJson) {
+        if (instance != null) {
+            instance.mainHandler.post(() -> instance.showPorterOrderCard(orderJson));
+        }
+    }
+
+    public static void dismissCardFromJS() {
+        if (instance != null) {
+            instance.mainHandler.post(instance::dismissPorterOrderCard);
+        }
+    }
+
+    private int dp(int value) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                value,
+                getResources().getDisplayMetrics()
+        );
+    }
+
+    /**
+     * 1. Draggable Circular Floating Logo
+     */
+    private void createFloatingCircleView() {
+        floatingCircleView = new FrameLayout(this);
+        int sizeInPx = dp(65);
 
         ImageView logoImage = new ImageView(this);
         logoImage.setImageResource(R.drawable.floating_logo);
         logoImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
-        // Circular clipping
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             logoImage.setClipToOutline(true);
             logoImage.setOutlineProvider(new ViewOutlineProvider() {
@@ -66,28 +180,25 @@ public class FloatingLogoService extends Service {
                     outline.setOval(0, 0, view.getWidth(), view.getHeight());
                 }
             });
-            floatingView.setElevation(24f);
+            floatingCircleView.setElevation(dp(8));
         }
 
         FrameLayout.LayoutParams imgParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         );
-        floatingView.addView(logoImage, imgParams);
+        floatingCircleView.addView(logoImage, imgParams);
 
         // Green border ring overlay
         View borderRing = new View(this);
         borderRing.setBackgroundResource(R.drawable.floating_circle_border);
-        floatingView.addView(borderRing, imgParams);
+        floatingCircleView.addView(borderRing, imgParams);
 
-        int layoutType;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            layoutType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-        } else {
-            layoutType = WindowManager.LayoutParams.TYPE_PHONE;
-        }
+        int layoutType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                : WindowManager.LayoutParams.TYPE_PHONE;
 
-        params = new WindowManager.LayoutParams(
+        circleParams = new WindowManager.LayoutParams(
                 sizeInPx,
                 sizeInPx,
                 layoutType,
@@ -96,12 +207,11 @@ public class FloatingLogoService extends Service {
                 PixelFormat.TRANSLUCENT
         );
 
-        params.gravity = Gravity.TOP | Gravity.START;
-        params.x = screenWidth - sizeInPx - 20; // Dock to right edge by default
-        params.y = screenHeight / 3;
+        circleParams.gravity = Gravity.TOP | Gravity.START;
+        circleParams.x = screenWidth - sizeInPx - dp(10);
+        circleParams.y = screenHeight / 3;
 
-        // Touch listener for dragging & click detection (Porter partner style)
-        floatingView.setOnTouchListener(new View.OnTouchListener() {
+        floatingCircleView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
             private int initialY;
             private float initialTouchX;
@@ -113,17 +223,17 @@ public class FloatingLogoService extends Service {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         touchStartTime = System.currentTimeMillis();
-                        initialX = params.x;
-                        initialY = params.y;
+                        initialX = circleParams.x;
+                        initialY = circleParams.y;
                         initialTouchX = event.getRawX();
                         initialTouchY = event.getRawY();
                         return true;
 
                     case MotionEvent.ACTION_MOVE:
-                        params.x = initialX + (int) (event.getRawX() - initialTouchX);
-                        params.y = initialY + (int) (event.getRawY() - initialTouchY);
-                        if (floatingView != null && windowManager != null) {
-                            windowManager.updateViewLayout(floatingView, params);
+                        circleParams.x = initialX + (int) (event.getRawX() - initialTouchX);
+                        circleParams.y = initialY + (int) (event.getRawY() - initialTouchY);
+                        if (floatingCircleView != null && windowManager != null) {
+                            windowManager.updateViewLayout(floatingCircleView, circleParams);
                         }
                         return true;
 
@@ -132,15 +242,14 @@ public class FloatingLogoService extends Service {
                         float diffX = Math.abs(event.getRawX() - initialTouchX);
                         float diffY = Math.abs(event.getRawY() - initialTouchY);
 
-                        // If user tapped without dragging much -> Click to reopen app
                         if (duration < 250 && diffX < 15 && diffY < 15) {
-                            openApp();
+                            openApp(null);
                         } else {
-                            // Snap to nearest screen edge (left or right like Porter / Messenger)
-                            int targetX = (params.x + (v.getWidth() / 2) < screenWidth / 2) ? 10 : (screenWidth - v.getWidth() - 10);
-                            params.x = targetX;
-                            if (floatingView != null && windowManager != null) {
-                                windowManager.updateViewLayout(floatingView, params);
+                            // Snap to nearest screen edge
+                            int targetX = (circleParams.x + (v.getWidth() / 2) < screenWidth / 2) ? dp(5) : (screenWidth - v.getWidth() - dp(5));
+                            circleParams.x = targetX;
+                            if (floatingCircleView != null && windowManager != null) {
+                                windowManager.updateViewLayout(floatingCircleView, circleParams);
                             }
                         }
                         return true;
@@ -149,36 +258,436 @@ public class FloatingLogoService extends Service {
             }
         });
 
+        // Add to windowManager only if app is not already in foreground
+        if (!isAppInForeground) {
+            try {
+                windowManager.addView(floatingCircleView, circleParams);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void hideCircleBubble() {
+        if (floatingCircleView != null && floatingCircleView.isAttachedToWindow()) {
+            try {
+                windowManager.removeView(floatingCircleView);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void showCircleBubble() {
+        if (floatingCircleView != null && !floatingCircleView.isAttachedToWindow()) {
+            try {
+                windowManager.addView(floatingCircleView, circleParams);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    /**
+     * 2. Porter Partner Style Floating Incoming Order Card
+     */
+    public synchronized void showPorterOrderCard(JSONObject order) {
+        if (order == null) return;
+
+        // Wake screen up
+        wakeUpScreen();
+
+        // Start ringing alert sound & vibration
+        startAlertEffects();
+
+        // If circle is visible, remove it while order card is shown
+        hideCircleBubble();
+
+        // Remove old order card if exists
+        dismissPorterOrderCardInternal();
+
         try {
-            windowManager.addView(floatingView, params);
+            String orderId = order.optString("_id", order.optString("id", ""));
+            String shortId = orderId.length() >= 6 ? orderId.substring(orderId.length() - 6).toUpperCase() : orderId;
+
+            JSONObject shippingAddress = order.optJSONObject("shippingAddress");
+            String customerName = shippingAddress != null ? shippingAddress.optString("name", "Customer") : "Customer";
+            String street = shippingAddress != null ? shippingAddress.optString("street", "") : "";
+            String city = shippingAddress != null ? shippingAddress.optString("city", "Ilayangudi") : "Ilayangudi";
+            String dropAddress = street.isEmpty() ? city : street + ", " + city;
+
+            JSONArray items = order.optJSONArray("items");
+            int itemCount = items != null ? items.length() : 0;
+            String pickupStore = "Store Pickup";
+            if (items != null && items.length() > 0) {
+                JSONObject firstItem = items.optJSONObject(0);
+                if (firstItem != null) {
+                    pickupStore = firstItem.optString("storeName", firstItem.optString("name", "Store Pickup"));
+                }
+            }
+
+            double deliveryCharge = order.optDouble("shipping", order.optDouble("deliveryCharge", 20.0));
+            String deliveryChargeStr = deliveryCharge <= 0 ? "FREE" : "₹" + (int) deliveryCharge;
+
+            // --- BUILD THE PORTER CARD VIEW PROGRAMMATICALLY ---
+            LinearLayout cardLayout = new LinearLayout(this);
+            cardLayout.setOrientation(LinearLayout.VERTICAL);
+
+            // Card background: Rounded White Card with elevation
+            GradientDrawable cardBg = new GradientDrawable();
+            cardBg.setColor(Color.WHITE);
+            cardBg.setCornerRadius(dp(22));
+            cardBg.setStroke(dp(1), Color.parseColor("#E5E7EB"));
+            cardLayout.setBackground(cardBg);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                cardLayout.setElevation(dp(28));
+            }
+
+            // Top Header: Dark Green `#2E5A2E` with rounded top corners
+            LinearLayout headerLayout = new LinearLayout(this);
+            headerLayout.setOrientation(LinearLayout.HORIZONTAL);
+            headerLayout.setGravity(Gravity.CENTER_VERTICAL);
+            headerLayout.setPadding(dp(16), dp(14), dp(16), dp(14));
+
+            GradientDrawable headerBg = new GradientDrawable();
+            headerBg.setColor(Color.parseColor("#2E5A2E"));
+            float r = dp(22);
+            headerBg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+            headerLayout.setBackground(headerBg);
+
+            TextView headerTitle = new TextView(this);
+            headerTitle.setText("🚨 NEW DELIVERY ORDER #" + shortId);
+            headerTitle.setTextColor(Color.WHITE);
+            headerTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+            headerTitle.setTypeface(Typeface.DEFAULT_BOLD);
+            LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            headerLayout.addView(headerTitle, titleParams);
+
+            // Dismiss Button '✕'
+            TextView closeBtn = new TextView(this);
+            closeBtn.setText("✕");
+            closeBtn.setTextColor(Color.WHITE);
+            closeBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+            closeBtn.setPadding(dp(8), dp(4), dp(8), dp(4));
+            closeBtn.setOnClickListener(v -> dismissPorterOrderCard());
+            headerLayout.addView(closeBtn);
+
+            cardLayout.addView(headerLayout);
+
+            // Content Container
+            LinearLayout bodyLayout = new LinearLayout(this);
+            bodyLayout.setOrientation(LinearLayout.VERTICAL);
+            bodyLayout.setPadding(dp(18), dp(16), dp(18), dp(18));
+
+            // Earning Banner
+            LinearLayout earningRow = new LinearLayout(this);
+            earningRow.setOrientation(LinearLayout.HORIZONTAL);
+            earningRow.setGravity(Gravity.CENTER_VERTICAL);
+
+            LinearLayout earningTextCol = new LinearLayout(this);
+            earningTextCol.setOrientation(LinearLayout.VERTICAL);
+
+            TextView earningLabel = new TextView(this);
+            earningLabel.setText("DELIVERY EARNING");
+            earningLabel.setTextColor(Color.parseColor("#6B7280"));
+            earningLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            earningLabel.setTypeface(Typeface.DEFAULT_BOLD);
+            earningTextCol.addView(earningLabel);
+
+            TextView earningAmount = new TextView(this);
+            earningAmount.setText(deliveryChargeStr);
+            earningAmount.setTextColor(Color.parseColor("#2E5A2E"));
+            earningAmount.setTextSize(TypedValue.COMPLEX_UNIT_SP, 30);
+            earningAmount.setTypeface(Typeface.DEFAULT_BOLD);
+            earningTextCol.addView(earningAmount);
+
+            LinearLayout.LayoutParams earningColParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            earningRow.addView(earningTextCol, earningColParams);
+
+            // Cash on delivery badge
+            TextView codBadge = new TextView(this);
+            codBadge.setText("Cash on Delivery");
+            codBadge.setTextColor(Color.parseColor("#166534"));
+            codBadge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            codBadge.setTypeface(Typeface.DEFAULT_BOLD);
+            GradientDrawable codBg = new GradientDrawable();
+            codBg.setColor(Color.parseColor("#DCFCE7"));
+            codBg.setCornerRadius(dp(12));
+            codBadge.setBackground(codBg);
+            codBadge.setPadding(dp(10), dp(5), dp(10), dp(5));
+            earningRow.addView(codBadge);
+
+            bodyLayout.addView(earningRow);
+
+            // Divider
+            View divider = new View(this);
+            divider.setBackgroundColor(Color.parseColor("#F3F4F6"));
+            LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(1)
+            );
+            divParams.setMargins(0, dp(12), 0, dp(12));
+            bodyLayout.addView(divider, divParams);
+
+            // Pickup Row (Store)
+            TextView pickupText = new TextView(this);
+            pickupText.setText("🟢  PICKUP:  " + pickupStore);
+            pickupText.setTextColor(Color.parseColor("#1F2937"));
+            pickupText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            pickupText.setTypeface(Typeface.DEFAULT_BOLD);
+            bodyLayout.addView(pickupText);
+
+            // Drop Row (Customer)
+            TextView dropText = new TextView(this);
+            dropText.setText("📍  DROP:  " + customerName + " (" + dropAddress + ")");
+            dropText.setTextColor(Color.parseColor("#374151"));
+            dropText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            LinearLayout.LayoutParams dropParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            dropParams.setMargins(0, dp(6), 0, dp(14));
+            bodyLayout.addView(dropText, dropParams);
+
+            // ACCEPT & VIEW ORDER Button
+            Button acceptBtn = new Button(this);
+            acceptBtn.setText("SWIPE / TAP TO VIEW ORDER ➔");
+            acceptBtn.setTextColor(Color.WHITE);
+            acceptBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            acceptBtn.setTypeface(Typeface.DEFAULT_BOLD);
+            GradientDrawable btnBg = new GradientDrawable();
+            btnBg.setColor(Color.parseColor("#2E5A2E"));
+            btnBg.setCornerRadius(dp(26));
+            acceptBtn.setBackground(btnBg);
+            acceptBtn.setPadding(dp(16), dp(12), dp(16), dp(12));
+
+            acceptBtn.setOnClickListener(v -> {
+                stopAlertEffects();
+                dismissPorterOrderCardInternal();
+                openApp(orderId);
+            });
+
+            bodyLayout.addView(acceptBtn);
+            cardLayout.addView(bodyLayout);
+
+            orderCardView = cardLayout;
+
+            int layoutType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                    ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                    : WindowManager.LayoutParams.TYPE_PHONE;
+
+            cardParams = new WindowManager.LayoutParams(
+                    screenWidth - dp(32),
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    layoutType,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                            | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                            | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                            | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                    PixelFormat.TRANSLUCENT
+            );
+            cardParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+            cardParams.y = dp(50);
+
+            windowManager.addView(orderCardView, cardParams);
+
+            // Also post Heads-Up Notification
+            postHighPriorityOrderNotification(shortId, deliveryChargeStr, pickupStore, dropAddress, orderId);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void openApp() {
+    public synchronized void dismissPorterOrderCard() {
+        stopAlertEffects();
+        dismissPorterOrderCardInternal();
+        if (!isAppInForeground) {
+            showCircleBubble();
+        }
+    }
+
+    private void dismissPorterOrderCardInternal() {
+        if (orderCardView != null) {
+            try {
+                if (orderCardView.isAttachedToWindow()) {
+                    windowManager.removeView(orderCardView);
+                }
+            } catch (Exception ignored) {}
+            orderCardView = null;
+        }
+    }
+
+    private void startAlertEffects() {
+        try {
+            stopAlertEffects();
+
+            // Loop Ringtone / Notification Sound
+            Uri alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            if (alertUri == null) {
+                alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            }
+
+            alertMediaPlayer = new MediaPlayer();
+            alertMediaPlayer.setDataSource(this, alertUri);
+            alertMediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build());
+            alertMediaPlayer.setLooping(true);
+            alertMediaPlayer.prepare();
+            alertMediaPlayer.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (vibrator != null && vibrator.hasVibrator()) {
+                long[] pattern = {0, 600, 300, 600, 300, 600};
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, 1));
+                } else {
+                    vibrator.vibrate(pattern, 1);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void stopAlertEffects() {
+        if (alertMediaPlayer != null) {
+            try {
+                if (alertMediaPlayer.isPlaying()) {
+                    alertMediaPlayer.stop();
+                }
+                alertMediaPlayer.release();
+            } catch (Exception ignored) {}
+            alertMediaPlayer = null;
+        }
+
+        if (vibrator != null) {
+            try {
+                vibrator.cancel();
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void wakeUpScreen() {
+        try {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null) {
+                PowerManager.WakeLock wakeLock = pm.newWakeLock(
+                        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                        "ILYMart:PorterOrderAlert"
+                );
+                wakeLock.acquire(15000); // 15 seconds
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void openApp(String orderId) {
         try {
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                     | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                     | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            if (orderId != null) {
+                intent.putExtra("open_incoming_order", true);
+                intent.putExtra("order_id", orderId);
+            }
             startActivity(intent);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void startForegroundServiceNotification() {
-        String channelId = "ily_mart_delivery_partner_overlay";
-        String channelName = "Delivery Partner Floating Service";
+    /**
+     * 3. Background Order Poller (Runs every 5 seconds even when app is closed)
+     */
+    private void startOrderPolling() {
+        pollingExecutor = Executors.newSingleThreadScheduledExecutor();
+        pollingExecutor.scheduleWithFixedDelay(() -> {
+            try {
+                pollForPendingOrders();
+            } catch (Exception e) {
+                // Silently retry on next tick
+            }
+        }, 2, 5, TimeUnit.SECONDS);
+    }
 
+    private void pollForPendingOrders() {
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        String token = prefs.getString("authToken", null);
+
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URL(ORDERS_API_URL);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+            conn.setRequestProperty("Content-Type", "application/json");
+
+            if (token != null && !token.trim().isEmpty()) {
+                conn.setRequestProperty("Authorization", "Bearer " + token.trim());
+            }
+
+            int code = conn.getResponseCode();
+            if (code == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                reader.close();
+
+                String jsonResponse = sb.toString();
+                JSONArray ordersArray = null;
+
+                if (jsonResponse.trim().startsWith("[")) {
+                    ordersArray = new JSONArray(jsonResponse);
+                } else {
+                    JSONObject obj = new JSONObject(jsonResponse);
+                    if (obj.has("data") && obj.optJSONArray("data") != null) {
+                        ordersArray = obj.optJSONArray("data");
+                    }
+                }
+
+                if (ordersArray != null && ordersArray.length() > 0) {
+                    for (int i = 0; i < ordersArray.length(); i++) {
+                        JSONObject order = ordersArray.optJSONObject(i);
+                        if (order == null) continue;
+
+                        String status = order.optString("status", "");
+                        if ("Pending".equalsIgnoreCase(status)
+                                || "Processing".equalsIgnoreCase(status)
+                                || "Order Placed".equalsIgnoreCase(status)) {
+
+                            String orderId = order.optString("_id", order.optString("id", ""));
+                            if (!orderId.isEmpty() && !alertedOrderIds.contains(orderId)) {
+                                alertedOrderIds.add(orderId);
+                                mainHandler.post(() -> showPorterOrderCard(order));
+                                break; // Alert latest first
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Network failure or backend wake-up; ignore and retry next cycle
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
+    private void startForegroundNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    channelId,
-                    channelName,
+                    NOTIFICATION_CHANNEL_ID,
+                    "Delivery Partner Active Duty",
                     NotificationManager.IMPORTANCE_LOW
             );
-            channel.setDescription("Shows active delivery status and floating bubble");
+            channel.setDescription("Keeps delivery partner online for incoming order alerts");
             channel.enableLights(false);
             channel.enableVibration(false);
 
@@ -197,9 +706,9 @@ public class FloatingLogoService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
-        Notification notification = new NotificationCompat.Builder(this, channelId)
-                .setContentTitle("ILY Mart Partner Online")
-                .setContentText("Tap floating icon or this notification to open")
+        Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle("ILY Mart Partner Online 🟢")
+                .setContentText("Watching for incoming delivery orders in background")
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
@@ -213,18 +722,64 @@ public class FloatingLogoService extends Service {
         }
     }
 
+    private void postHighPriorityOrderNotification(String shortId, String earning, String pickup, String drop, String orderId) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel alertChannel = new NotificationChannel(
+                    ALERT_CHANNEL_ID,
+                    "High Priority Order Alerts",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            alertChannel.setDescription("Rings loud for incoming orders");
+            alertChannel.enableLights(true);
+            alertChannel.setLightColor(Color.GREEN);
+            alertChannel.enableVibration(true);
+
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(alertChannel);
+            }
+        }
+
+        Intent openOrderIntent = new Intent(this, MainActivity.class);
+        openOrderIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        openOrderIntent.putExtra("open_incoming_order", true);
+        openOrderIntent.putExtra("order_id", orderId);
+
+        PendingIntent pi = PendingIntent.getActivity(
+                this,
+                (int) System.currentTimeMillis(),
+                openOrderIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+        );
+
+        Notification notif = new NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
+                .setContentTitle("🚨 New Order #" + shortId + " (" + earning + ")")
+                .setContentText(pickup + " ➔ " + drop)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setContentIntent(pi)
+                .setAutoCancel(true)
+                .build();
+
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) {
+            nm.notify(3002, notif);
+        }
+    }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
         isRunning = false;
-        if (floatingView != null && windowManager != null) {
-            try {
-                windowManager.removeView(floatingView);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            floatingView = null;
+        instance = null;
+
+        stopAlertEffects();
+        dismissPorterOrderCardInternal();
+        hideCircleBubble();
+
+        if (pollingExecutor != null && !pollingExecutor.isShutdown()) {
+            pollingExecutor.shutdownNow();
         }
     }
 }
-

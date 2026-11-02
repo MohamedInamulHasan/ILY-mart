@@ -49,7 +49,8 @@ import {
     checkOverlayPermission, 
     requestOverlayPermission, 
     showFloatingOverlay, 
-    hideFloatingOverlay 
+    hideFloatingOverlay,
+    setOverlayAuthToken 
 } from '../../utils/floatingOverlay';
 
 const DeliveryDashboard = () => {
@@ -89,6 +90,12 @@ const DeliveryDashboard = () => {
             const granted = await checkOverlayPermission();
             if (isMounted) {
                 setHasOverlayPermission(granted);
+            }
+
+            // Sync auth token with native background service so orders poll when closed
+            const currentToken = localStorage.getItem('authToken');
+            if (currentToken) {
+                setOverlayAuthToken(currentToken);
             }
 
             try {

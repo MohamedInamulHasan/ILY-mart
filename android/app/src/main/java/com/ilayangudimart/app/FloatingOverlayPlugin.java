@@ -2,6 +2,7 @@ package com.ilayangudimart.app;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
@@ -11,6 +12,8 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+
+import org.json.JSONObject;
 
 @CapacitorPlugin(name = "FloatingOverlay")
 public class FloatingOverlayPlugin extends Plugin {
@@ -46,6 +49,18 @@ public class FloatingOverlayPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void setAuthToken(PluginCall call) {
+        String token = call.getString("token", "");
+        if (token != null) {
+            SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            prefs.edit().putString("authToken", token).apply();
+        }
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
     public void show(PluginCall call) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -54,6 +69,14 @@ public class FloatingOverlayPlugin extends Plugin {
                     return;
                 }
             }
+
+            // Save token if provided
+            String token = call.getString("token");
+            if (token != null && !token.isEmpty()) {
+                SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+                prefs.edit().putString("authToken", token).apply();
+            }
+
             Intent intent = new Intent(getContext(), FloatingLogoService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 getContext().startForegroundService(intent);
@@ -85,6 +108,29 @@ public class FloatingOverlayPlugin extends Plugin {
     public void isRunning(PluginCall call) {
         JSObject ret = new JSObject();
         ret.put("running", FloatingLogoService.isRunning);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void showPorterOrderCard(PluginCall call) {
+        try {
+            JSObject orderData = call.getObject("order");
+            if (orderData != null) {
+                FloatingLogoService.triggerCardFromJS(new JSONObject(orderData.toString()));
+            }
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("FAILED_SHOW_CARD", e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void dismissPorterOrderCard(PluginCall call) {
+        FloatingLogoService.dismissCardFromJS();
+        JSObject ret = new JSObject();
+        ret.put("success", true);
         call.resolve(ret);
     }
 

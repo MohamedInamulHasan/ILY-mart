@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 
 /**
- * Custom hook to handle Android back button navigation
- * Prevents app from closing when navigating between pages
+ * Custom hook to handle Android hardware/gesture back button navigation
+ * Prevents app from unexpectedly closing when navigating between pages,
+ * and ensures placing an order navigates back to Home rather than Confirmation.
  */
 export const useBackButton = () => {
     const navigate = useNavigate();
@@ -16,48 +19,75 @@ export const useBackButton = () => {
     }, [location]);
 
     useEffect(() => {
-        // Only set up back button handler in Capacitor environment (not browser)
-        if (typeof window !== 'undefined' && window.Capacitor) {
-            let listenerHandle;
-            let isMounted = true;
+        // Only active on native Android / iOS
+        if (!Capacitor.isNativePlatform()) return;
 
-            const setupListener = async () => {
-                try {
-                    // Dynamic import for Capacitor App
-                    const { App: CapacitorApp } = await import('@capacitor/app');
+        let listenerHandle = null;
+        let isMounted = true;
 
-                    const handle = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-                        const currentLocation = locationRef.current;
-                        // If we're on the home page, exit the app
-                        if (currentLocation.pathname === '/' || currentLocation.pathname === '/home') {
-                            CapacitorApp.exitApp();
-                        } else {
-                            // Otherwise, navigate back in history
-                            navigate(-1);
-                        }
-                    });
+        const setupListener = async () => {
+            try {
+                const handle = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+                    const currentPath = locationRef.current?.pathname || '/';
 
-                    if (isMounted) {
-                        listenerHandle = handle;
-                    } else {
-                        handle.remove();
+                    // 1. Root / Home screen: minimize app to background (do not destroy process)
+                    if (currentPath === '/' || currentPath === '/home') {
+                        CapacitorApp.minimizeApp();
+                        return;
                     }
-                } catch (error) {
-                    console.error('Failed to setup back button listener:', error);
-                }
-            };
 
-            setupListener();
+                    // 2. Order Confirmation page: always go back to Home
+                    if (currentPath === '/order-confirmation') {
+                        navigate('/', { replace: true });
+                        return;
+                    }
 
-            // Cleanup listener on unmount
-            return () => {
-                isMounted = false;
-                if (listenerHandle) {
-                    listenerHandle.remove();
+                    // 3. Orders page: return to Home screen instead of going back to Checkout/Confirmation
+                    if (currentPath === '/orders') {
+                        navigate('/', { replace: true });
+                        return;
+                    }
+
+                    // 4. Other top-level tabs (Cart, Profile, Categories, Store)
+                    if (
+                        currentPath === '/cart' ||
+                        currentPath === '/profile' ||
+                        currentPath === '/categories' ||
+                        currentPath === '/store' ||
+                        currentPath === '/shop'
+                    ) {
+                        navigate('/', { replace: true });
+                        return;
+                    }
+
+                    // 5. Nested / sub-pages (e.g. OrderDetails /orders/:id, ProductDetails, etc.)
+                    // Use history back if possible, fallback to Home
+                    if (window.history.length > 1) {
+                        navigate(-1);
+                    } else {
+                        navigate('/', { replace: true });
+                    }
+                });
+
+                if (isMounted) {
+                    listenerHandle = handle;
+                } else {
+                    handle.remove();
                 }
-            };
-        }
-    }, [navigate]); // Removed location from deps to prevent re-registration
+            } catch (error) {
+                console.error('Failed to setup back button listener:', error);
+            }
+        };
+
+        setupListener();
+
+        return () => {
+            isMounted = false;
+            if (listenerHandle) {
+                listenerHandle.remove();
+            }
+        };
+    }, [navigate]);
 };
 
 export default useBackButton;
