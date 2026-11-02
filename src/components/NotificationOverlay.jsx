@@ -159,6 +159,10 @@ const NotificationOverlay = () => {
             // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
             queryClient.invalidateQueries({ queryKey: ['orders'] });
 
+            // Pop up the new incoming order card modal for the delivery boy and trigger alert
+            setIncomingOrder(order);
+            triggerIncomingOrderAlert();
+
             // Play notification chime and vibrate to notify the delivery boy without disrupting their screen
             playSuccessSound();
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
