@@ -100,3 +100,4 @@ if target in text and target2 in text and old_handler in text:
     print('SUCCESS')
 else:
     print('FAILED: one of the targets not found')
+

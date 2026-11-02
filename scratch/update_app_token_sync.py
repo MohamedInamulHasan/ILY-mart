@@ -28,3 +28,4 @@ if target1 in text and target2 in text:
     print('SUCCESS')
 else:
     print('FAILED')
+

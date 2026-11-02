@@ -120,3 +120,4 @@ if target1 in text and target2 in text and target3 in text and target4 in text:
     print('SUCCESS')
 else:
     print('FAILED to match all targets')
+

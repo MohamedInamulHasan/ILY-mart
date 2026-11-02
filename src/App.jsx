@@ -125,6 +125,7 @@ const RoleRedirectHandler = () => {
 
 const Layout = ({ children, onRefresh }) => {
     const location = useLocation();
+    const { user } = useAuth();
     // Use back button handler for Android navigation
     useBackButton();
 
@@ -142,7 +143,6 @@ const Layout = ({ children, onRefresh }) => {
 
     const { settings, isFooterHidden, updateMaintenanceMode } = useData();
     const [showAdminPreview, setShowAdminPreview] = useState(false);
-    const { user } = useAuth();
 
     const { isMaintenance: isLiveMaintenance } = useSocket();
     const isMaintenanceMode = settings?.maintenanceMode === true || isLiveMaintenance;
