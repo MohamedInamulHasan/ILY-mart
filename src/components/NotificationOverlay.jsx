@@ -45,6 +45,7 @@ const NotificationOverlay = () => {
     // Listen for native intent/card clicks when app was closed/backgrounded
     useEffect(() => {
         const handleNativeOpenOrder = async (e) => {
+            if (!isDeliveryBoy) return;
             const orderId = e.detail?.id;
             if (!orderId) return;
             try {
@@ -64,6 +65,7 @@ const NotificationOverlay = () => {
     useEffect(() => {
         // Allows testing the Porter-style incoming order modal
         const handleTestIncomingOrder = (e) => {
+            if (!isDeliveryBoy) return;
             const testOrder = e.detail || {
                 _id: '672000000000000000a0e25d',
                 shippingAddress: {
@@ -210,7 +212,7 @@ const NotificationOverlay = () => {
 
     return (
         <>
-            {incomingOrder && (
+            {isDeliveryBoy && incomingOrder && (
                 <IncomingOrderModal
                     order={incomingOrder}
                     startWithViewCard={true}
