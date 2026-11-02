@@ -11,7 +11,14 @@ import { startIncomingOrderAlertSound, stopIncomingOrderAlertSound, playSuccessS
 import { CartoonCoin } from './CartoonCoin';
 import SwipeActionButton from './SwipeActionButton';
 
-const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancelled }) => {
+const IncomingOrderModal = ({
+    order,
+    onClose,
+    onAccepted,
+    onDelivered,
+    onCancelled,
+    startWithViewCard = false
+}) => {
     const { t, language } = useLanguage();
     const { stores } = useData();
     const navigate = useNavigate();
@@ -26,6 +33,17 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
     const isProcessing = order?.status === 'Processing' || order?.status === 'Pending' || order?.status === 'Order Placed' || order?.status === 'Confirmed';
     const isDelivered = order?.status === 'Delivered';
     const isCancelled = order?.status === 'Cancelled';
+
+    // Step state: 'view' shows the compact View Order card; 'accept' shows the full Accept Order view
+    const [viewMode, setViewMode] = useState(startWithViewCard && isProcessing ? 'view' : 'accept');
+
+    useEffect(() => {
+        if (order && isProcessing && startWithViewCard) {
+            setViewMode('view');
+        } else {
+            setViewMode('accept');
+        }
+    }, [order?._id, order?.status, startWithViewCard, isProcessing]);
 
     // Only play alert sound for fresh pending/processing orders
     useEffect(() => {
@@ -174,6 +192,103 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
         return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trimmed)}`;
     })();
 
+    // 1. Initial Step: Compact "VIEW ORDER" card (shown when app closed/minimized upon order receipt)
+    if (viewMode === 'view' && isProcessing) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={handleDismissView}
+                className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 select-none"
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                    transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2.5rem] p-6 border border-gray-100 dark:border-gray-700 shadow-2xl relative text-center flex flex-col"
+                >
+                    {/* Top right: Black X to dismiss */}
+                    <div className="absolute top-4 right-4 z-10">
+                        <button
+                            type="button"
+                            onClick={handleDismissView}
+                            title={t('Close')}
+                            className="p-1 text-black dark:text-white hover:opacity-70 transition-opacity active:scale-90"
+                        >
+                            <X size={22} className="stroke-[2.5]" />
+                        </button>
+                    </div>
+
+                    {/* Delivery Charge Header */}
+                    <div className="pt-2 pb-1 text-center">
+                        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 block mb-0.5">
+                            {t('Delivery Charge')}
+                        </span>
+                        {deliveryCharge > 0 ? (
+                            <div className="text-5xl font-black text-black dark:text-white tracking-tight font-sans">
+                                ₹{deliveryCharge}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-2 py-1">
+                                <span className="text-4xl font-black text-black dark:text-white tracking-tight uppercase">
+                                    {t('Free Delivery')}
+                                </span>
+                                <CartoonCoin size={32} />
+                            </div>
+                        )}
+
+                        <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mt-1">
+                            {t(paymentType || 'Cash on Delivery')}
+                        </p>
+
+                        {formattedOrderTime && (
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-center gap-1 font-semibold">
+                                <Clock size={12} className="text-gray-400" />
+                                <span>{t('Ordered at')} {formattedOrderTime}</span>
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Customer & Location */}
+                    <div className="my-3 py-3 border-y border-gray-100 dark:border-gray-700/60 text-center">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                            {customerName}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                            {[street, city].filter(Boolean).join(', ')} {items.length > 0 ? `(${items.length} items)` : ''}
+                        </p>
+
+                        {scheduledTimeDisplay && !String(scheduledTimeDisplay).toLowerCase().includes('instant') && (
+                            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-full text-amber-800 dark:text-amber-300 text-[11px] font-bold">
+                                <Clock size={12} />
+                                <span>{t('Scheduled')}: {scheduledTimeDisplay}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bottom: Swipe to VIEW ORDER (moves to the full Accept Order card) */}
+                    <div className="pt-1">
+                        <SwipeActionButton
+                            variant="yellow"
+                            label={t('VIEW ORDER')}
+                            autoReset={true}
+                            heightClass="h-[58px] sm:h-[62px]"
+                            knobSizeClass="w-[46px] h-[46px] sm:w-[50px] sm:h-[50px]"
+                            onSuccess={() => {
+                                setViewMode('accept');
+                            }}
+                        />
+                    </div>
+                </motion.div>
+            </motion.div>
+        );
+    }
+
+    // 2. Full "ACCEPT ORDER" / Order Details View
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -181,7 +296,7 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={handleDismissView}
-            className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm select-none"
+            className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 select-none"
         >
             <motion.div
                 initial={{ y: '100%', opacity: 0 }}
@@ -473,7 +588,7 @@ const IncomingOrderModal = ({ order, onClose, onAccepted, onDelivered, onCancell
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowCancelPopup(false)}
-                            className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+                            className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75"
                         >
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}

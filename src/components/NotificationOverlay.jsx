@@ -185,6 +185,7 @@ const NotificationOverlay = () => {
             {incomingOrder && (
                 <IncomingOrderModal
                     order={incomingOrder}
+                    startWithViewCard={true}
                     onClose={() => setIncomingOrder(null)}
                 />
             )}

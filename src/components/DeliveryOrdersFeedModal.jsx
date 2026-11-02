@@ -7,6 +7,7 @@ import { playSuccessSound } from '../utils/soundHelper';
 import { CartoonCoin } from './CartoonCoin';
 import ShineActionButton from './ShineActionButton';
 import SwipeActionButton from './SwipeActionButton';
+import PullToRefreshLayout from './PullToRefreshLayout';
 import { formatDeliveryRangeFromDate } from '../utils/storeHelpers';
 
 const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }) => {
@@ -196,23 +197,25 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                 </div>
 
                 {/* Scrollable Order Cards List filling full page */}
-                <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 max-w-2xl mx-auto w-full">
-                    {feedOrders.length === 0 ? (
-                        <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
-                            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                {showDeliveredOnly ? <CheckCircle size={30} className="text-emerald-500" /> : <Package size={30} />}
-                            </div>
-                            <h3 className="font-bold text-gray-800 dark:text-gray-200 text-base">
-                                {showDeliveredOnly ? t('No delivered orders yet') : t('No orders right now')}
-                            </h3>
-                            <p className="text-xs text-gray-500 mt-1">
-                                {showDeliveredOnly
-                                    ? t('Delivered customer orders will appear here.')
-                                    : t('New customer orders will automatically appear here.')}
-                            </p>
-                        </div>
-                    ) : (
-                        feedOrders.map((order) => {
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    <PullToRefreshLayout>
+                        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 max-w-2xl mx-auto w-full">
+                            {feedOrders.length === 0 ? (
+                                <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
+                                    <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                        {showDeliveredOnly ? <CheckCircle size={30} className="text-emerald-500" /> : <Package size={30} />}
+                                    </div>
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 text-base">
+                                        {showDeliveredOnly ? t('No delivered orders yet') : t('No orders right now')}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {showDeliveredOnly
+                                            ? t('Delivered customer orders will appear here.')
+                                            : t('New customer orders will automatically appear here.')}
+                                    </p>
+                                </div>
+                            ) : (
+                                feedOrders.map((order) => {
                             const deliveryCharge = order.shipping !== undefined && order.shipping !== null
                                 ? order.shipping
                                 : (order.deliveryCharge !== undefined ? order.deliveryCharge : 20);
@@ -387,6 +390,8 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                             );
                         })
                     )}
+                        </div>
+                    </PullToRefreshLayout>
                 </div>
 
                 {/* POPUP: Cancel Order Confirmation with Red Swipe Button */}
@@ -397,7 +402,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowCancelPopup(false)}
-                            className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+                            className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75"
                         >
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}
@@ -464,7 +469,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowDeletePopup(false)}
-                            className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+                            className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75"
                         >
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}

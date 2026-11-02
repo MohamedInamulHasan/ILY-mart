@@ -26,7 +26,7 @@ const CancelOrderModal = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={onClose}
-                className="fixed inset-0 z-[100020] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm select-none"
+                className="fixed inset-0 z-[100020] flex items-center justify-center p-4 bg-black/75 select-none"
             >
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}

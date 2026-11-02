@@ -562,40 +562,40 @@ const DeliveryDashboard = () => {
                         </div>
                     </div>
                 </div>
-                {/* Available Orders Feed Modal (triggered by Bell icon, sorted Oldest to Newest) */}
-                <DeliveryOrdersFeedModal
-                    isOpen={showOrdersFeed}
-                    onClose={() => setShowOrdersFeed(false)}
-                    orders={orders}
-                    onSelectOrder={(order) => {
-                        setSelectedOrderForAccept(order);
-                    }}
-                />
-
-                {/* Incoming Order Accept Modal (opened when clicking View on any card) */}
-                <AnimatePresence>
-                    {selectedOrderForAccept && (
-                        <IncomingOrderModal
-                            key={selectedOrderForAccept._id || selectedOrderForAccept.id}
-                            order={selectedOrderForAccept}
-                            onClose={() => setSelectedOrderForAccept(null)}
-                            onAccepted={(order) => {
-                                setSelectedOrderForAccept(null);
-                                setActiveTab('Out for Delivery');
-                            }}
-                            onDelivered={(order) => {
-                                setSelectedOrderForAccept(null);
-                                setActiveTab('Delivered');
-                            }}
-                            onCancelled={(order) => {
-                                setSelectedOrderForAccept(null);
-                                setActiveTab('Cancelled');
-                            }}
-                        />
-                    )}
-                </AnimatePresence>
-
             </PullToRefreshLayout>
+
+            {/* Available Orders Feed Modal (placed outside PullToRefreshLayout to prevent CSS transform conflicts) */}
+            <DeliveryOrdersFeedModal
+                isOpen={showOrdersFeed}
+                onClose={() => setShowOrdersFeed(false)}
+                orders={orders}
+                onSelectOrder={(order) => {
+                    setSelectedOrderForAccept(order);
+                }}
+            />
+
+            {/* Incoming Order Accept Modal (opened when clicking View on any card) */}
+            <AnimatePresence>
+                {selectedOrderForAccept && (
+                    <IncomingOrderModal
+                        key={selectedOrderForAccept._id || selectedOrderForAccept.id}
+                        order={selectedOrderForAccept}
+                        onClose={() => setSelectedOrderForAccept(null)}
+                        onAccepted={(order) => {
+                            setSelectedOrderForAccept(null);
+                            setActiveTab('Out for Delivery');
+                        }}
+                        onDelivered={(order) => {
+                            setSelectedOrderForAccept(null);
+                            setActiveTab('Delivered');
+                        }}
+                        onCancelled={(order) => {
+                            setSelectedOrderForAccept(null);
+                            setActiveTab('Cancelled');
+                        }}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };
