@@ -374,7 +374,7 @@ const DeliveryDashboard = () => {
 
             <PullToRefreshLayout>
                 <div className="pt-[72px]">
-                    <div className="px-5 mt-2 max-w-3xl mx-auto">
+                    <div className="px-5 mt-2 max-w-3xl mx-auto pb-28">
 
 
                         {/* Search Pill */}
