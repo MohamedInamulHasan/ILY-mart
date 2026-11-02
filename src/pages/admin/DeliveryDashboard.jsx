@@ -398,7 +398,7 @@ const DeliveryDashboard = () => {
 
             <PullToRefreshLayout>
                 <div className="pt-[72px]">
-                    <div className="px-5 mt-2 max-w-3xl mx-auto pb-28">
+                    <div className="px-5 mt-2 max-w-3xl mx-auto pb-44">
 
 
                         {/* Permission Warning Banner if Display Over Other Apps is missing */}
@@ -624,12 +624,12 @@ const DeliveryDashboard = () => {
                 </div>
             </PullToRefreshLayout>
 
-            {/* Floating Action Footer (Elevated like Home Footer) */}
+            {/* Attached Bottom Rectangle Footer */}
             <div 
-                className="fixed z-40 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 pointer-events-auto select-none"
-                style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+                className="fixed bottom-0 inset-x-0 z-40 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] pointer-events-auto select-none"
+                style={{ paddingBottom: 'calc(2.25rem + env(safe-area-inset-bottom, 20px))', paddingTop: '0.85rem' }}
             >
-                <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl p-2 rounded-full border border-gray-200/80 dark:border-gray-700/80 shadow-2xl shadow-black/15">
+                <div className="max-w-md mx-auto px-4">
                     <SwipeActionButton
                         key={isFloatingEnabled ? 'disable-floating' : 'enable-floating'}
                         variant={isFloatingEnabled ? 'red' : 'amber'}
