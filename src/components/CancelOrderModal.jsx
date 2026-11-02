@@ -19,9 +19,6 @@ const CancelOrderModal = ({
     if (!isOpen || !order) return null;
 
     const orderIdShort = String(order._id || order.id || '000000').slice(-6).toUpperCase();
-    const customerName = order.shippingAddress?.name || order.user?.fullName || order.user?.name || order.user || t('Customer');
-    const street = order.shippingAddress?.street || '';
-    const city = order.shippingAddress?.city || 'Ilayangudi';
 
     return (
         <AnimatePresence>
@@ -38,7 +35,7 @@ const CancelOrderModal = ({
                     exit={{ scale: 0.9, opacity: 0 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-4"
+                    className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-5"
                 >
                     <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
                         <AlertTriangle size={32} />
@@ -48,15 +45,9 @@ const CancelOrderModal = ({
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                             {t('Cancel Order')} #{orderIdShort}?
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
                             {t('Are you sure you want to cancel this order?')}
                         </p>
-                    </div>
-
-                    {/* Customer snippet */}
-                    <div className="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-3 text-xs text-gray-600 dark:text-gray-300 text-left">
-                        <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{customerName}</p>
-                        <p className="text-[11px] text-gray-400 truncate">{street}{city ? `, ${city}` : ''}</p>
                     </div>
 
                     {/* Simple Yes or Cancel Buttons */}

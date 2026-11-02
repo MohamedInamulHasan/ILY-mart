@@ -147,8 +147,11 @@ const NotificationOverlay = () => {
             // Show Porter-style full incoming order alert ONLY to Delivery Boys
             if (isDeliveryBoy) {
                 setIncomingOrder(order);
-                triggerIncomingOrderAlert();
-                showPorterOrderCard(order);
+                const isFloatingAlertEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+                if (isFloatingAlertEnabled) {
+                    triggerIncomingOrderAlert();
+                    showPorterOrderCard(order);
+                }
 
                 // Show Native System Notification (pops up outside browser if minimized)
                 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
