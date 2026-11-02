@@ -1,123 +1,96 @@
+import re
+
 with open('src/pages/admin/DeliveryDashboard.jsx', 'r', encoding='utf-8') as f:
-    text = f.read()
+    code = f.read()
 
-# 1. Add registerModalBackHandler import
-target1 = """import { 
-    isNativeAndroid, 
-    checkOverlayPermission, 
-    requestOverlayPermission, 
-    showFloatingOverlay, 
-    hideFloatingOverlay,
-    setOverlayAuthToken 
-} from '../../utils/floatingOverlay';"""
+# 1. Imports
+if "import { useSocket } from '../../context/SocketContext';" not in code:
+    code = code.replace(
+        "import { useLanguage } from '../../context/LanguageContext';",
+        "import { useLanguage } from '../../context/LanguageContext';\nimport { useSocket } from '../../context/SocketContext';\nimport { useQueryClient } from '@tanstack/react-query';"
+    )
 
-replacement1 = """import { 
-    isNativeAndroid, 
-    checkOverlayPermission, 
-    requestOverlayPermission, 
-    showFloatingOverlay, 
-    hideFloatingOverlay,
-    setOverlayAuthToken 
-} from '../../utils/floatingOverlay';
-import { registerModalBackHandler } from '../../utils/useBackButton';"""
+# 2. Hooks in component
+old_hooks = "    const { logout, user } = useAuth();\n    const { t, language } = useLanguage();"
+new_hooks = "    const { logout, user } = useAuth();\n    const { t, language } = useLanguage();\n    const { socket } = useSocket();\n    const queryClient = useQueryClient();"
+code = code.replace(old_hooks, new_hooks)
 
-# 2. Add back handlers and overlay starter
-target2 = """    const toggleFloatingOverlay = async () => {
-        const nextState = !isFloatingEnabled;
-        setIsFloatingEnabled(nextState);
-        localStorage.setItem('delivery_floating_overlay_enabled', String(nextState));
-        if (!nextState) {
-            await hideFloatingOverlay();
-        } else {
-            const granted = await checkOverlayPermission();
-            if (!granted) {
-                await requestOverlayPermission();
-            }
-        }
-    };"""
-
-replacement2 = """    // Register Android back button handlers to dismiss modals before navigating
+# 3. Socket listener effect
+socket_effect = """
+    // Listen for incoming orders in real-time to alert delivery boy and refresh list
     useEffect(() => {
-        if (!selectedOrderForAccept) return;
-        return registerModalBackHandler(() => setSelectedOrderForAccept(null));
-    }, [selectedOrderForAccept]);
-
-    useEffect(() => {
-        if (!showOrdersFeed) return;
-        return registerModalBackHandler(() => setShowOrdersFeed(false));
-    }, [showOrdersFeed]);
-
-    useEffect(() => {
-        if (!showLogoutModal) return;
-        return registerModalBackHandler(() => setShowLogoutModal(false));
-    }, [showLogoutModal]);
-
-    const toggleFloatingOverlay = async () => {
-        const nextState = !isFloatingEnabled;
-        setIsFloatingEnabled(nextState);
-        localStorage.setItem('delivery_floating_overlay_enabled', String(nextState));
-        if (!nextState) {
-            await hideFloatingOverlay();
-        } else {
-            const granted = await checkOverlayPermission();
-            setHasOverlayPermission(granted);
-            if (!granted) {
-                await requestOverlayPermission();
-            } else {
-                await showFloatingOverlay();
+        if (!socket) return;
+        const handleNewOrder = () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            playSuccessSound();
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
             }
-        }
-    };"""
+        };
+        socket.on('order:created', handleNewOrder);
+        return () => socket.off('order:created', handleNewOrder);
+    }, [socket, queryClient]);
+"""
 
-# 3. In initOverlay, ensure showFloatingOverlay is called if enabled
-target3 = """            // Sync auth token with native background service so orders poll when closed
-            const currentToken = localStorage.getItem('authToken');
-            if (currentToken) {
-                setOverlayAuthToken(currentToken);
-            }"""
+# Place after line "const [isFloatingEnabled, setIsFloatingEnabled] = useState" effect
+code = code.replace(
+    "    const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {",
+    socket_effect + "\n    const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {"
+)
 
-replacement3 = """            // Sync auth token with native background service so orders poll when closed
-            const currentToken = localStorage.getItem('authToken');
-            if (currentToken) {
-                setOverlayAuthToken(currentToken);
-            }
+# 4. pendingOrdersCount
+code = code.replace(
+    "const pendingOrdersCount = orders.filter(o => ['Processing', 'Pending'].includes(o.status)).length;",
+    "const pendingOrdersCount = orders.filter(o => ['Processing', 'Pending', 'Order Placed'].includes(o.status)).length;"
+)
 
-            if (isFloatingEnabled && granted) {
-                showFloatingOverlay();
-            }"""
+# 5. displayOrders
+old_display = """    // Filter to Out for Delivery order cards in delivery panel
+    const displayOrders = orders
+        .filter(order => {
+            // "only put the out for delivery order cards in the delivery panel"
+            if (!['Out for Delivery', 'Shipped'].includes(order.status)) return false;
 
-# 4. Add permission warning banner above search pill if permission is missing
-target4 = """                        {/* Search Pill */}"""
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            const orderId = String(order._id || order.id).toLowerCase();
+            const customerName = (order.shippingAddress?.name || order.user || '').toLowerCase();
+            const customerMobile = (order.shippingAddress?.mobile || '').toLowerCase();
+            return orderId.includes(q) || customerName.includes(q) || customerMobile.includes(q) ||
+                order.items?.some(item => (item.name || '').toLowerCase().includes(q));
+        })
+        .slice()
+        .sort((a, b) => getOrderTimeMs(a) - getOrderTimeMs(b));"""
 
-replacement4 = """                        {/* Permission Warning Banner if Display Over Other Apps is missing */}
-                        {!hasOverlayPermission && (
-                            <div className="mb-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
-                                <div className="flex items-center gap-2.5">
-                                    <span className="text-xl">⚠️</span>
-                                    <div className="text-left">
-                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">{t('Display Over Other Apps Required')}</p>
-                                        <p className="text-[11px] text-amber-700 dark:text-amber-300">{t('Enable permission so floating screen image and order alerts appear')}</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={requestOverlayPermission}
-                                    className="shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-                                >
-                                    {t('Allow')}
-                                </button>
-                            </div>
-                        )}
+new_display = """    // Filter to delivery order cards in delivery panel
+    const displayOrders = orders
+        .filter(order => {
+            // Include newly placed orders (Pending, Processing, Order Placed) and active deliveries (Out for Delivery, Shipped)
+            if (!['Pending', 'Processing', 'Order Placed', 'Out for Delivery', 'Shipped'].includes(order.status)) return false;
 
-                        {/* Search Pill */}"""
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            const orderId = String(order._id || order.id).toLowerCase();
+            const customerName = (order.shippingAddress?.name || order.user || '').toLowerCase();
+            const customerMobile = (order.shippingAddress?.mobile || '').toLowerCase();
+            return orderId.includes(q) || customerName.includes(q) || customerMobile.includes(q) ||
+                order.items?.some(item => (item.name || '').toLowerCase().includes(q));
+        })
+        .slice()
+        .sort((a, b) => {
+            // New orders (Pending/Processing) prioritized at the top of the list!
+            const aIsPending = ['Pending', 'Processing', 'Order Placed'].includes(a.status);
+            const bIsPending = ['Pending', 'Processing', 'Order Placed'].includes(b.status);
+            if (aIsPending && !bIsPending) return -1;
+            if (!aIsPending && bIsPending) return 1;
 
-if target1 in text and target2 in text and target3 in text and target4 in text:
-    text = text.replace(target1, replacement1, 1)
-    text = text.replace(target2, replacement2, 1)
-    text = text.replace(target3, replacement3, 1)
-    text = text.replace(target4, replacement4, 1)
-    with open('src/pages/admin/DeliveryDashboard.jsx', 'w', encoding='utf-8') as f:
-        f.write(text)
-    print('SUCCESS')
-else:
-    print('FAILED to match all targets')
+            // Within same status group, sort newest first so latest orders are at the top
+            return getOrderTimeMs(b) - getOrderTimeMs(a);
+        });"""
 
+code = code.replace(old_display, new_display)
+
+with open('src/pages/admin/DeliveryDashboard.jsx', 'w', encoding='utf-8') as f:
+    f.write(code)
+
+print("DeliveryDashboard.jsx updated successfully!")

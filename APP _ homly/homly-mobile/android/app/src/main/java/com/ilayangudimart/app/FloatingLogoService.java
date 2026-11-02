@@ -143,7 +143,7 @@ public class FloatingLogoService extends Service {
     }
 
     public static void triggerCardFromJS(JSONObject orderJson) {
-        if (instance != null) {
+        if (instance != null && !isAppInForeground) {
             instance.mainHandler.post(() -> instance.showPorterOrderCard(orderJson));
         }
     }
@@ -301,7 +301,7 @@ public class FloatingLogoService extends Service {
      * 2. Porter Partner Style Floating Incoming Order Card
      */
     public synchronized void showPorterOrderCard(JSONObject order) {
-        if (order == null) return;
+        if (order == null || isAppInForeground) return;
 
         // Wake screen up
         wakeUpScreen();
@@ -683,7 +683,9 @@ public class FloatingLogoService extends Service {
                             String orderId = order.optString("_id", order.optString("id", ""));
                             if (!orderId.isEmpty() && !alertedOrderIds.contains(orderId)) {
                                 alertedOrderIds.add(orderId);
-                                mainHandler.post(() -> showPorterOrderCard(order));
+                                if (!isAppInForeground) {
+                                    mainHandler.post(() -> showPorterOrderCard(order));
+                                }
                                 break; // Alert latest first
                             }
                         }

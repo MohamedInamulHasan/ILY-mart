@@ -13,6 +13,8 @@ const SwipeActionButton = ({
     loadingLabel = 'Processing...',
     heightClass = 'h-[60px] sm:h-[64px]',
     knobSizeClass = 'w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]',
+    textSizeClass = 'text-base sm:text-lg',
+    iconSize = 24,
     variant = 'green', // 'yellow' | 'amber' | 'blue' | 'sky' | 'green' | 'red'
     autoReset = false,
     className = ''
@@ -159,12 +161,12 @@ const SwipeActionButton = ({
                 style={{ touchAction: 'none' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <ChevronsRight size={24} className={`stroke-[3.5] ${colors.knob}`} />
+                <ChevronsRight size={iconSize} className={`stroke-[3.5] ${colors.knob}`} />
             </motion.div>
 
             {/* Centered Track Label - Exactly in the center of button for all */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-4">
-                <span className="font-black text-base sm:text-lg tracking-wider uppercase text-white text-center select-none truncate">
+                <span className={`font-black ${textSizeClass} tracking-wider uppercase text-white text-center select-none truncate`}>
                     {isLoading ? (
                         <span className="inline-flex items-center justify-center gap-2">
                             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" />

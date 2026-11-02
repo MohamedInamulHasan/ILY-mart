@@ -5,7 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Bell, CheckCircle, Truck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import IncomingOrderModal from './IncomingOrderModal';
+import { playSuccessSound } from '../utils/soundHelper';
 import { triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
 import { apiService } from '../utils/api';
 import { registerModalBackHandler } from '../utils/useBackButton';
@@ -14,6 +16,7 @@ const NotificationOverlay = () => {
     const { socket } = useSocket();
     const { t } = useLanguage();
     const { user } = useAuth();
+    const queryClient = useQueryClient();
     const [notifications, setNotifications] = useState([]);
     const [incomingOrder, setIncomingOrder] = useState(null);
     const navigate = useNavigate();
@@ -150,32 +153,33 @@ const NotificationOverlay = () => {
         };
 
         const handleOrderCreated = (order) => {
-            // Show Porter-style incoming order alert to Delivery Boys and Admins
-            if (isDeliveryBoy || isAdmin) {
-                setIncomingOrder(order);
-                const isFloatingAlertEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-                if (isFloatingAlertEnabled) {
-                    triggerIncomingOrderAlert();
-                    showPorterOrderCard(order);
-                }
+            // Strictly only for Delivery Boys, NOT for customers or other roles
+            if (!isDeliveryBoy) return;
 
-                // Show Native System Notification (pops up outside browser if minimized)
-                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                    try {
-                        const orderIdShort = String(order._id || order.id || '000').slice(-6).toUpperCase();
-                        const notif = new Notification(`🚨 New Delivery Order #${orderIdShort} - ₹${order.total || order.subtotal || 0}`, {
-                            body: `Pickup: ${order.items?.[0]?.storeName || 'Store'} → Drop: ${order.shippingAddress?.street || 'Customer'}`,
-                            icon: '/floating-logo.jpg',
-                            requireInteraction: true,
-                            tag: `delivery-${order._id}`
-                        });
-                        notif.onclick = () => {
-                            window.focus();
-                            setIncomingOrder(order);
-                        };
-                    } catch (err) {
-                        console.warn('System notification error:', err);
-                    }
+            // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+            // Play notification chime and vibrate to notify the delivery boy without disrupting their screen
+            playSuccessSound();
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+
+            // Only show OS desktop/mobile push notification if the app is minimized/hidden in background
+            if (typeof document !== 'undefined' && document.hidden && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                try {
+                    const orderIdShort = String(order._id || order.id || '000').slice(-6).toUpperCase();
+                    const notif = new Notification(`🚨 New Delivery Order #${orderIdShort} - ₹${order.total || order.subtotal || 0}`, {
+                        body: `Pickup: ${order.items?.[0]?.storeName || 'Store'} → Drop: ${order.shippingAddress?.street || 'Customer'}`,
+                        icon: '/floating-logo.jpg',
+                        tag: `delivery-${order._id}`
+                    });
+                    notif.onclick = () => {
+                        window.focus();
+                        navigate('/admin');
+                    };
+                } catch (err) {
+                    console.warn('System notification error:', err);
                 }
             }
         };
@@ -187,7 +191,7 @@ const NotificationOverlay = () => {
             socket.off('order:updated', handleOrderUpdated);
             socket.off('order:created', handleOrderCreated);
         };
-    }, [socket, user, isDeliveryBoy, isAdmin, t, navigate]);
+    }, [socket, user, isDeliveryBoy, t, navigate, queryClient]);
 
     const addNotification = (notif) => {
         setNotifications(prev => [...prev, notif]);

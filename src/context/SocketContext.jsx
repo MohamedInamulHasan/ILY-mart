@@ -52,8 +52,12 @@ export const SocketProvider = ({ children }) => {
         });
 
         // Data Update Events
+        newSocket.on('order:created', () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+        });
+
         newSocket.on('order:updated', () => {
-            queryClient.invalidateQueries(['orders']);
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
         });
 
         newSocket.on('product:updated', () => {
