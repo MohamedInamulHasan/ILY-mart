@@ -9,6 +9,7 @@ import { getStoreName, formatDeliveryRangeFromDate } from '../utils/storeHelpers
 import { API_BASE_URL } from '../utils/api';
 import { startIncomingOrderAlertSound, stopIncomingOrderAlertSound, playSuccessSound } from '../utils/soundHelper';
 import { CartoonCoin } from './CartoonCoin';
+import { formatOrderBannerTime } from '../utils/dateUtils';
 import SwipeActionButton from './SwipeActionButton';
 import { registerModalBackHandler } from '../utils/useBackButton';
 
@@ -217,21 +218,36 @@ const IncomingOrderModal = ({
                     onClick={(e) => e.stopPropagation()}
                     className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2.5rem] p-6 border border-gray-100 dark:border-gray-700 shadow-2xl relative text-center flex flex-col"
                 >
-                    {/* Top right: Black X to dismiss */}
-                    <div className="absolute top-4 right-4 z-10">
+                    {/* Compact View when app closed: ID Left, X Right, grey line not touching edges */}
+                    <div className="px-5 pt-3 pb-2.5 flex items-center justify-between text-black dark:text-white -mx-6 -mt-6 rounded-t-[2.5rem] bg-white dark:bg-gray-800">
+                        {/* Left: #Order ID */}
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 font-mono shrink-0">
+                                #{orderIdShort}
+                            </span>
+                            {formattedOrderTime && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold truncate">
+                                    • {formattedOrderTime}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Right: X Button */}
                         <button
                             type="button"
                             onClick={handleDismissView}
                             title={t('Close')}
-                            className="p-1 text-black dark:text-white hover:opacity-70 transition-opacity active:scale-90"
+                            className="p-1 -mr-1 hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-90 rounded-full text-gray-900 dark:text-white transition-all flex items-center justify-center cursor-pointer shrink-0 ml-2"
                         >
-                            <X size={22} className="stroke-[2.5]" />
+                            <X size={18} className="text-gray-900 dark:text-white stroke-[2.5]" />
                         </button>
                     </div>
+                    {/* Grey line not touching left and right edges */}
+                    <div className="mx-2 h-[1px] bg-gray-300 dark:bg-gray-600 mb-3 shrink-0" />
 
                     {/* Delivery Charge Header */}
-                    <div className="pt-2 pb-1 text-center">
-                        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 block mb-0.5">
+                    <div className="pt-1 pb-1 text-center">
+                        <span className="text-[11px] font-black uppercase tracking-widest text-black dark:text-white block mb-0.5">
                             {t('Delivery Charge')}
                         </span>
                         {deliveryCharge > 0 ? (
@@ -312,72 +328,41 @@ const IncomingOrderModal = ({
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#E8EAEF] dark:bg-gray-900 w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[94vh] relative"
             >
-                {/* Top Header Section - Clean Solid Background, Grey Texts & Green Price */}
-                <div className="bg-white dark:bg-gray-800 pt-7 pb-4 px-6 relative text-center shrink-0 border-b border-gray-100 dark:border-gray-750">
-                    {/* Top right controls: Black X (no round background) */}
-                    <div className="absolute top-4 right-4 flex items-center">
-                        <button
-                            type="button"
-                            onClick={handleDismissView}
-                            title={t('Close')}
-                            className="p-1 text-black dark:text-white hover:opacity-70 transition-opacity active:scale-90"
-                        >
-                            <X size={22} className="stroke-[2.5]" />
-                        </button>
+                {/* Full Accept View: Time Left & ID Right in grey same thickness, light grey line like green dot line */}
+                <div className="bg-white dark:bg-gray-800 shrink-0">
+                    <div className="px-5 pt-4 pb-2.5 flex items-center justify-between text-gray-500 dark:text-gray-400">
+                        {/* Left: 🕒 Nov 6, 8.00 PM */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
+                            <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 tracking-wide truncate">
+                                {formatOrderBannerTime(order.createdAt || order.date) || formattedOrderTime || t('New Order')}
+                            </span>
+                        </div>
+
+                        {/* Right: #Order ID (same font-bold thickness and grey color) */}
+                        <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 font-mono shrink-0">
+                            #{orderIdShort}
+                        </span>
                     </div>
 
-                    {/* Top Label: Delivery Charge in Dark Grey */}
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-300 block mb-0.5">
-                        {t('Delivery Charge')}
-                    </span>
-
-                    {/* Delivery Charge Price in BLACK */}
-                    {deliveryCharge > 0 ? (
-                        <div className="text-5xl sm:text-6xl font-black text-black dark:text-white tracking-tight font-sans">
-                            ₹{deliveryCharge}
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-center gap-2.5 py-1">
-                            <span className="text-4xl sm:text-5xl font-black text-black dark:text-white tracking-tight uppercase">
-                                {t('Free Delivery')}
-                            </span>
-                            <CartoonCoin size={36} />
-                        </div>
-                    )}
-
-                    {/* Plain text: Cash on Delivery in Dark Grey */}
-                    <p className="text-sm font-bold text-gray-700 dark:text-gray-200 mt-1">
-                        {t(paymentType || 'Cash on Delivery')}
-                    </p>
-
-                    {/* User Ordered Time in Dark Grey */}
-                    {formattedOrderTime && (
-                        <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 flex items-center justify-center gap-1 font-semibold">
-                            <Clock size={12} className="text-gray-600 dark:text-gray-400" />
-                            <span>{t('Ordered at')} {formattedOrderTime}</span>
-                        </p>
-                    )}
                 </div>
 
-                {/* Scrollable Order Details Section */}
+                {/* Scrollable Order Details Section matching OrderDetails.jsx exactly */}
                 <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
-                    {/* CARD 1: Shipping Details Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-4 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
+                    {/* CARD 1: Shipping Details Card - Matching Order Details Design */}
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="p-5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
                                 <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <MapPin size={18} />
                                 </div>
-                                <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-                                    {t('Shipping details')}
-                                </h3>
+                                <h3 className="font-medium text-gray-900 dark:text-white text-base">{t('Shipping details')}</h3>
                             </div>
                             {customerPhone && (
                                 <a
                                     href={`tel:${customerPhone}`}
                                     className="relative overflow-hidden flex items-center gap-2 px-4 py-2 rounded-xl bg-black dark:bg-black text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-black/80"
                                 >
-                                    {/* Continuous sliding light sheen shine effect */}
                                     <motion.div
                                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
                                         animate={{ x: ['-100%', '150%'] }}
@@ -388,159 +373,166 @@ const IncomingOrderModal = ({
                                 </a>
                             )}
                         </div>
-
-                        <div className="p-5 space-y-2">
-                            <p className="font-bold text-[15px] text-gray-900 dark:text-white">
-                                {customerName}
-                            </p>
-                            {customerPhone && (
-                                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-                                    +91 {customerPhone}
+                        <div className="p-6">
+                            <div className="pl-2 sm:pl-4 space-y-1.5">
+                                {/* 1. Name */}
+                                <p className="font-bold text-[16px] text-gray-900 dark:text-white">
+                                    {customerName}
                                 </p>
-                            )}
-                            <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-semibold">
-                                {street}{city ? `, ${city}` : ''}{zip ? ` - ${zip}` : ''}
-                            </p>
 
-                            <div className="pt-1 flex items-center gap-2 flex-wrap">
-                                <a
-                                    href={dropMapsUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-[#2E5A2E] dark:text-[#CBF9B2] text-[12px] font-bold bg-green-50 dark:bg-[#CBF9B2]/10 px-3.5 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-[#CBF9B2]/20 transition-all border border-[#2E5A2E]/10 dark:border-[#CBF9B2]/20 shadow-xs"
-                                >
-                                    <Navigation size={13} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                                    <span>{t('View on Map')}</span>
-                                </a>
+                                {/* 2. Number */}
+                                {customerPhone && (
+                                    <p className="text-[13px] font-semibold text-gray-600 dark:text-gray-300">
+                                        {customerPhone}
+                                    </p>
+                                )}
+
+                                {/* 3. Address */}
+                                <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                                    {street}{city ? `, ${city}` : ''}{zip ? ` - ${zip}` : ''}
+                                </p>
+
+                                {/* 4. Pin / View on Map */}
+                                {dropMapsUrl && (
+                                    <div className="pt-1">
+                                        <a
+                                            href={dropMapsUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-[#2E5A2E] dark:text-[#CBF9B2] text-[11px] font-bold bg-green-50 dark:bg-[#CBF9B2]/10 px-3 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-[#CBF9B2]/20 transition-all border border-[#2E5A2E]/10 dark:border-[#CBF9B2]/20 shadow-xs"
+                                        >
+                                            <Navigation size={13} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
+                                            <span>{t('View on Map')}</span>
+                                        </a>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Scheduled Delivery Time like in OrderDetails.jsx in Dark Grey */}
-                            {(() => {
-                                const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
-                                if (!rawTime) return null;
-                                const strTime = String(rawTime).toLowerCase();
-                                if (strTime.includes('instant')) return null;
-
-                                const formattedRange = formatDeliveryRangeFromDate(rawTime);
-                                if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
-
-                                return (
-                                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                        <div className="flex items-center gap-2.5 text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                            <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center shrink-0">
-                                                <Clock size={16} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 leading-tight">
-                                                    {t('Scheduled Delivery')}
-                                                </p>
-                                                <p className="text-xs font-bold text-gray-900 dark:text-white">
-                                                    {formattedRange}
-                                                </p>
-                                            </div>
+                            {/* 5. Scheduled Delivery Time */}
+                            {scheduledTimeDisplay && !String(scheduledTimeDisplay).toLowerCase().includes('instant') && (
+                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="flex items-center gap-3 text-[#2E5A2E] dark:text-[#CBF9B2]">
+                                        <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center shrink-0">
+                                            <Clock size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('Scheduled Delivery')}</p>
+                                            <p className="font-medium text-gray-900 dark:text-white">
+                                                {scheduledTimeDisplay}
+                                            </p>
                                         </div>
                                     </div>
-                                );
-                            })()}
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* CARD 2: Items Ordered Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    {/* CARD 2: Items Ordered Card - Matching Order Details Design */}
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         <div className="p-4 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <Package size={18} />
                                 </div>
-                                <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-                                    {t('Items Ordered')} ({items.length})
-                                </h3>
+                                <h3 className="font-bold text-gray-900 dark:text-white">{t('Items Ordered')} ({items.length})</h3>
                             </div>
                             <span className="text-xs font-mono font-bold text-gray-400">
                                 #{orderIdShort}
                             </span>
                         </div>
-
                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                            {items.map((item, index) => {
-                                const itemImage = getItemImage(item);
-                                const itemStore = getItemStoreName(item);
-                                return (
-                                    <div key={index} className="p-4 flex gap-3.5 hover:bg-gray-50/50 dark:hover:bg-gray-750/50 transition-colors">
-                                        {/* Product Image Thumbnail */}
-                                        <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shrink-0 relative">
-                                            <img
-                                                src={itemImage}
-                                                alt={item.name}
-                                                className="h-full w-full object-cover"
-                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/150?text=Product'; }}
-                                            />
-                                        </div>
-
-                                        {/* Product Title and Store Name */}
-                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                            <h4 className="font-bold text-gray-900 dark:text-white text-xs leading-snug line-clamp-2">
-                                                {item.name}
-                                            </h4>
-
-                                            {itemStore && (
-                                                <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                                    {itemStore}
-                                                </p>
+                            {items.map((item, index) => (
+                                <div key={index} className="p-5 flex gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-5">
+                                    <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden flex-shrink-0 relative">
+                                        <img
+                                            src={getItemImage(item)}
+                                            alt={item.name}
+                                            className="h-full w-full object-cover"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/150?text=Product"; }}
+                                        />
+                                        {/* Status Tags */}
+                                        <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
+                                            {((item.isGold) || (item.product && item.product.isGold)) && (
+                                                <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
+                                                    {t('Free Delivery')}
+                                                </span>
                                             )}
-
-                                            <div className="flex items-center justify-between mt-1.5">
-                                                <div>
-                                                    <p className="text-[14px] font-black text-gray-900 dark:text-white leading-none">
-                                                        ₹{Number(item.price * item.quantity).toFixed(0)}
+                                            {item.isFromAd && !item.isGold && !(item.product && item.product.isGold) && (
+                                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
+                                                    {t('Special Offer')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                        <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate mb-0.5" title={item.name}>
+                                            {item.name}
+                                        </h4>
+                                        {(item.storeId || item.storeName) && (
+                                            <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                {getItemStoreName(item)}
+                                            </p>
+                                        )}
+                                        <div className="flex items-center justify-between mt-1">
+                                            <div>
+                                                <p className="text-[15px] font-bold text-gray-900 dark:text-white leading-none">
+                                                    ₹{Number(item.price * item.quantity).toFixed(0)}
+                                                </p>
+                                                {(item.unit || item.product?.unit) && (
+                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-1">
+                                                        {item.unit || item.product?.unit}
                                                     </p>
-                                                    {item.unit && (
-                                                        <p className="text-[10px] text-gray-400 font-medium mt-0.5">
-                                                            {item.unit}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/60 rounded-md text-xs font-bold text-gray-600 dark:text-gray-300 shrink-0">
-                                                    x{item.quantity}
-                                                </div>
+                                                )}
+                                            </div>
+                                            <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
+                                                x{item.quantity}
                                             </div>
                                         </div>
                                     </div>
-                                );
-                            })}
+                                </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* CARD 3: Payment Summary Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 p-5 text-sm">
-                        <h3 className="font-bold text-gray-900 dark:text-white mb-3.5 flex items-center gap-2">
-                            <CreditCard size={17} className="text-gray-400" />
+                    {/* CARD 3: Payment Summary Card - Matching Order Details Design */}
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 p-6 text-[15px]">
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <CreditCard size={18} className="text-gray-400" />
                             {t('Payment Summary')}
                         </h3>
-                        <div className="space-y-2.5 text-xs">
-                            <div className="flex justify-between text-gray-700 dark:text-gray-300 font-semibold">
+                        <div className="space-y-3 text-sm">
+                            <div className="flex justify-between text-gray-500 dark:text-gray-400">
                                 <span>{t('Item Total')}</span>
-                                <span className="font-mono text-gray-800 dark:text-gray-200 font-bold">₹{subtotal}</span>
+                                <span className="font-medium text-gray-900 dark:text-white">₹{Number(subtotal).toFixed(0)}</span>
                             </div>
-                            <div className="flex justify-between text-gray-700 dark:text-gray-300 font-semibold items-center">
+                            <div className="flex justify-between text-gray-500 dark:text-gray-400">
                                 <span>{t('Delivery Fee')}</span>
-                                {deliveryCharge > 0 ? (
-                                    <span className="font-mono text-black dark:text-white font-black">₹{deliveryCharge}</span>
+                                {Number(deliveryCharge) <= 0 ? (
+                                    <div className="text-right">
+                                        <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">{t('FREE')}</span>
+                                        <p className="text-[11px] text-amber-700 dark:text-amber-400 font-bold flex items-center justify-end gap-1.5">
+                                            <CartoonCoin size={17} /> <span>{t('Coin Applied')}</span>
+                                        </p>
+                                    </div>
                                 ) : (
-                                    <span className="flex items-center gap-1 font-bold text-black dark:text-white">
-                                        <span>{t('Free Delivery')}</span>
-                                        <CartoonCoin size={15} />
-                                    </span>
+                                    <span className="font-medium text-gray-900 dark:text-white">₹{Number(deliveryCharge).toFixed(0)}</span>
                                 )}
                             </div>
-                            <div className="border-t border-gray-100 dark:border-gray-700 pt-2 flex justify-between font-black text-sm text-gray-900 dark:text-white">
-                                <span>{t('Total Bill to Collect')}</span>
-                                <span className="font-mono text-base text-black dark:text-white">₹{totalAmount}</span>
+                            {order.discount > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>{t('Discount')}</span>
+                                    <span>-₹{Number(order.discount).toFixed(0)}</span>
+                                </div>
+                            )}
+                            <div className="pt-3 border-t border-gray-100 dark:border-gray-700 mt-3 pt-3 flex justify-between items-end">
+                                <span className="font-bold text-gray-900 dark:text-white">{t('Total to Collect')}</span>
+                                <span className="text-2xl font-black text-gray-900 dark:text-white">
+                                    ₹{Number(totalAmount).toFixed(0)}
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 {/* Bottom Action Area with safe mobile footer padding */}
                 <div className="p-4 pb-14 sm:pb-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
                     {isOutForDelivery ? (
@@ -554,15 +546,28 @@ const IncomingOrderModal = ({
                             onSuccess={handleMainSwipeAction}
                         />
                     ) : isProcessing ? (
-                        <SwipeActionButton
-                            variant="yellow"
-                            label={t('ACCEPT')}
-                            loadingLabel={t('Accepting...')}
-                            isLoading={isActionLoading}
-                            heightClass="h-[68px] sm:h-[72px]"
-                            knobSizeClass="w-[56px] h-[56px] sm:w-[60px] sm:h-[60px]"
-                            onSuccess={handleMainSwipeAction}
-                        />
+                        <div className="space-y-2.5 w-full">
+                            <SwipeActionButton
+                                variant="yellow"
+                                label={t('ACCEPT')}
+                                loadingLabel={t('Accepting...')}
+                                isLoading={isActionLoading}
+                                heightClass="h-[60px] sm:h-[64px]"
+                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                onSuccess={handleMainSwipeAction}
+                            />
+                            {/* Cancel Button styled like Accept button in Grey */}
+                            <SwipeActionButton
+                                variant="gray"
+                                label={t('CANCEL')}
+                                loadingLabel={t('Cancelling...')}
+                                isLoading={isCancelling}
+                                heightClass="h-[60px] sm:h-[64px]"
+                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                autoReset={true}
+                                onSuccess={handleConfirmCancel}
+                            />
+                        </div>
                     ) : isDelivered ? (
                         <div className="relative overflow-hidden w-full py-4 rounded-full bg-[#00C988] text-white font-black text-sm flex items-center justify-center gap-2 shadow-md select-none">
                             {/* Animated sheen shine effect */}
@@ -586,68 +591,7 @@ const IncomingOrderModal = ({
                     )}
                 </div>
 
-                {/* POPUP: Cancel Order with RED Swipe Button */}
-                <AnimatePresence>
-                    {showCancelPopup && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowCancelPopup(false)}
-                            className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75"
-                        >
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-4"
-                            >
-                                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
-                                    <AlertTriangle size={32} />
-                                </div>
 
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                        {t('Cancel Order')} #{orderIdShort}?
-                                    </h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-                                        {t('Are you sure you want to cancel this order?')}
-                                    </p>
-                                </div>
-
-                                {/* Customer snippet */}
-                                <div className="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-3 text-xs text-gray-600 dark:text-gray-300">
-                                    <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{customerName}</p>
-                                    <p className="text-[11px] text-gray-400 truncate">{street}, {city}</p>
-                                </div>
-
-                                {/* RED Swipe to Cancel Button */}
-                                <div className="pt-2">
-                                    <SwipeActionButton
-                                        variant="red"
-                                        label={t('Swipe to Cancel')}
-                                        loadingLabel={t('Cancelling...')}
-                                        isLoading={isCancelling}
-                                        heightClass="h-[60px] sm:h-[64px]"
-                                        knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
-                                        onSuccess={handleConfirmCancel}
-                                    />
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCancelPopup(false)}
-                                    disabled={isCancelling}
-                                    className="w-full py-2 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors uppercase tracking-wider"
-                                >
-                                    {t('Keep Order')}
-                                </button>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </motion.div>
         </motion.div>
     );

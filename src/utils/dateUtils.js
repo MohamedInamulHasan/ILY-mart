@@ -44,6 +44,32 @@ export const formatOrderDateTime = (dateString) => {
 };
 
 /**
+ * Format a date string or Date object to a banner format (e.g. "Nov 6, 8.00 PM")
+ * @param {string|Date} dateString - The date to format
+ * @returns {string} Formatted banner date and time
+ */
+export const formatOrderBannerTime = (dateString) => {
+    if (!dateString) return '';
+
+    try {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return '';
+
+        const month = d.toLocaleDateString('en-US', { month: 'short' });
+        const day = d.getDate();
+        let hours = d.getHours();
+        const minutes = d.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        const minStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
+
+        return `${month} ${day}, ${hours}.${minStr} ${ampm}`;
+    } catch (error) {
+        return '';
+    }
+};
+
+/**
  * Format scheduled delivery time to a range (e.g., "Dec 20, 2024 • 2pm - 3pm")
  * @param {string|Date} dateString - The scheduled delivery date
  * @returns {string} Formatted delivery time

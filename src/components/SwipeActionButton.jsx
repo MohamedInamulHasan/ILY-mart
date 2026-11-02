@@ -28,34 +28,74 @@ const SwipeActionButton = ({
     // Color definitions based on variant
     const getColors = () => {
         switch (variant) {
+            case 'outline-white':
+            case 'white':
+                return {
+                    track: 'bg-white border-2 border-black',
+                    text: 'text-black',
+                    knob: 'text-white',
+                    knobBg: 'bg-black shadow-md',
+                    sheen: 'via-gray-400/20'
+                };
+            case 'black-shine':
+            case 'black':
+                return {
+                    track: 'bg-black border-2 border-black shadow-lg',
+                    text: 'text-white',
+                    knob: 'text-black',
+                    knobBg: 'bg-white shadow-md',
+                    sheen: 'via-white/40'
+                };
+            case 'gray':
+            case 'grey':
+                return {
+                    track: 'bg-gray-400 hover:bg-gray-500 border-gray-400',
+                    text: 'text-white',
+                    knob: 'text-gray-500',
+                    knobBg: 'bg-white shadow-md',
+                    sheen: 'via-white/25'
+                };
             case 'yellow':
             case 'amber':
                 return {
                     track: 'bg-amber-500 hover:bg-amber-600 border-amber-500',
-                    knob: 'text-amber-600'
+                    text: 'text-white',
+                    knob: 'text-amber-600',
+                    knobBg: 'bg-white',
+                    sheen: 'via-white/25'
                 };
             case 'blue':
             case 'sky':
                 return {
                     track: 'bg-[#0284c7] hover:bg-[#0369a1] border-[#0284c7]',
-                    knob: 'text-[#0284c7]'
+                    text: 'text-white',
+                    knob: 'text-[#0284c7]',
+                    knobBg: 'bg-white',
+                    sheen: 'via-white/25'
                 };
             case 'red':
             case 'rose':
                 return {
                     track: 'bg-rose-600 hover:bg-rose-700 border-rose-600',
-                    knob: 'text-rose-600'
+                    text: 'text-white',
+                    knob: 'text-rose-600',
+                    knobBg: 'bg-white',
+                    sheen: 'via-white/25'
                 };
             case 'green':
             default:
                 return {
                     track: 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600',
-                    knob: 'text-emerald-600'
+                    text: 'text-white',
+                    knob: 'text-emerald-600',
+                    knobBg: 'bg-white',
+                    sheen: 'via-white/25'
                 };
         }
     };
 
     const colors = getColors();
+    const isEnableDisable = variant === 'outline-white' || variant === 'black-shine';
 
     // Calculate maximum drag width accurately via ResizeObserver & clientWidth
     useEffect(() => {
@@ -115,15 +155,17 @@ const SwipeActionButton = ({
     return (
         <div
             ref={trackRef}
-            className={`relative w-full ${heightClass} rounded-full ${colors.track} text-white flex items-center p-1.5 overflow-hidden select-none border shadow-xs ${className}`}
-            style={{ touchAction: 'none' }}
+            className={`relative w-full ${heightClass} rounded-full ${colors.track} ${colors.text || "text-white"} flex items-center p-1 overflow-hidden select-none shadow-xs ${className}`}
+            style={{ touchAction: 'pan-y' }}
         >
-            {/* Continuous sliding light sheen animation from left to right */}
-            <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none"
-                animate={{ x: ['-100%', '150%'] }}
-                transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-            />
+            {/* Continuous sliding light sheen animation only for non-enable/disable buttons */}
+            {!isEnableDisable && (
+                <motion.div
+                    className={`absolute inset-0 bg-gradient-to-r from-transparent ${colors.sheen || "via-white/25"} to-transparent pointer-events-none`}
+                    animate={{ x: ['-100%', '150%'] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                />
+            )}
 
             {/* Draggable Porter White Round Knob with idle nudge/shake like in Porter Partner */}
             <motion.div
@@ -139,8 +181,8 @@ const SwipeActionButton = ({
                 animate={
                     isLoading || isCompleted
                         ? { x: maxDrag }
-                        : isDragging
-                        ? undefined
+                        : isDragging || isEnableDisable
+                        ? { x: 0 }
                         : {
                             x: [0, 9, -2, 7, 0, 0, 0, 0]
                         }
@@ -148,7 +190,7 @@ const SwipeActionButton = ({
                 transition={
                     isLoading || isCompleted
                         ? { type: 'spring', damping: 25, stiffness: 200 }
-                        : isDragging
+                        : isDragging || isEnableDisable
                         ? undefined
                         : {
                             repeat: Infinity,
@@ -157,7 +199,7 @@ const SwipeActionButton = ({
                             ease: 'easeInOut'
                         }
                 }
-                className={`${knobSizeClass} rounded-full bg-white ${colors.knob} flex items-center justify-center shrink-0 z-20 cursor-grab active:cursor-grabbing select-none shadow-md`}
+                className={`${knobSizeClass} rounded-full ${colors.knobBg || "bg-white"} ${colors.knob} flex items-center justify-center shrink-0 z-20 cursor-grab active:cursor-grabbing select-none shadow-md`}
                 style={{ touchAction: 'none' }}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -166,7 +208,7 @@ const SwipeActionButton = ({
 
             {/* Centered Track Label - Exactly in the center of button for all */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-4">
-                <span className={`font-black ${textSizeClass} tracking-wider uppercase text-white text-center select-none truncate`}>
+                <span className={`font-black ${textSizeClass} tracking-wider uppercase ${colors.text || "text-white"} text-center select-none truncate`}>
                     {isLoading ? (
                         <span className="inline-flex items-center justify-center gap-2">
                             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" />

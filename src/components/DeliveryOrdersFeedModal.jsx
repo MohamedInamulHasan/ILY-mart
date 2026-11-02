@@ -8,6 +8,7 @@ import { CartoonCoin } from './CartoonCoin';
 import ShineActionButton from './ShineActionButton';
 import SwipeActionButton from './SwipeActionButton';
 import PullToRefreshLayout from './PullToRefreshLayout';
+import { formatOrderBannerTime } from '../utils/dateUtils';
 import { formatDeliveryRangeFromDate } from '../utils/storeHelpers';
 import { registerModalBackHandler } from '../utils/useBackButton';
 
@@ -68,21 +69,22 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
         }
     };
 
-    // Feed orders: toggle between pending/cancelled orders and delivered orders
+    // Unified Orders List sorted: Processing at top, Delivered in middle (above cancelled), Cancelled at bottom
+    const getFeedCategoryRank = (status) => {
+        if (['Processing', 'Pending', 'Order Placed'].includes(status)) return 1; // Top
+        if (['Delivered', 'Completed'].includes(status)) return 2; // Middle (above cancelled)
+        if (status === 'Cancelled') return 3; // Bottom
+        return 4;
+    };
+
     const feedOrders = orders
-        .filter((o) => showDeliveredOnly
-            ? ['Delivered', 'Completed'].includes(o.status)
-            : ['Processing', 'Pending', 'Cancelled'].includes(o.status)
-        )
+        .filter((o) => ['Processing', 'Pending', 'Order Placed', 'Delivered', 'Completed', 'Cancelled'].includes(o.status))
         .slice()
         .sort((a, b) => {
-            if (showDeliveredOnly) {
-                return getOrderTimeMs(b) - getOrderTimeMs(a);
-            }
-            const rankA = getStatusRank(a.status);
-            const rankB = getStatusRank(b.status);
+            const rankA = getFeedCategoryRank(a.status);
+            const rankB = getFeedCategoryRank(b.status);
             if (rankA !== rankB) return rankA - rankB;
-            return getOrderTimeMs(a) - getOrderTimeMs(b);
+            return getOrderTimeMs(b) - getOrderTimeMs(a);
         });
 
     const pendingOrdersCount = orders.filter((o) => ['Processing', 'Pending'].includes(o.status)).length;
@@ -161,67 +163,33 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
 
                         {/* Centered Title */}
                         <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center">
-                            {showDeliveredOnly ? t('Delivered Orders') : t('Orders List')}
+                            {t('Orders List')}
                         </h1>
 
-                        {/* Right: Pendings icon + Green squircle tick button */}
-                        <div className="flex items-center gap-2">
-                            {/* Pendings icon: click to show pending orders list */}
-                            <button
-                                type="button"
-                                onClick={() => setShowDeliveredOnly(false)}
-                                title={t('Show Pending Orders')}
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-xs transition-all active:scale-90 relative ${
-                                    !showDeliveredOnly
-                                        ? 'bg-[#F59E0B] text-white'
-                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-400 hover:bg-gray-300'
-                                }`}
-                            >
-                                <Clock size={19} className="stroke-[2.5]" />
-                                {pendingOrdersCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-xs">
-                                        {pendingOrdersCount}
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Green squircle tick button: click to show delivered cards */}
-                            <button
-                                type="button"
-                                onClick={() => setShowDeliveredOnly(true)}
-                                title={t('Show Delivered Orders')}
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-xs transition-all active:scale-90 ${
-                                    showDeliveredOnly
-                                        ? 'bg-[#00C988] text-white'
-                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-400 hover:bg-gray-300'
-                                }`}
-                            >
-                                <Check size={20} className="stroke-[3]" />
-                            </button>
-                        </div>
+                        {/* Right: empty spacer to keep title perfectly centered */}
+                        <div className="w-[34px] shrink-0" />
                     </div>
                 </div>
 
-                {/* Scrollable Order Cards List filling full page */}
-                <div className="flex-1 overflow-hidden flex flex-col">
-                    <PullToRefreshLayout>
-                        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 max-w-2xl mx-auto w-full">
-                            {feedOrders.length === 0 ? (
-                                <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
-                                    <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                        {showDeliveredOnly ? <CheckCircle size={30} className="text-emerald-500" /> : <Package size={30} />}
-                                    </div>
-                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 text-base">
-                                        {showDeliveredOnly ? t('No delivered orders yet') : t('No orders right now')}
-                                    </h3>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {showDeliveredOnly
-                                            ? t('Delivered customer orders will appear here.')
-                                            : t('New customer orders will automatically appear here.')}
-                                    </p>
-                                </div>
-                            ) : (
-                                feedOrders.map((order) => {
+                {/* Scrollable Order Cards List filling full page with fluid mobile touch scroll */}
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 max-w-2xl mx-auto w-full pb-36" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    {feedOrders.length === 0 ? (
+                        <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
+                            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                {showDeliveredOnly ? <CheckCircle size={30} className="text-emerald-500" /> : <Package size={30} />}
+                            </div>
+                            <h3 className="font-bold text-gray-800 dark:text-gray-200 text-base">
+                                {showDeliveredOnly ? t('No delivered orders yet') : t('No orders right now')}
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1">
+                                {showDeliveredOnly
+                                    ? t('Delivered customer orders will appear here.')
+                                    : t('New customer orders will automatically appear here.')}
+                            </p>
+                        </div>
+                    ) : (
+                        feedOrders.map((order) => {
+                            const orderIdShort = String(order._id || order.id || '000000').slice(-6).toUpperCase();
                             const deliveryCharge = order.shipping !== undefined && order.shipping !== null
                                 ? order.shipping
                                 : (order.deliveryCharge !== undefined ? order.deliveryCharge : 20);
@@ -242,57 +210,55 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                         isCancelled
                                             ? 'bg-gray-100/90 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700/80'
                                             : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
-                                    } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm relative`}
+                                    } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
                                 >
-                                    {/* Black X symbol (no round) instead of delete icon for processing */}
-                                    {isProcessing && (
-                                        <div className="absolute right-4 top-4 z-10">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOrderToCancel(order);
-                                                    setShowCancelPopup(true);
-                                                }}
-                                                title={t('Cancel Order')}
-                                                className="p-1 text-black dark:text-white hover:opacity-70 transition-opacity active:scale-90"
-                                            >
-                                                <X size={20} className="stroke-[2.5]" />
-                                            </button>
+                                    {/* Top Header Row: Time Left & ID Right in grey same thickness, light grey line like green dot line */}
+                                    <div className="px-5 pt-4 pb-2.5 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
+                                        {/* Left: 🕒 Nov 6, 8.00 PM */}
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
+                                            <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 tracking-wide truncate">
+                                                {formatOrderBannerTime(order.createdAt || order.date) || orderTimeStr || t('New Order')}
+                                            </span>
                                         </div>
-                                    )}
 
-                                    {/* Red Trash2 delete icon for cancelled orders */}
-                                    {isCancelled && (
-                                        <div className="absolute right-4 top-4 z-10">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOrderToDelete(order);
-                                                    setShowDeletePopup(true);
-                                                }}
-                                                title={t('Delete Cancelled Order')}
-                                                className="p-1.5 text-red-500 hover:text-red-700 hover:opacity-70 transition-opacity active:scale-90"
-                                            >
-                                                <Trash2 size={20} className="stroke-[2.2]" />
-                                            </button>
+                                        {/* Right: #Order ID (same font-bold thickness and grey color) */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 font-mono shrink-0">
+                                                #{orderIdShort}
+                                            </span>
+                                            {isCancelled && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOrderToDelete(order);
+                                                        setShowDeletePopup(true);
+                                                    }}
+                                                    title={t('Delete Cancelled Order')}
+                                                    className="p-1 -mr-1 hover:bg-red-50 dark:hover:bg-red-950/40 active:scale-90 rounded-full text-red-500 transition-all flex items-center justify-center cursor-pointer"
+                                                >
+                                                    <Trash2 size={16} className="stroke-[2.2]" />
+                                                </button>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
+                                    {/* Grey line not touching left and right edges */}
+                                    <div className="mx-5 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
 
-                                    {/* Card Body: Solid Clean Header with Centered Content */}
-                                    <div className="pt-5 pb-3 px-5 text-center">
-                                        {/* Delivery Charge */}
-                                        <div className="text-center py-1">
-                                            <span className="text-[11px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-300 block mb-0.5">
+                                    {/* Card Content: Delivery Charge in center thick, Customer & address on left */}
+                                    <div className="pt-3.5 pb-3 px-5">
+                                        {/* Delivery Charge and Price in Center Thick */}
+                                        <div className="text-center py-1.5 mb-2 border-b border-gray-100 dark:border-gray-700/60">
+                                            <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white block mb-0.5">
                                                 {t('Delivery Charge')}
                                             </span>
                                             {isFreeDelivery ? (
-                                                <div className="flex items-center justify-center gap-2 py-1">
+                                                <div className="flex items-center justify-center gap-2 py-0.5">
                                                     <span className="text-3xl sm:text-4xl font-black text-black dark:text-white tracking-tight uppercase">
                                                         {t('Free Delivery')}
                                                     </span>
-                                                    <CartoonCoin size={30} />
+                                                    <CartoonCoin size={28} />
                                                 </div>
                                             ) : (
                                                 <div className="text-4xl sm:text-5xl font-black text-black dark:text-white tracking-tight font-sans">
@@ -301,54 +267,74 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                             )}
                                         </div>
 
-                                        {/* User Ordered Time in Dark Grey */}
-                                        {orderTimeStr && (
-                                            <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">
-                                                <Clock size={13} className="text-gray-600 dark:text-gray-400" />
-                                                <span>{orderTimeStr}</span>
+                                        {/* Left-Aligned Details with Route Timeline: Green dot before Name -> Light Grey line -> Green dot before Time */}
+                                        <div className="flex gap-3 text-left mt-3">
+                                            {/* Timeline Track: Green Dot -> Vertical Light Grey Line -> Green Dot */}
+                                            <div className="flex flex-col items-center pt-1.5 shrink-0">
+                                                {/* Green dot before Name */}
+                                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-950/80 shrink-0" />
+
+                                                {/* Light grey line joining the two dots */}
+                                                <div className="w-[2px] flex-1 bg-gray-300 dark:bg-gray-600 my-1 min-h-[36px]" />
+
+                                                {/* Green dot before Time */}
+                                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-950/80 shrink-0" />
                                             </div>
-                                        )}
 
-                                        {/* Customer Name */}
-                                        {customerName && (
-                                            <p className="text-center text-xs sm:text-sm text-gray-900 dark:text-white font-bold mt-2 truncate">
-                                                {customerName}
-                                            </p>
-                                        )}
+                                            {/* Content: Customer details on top, Delivery time on bottom */}
+                                            <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                                {/* Customer Details */}
+                                                <div className="space-y-0.5">
+                                                    {/* Customer Name */}
+                                                    {customerName && (
+                                                        <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate leading-tight">
+                                                            {customerName}
+                                                        </h3>
+                                                    )}
 
-                                        {/* Address below Name */}
-                                        {(locationSnippet || order.items?.length > 0) && (
-                                            <p className="text-center text-[11px] sm:text-xs text-gray-600 dark:text-gray-300 font-medium mt-0.5 truncate">
-                                                {[locationSnippet, order.items?.length > 0 ? `(${order.items.length} items)` : ''].filter(Boolean).join(' ')}
-                                            </p>
-                                        )}
-
-                                        {/* Scheduled Delivery Time */}
-                                        {(() => {
-                                            const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
-                                            if (!rawTime) return null;
-                                            const strTime = String(rawTime).toLowerCase();
-                                            if (strTime.includes('instant')) return null;
-
-                                            const formattedRange = formatDeliveryRangeFromDate(rawTime);
-                                            if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
-
-                                            return (
-                                                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-center gap-2 text-gray-700 dark:text-gray-300">
-                                                    <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700/60 flex items-center justify-center shrink-0">
-                                                        <Clock size={15} className="text-gray-600 dark:text-gray-300" />
-                                                    </div>
-                                                    <div className="text-left">
-                                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 leading-tight">
-                                                            {t('Scheduled Delivery')}
+                                                    {/* Address (Street) below Name */}
+                                                    {street && (
+                                                        <p className="text-xs sm:text-[13px] text-gray-500 dark:text-gray-400 font-medium truncate">
+                                                            {street}
                                                         </p>
-                                                        <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                                                            {formattedRange}
+                                                    )}
+
+                                                    {/* City below Address */}
+                                                    {city && (
+                                                        <p className="text-xs sm:text-[13px] text-gray-500 dark:text-gray-400 font-medium truncate">
+                                                            {city}
                                                         </p>
-                                                    </div>
+                                                    )}
+
+                                                    {/* Items below City */}
+                                                    {order.items?.length > 0 && (
+                                                        <p className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1.5 pt-0.5">
+                                                            <Package size={13} className="text-gray-400 shrink-0" />
+                                                            <span>{order.items.length} {order.items.length === 1 ? t('item') : t('items')}</span>
+                                                        </p>
+                                                    )}
                                                 </div>
-                                            );
-                                        })()}
+
+                                                {/* Scheduled Delivery Time (or Delivery Time) aligned with bottom green dot */}
+                                                {(() => {
+                                                    const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
+                                                    const isScheduled = rawTime && !String(rawTime).toLowerCase().includes('instant');
+                                                    const timeLabel = isScheduled ? t('Scheduled Delivery') : t('Delivery Time');
+                                                    const timeRange = isScheduled ? formatDeliveryRangeFromDate(rawTime) : (orderTimeStr || t('Standard Delivery'));
+
+                                                    return (
+                                                        <div className="mt-2.5 pt-1">
+                                                                    <p className="text-xs sm:text-[13px] font-medium text-gray-500 dark:text-gray-400 leading-tight">
+                                                                        {timeLabel}
+                                                                    </p>
+                                                                    <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight mt-0.5">
+                                                                        {timeRange}
+                                                                    </p>
+                                                                </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Action Button: Swipe to View Order or Delivered Successfully */}
@@ -384,8 +370,8 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                                 variant="yellow"
                                                 label={t('VIEW ORDER')}
                                                 autoReset={true}
-                                                heightClass="h-[56px] sm:h-[60px]"
-                                                knobSizeClass="w-[44px] h-[44px] sm:w-[48px] sm:h-[48px]"
+                                                heightClass="h-[50px]"
+                                                knobSizeClass="w-[38px] h-[38px]"
                                                 onSuccess={() => {
                                                     onSelectOrder(order);
                                                 }}
@@ -396,8 +382,6 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                             );
                         })
                     )}
-                        </div>
-                    </PullToRefreshLayout>
                 </div>
 
                 {/* POPUP: Cancel Order Confirmation with Red Swipe Button */}

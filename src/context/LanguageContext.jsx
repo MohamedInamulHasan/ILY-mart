@@ -106,6 +106,7 @@ export const LanguageProvider = ({ children }) => {
         'Edit Profile': { en: 'Edit Profile', ta: 'சுயவிவரத்தைத் திருத்து' },
         'Save Changes': { en: 'Save Changes', ta: 'மாற்றங்களைச் சேமிக்கவும்' },
         'Cancel': { en: 'Cancel', ta: 'ரத்து செய்' },
+        'CANCEL': { en: 'CANCEL', ta: 'CANCEL' },
         'Order History': { en: 'Order History', ta: 'ஆர்டர் வரலாறு' },
         'Order ID': { en: 'Order ID', ta: 'ஆர்டர் ஐடி' },
         'Date': { en: 'Date', ta: 'தேதி' },

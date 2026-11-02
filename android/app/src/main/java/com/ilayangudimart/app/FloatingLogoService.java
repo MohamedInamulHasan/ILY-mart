@@ -262,7 +262,7 @@ public class FloatingLogoService extends Service {
         // Add to windowManager only if app is not in foreground, enabled, and permitted
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", true);
-        boolean canDraw = Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this);
+        boolean canDraw = Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this);
 
         if (!isAppInForeground && enabled && canDraw) {
             try {
@@ -286,7 +286,7 @@ public class FloatingLogoService extends Service {
         boolean enabled = prefs.getBoolean("floating_enabled", true);
         if (!enabled) return;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !android.provider.Settings.canDrawOverlays(this)) {
             return;
         }
 
@@ -498,7 +498,7 @@ public class FloatingLogoService extends Service {
             cardParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
             cardParams.y = dp(50);
 
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this)) {
                 try {
                     windowManager.addView(orderCardView, cardParams);
                 } catch (Exception e) {

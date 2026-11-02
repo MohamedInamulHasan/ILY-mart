@@ -35,7 +35,7 @@ import { useOrders, useUpdateOrderStatus } from '../../hooks/queries/useOrders';
 import { useServiceRequests, useUpdateServiceRequestStatus } from '../../hooks/queries/useServiceRequests';
 import { useStores } from '../../hooks/queries/useStores';
 import { getStoreName, formatDeliveryRangeFromDate } from '../../utils/storeHelpers';
-import { formatOrderDateTime, formatDeliveryTime } from '../../utils/dateUtils';
+import { formatOrderDateTime, formatOrderBannerTime, formatDeliveryTime } from '../../utils/dateUtils';
 import { openExternalLink } from '../../utils/linkHelper';
 import { API_BASE_URL } from '../../utils/api';
 import LogoutModal from '../../components/LogoutModal';
@@ -258,8 +258,8 @@ const DeliveryDashboard = () => {
     // Filter to delivery order cards in delivery panel
     const displayOrders = orders
         .filter(order => {
-            // Include newly placed orders (Pending, Processing, Order Placed) and active deliveries (Out for Delivery, Shipped)
-            if (!['Pending', 'Processing', 'Order Placed', 'Out for Delivery', 'Shipped'].includes(order.status)) return false;
+            // Only show active deliveries in Delivery Panel (do not show processing cards here)
+            if (!['Out for Delivery', 'Shipped'].includes(order.status)) return false;
 
             if (!searchQuery) return true;
             const q = searchQuery.toLowerCase();
@@ -354,6 +354,19 @@ const DeliveryDashboard = () => {
         }
     };
 
+    const handleCancelOrderClick = async (order) => {
+        const orderIdShort = String(order._id || order.id || '000000').slice(-6).toUpperCase();
+        const confirmed = window.confirm(`${t('Are you sure you want to cancel order')} #${orderIdShort}?`);
+        if (!confirmed) return;
+
+        try {
+            await updateOrderStatus({ id: order._id || order.id, status: 'Cancelled' });
+        } catch (error) {
+            console.error('Error cancelling order:', error);
+            alert(t('Failed to cancel order'));
+        }
+    };
+
     const updateStatus = async (id, newStatus) => {
         const confirmed = window.confirm(`${t('Are you sure you want to change status to')} ${t(newStatus)}?`);
         if (!confirmed) return;
@@ -379,7 +392,7 @@ const DeliveryDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-28">
+        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-44">
             <LogoutModal
                 isOpen={showLogoutModal}
                 onClose={() => setShowLogoutModal(false)}
@@ -426,7 +439,7 @@ const DeliveryDashboard = () => {
 
             <PullToRefreshLayout>
                 <div className="pt-[72px]">
-                    <div className="px-5 mt-2 max-w-3xl mx-auto pb-24">
+                    <div className="px-5 mt-2 max-w-3xl mx-auto pb-40">
 
 
                         {/* Permission Warning Banner if Display Over Other Apps is missing */}
@@ -526,96 +539,113 @@ const DeliveryDashboard = () => {
                                                     : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
                                             } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
                                         >
-                                            {/* Card Content: Ordered time in top-left, Delivery Charge in top-right, Customer & address on left */}
-                                            <div className="pt-4 pb-3 px-5">
-                                                {/* Upper Row: Left corner has Ordered Date & Time, Right corner has Delivery Charge */}
-                                                <div className="flex items-start justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-700/60">
-                                                    {/* Ordered Time & Date in Upper Left Corner */}
-                                                    {orderTimeStr ? (
-                                                        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 pt-0.5">
-                                                            <Clock size={13} className="text-gray-400 dark:text-gray-500 shrink-0" />
-                                                            <span>{orderTimeStr}</span>
-                                                        </div>
-                                                    ) : <div />}
+                                            {/* Top Header Row: Time Left & ID Right in grey same thickness, light grey line like green dot line */}
+                                            <div className="px-5 pt-4 pb-2.5 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
+                                                {/* Left: 🕒 Nov 6, 8.00 PM */}
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
+                                                    <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 tracking-wide truncate">
+                                                        {formatOrderBannerTime(order.createdAt || order.date) || orderTimeStr || t('New Order')}
+                                                    </span>
+                                                </div>
 
-                                                    {/* Delivery Charge in Upper Right Corner */}
-                                                    <div className="text-right shrink-0">
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block leading-tight">
-                                                            {t('Delivery Charge')}
-                                                        </span>
-                                                        {isFreeDelivery ? (
-                                                            <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                                                                <span className="text-xl sm:text-2xl font-black text-black dark:text-white uppercase">
-                                                                    {t('Free')}
-                                                                </span>
-                                                                <CartoonCoin size={22} />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="text-2xl sm:text-3xl font-black text-black dark:text-white tracking-tight font-sans leading-none mt-0.5">
-                                                                ₹{deliveryCharge}
-                                                            </div>
-                                                        )}
+                                                {/* Right: #Order ID (same font-bold thickness and grey color) */}
+                                                <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 font-mono shrink-0">
+                                                    #{orderIdShort}
+                                                </span>
+                                            </div>
+                                            {/* Light grey line matching green dot line */}
+                                            <div className="mx-5 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
+
+                                            {/* Card Content: Delivery Charge in center thick, Customer & address on left */}
+                                            <div className="pt-3.5 pb-3 px-5">
+                                                {/* Delivery Charge and Price in Center Thick */}
+                                                <div className="text-center py-1.5 mb-2 border-b border-gray-100 dark:border-gray-700/60">
+                                                    <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white block mb-0.5">
+                                                        {t('Delivery Charge')}
+                                                    </span>
+                                                    {isFreeDelivery ? (
+                                                        <div className="flex items-center justify-center gap-2 py-0.5">
+                                                            <span className="text-3xl sm:text-4xl font-black text-black dark:text-white tracking-tight uppercase">
+                                                                {t('Free Delivery')}
+                                                            </span>
+                                                            <CartoonCoin size={28} />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-4xl sm:text-5xl font-black text-black dark:text-white tracking-tight font-sans">
+                                                            ₹{deliveryCharge}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Left-Aligned Details with Route Timeline: Green dot before Name -> Black line -> Green dot before Time */}
+                                                <div className="flex gap-3 text-left mt-3">
+                                                    {/* Timeline Track: Green Dot -> Vertical Black Line -> Green Dot */}
+                                                    <div className="flex flex-col items-center pt-1.5 shrink-0">
+                                                        {/* Green dot before Name */}
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-950/80 shrink-0" />
+
+                                                        {/* Light grey line joining the two dots */}
+                                                        <div className="w-[2px] flex-1 bg-gray-300 dark:bg-gray-600 my-1 min-h-[36px]" />
+
+                                                        {/* Green dot before Time */}
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-950/80 shrink-0" />
+                                                    </div>
+
+                                                    {/* Content: Customer details on top, Delivery time on bottom */}
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                                        {/* Customer Details */}
+                                                        <div className="space-y-0.5">
+                                                            {/* Customer Name */}
+                                                            {customerName && (
+                                                                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate leading-tight">
+                                                                    {customerName}
+                                                                </h3>
+                                                            )}
+
+                                                            {/* Address (Street) below Name */}
+                                                            {street && (
+                                                                <p className="text-xs sm:text-[13px] text-gray-500 dark:text-gray-400 font-medium truncate">
+                                                                    {street}
+                                                                </p>
+                                                            )}
+
+                                                            {/* City below Address */}
+                                                            {city && (
+                                                                <p className="text-xs sm:text-[13px] text-gray-500 dark:text-gray-400 font-medium truncate">
+                                                                    {city}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Items below City */}
+                                                            {order.items?.length > 0 && (
+                                                                <p className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1.5 pt-0.5">
+                                                                    <Package size={13} className="text-gray-400 shrink-0" />
+                                                                    <span>{order.items.length} {order.items.length === 1 ? t('item') : t('items')}</span>
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Scheduled Delivery Time (or Delivery Time) aligned with bottom green dot */}
+                                                        {(() => {
+                                                            const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
+                                                            const isScheduled = rawTime && !String(rawTime).toLowerCase().includes('instant');
+                                                            const timeLabel = isScheduled ? t('Scheduled Delivery') : t('Delivery Time');
+                                                            const timeRange = isScheduled ? formatDeliveryRangeFromDate(rawTime) : (orderTimeStr || t('Standard Delivery'));
+
+                                                            return (
+                                                                <div className="mt-2.5 pt-1">
+                                                                    <p className="text-xs sm:text-[13px] font-medium text-gray-500 dark:text-gray-400 leading-tight">
+                                                                        {timeLabel}
+                                                                    </p>
+                                                                    <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight mt-0.5">
+                                                                        {timeRange}
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
-
-                                                {/* Left-Aligned Details: Name, Address, City, Items */}
-                                                <div className="text-left space-y-1 mt-3">
-                                                    {/* Name */}
-                                                    {customerName && (
-                                                        <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
-                                                            {customerName}
-                                                        </h3>
-                                                    )}
-
-                                                    {/* Address (Street) below Name */}
-                                                    {street && (
-                                                        <p className="text-xs sm:text-[13px] text-gray-700 dark:text-gray-300 font-medium truncate">
-                                                            {street}
-                                                        </p>
-                                                    )}
-
-                                                    {/* City below Address */}
-                                                    {city && (
-                                                        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">
-                                                            {city}
-                                                        </p>
-                                                    )}
-
-                                                    {/* Items below City */}
-                                                    {order.items?.length > 0 && (
-                                                        <p className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1.5 pt-0.5">
-                                                            <Package size={13} className="text-gray-400 shrink-0" />
-                                                            <span>{order.items.length} {order.items.length === 1 ? t('item') : t('items')}</span>
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                {/* Scheduled Delivery Time on Left Side */}
-                                                {(() => {
-                                                    const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
-                                                    if (!rawTime) return null;
-                                                    const strTime = String(rawTime).toLowerCase();
-                                                    if (strTime.includes('instant')) return null;
-
-                                                    const formattedRange = formatDeliveryRangeFromDate(rawTime);
-                                                    if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
-
-                                                    return (
-                                                        <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center gap-2 text-left">
-                                                            <div className="w-6 h-6 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                                                                <Clock size={13} className="text-amber-600 dark:text-amber-400" />
-                                                            </div>
-                                                            <div className="text-left">
-                                                                <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 leading-tight">
-                                                                    {t('Scheduled Delivery')}
-                                                                </p>
-                                                                <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                                                                    {formattedRange}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })()}
                                             </div>
 
                                             {/* Action Button: Swipe to View Order with related status color */}
@@ -673,23 +703,23 @@ const DeliveryDashboard = () => {
                 </div>
             </PullToRefreshLayout>
 
-            {/* Attached Bottom Rectangle Footer */}
+            {/* Attached Bottom Rectangle Footer - Matches Accept & Delivered Footer Size */}
             <div 
-                className="fixed bottom-0 inset-x-0 z-40 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pointer-events-auto select-none"
-                style={{ paddingBottom: 'calc(0.65rem + env(safe-area-inset-bottom, 10px))', paddingTop: '0.45rem' }}
+                className="fixed bottom-0 inset-x-0 z-40 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] pointer-events-auto select-none"
+                style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 16px))', paddingTop: '0.85rem' }}
             >
-                <div className="max-w-xs sm:max-w-sm mx-auto px-4">
+                <div className="max-w-md mx-auto px-4">
                     <SwipeActionButton
                         key={isFloatingEnabled ? 'disable-floating' : 'enable-floating'}
-                        variant={isFloatingEnabled ? 'red' : 'amber'}
+                        variant={isFloatingEnabled ? 'black-shine' : 'outline-white'}
                         label={isFloatingEnabled ? t('Swipe to Disable') : t('Swipe to Enable')}
                         loadingLabel={isFloatingEnabled ? t('Disabling...') : t('Enabling...')}
                         onSuccess={toggleFloatingOverlay}
                         autoReset={true}
-                        heightClass="h-[44px]"
-                        knobSizeClass="w-[34px] h-[34px]"
-                        textSizeClass="text-xs sm:text-[13px]"
-                        iconSize={18}
+                        heightClass="h-[58px] sm:h-[62px]"
+                        knobSizeClass="w-[46px] h-[46px] sm:w-[50px] sm:h-[50px]"
+                        textSizeClass="text-sm sm:text-base font-black"
+                        iconSize={22}
                     />
                 </div>
             </div>
