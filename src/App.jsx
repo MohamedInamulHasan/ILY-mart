@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate, Link } from 'react-router-dom';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -205,12 +205,15 @@ const Layout = ({ children, onRefresh }) => {
             </main>
             {/* </PullToRefresh> */}
 
-            {/* Floating Delivery Charge Card - right side */}
+            {/* Floating Delivery Charge Card - right side (Leaf Green) */}
             {showFloatingDeliveryBadge && (
-                <div className="fixed right-0 top-[25%] -translate-y-1/2 z-[90]">
+                <Link
+                    to="/cart"
+                    className="fixed right-0 top-[25%] -translate-y-1/2 z-[90] active:scale-95 transition-transform"
+                    title={t('View Cart')}
+                >
                     <div
-                        className="rounded-l-2xl py-2 px-3 flex flex-col items-center shadow-lg border-2 border-r-0 border-white text-center"
-                        style={{ background: '#000000' }}
+                        className="rounded-l-2xl py-2 px-3 flex flex-col items-center shadow-lg border-2 border-r-0 border-white text-center bg-[#2E5A2E]"
                     >
                         <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider mb-0.5 select-none leading-none">
                             {t('Delivery')}
@@ -219,7 +222,7 @@ const Layout = ({ children, onRefresh }) => {
                             {deliveryCharge === 0 ? t('Free') : `₹${deliveryCharge}`}
                         </span>
                     </div>
-                </div>
+                </Link>
             )}
 
             {showMobileFooter && <MobileFooter />}
