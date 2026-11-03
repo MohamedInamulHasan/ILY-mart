@@ -219,7 +219,7 @@ const IncomingOrderModal = ({
                     className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col justify-between"
                 >
                     {/* Top Header Row: Time and ID on Left, X Button on Right */}
-                    <div className="px-5 pt-4 pb-2.5 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
+                    <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
                         {/* Left: Time and #Order ID in grey */}
                         <div className="flex items-center gap-2 min-w-0">
                             <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
@@ -246,9 +246,9 @@ const IncomingOrderModal = ({
                     <div className="mx-5 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
 
                     {/* Card Content: EXACT Orders List Card Structure */}
-                    <div className="pt-3.5 pb-3 px-5">
+                    <div className="pt-2.5 pb-2.5 px-3.5 sm:px-4">
                         {/* Delivery Charge and Price in Center Thick */}
-                        <div className="text-center py-1.5 mb-2 border-b border-gray-100 dark:border-gray-700/60">
+                        <div className="text-center py-1 mb-1.5 border-b border-gray-100 dark:border-gray-700/60">
                             <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white block mb-0.5">
                                 {t('Delivery Charge')}
                             </span>
@@ -358,11 +358,11 @@ const IncomingOrderModal = ({
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 350 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#E8EAEF] dark:bg-gray-900 w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[94vh] relative"
+                className="bg-[#E8EAEF] dark:bg-gray-900 w-full max-w-lg rounded-t-[2.5rem] sm:rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[94vh] relative"
             >
                 {/* Full Accept View: Time Left & ID Right in grey same thickness, light grey line like green dot line */}
                 <div className="bg-white dark:bg-gray-800 shrink-0">
-                    <div className="px-5 pt-4 pb-2.5 flex items-center justify-between text-gray-500 dark:text-gray-400">
+                    <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400">
                         {/* Left: 🕒 Nov 6, 8.00 PM */}
                         <div className="flex items-center gap-1.5 min-w-0">
                             <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
@@ -380,10 +380,10 @@ const IncomingOrderModal = ({
                 </div>
 
                 {/* Scrollable Order Details Section matching OrderDetails.jsx exactly */}
-                <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+                <div className="p-3.5 sm:p-4 overflow-y-auto space-y-3 sm:space-y-3.5 flex-1">
                     {/* CARD 1: Shipping Details Card - Matching Order Details Design */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <MapPin size={18} />
@@ -405,8 +405,8 @@ const IncomingOrderModal = ({
                                 </a>
                             )}
                         </div>
-                        <div className="p-6">
-                            <div className="pl-2 sm:pl-4 space-y-1.5">
+                        <div className="p-3.5 sm:p-4">
+                            <div className="pl-2 sm:pl-3 space-y-1">
                                 {/* 1. Name */}
                                 <p className="font-bold text-[16px] text-gray-900 dark:text-white">
                                     {customerName}
@@ -442,7 +442,7 @@ const IncomingOrderModal = ({
 
                             {/* 5. Scheduled Delivery Time */}
                             {scheduledTimeDisplay && !String(scheduledTimeDisplay).toLowerCase().includes('instant') && (
-                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700">
                                     <div className="flex items-center gap-3 text-[#2E5A2E] dark:text-[#CBF9B2]">
                                         <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center shrink-0">
                                             <Clock size={20} />
@@ -460,8 +460,8 @@ const IncomingOrderModal = ({
                     </div>
 
                     {/* CARD 2: Items Ordered Card - Matching Order Details Design */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-4 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <Package size={18} />
@@ -474,27 +474,15 @@ const IncomingOrderModal = ({
                         </div>
                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
                             {items.map((item, index) => (
-                                <div key={index} className="p-5 flex gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-5">
-                                    <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden flex-shrink-0 relative">
+                                <div key={index} className="p-3 sm:p-3.5 flex gap-3 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-3">
+                                    <div className="w-14 h-14 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden flex-shrink-0 relative">
                                         <img
                                             src={getItemImage(item)}
                                             alt={item.name}
                                             className="h-full w-full object-cover"
                                             onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/150?text=Product"; }}
                                         />
-                                        {/* Status Tags */}
-                                        <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
-                                            {((item.isGold) || (item.product && item.product.isGold)) && (
-                                                <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
-                                                    {t('Free Delivery')}
-                                                </span>
-                                            )}
-                                            {item.isFromAd && !item.isGold && !(item.product && item.product.isGold) && (
-                                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
-                                                    {t('Special Offer')}
-                                                </span>
-                                            )}
-                                        </div>
+
                                     </div>
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                         <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate mb-0.5" title={item.name}>
@@ -527,12 +515,12 @@ const IncomingOrderModal = ({
                     </div>
 
                     {/* CARD 3: Payment Summary Card - Matching Order Details Design */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 p-6 text-[15px]">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 text-[14px]">
                         <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <CreditCard size={18} className="text-gray-400" />
                             {t('Payment Summary')}
                         </h3>
-                        <div className="space-y-3 text-sm">
+                        <div className="space-y-2 text-sm">
                             <div className="flex justify-between text-gray-500 dark:text-gray-400">
                                 <span>{t('Item Total')}</span>
                                 <span className="font-medium text-gray-900 dark:text-white">₹{Number(subtotal).toFixed(0)}</span>
@@ -556,7 +544,7 @@ const IncomingOrderModal = ({
                                     <span>-₹{Number(order.discount).toFixed(0)}</span>
                                 </div>
                             )}
-                            <div className="pt-3 border-t border-gray-100 dark:border-gray-700 mt-3 pt-3 flex justify-between items-end">
+                            <div className="pt-2.5 border-t border-gray-100 dark:border-gray-700 mt-2.5 flex justify-between items-end">
                                 <span className="font-bold text-gray-900 dark:text-white">{t('Total to Collect')}</span>
                                 <span className="text-2xl font-black text-gray-900 dark:text-white">
                                     ₹{Number(totalAmount).toFixed(0)}

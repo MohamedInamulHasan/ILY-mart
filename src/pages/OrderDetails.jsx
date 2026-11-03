@@ -73,7 +73,7 @@ const OrderDetails = () => {
                         <div className="w-[46px] h-[46px]"></div>
                     </div>
 
-                    <div className="space-y-5">
+                    <div className="space-y-3 sm:space-y-3.5">
                         {/* Status Card Skeleton */}
                         <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
                             <div className="h-5 w-40 rounded-lg blinkit-shimmer" />
@@ -82,7 +82,7 @@ const OrderDetails = () => {
                         </div>
 
                         {/* Items Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                             <div className="p-4 border-b border-gray-50 dark:border-gray-700">
                                 <div className="h-6 w-40 rounded-lg blinkit-shimmer"></div>
                             </div>
@@ -228,10 +228,10 @@ const OrderDetails = () => {
                      <div className="w-[46px] h-[46px]" /> {/* Spacer */}
                 </div>
 
-                <div className="space-y-5">
+                <div className="space-y-3 sm:space-y-3.5">
 
                 {/* Status Card & Timeline */}
-                <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     {/* Status Banner */}
                     <div className={`p-6 ${
                         order.status === 'Cancelled' ? 'bg-[#fef2f2] dark:bg-red-900/10' :
@@ -239,11 +239,12 @@ const OrderDetails = () => {
                         order.status === 'Processing' ? 'bg-[#fffbeb] dark:bg-amber-900/10' :
                         'bg-[#f0f9ff] dark:bg-blue-900/10'
                         } flex items-center justify-between`}>
+
                         <div>
                             <p className="text-sm font-medium opacity-80 mb-1 dark:text-gray-300">
                                 {t('Order ID')}: #{String(order._id || order.id).slice(-6).toUpperCase()}
                             </p>
-                            <h2 className={`text-2xl font-black ${
+                            <h2 className={`text-xl sm:text-2xl font-bold ${
                                 order.status === 'Cancelled' ? 'text-[#dc2626] dark:text-[#f87171]' :
                                 order.status === 'Delivered' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' :
                                 order.status === 'Processing' ? 'text-[#b45309] dark:text-[#fbbf24]' :
@@ -267,7 +268,7 @@ const OrderDetails = () => {
 
                     {/* Visual Timeline (Hidden for Cancelled) */}
                     {order.status !== 'Cancelled' && (
-                        <div className="p-6 relative">
+                        <div className="px-4 py-3.5 relative">
                             {/* Connecting Line */}
                             <div className="absolute top-[42px] left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                                 <div
@@ -302,8 +303,8 @@ const OrderDetails = () => {
                 </div>
 
                 {/* Items Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div className="p-4 border-b border-gray-50 dark:border-gray-700 flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center gap-2">
                         <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
                             <Package size={18} />
                         </div>
@@ -311,8 +312,8 @@ const OrderDetails = () => {
                     </div>
                     <div className="divide-y divide-gray-50 dark:divide-gray-700">
                         {order.items?.map((item, index) => (
-                            <div key={index} className="p-5 flex gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-5">
-                                <div className="h-16 w-16 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden flex-shrink-0 relative">
+                            <div key={index} className="p-3 sm:p-3.5 flex gap-3 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-3">
+                                <div className="w-14 h-14 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden flex-shrink-0 relative">
                                     <img
                                         src={item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
                                             ? item.image
@@ -323,19 +324,7 @@ const OrderDetails = () => {
                                         className="h-full w-full object-cover"
                                         onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Product"; }}
                                     />
-                                    {/* Status Tags */}
-                                    <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
-                                        {((item.isGold) || (item.product && item.product.isGold)) && (
-                                            <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
-                                                {t('Free Delivery')}
-                                            </span>
-                                        )}
-                                        {item.isFromAd && !item.isGold && !(item.product && item.product.isGold) && (
-                                            <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
-                                                {t('Special Offer')}
-                                            </span>
-                                        )}
-                                    </div>
+
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                     <h4 className={`font-medium text-gray-900 dark:text-white text-sm ${item.isFromAd ? '' : 'truncate'} mb-0.5`} title={item.adTitle || item.name}>
@@ -384,15 +373,15 @@ const OrderDetails = () => {
                 </div>
 
                 {/* Shipping Details Card - Matching Order Confirmation Design */}
-                <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div className="p-5 border-b border-gray-50 dark:border-gray-700 flex items-center gap-3">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center gap-2.5">
                         <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
                             <MapPin size={18} />
                         </div>
                         <h3 className="font-medium text-gray-900 dark:text-white text-base">{t('Shipping details')}</h3>
                     </div>
-                    <div className="p-6">
-                        <div className="pl-12 space-y-1.5">
+                    <div className="p-3.5 sm:p-4">
+                        <div className="pl-3 sm:pl-4 space-y-1">
                             {/* 1. Name */}
                             <p className="font-bold text-[16px] text-gray-900 dark:text-white">
                                 {order.shippingAddress?.name || 'User'}
@@ -436,7 +425,7 @@ const OrderDetails = () => {
                             if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
 
                             return (
-                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700">
                                     <div className="flex items-center gap-3 text-[#2E5A2E] dark:text-[#CBF9B2]">
                                         <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center">
                                             <Clock size={20} />
@@ -455,12 +444,12 @@ const OrderDetails = () => {
                 </div>
 
                 {/* Price Breakdown */}
-                <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 p-6 text-[15px]">
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 text-[14px]">
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-2.5 flex items-center gap-2">
                         <CreditCard size={18} className="text-gray-400" />
                         {t('Payment Summary')}
                     </h3>
-                    <div className="space-y-3 text-sm">
+                    <div className="space-y-2 text-sm">
                         <div className="flex justify-between text-gray-500 dark:text-gray-400">
                             <span>{t('Item Total')}</span>
                             <span className="font-medium text-gray-900 dark:text-white">₹{calculatedSubtotal.toFixed(0)}</span>
@@ -490,9 +479,9 @@ const OrderDetails = () => {
                                 <span>-₹{Number(order.discount).toFixed(0)}</span>
                             </div>
                         )}
-                        <div className="pt-3 border-t border-gray-100 dark:border-gray-700 mt-3 pt-3 flex justify-between items-end">
+                        <div className="pt-2.5 border-t border-gray-100 dark:border-gray-700 mt-2.5 flex justify-between items-end">
                             <span className="font-bold text-gray-900 dark:text-white">{t('Grand Total')}</span>
-                            <span className="text-2xl font-black text-gray-900 dark:text-white">
+                            <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                 ₹{(
                                     calculatedSubtotal +
                                     (order.shipping !== undefined && order.shipping !== null ? Number(order.shipping) : 20) -
@@ -511,7 +500,7 @@ const OrderDetails = () => {
                     <div className="pt-4">
                         <button
                             onClick={() => setCancelConfirmation(true)}
-                            className="w-full py-4 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+                            className="w-full py-3 sm:py-3.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
                         >
                             <RotateCcw size={18} />
                             {t('Cancel Order')}

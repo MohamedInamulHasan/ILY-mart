@@ -172,7 +172,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                 </div>
 
                 {/* Scrollable Order Cards List filling full page with fluid mobile touch scroll */}
-                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 max-w-2xl mx-auto w-full pb-36" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-2.5 sm:space-y-3 max-w-2xl mx-auto w-full pb-36" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {feedOrders.length === 0 ? (
                         <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
                             <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
@@ -213,7 +213,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                     } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
                                 >
                                     {/* Top Header Row: Time Left & ID Right in grey same thickness, light grey line like green dot line */}
-                                    <div className="px-5 pt-4 pb-2.5 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
+                                    <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
                                         {/* Left: 🕒 Nov 6, 8.00 PM */}
                                         <div className="flex items-center gap-1.5 min-w-0">
                                             <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
@@ -244,12 +244,12 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                         </div>
                                     </div>
                                     {/* Grey line not touching left and right edges */}
-                                    <div className="mx-5 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
+                                    <div className="mx-4 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
 
                                     {/* Card Content: Delivery Charge in center thick, Customer & address on left */}
-                                    <div className="pt-3.5 pb-3 px-5">
+                                    <div className="pt-2.5 pb-2.5 px-3.5 sm:px-4">
                                         {/* Delivery Charge and Price in Center Thick */}
-                                        <div className="text-center py-1.5 mb-2 border-b border-gray-100 dark:border-gray-700/60">
+                                        <div className="text-center py-1 mb-1.5 border-b border-gray-100 dark:border-gray-700/60">
                                             <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white block mb-0.5">
                                                 {t('Delivery Charge')}
                                             </span>
@@ -338,7 +338,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                     </div>
 
                                     {/* Action Button: Swipe to View Order or Delivered Successfully */}
-                                    <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
+                                    <div className="p-3 sm:p-3.5 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                                         {isDelivered ? (
                                             <button
                                                 type="button"
@@ -400,7 +400,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                 exit={{ scale: 0.9, opacity: 0 }}
                                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-4"
+                                className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-2.5 sm:space-y-3"
                             >
                                 <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
                                     <AlertTriangle size={32} />
@@ -467,7 +467,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                                 exit={{ scale: 0.9, opacity: 0 }}
                                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-4"
+                                className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-2.5 sm:space-y-3"
                             >
                                 <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
                                     <Trash2 size={32} />

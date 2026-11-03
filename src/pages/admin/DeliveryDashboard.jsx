@@ -482,13 +482,13 @@ const DeliveryDashboard = () => {
                         </div>
 
                         {/* Orders List */}
-                        <div className="space-y-4">
+                        <div className="space-y-2.5 sm:space-y-3">
                             {isLoading ? (
                                 <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
                                     {[1, 2, 3].map(i => (
                                         <div
                                             key={i}
-                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700/60 overflow-hidden flex flex-col justify-between p-5 space-y-4 shadow-sm"
+                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700/60 overflow-hidden flex flex-col justify-between p-5 space-y-2.5 sm:space-y-3 shadow-sm"
                                         >
                                             {/* Delivery charge & customer details skeleton */}
                                             <div className="flex flex-col items-center space-y-2 py-2">
@@ -540,7 +540,7 @@ const DeliveryDashboard = () => {
                                             } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
                                         >
                                             {/* Top Header Row: Time Left & ID Right in grey same thickness, light grey line like green dot line */}
-                                            <div className="px-5 pt-4 pb-2.5 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
+                                            <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
                                                 {/* Left: 🕒 Nov 6, 8.00 PM */}
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                     <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
@@ -555,12 +555,12 @@ const DeliveryDashboard = () => {
                                                 </span>
                                             </div>
                                             {/* Light grey line matching green dot line */}
-                                            <div className="mx-5 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
+                                            <div className="mx-4 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
 
                                             {/* Card Content: Delivery Charge in center thick, Customer & address on left */}
-                                            <div className="pt-3.5 pb-3 px-5">
+                                            <div className="pt-2.5 pb-2.5 px-3.5 sm:px-4">
                                                 {/* Delivery Charge and Price in Center Thick */}
-                                                <div className="text-center py-1.5 mb-2 border-b border-gray-100 dark:border-gray-700/60">
+                                                <div className="text-center py-1 mb-1.5 border-b border-gray-100 dark:border-gray-700/60">
                                                     <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white block mb-0.5">
                                                         {t('Delivery Charge')}
                                                     </span>
@@ -649,7 +649,7 @@ const DeliveryDashboard = () => {
                                             </div>
 
                                             {/* Action Button: Swipe to View Order with related status color */}
-                                            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
+                                            <div className="p-3 sm:p-3.5 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                                                 {isDelivered ? (
                                                     <div className="relative overflow-hidden w-full py-3.5 rounded-full bg-[#00C988] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md select-none">
                                                         {/* Animated sheen shine effect */}
