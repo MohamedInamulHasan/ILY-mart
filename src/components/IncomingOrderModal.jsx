@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Phone, MapPin, Package, ChevronsRight, X, Volume2, VolumeX, Navigation, Clock, CreditCard, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
@@ -25,6 +25,7 @@ const IncomingOrderModal = ({
     const { stores } = useData();
     const navigate = useNavigate();
     const { mutateAsync: updateOrderStatus } = useUpdateOrderStatus();
+    const dragControls = useDragControls();
 
     const [isMuted, setIsMuted] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
@@ -207,8 +208,13 @@ const IncomingOrderModal = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                onClick={handleDismissView}
-                className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 select-none"
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) handleDismissView();
+                }}
+                onPointerDown={(e) => {
+                    if (e.target === e.currentTarget) handleDismissView();
+                }}
+                className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 select-none cursor-pointer"
             >
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -216,6 +222,7 @@ const IncomingOrderModal = ({
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
                     transition={{ type: 'spring', damping: 28, stiffness: 350 }}
                     onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
                     className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col justify-between"
                 >
                     {/* Top Header Row: Time and ID on Left, X Button on Right */}
@@ -349,20 +356,42 @@ const IncomingOrderModal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={handleDismissView}
-            className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 select-none"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) handleDismissView();
+            }}
+            onPointerDown={(e) => {
+                if (e.target === e.currentTarget) handleDismissView();
+            }}
+            className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 select-none cursor-pointer"
         >
             <motion.div
+                drag="y"
+                dragControls={dragControls}
+                dragListener={false}
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={{ top: 0, bottom: 0.7 }}
+                onDragEnd={(e, info) => {
+                    if (info.offset.y > 80 || info.velocity.y > 350) {
+                        handleDismissView();
+                    }
+                }}
                 initial={{ y: '100%', opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 350 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#E8EAEF] dark:bg-gray-900 w-full max-w-lg rounded-t-[2.5rem] sm:rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[94vh] relative"
+                onPointerDown={(e) => e.stopPropagation()}
+                className="bg-[#E8EAEF] dark:bg-gray-900 w-full max-w-lg rounded-t-[2.5rem] sm:rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[94vh] relative cursor-default"
             >
-                {/* Full Accept View: Time Left & ID Right in grey same thickness, light grey line like green dot line */}
-                <div className="bg-white dark:bg-gray-800 shrink-0">
-                    <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400">
+                {/* Full Accept View: Drag Handle Bar & Header (drag down from here to close) */}
+                <div 
+                    onPointerDown={(e) => dragControls.start(e)}
+                    className="bg-white dark:bg-gray-800 shrink-0 cursor-grab active:cursor-grabbing select-none touch-none pt-2.5 pb-2"
+                >
+                    {/* Thin Drag Handle Line */}
+                    <div className="w-10 sm:w-12 h-[2.5px] bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-2.5" />
+
+                    <div className="px-4 flex items-center justify-between text-gray-500 dark:text-gray-400">
                         {/* Left: 🕒 Nov 6, 8.00 PM */}
                         <div className="flex items-center gap-1.5 min-w-0">
                             <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
