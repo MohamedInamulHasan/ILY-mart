@@ -100,50 +100,47 @@ const Cart = () => {
             </div>
 
             {/* Scrollable Container */}
-            <div className="flex-1 overflow-y-auto px-3.5 sm:px-4 pt-[96px] pb-8 no-scrollbar">
+            <div className="flex-1 overflow-y-auto px-3.5 sm:px-4 pt-[84px] pb-8 no-scrollbar">
 
                 {/* Items */}
                 <div className="space-y-2 sm:space-y-2.5 mb-3">
                     {cartItems.map((item) => (
-                        <div key={item.id} className="bg-white dark:bg-gray-800 rounded-2xl p-2.5 sm:p-3 flex gap-3 items-center relative shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
+                        <div key={item.id} className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-3.5 flex gap-3.5 items-center relative shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
                              {/* Image block */}
-                             <div className="h-[70px] w-[72px] sm:h-[74px] sm:w-[76px] rounded-xl overflow-hidden bg-[#F9FAFB] dark:bg-gray-800 flex-shrink-0 relative border border-gray-100/60 dark:border-gray-700/60">
+                             <div className="w-[78px] h-[78px] sm:w-[82px] sm:h-[82px] rounded-xl overflow-hidden bg-[#F9FAFB] dark:bg-gray-800 flex-shrink-0 relative border border-gray-100/60 dark:border-gray-700/60">
                                   <img 
                                       src={item.image || `${API_BASE_URL}/products/${item.id}/image`} 
                                       alt={item.title}
                                       className="h-full w-full object-cover" 
                                       onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/100x100?text=No+Image'; }}
                                   />
-
                              </div>
                              
                              {/* Content block */}
-                             <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-between h-[70px] sm:h-[74px]">
+                             <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 min-h-[78px] sm:min-h-[82px]">
                                   {/* Top row: Title and Trash */}
                                   <div className="flex justify-between items-start">
                                        <div className="flex-1 min-w-0 pr-2">
-                                            <h3 className="text-[13px] sm:text-[14px] font-semibold text-gray-900 dark:text-white truncate">
+                                            <h3 className="text-[13px] sm:text-[14px] font-semibold text-gray-900 dark:text-white leading-tight">
                                                 {renderBilingualTitle(t(item, 'title') || item.title || item.name, language, { hideTag: true })}
                                             </h3>
                                             <p className="text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                                                 {getStoreName(item.storeId, stores) || "ILY mart Direct"}
                                             </p>
                                        </div>
-                                       <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 p-0.5 transition-colors">
+                                       <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 p-0.5 transition-colors flex-shrink-0">
                                             <Trash2 size={16} />
                                        </button>
                                   </div>
 
                                   {/* Bottom row: Price and Controls */}
-                                  <div className="flex justify-between items-end mt-auto">
-                                       <div className="flex flex-col">
-                                            <div className="flex items-center gap-1.5">
-                                                 <span className="text-[14px] sm:text-[15px] font-extrabold text-gray-900 dark:text-white leading-none">
-                                                     ₹ {(item.price * item.quantity).toFixed(0)}
-                                                 </span>
-                                            </div>
+                                  <div className="flex justify-between items-end mt-1.5">
+                                       <div className="flex flex-col justify-end">
+                                            <span className="text-[14px] sm:text-[15px] font-extrabold text-gray-900 dark:text-white leading-tight">
+                                                ₹ {(item.price * item.quantity).toFixed(0)}
+                                            </span>
                                             {item.unit && (
-                                                <span className="text-[10px] text-gray-400 font-medium mt-0.5">
+                                                <span className="text-[10px] text-gray-400 font-medium leading-tight mt-0.5">
                                                     {item.unit}
                                                 </span>
                                             )}

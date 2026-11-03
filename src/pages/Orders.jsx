@@ -170,7 +170,7 @@ const Orders = () => {
                 <div className="pt-[88px]">
                 <div className="px-4 mt-0 max-w-3xl mx-auto">
                     {/* Search Pill */}
-                    <div className="relative mb-3 sm:mb-3.5">
+                    <div className="relative mb-3.5 sm:mb-4">
                         <input
                             type="text"
                             placeholder={t('Search orders, items...')}
@@ -190,7 +190,7 @@ const Orders = () => {
                     </div>
 
                     {/* Tabs - perfectly fit mobile screen left to right */}
-                    <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3.5 w-full">
+                    <div className="grid grid-cols-4 gap-2 sm:gap-2.5 mb-4 sm:mb-4.5 w-full">
                         {tabs.map(tab => (
                             <button
                                 key={tab}
@@ -198,7 +198,7 @@ const Orders = () => {
                                 onClick={() => setActiveTab(tab)}
                                 className={`w-full py-2 px-1 text-center rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 shadow-sm ${
                                     activeTab === tab
-                                    ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900'
+                                    ? 'bg-black dark:bg-white text-white dark:text-gray-900 shadow-md'
                                     : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700/60'
                                 }`}
                             >
