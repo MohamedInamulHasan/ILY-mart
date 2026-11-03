@@ -24,22 +24,20 @@ const MenuLink = ({ icon, title, to, onClick, isRed = false }) => {
         <Wrapper 
             to={to} 
             onClick={onClick}
-            className={`w-full flex items-center justify-between py-2.5 px-2 hover:bg-gray-100/50 dark:hover:bg-gray-800 transition-colors group ${!to ? 'cursor-pointer focus:outline-none' : ''}`}
+            className={`w-full flex items-center justify-between py-2.5 sm:py-3 px-2.5 hover:bg-gray-100/50 dark:hover:bg-gray-800 transition-colors group ${!to ? 'cursor-pointer focus:outline-none' : ''}`}
         >
-            <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 ${isRed ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}>
+            <div className="flex items-center gap-3 sm:gap-3.5">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 ${isRed ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}>
                     {icon}
                 </div>
-                <span className={`text-[13.5px] sm:text-[14px] font-medium ${isRed ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+                <span className={`text-[14px] sm:text-[14.5px] font-medium ${isRed ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
                     {title}
                 </span>
             </div>
-            <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight size={17} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
         </Wrapper>
     );
 };
-
-
 
 const Profile = () => {
     const { theme, toggleTheme } = useTheme();
@@ -58,7 +56,6 @@ const Profile = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const { mutate: updateProfile } = useUpdateProfile();
-
 
     const fruitAvatars = [
         { id: 'strawberry', url: '/avatars/strawberry.png', name: 'Strawberry' },
@@ -124,7 +121,7 @@ const Profile = () => {
     const confirmLogout = () => { logout(); };
 
     return (
-        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-48">
+        <div className="flex-1 flex flex-col min-h-0 bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative overflow-hidden overscroll-none select-none">
             
             {/* Logout Modal */}
             <LogoutModal 
@@ -134,28 +131,28 @@ const Profile = () => {
             />
 
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
-            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
+            <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden flex-shrink-0 relative">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                 
                 <div className="relative z-10">
-                    <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                            <button onClick={() => navigate(-1)} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50">
-                                <ArrowLeft size={22} />
+                    <div className="w-full px-2 relative flex items-center justify-center min-h-[38px]">
+                        <div className="absolute left-1 top-1/2 -translate-y-1/2">
+                            <button onClick={() => navigate(-1)} className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50">
+                                <ArrowLeft size={20} />
                             </button>
                         </div>
                         <div className="flex flex-col text-center">
-                            <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight">{t('Profile')}</h1>
+                            <h1 className="text-[17px] font-bold text-gray-900 tracking-tight leading-tight">{t('Profile')}</h1>
                             <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{t('Manage account')}</p>
                         </div>
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2">
                             <button 
                                 onClick={() => navigate('/cart')}
-                                className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
+                                className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
                             >
-                                <ShoppingCart size={22} className="text-gray-700 dark:text-gray-800" />
+                                <ShoppingCart size={20} className="text-gray-700 dark:text-gray-800" />
                                 {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
                                         {cartCount}
                                     </span>
                                 )}
@@ -165,10 +162,10 @@ const Profile = () => {
                 </div>
             </div>
 
-            <div className="pt-[88px]">
-            <div className="px-4 mt-1 max-w-3xl mx-auto w-full">
+            {/* Stable Content Container - comfortably fits standard screens without scrolling */}
+            <div className="flex-1 overflow-y-auto overscroll-none scrollbar-hide px-4 pt-3 pb-3 sm:pb-5 max-w-3xl mx-auto w-full">
                 {/* Profile Widget */}
-                <div className="bg-white dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between mb-3.5 sm:mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between mb-3 shadow-sm border border-gray-100 dark:border-gray-700">
                      <div className="flex items-center gap-3.5 flex-1 min-w-0">
                           <div className="relative flex-shrink-0">
                                <div className="w-[52px] h-[52px] sm:w-[56px] sm:h-[56px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-white dark:border-gray-800 shadow-sm">
@@ -193,7 +190,7 @@ const Profile = () => {
                           <div className="flex-1 min-w-0">
                                 {/* Name + Coin inline */}
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                    <h2 className="text-[15px] sm:text-[16px] font-bold text-gray-900 dark:text-white leading-tight tracking-tight truncate">
+                                    <h2 className="text-[15.5px] sm:text-[16.5px] font-bold text-gray-900 dark:text-white leading-tight tracking-tight truncate">
                                         {user?.name || 'Guest User'}
                                     </h2>
                                     {Number(user?.coins || 0) > 0 && (
@@ -202,7 +199,7 @@ const Profile = () => {
                                 </div>
                                 {/* Mobile number */}
                                 {user?.mobile && (
-                                    <p className="text-[12px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                                    <p className="text-[12px] sm:text-[12.5px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
                                         {user.mobile}
                                     </p>
                                 )}
@@ -212,99 +209,80 @@ const Profile = () => {
 
                 {/* Performance Summary for Global Admin */}
                 {roles.includes('admin') && (
-                    <div className="grid grid-cols-4 gap-2 mb-3.5 sm:mb-4">
+                    <div className="grid grid-cols-4 gap-2 mb-3">
                         {/* Processing */}
                         <div className="bg-white dark:bg-gray-800/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
-                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-500 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-500 mb-1.5">
                                 <Clock size={16} />
                             </div>
-                            <span className="text-[15px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.processing}</span>
+                            <span className="text-[14.5px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.processing}</span>
                             <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">{t('Process')}</span>
                         </div>
 
                         {/* Out for Delivery */}
                         <div className="bg-white dark:bg-gray-800/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
-                            <div className="w-8 h-8 rounded-full bg-[#FFCE31]/10 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2] mb-2">
+                            <div className="w-8 h-8 rounded-full bg-[#FFCE31]/10 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2] mb-1.5">
                                 <Truck size={16} />
                             </div>
-                            <span className="text-[15px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.outForDelivery}</span>
+                            <span className="text-[14.5px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.outForDelivery}</span>
                             <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">{t('Transit')}</span>
                         </div>
 
                         {/* Delivered */}
                         <div className="bg-white dark:bg-gray-800/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
-                            <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-green-900/10 flex items-center justify-center text-green-600 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-green-900/10 flex items-center justify-center text-green-600 mb-1.5">
                                 <CheckCircle2 size={16} />
                             </div>
-                            <span className="text-[15px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.delivered}</span>
+                            <span className="text-[14.5px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.delivered}</span>
                             <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">{t('Deliver')}</span>
                         </div>
 
                         {/* Cancelled */}
                         <div className="bg-white dark:bg-gray-800/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
-                            <div className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/10 flex items-center justify-center text-red-500 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/10 flex items-center justify-center text-red-500 mb-1.5">
                                 <XCircle size={16} />
                             </div>
-                            <span className="text-[15px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.cancelled}</span>
+                            <span className="text-[14.5px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.cancelled}</span>
                             <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">{t('Cancel')}</span>
                         </div>
                     </div>
                 )}
 
                 {/* Account Section */}
-                <div className="mb-3.5 sm:mb-4">
-                     <h3 className="text-[14px] sm:text-[15px] font-bold text-gray-900 dark:text-white mb-2 px-1 tracking-tight">{t('Account')}</h3>
+                <div className="mb-3">
+                     <h3 className="text-[14px] sm:text-[14.5px] font-bold text-gray-900 dark:text-white mb-2 px-1 tracking-tight">{t('Account')}</h3>
                      <div className="bg-white dark:bg-gray-800/50 rounded-2xl p-1.5 sm:p-2 flex flex-col items-center shadow-sm border border-gray-100 dark:border-gray-700">
                           
-                          <MenuLink to="/orders" icon={<Package size={16} strokeWidth={2} />} title={t('My Orders')} />
-                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
+                          <MenuLink to="/orders" icon={<Package size={17} strokeWidth={2} />} title={t('My Orders')} />
+                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
                           
-                          <MenuLink to="/edit-address" icon={<MapPin size={16} strokeWidth={2} />} title={t('My Address')} />
-                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
+                          <MenuLink to="/edit-address" icon={<MapPin size={17} strokeWidth={2} />} title={t('My Address')} />
+                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
 
-                          <MenuLink to="/saved-products" icon={<Heart size={16} strokeWidth={2} />} title={t('Saved Products')} />
-                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
+                          <MenuLink to="/saved-products" icon={<Heart size={17} strokeWidth={2} />} title={t('Saved Products')} />
+                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
 
-                          <MenuLink to="/services" icon={<Wrench size={16} strokeWidth={2} />} title={t('Services')} />
-                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
-
-                          {/* Hide News and Games menu items for now
-                          <MenuLink to="/news" icon={<Newspaper size={18} strokeWidth={2} />} title={t('News')} />
-                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
-
-                          <MenuLink to="/games" icon={<Gamepad2 size={18} strokeWidth={2} />} title={t('Games')} />
-                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
-                          */}
+                          <MenuLink to="/services" icon={<Wrench size={17} strokeWidth={2} />} title={t('Services')} />
+                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
 
                           {/* Settings Dropdown/Accordion */}
                           <button 
                               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                              className="w-full flex items-center justify-between py-2.5 px-2 hover:bg-gray-100/50 dark:hover:bg-gray-800 transition-colors group focus:outline-none"
+                              className="w-full flex items-center justify-between py-2.5 sm:py-3 px-2.5 hover:bg-gray-100/50 dark:hover:bg-gray-800 transition-colors group focus:outline-none"
                           >
-                              <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300">
-                                      <Settings size={16} strokeWidth={2} />
+                              <div className="flex items-center gap-3 sm:gap-3.5">
+                                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                                      <Settings size={17} strokeWidth={2} />
                                   </div>
-                                  <span className="text-[13.5px] sm:text-[14px] font-medium text-gray-900 dark:text-white">
+                                  <span className="text-[14px] sm:text-[14.5px] font-medium text-gray-900 dark:text-white">
                                       {t('Settings')}
                                   </span>
                               </div>
-                              <ChevronDown size={16} className={`text-gray-400 transition-transform duration-300 ${isSettingsOpen ? 'rotate-180' : ''}`} />
+                              <ChevronDown size={17} className={`text-gray-400 transition-transform duration-300 ${isSettingsOpen ? 'rotate-180' : ''}`} />
                           </button>
 
                           {isSettingsOpen && (
-                              <div className="w-full pl-12 pr-4 pb-2 space-y-1 animate-in slide-in-from-top-2 duration-200">
-                                  {/* Hide Dark Mode option for now
-                                  <button 
-                                      onClick={toggleTheme}
-                                      className="w-full flex items-center justify-between py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors"
-                                  >
-                                      <span>{theme === 'dark' ? t('Light Mode') : t('Dark Mode')}</span>
-                                      <div className={`w-9 h-5 rounded-full relative transition-colors duration-300 ${theme === 'light' ? 'bg-[#7CA90E]' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ${theme === 'light' ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                                      </div>
-                                  </button>
-                                  */}
+                              <div className="w-full pl-12 pr-4 pb-2.5 space-y-1 animate-in slide-in-from-top-2 duration-200">
                                   <button 
                                       onClick={() => {
                                           const newLang = language === 'en' ? 'ta' : 'en';
@@ -324,66 +302,65 @@ const Profile = () => {
                           {/* Dynamic Roles */}
                           {roles.includes('store_admin') && (
                               <>
-                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
-                                <MenuLink to="/my-store" icon={<Store size={16} strokeWidth={2} />} title={t('My Store')} />
+                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
+                                <MenuLink to="/my-store" icon={<Store size={17} strokeWidth={2} />} title={t('My Store')} />
                               </>
                           )}
                           {(roles.includes('admin') || roles.includes('delivery_boy')) && (
                               <>
-                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
+                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
                                 <MenuLink 
                                     to="/admin" 
-                                    icon={roles.includes('delivery_boy') ? <Truck size={16} strokeWidth={2} /> : <Shield size={16} strokeWidth={2} />} 
+                                    icon={roles.includes('delivery_boy') ? <Truck size={17} strokeWidth={2} /> : <Shield size={17} strokeWidth={2} />} 
                                     title={roles.includes('delivery_boy') ? t('Manage Deliveries') : t('Admin Dashboard')} 
                                 />
                               </>
                           )}
                           {roles.includes('service_admin') && (
                               <>
-                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
-                                <MenuLink to="/my-service" icon={<Wrench size={16} strokeWidth={2} />} title={t('My Service')} />
+                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
+                                <MenuLink to="/my-service" icon={<Wrench size={17} strokeWidth={2} />} title={t('My Service')} />
                               </>
                           )}
                      </div>
                 </div>
 
                 {/* Support Section */}
-                <div className="mb-3">
-                     <h3 className="text-[14px] sm:text-[15px] font-bold text-gray-900 dark:text-white mb-2 px-1 tracking-tight">{t('Support')}</h3>
+                <div className="mb-2">
+                     <h3 className="text-[14px] sm:text-[14.5px] font-bold text-gray-900 dark:text-white mb-2 px-1 tracking-tight">{t('Support')}</h3>
                      <div className="bg-white dark:bg-gray-800/50 rounded-2xl p-1.5 sm:p-2 flex flex-col items-center shadow-sm border border-gray-100 dark:border-gray-700">
                           <MenuLink 
                               onClick={() => window.open('https://wa.me/919500171980', '_blank')} 
-                              icon={<HelpCircle size={16} strokeWidth={2} />} 
+                              icon={<HelpCircle size={17} strokeWidth={2} />} 
                               title={t('Help Center')} 
                           />
-                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
-                          <MenuLink to="/privacy-policy" icon={<Shield size={16} strokeWidth={2} />} title={t('Privacy Policy')} />
+                          <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
+                          <MenuLink to="/privacy-policy" icon={<Shield size={17} strokeWidth={2} />} title={t('Privacy Policy')} />
                           {showLogout && (
                                <>
-                                   <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-4"></div>
+                                   <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
                                    <MenuLink 
                                        onClick={handleLogout} 
-                                       icon={<LogOut size={16} strokeWidth={2} />} 
+                                       icon={<LogOut size={17} strokeWidth={2} />} 
                                        title={t('Logout')} 
-                                       isRed={false} // Match mockup design text
+                                       isRed={false}
                                    />
                                </>
                            )}
                      </div>
                 </div>
             </div>
-            </div>
 
             {/* Floating WhatsApp Button */}
             <button 
                 onClick={() => window.open('https://wa.me/919500171980', '_blank')}
-                className="fixed bottom-36 right-6 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-[60] animate-in fade-in zoom-in duration-500"
+                className="fixed bottom-20 right-5 sm:bottom-24 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-[60] animate-in fade-in zoom-in duration-500"
                 aria-label="Contact on WhatsApp"
             >
                 <svg 
                     viewBox="0 0 24 24" 
-                    width="30" 
-                    height="30" 
+                    width="26" 
+                    height="26" 
                     fill="currentColor" 
                     className="text-white"
                 >

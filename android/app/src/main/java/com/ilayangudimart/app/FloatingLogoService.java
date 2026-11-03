@@ -581,17 +581,115 @@ public class FloatingLogoService extends Service {
             routeRow.addView(detailsCol);
             bodyLayout.addView(routeRow);
 
-            // VIEW ORDER Button with 8s countdown timer (like Porter app)
-            Button acceptBtn = new Button(this);
-            acceptBtn.setText("VIEW ORDER  ➔  8s");
-            acceptBtn.setTextColor(Color.WHITE);
-            acceptBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-            acceptBtn.setTypeface(Typeface.DEFAULT_BOLD);
-            GradientDrawable btnBg = new GradientDrawable();
-            btnBg.setColor(Color.parseColor("#F59E0B")); // Amber 500
-            btnBg.setCornerRadius(dp(26));
-            acceptBtn.setBackground(btnBg);
-            acceptBtn.setPadding(dp(16), dp(12), dp(16), dp(12));
+            // Swipe To VIEW ORDER Track (matching SwipeActionButton yellow variant in order list card)
+            FrameLayout swipeTrack = new FrameLayout(this);
+            LinearLayout.LayoutParams swipeTrackParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(52)
+            );
+            swipeTrackParams.setMargins(0, dp(4), 0, 0);
+            swipeTrack.setLayoutParams(swipeTrackParams);
+
+            GradientDrawable trackBg = new GradientDrawable();
+            trackBg.setColor(Color.parseColor("#F59E0B")); // Amber 500
+            trackBg.setCornerRadius(dp(26));
+            swipeTrack.setBackground(trackBg);
+
+            // Centered Text Label: VIEW ORDER 8s
+            TextView swipeLabel = new TextView(this);
+            swipeLabel.setText("VIEW ORDER  8s");
+            swipeLabel.setTextColor(Color.WHITE);
+            swipeLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+            swipeLabel.setTypeface(Typeface.DEFAULT_BOLD);
+            swipeLabel.setGravity(Gravity.CENTER);
+            FrameLayout.LayoutParams labelParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            swipeTrack.addView(swipeLabel, labelParams);
+
+            // White Circular Swipe Knob with orange chevrons (matching order list card)
+            FrameLayout swipeKnob = new FrameLayout(this);
+            int knobSize = dp(42);
+            FrameLayout.LayoutParams knobParams = new FrameLayout.LayoutParams(knobSize, knobSize);
+            knobParams.gravity = Gravity.CENTER_VERTICAL | Gravity.START;
+            knobParams.setMargins(dp(5), 0, 0, 0);
+            swipeKnob.setLayoutParams(knobParams);
+
+            GradientDrawable knobBg = new GradientDrawable();
+            knobBg.setColor(Color.WHITE);
+            knobBg.setCornerRadius(dp(21));
+            swipeKnob.setBackground(knobBg);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                swipeKnob.setElevation(dp(4));
+            }
+
+            // Chevrons icon "»" in knob
+            TextView knobIcon = new TextView(this);
+            knobIcon.setText("»");
+            knobIcon.setTextColor(Color.parseColor("#D97706")); // Amber 600
+            knobIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+            knobIcon.setTypeface(Typeface.DEFAULT_BOLD);
+            knobIcon.setGravity(Gravity.CENTER);
+            FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            swipeKnob.addView(knobIcon, iconParams);
+            swipeTrack.addView(swipeKnob);
+
+            // Touch Listener for swiping knob left to right
+            final float[] startTouchX = {0};
+            final float[] initialKnobX = {0};
+            final boolean[] isCompleted = {false};
+
+            View.OnTouchListener swipeListener = new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    if (isCompleted[0]) return true;
+
+                    int maxDrag = swipeTrack.getWidth() - swipeKnob.getWidth() - dp(10);
+                    if (maxDrag <= 0) maxDrag = dp(240);
+
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN:
+                            startTouchX[0] = event.getRawX();
+                            initialKnobX[0] = swipeKnob.getTranslationX();
+                            return true;
+
+                        case MotionEvent.ACTION_MOVE:
+                            float dx = event.getRawX() - startTouchX[0];
+                            float newX = Math.max(0, Math.min(maxDrag, initialKnobX[0] + dx));
+                            swipeKnob.setTranslationX(newX);
+                            float progress = newX / (float) maxDrag;
+                            swipeLabel.setAlpha(Math.max(0.1f, 1f - progress * 1.3f));
+                            return true;
+
+                        case MotionEvent.ACTION_UP:
+                        case MotionEvent.ACTION_CANCEL:
+                            float finalX = swipeKnob.getTranslationX();
+                            if (finalX >= maxDrag * 0.6f) {
+                                isCompleted[0] = true;
+                                swipeKnob.animate().translationX(maxDrag).setDuration(120).start();
+                                if (orderCardTimer != null) {
+                                    orderCardTimer.cancel();
+                                    orderCardTimer = null;
+                                }
+                                stopAlertEffects();
+                                dismissPorterOrderCardInternal();
+                                openApp(orderId);
+                            } else {
+                                swipeKnob.animate().translationX(0).setDuration(200).start();
+                                swipeLabel.animate().alpha(1f).setDuration(200).start();
+                            }
+                            return true;
+                    }
+                    return false;
+                }
+            };
+
+            swipeKnob.setOnTouchListener(swipeListener);
+            swipeTrack.setOnTouchListener(swipeListener);
 
             if (orderCardTimer != null) {
                 orderCardTimer.cancel();
@@ -601,7 +699,7 @@ public class FloatingLogoService extends Service {
                 @Override
                 public void onTick(long millisUntilFinished) {
                     int sec = (int) Math.ceil(millisUntilFinished / 1000.0);
-                    acceptBtn.setText("VIEW ORDER  ➔  " + sec + "s");
+                    swipeLabel.setText("VIEW ORDER  " + sec + "s");
                 }
 
                 @Override
@@ -610,17 +708,7 @@ public class FloatingLogoService extends Service {
                 }
             }.start();
 
-            acceptBtn.setOnClickListener(v -> {
-                if (orderCardTimer != null) {
-                    orderCardTimer.cancel();
-                    orderCardTimer = null;
-                }
-                stopAlertEffects();
-                dismissPorterOrderCardInternal();
-                openApp(orderId);
-            });
-
-            bodyLayout.addView(acceptBtn);
+            bodyLayout.addView(swipeTrack);
 
             // SKIP Button below VIEW ORDER (like Porter app)
             TextView skipBtn = new TextView(this);

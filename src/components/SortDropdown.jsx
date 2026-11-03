@@ -9,9 +9,9 @@ const SortDropdown = ({ currentSort, onSortChange }) => {
     const { t } = useLanguage();
 
     const sortOptions = [
-        { id: 'none', label: 'Default', icon: <ListFilter size={14} /> },
-        { id: 'lowToHigh', label: 'Price: Low to High', icon: <ArrowUpNarrowWide size={14} /> },
-        { id: 'highToLow', label: 'Price: High to Low', icon: <ArrowDownWideNarrow size={14} /> },
+        { id: 'none', label: 'Default', icon: <ListFilter size={16} /> },
+        { id: 'lowToHigh', label: 'Price: Low to High', icon: <ArrowUpNarrowWide size={16} /> },
+        { id: 'highToLow', label: 'Price: High to Low', icon: <ArrowDownWideNarrow size={16} /> },
     ];
 
     useEffect(() => {
@@ -30,7 +30,7 @@ const SortDropdown = ({ currentSort, onSortChange }) => {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center rounded-full border transition-all duration-300 active:scale-95 ${isOpen
+                className={`w-12 h-12 sm:w-[52px] sm:h-[52px] flex-shrink-0 flex items-center justify-center rounded-2xl border transition-all duration-300 active:scale-95 ${isOpen
                     ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/10'
                     : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800'
                     }`}

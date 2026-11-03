@@ -20,6 +20,7 @@ const NotificationOverlay = () => {
     const queryClient = useQueryClient();
     const [notifications, setNotifications] = useState([]);
     const [incomingOrder, setIncomingOrder] = useState(null);
+    const [startWithAcceptView, setStartWithAcceptView] = useState(false);
     const navigate = useNavigate();
 
     const roles = Array.isArray(user?.role) ? user.role : [user?.role];
@@ -82,6 +83,7 @@ const NotificationOverlay = () => {
             try {
                 const res = await apiService.getOrder(orderId);
                 if (res.success && res.data) {
+                    setStartWithAcceptView(true);
                     setIncomingOrder(res.data);
                 }
             } catch (err) {
@@ -193,6 +195,7 @@ const NotificationOverlay = () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
 
             // Pop up the new incoming order card modal for the delivery boy and trigger alert
+            setStartWithAcceptView(false);
             setIncomingOrder(order);
             triggerIncomingOrderAlert();
 
@@ -247,9 +250,15 @@ const NotificationOverlay = () => {
                 <IncomingOrderModal
                     key={incomingOrder._id || incomingOrder.id}
                     order={incomingOrder}
-                    startWithViewCard={true}
-                    onClose={handleModalClose}
-                    onSkip={handleOrderSkip}
+                    startWithViewCard={!startWithAcceptView}
+                    onClose={() => {
+                        setStartWithAcceptView(false);
+                        handleModalClose();
+                    }}
+                    onSkip={() => {
+                        setStartWithAcceptView(false);
+                        handleOrderSkip();
+                    }}
                     onAcceptViewOpened={handleAcceptViewOpened}
                 />
             )}

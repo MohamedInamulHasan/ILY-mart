@@ -75,7 +75,7 @@ const Categories = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder={t('Search categories...')}
-                                    className="w-full pl-12 pr-6 py-4 rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none transition-all duration-300 shadow-sm"
+                                    className="w-full pl-12 pr-6 py-3.5 sm:py-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-none transition-colors duration-200" style={{ outline: "none", WebkitTapHighlightColor: "transparent" }}
                                 />
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] transition-colors" size={20} />
                             </form>

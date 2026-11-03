@@ -22,15 +22,10 @@ const Orders = () => {
     // const { orders, deleteOrder, stores } = useData(); // Refactored
     const { t, language } = useLanguage();
     const { setIsFooterHidden } = useData();
-    const [activeTab, setActiveTab] = useState('All');
+    
     const [searchQuery, setSearchQuery] = useState('');
 
-    useEffect(() => {
-        const activeTabElement = document.getElementById('active-order-tab');
-        if (activeTabElement) {
-            activeTabElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-        }
-    }, [activeTab]);
+
 
     const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, orderId: null });
 
@@ -41,29 +36,19 @@ const Orders = () => {
 
 
 
-    const tabs = ['All', 'Active', 'Completed', 'Cancelled'];
+    
 
     const filteredOrders = orders.filter(order => {
-        const matchesSearch =
-            searchQuery === '' ||
-            String(order._id || order.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        if (!searchQuery.trim()) return true;
+        const query = searchQuery.toLowerCase();
+        return (
+            String(order._id || order.id).toLowerCase().includes(query) ||
             order.items?.some(item => {
                 const itemName = (item.name || item.adTitle || '').toLowerCase();
                 const storeName = (item.storeName || item.storeId?.name || getStoreName(item.storeId, stores) || '').toLowerCase();
-                const query = searchQuery.toLowerCase();
                 return itemName.includes(query) || storeName.includes(query);
-            });
-
-        // If searching, ignore tab filter to find orders everywhere
-        if (searchQuery !== '') return matchesSearch;
-
-        const matchesTab =
-            activeTab === 'All' ? true :
-                activeTab === 'Active' ? ['Processing', 'Shipped', 'Out for Delivery'].includes(order.status) :
-                    activeTab === 'Completed' ? order.status === 'Delivered' :
-                        activeTab === 'Cancelled' ? order.status === 'Cancelled' : true;
-
-        return matchesTab;
+            })
+        );
     });
 
     const getStatusText = (status) => {
@@ -169,42 +154,26 @@ const Orders = () => {
             <PullToRefreshLayout>
                 <div className="pt-[88px]">
                 <div className="px-4 mt-0 max-w-3xl mx-auto">
-                    {/* Search Pill */}
-                    <div className="relative mb-3.5 sm:mb-4">
+                    {/* Zepto-style Search Bar */}
+                    <div className="relative mb-4 sm:mb-5">
                         <input
                             type="text"
                             placeholder={t('Search orders, items...')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-9 py-2.5 sm:py-3 rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none shadow-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300"
+                            className="w-full pl-11 sm:pl-12 pr-11 py-3.5 sm:py-4 text-[14.5px] sm:text-[15.5px] font-medium rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none transition-colors duration-200"
                         />
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 stroke-[2.2]" size={20} />
                         {searchQuery && (
                             <button
+                                type="button"
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 active:scale-90 transition-all rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer"
+                                title={t('Clear')}
                             >
-                                <X size={16} />
+                                <X size={18} className="stroke-[2.5]" />
                             </button>
                         )}
-                    </div>
-
-                    {/* Tabs - perfectly fit mobile screen left to right */}
-                    <div className="grid grid-cols-4 gap-2 sm:gap-2.5 mb-4 sm:mb-4.5 w-full">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab}
-                                id={activeTab === tab ? "active-order-tab" : undefined}
-                                onClick={() => setActiveTab(tab)}
-                                className={`w-full py-2 px-1 text-center rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 shadow-sm ${
-                                    activeTab === tab
-                                    ? 'bg-black dark:bg-white text-white dark:text-gray-900 shadow-md'
-                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700/60'
-                                }`}
-                            >
-                                {t(tab)}
-                            </button>
-                        ))}
                     </div>
 
                     {/* Orders List */}

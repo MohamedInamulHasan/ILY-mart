@@ -208,7 +208,7 @@ const Layout = ({ children, onRefresh }) => {
             )}
             {/* {showNavbar && <Navbar />} */}
             {/* <PullToRefresh onRefresh={onRefresh} resistance={2.5} className="flex-grow flex flex-col"> */}
-            <main className={`flex-grow flex flex-col ${showMobileFooter ? 'pb-32 md:pb-0 md:pr-28' : ''}`}>
+            <main className={`flex-grow flex flex-col ${showMobileFooter && location.pathname !== '/profile' ? 'pb-32 md:pb-0 md:pr-28' : ''}`}>
                 {children}
             </main>
             {/* </PullToRefresh> */}

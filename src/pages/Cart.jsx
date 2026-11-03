@@ -74,7 +74,7 @@ const Cart = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 flex flex-col transition-colors duration-200 relative overflow-hidden mx-auto max-w-md w-full my-auto pb-2">
+        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 flex flex-col transition-colors duration-200 relative mx-auto max-w-md w-full pb-20 md:pb-40">
             
             {/* Premium Green Header — matches Orders / Profile style */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
@@ -100,7 +100,7 @@ const Cart = () => {
             </div>
 
             {/* Scrollable Container */}
-            <div className="flex-1 overflow-y-auto px-3.5 sm:px-4 pt-[84px] pb-8 no-scrollbar">
+            <div className="flex-1 w-full px-3.5 sm:px-4 pt-[84px]">
 
                 {/* Items */}
                 <div className="space-y-2 sm:space-y-2.5 mb-3">
@@ -163,35 +163,38 @@ const Cart = () => {
                     ))}
                 </div>
                 
-                {/* Order Summary Integrated in Flow */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 sm:p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                     <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-gray-100/60 dark:border-gray-700/60">
-                          <h2 className="text-[15px] sm:text-[16px] font-bold text-gray-900 dark:text-white">{t('Payment')}</h2>
-                          <span className="text-[12px] font-medium text-gray-400">{cartItems.length} {t('items')}</span>
-                     </div>
-    
-                     <div className="space-y-2 mb-3 sm:mb-4">
-                          <div className="flex justify-between items-center">
-                               <span className="text-[14px] text-gray-400 font-medium">{t('Subtotal')}</span>
-                               <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹ {cartTotal.toFixed(0)}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                               <span className="text-[14px] text-gray-400 font-medium">{t('Delivery')}</span>
-                               {deliveryCharge === 0 ? (
-                                   <span className="text-[15px] font-bold text-[#2E5A2E]">{t('FREE')}</span>
-                               ) : (
-                                   <span className="text-[15px] font-bold text-gray-900 dark:text-white">₹ {deliveryCharge.toFixed(0)}</span>
-                               )}
-                          </div>
-                          <div className="flex justify-between items-center pt-2 border-t border-gray-50 dark:border-gray-700/40">
-                               <span className="text-[15px] text-gray-500 font-medium">{t('Total')}</span>
-                               <span className="text-[16px] font-extrabold text-gray-900 dark:text-white">₹ {finalTotal.toFixed(0)}</span>
-                          </div>
-                     </div>
-    
-                     <Link to="/checkout" className="w-full bg-black text-white rounded-full py-2.5 sm:py-3 flex items-center justify-center font-normal text-sm active:scale-[0.98] transition-transform">
-                           <span>{t('Proceed to Checkout')}</span>
-                     </Link>
+                {/* Order Summary / Payment Card — exactly matching Checkout.jsx design */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-3.5">
+                        <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">{t('Payment Summary')}</h2>
+                        <span className="text-[13px] font-medium text-gray-400 tracking-tight">{cartItems.length} {t('items')}</span>
+                    </div>
+
+                    <div className="space-y-2.5 mb-5">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[14px] text-gray-400 font-medium">{t('Subtotal')}</span>
+                            <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹{cartTotal.toFixed(0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[14px] text-gray-400 font-medium">{t('Delivery')}</span>
+                            {deliveryCharge === 0 ? (
+                                <span className="text-[15px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2]">FREE</span>
+                            ) : (
+                                <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹{deliveryCharge.toFixed(0)}</span>
+                            )}
+                        </div>
+                        <div className="flex justify-between items-center pt-2">
+                            <span className="text-[15px] text-gray-500 font-medium">{t('Total')}</span>
+                            <span className="text-[17px] font-extrabold text-gray-900 dark:text-white">₹{finalTotal.toFixed(0)}</span>
+                        </div>
+                    </div>
+
+                    <Link
+                        to="/checkout"
+                        className="w-full bg-black text-white rounded-full py-3 sm:py-3.5 flex items-center justify-center font-normal text-sm active:scale-[0.98] transition-transform"
+                    >
+                        <span>{t('Place Order')}</span>
+                    </Link>
                 </div>
                 
             </div>

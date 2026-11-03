@@ -7,13 +7,18 @@
   --safe-area-inset-bottom: env(safe-area-inset-bottom);
 }
 
-/* Remove unwanted default browser outline boxes on links and buttons */
-a, button {
-    -webkit-tap-highlight-color: transparent;
+/* Remove unwanted default browser outline boxes, tap highlights and focus rings */
+a, button, input, textarea, select {
+    -webkit-tap-highlight-color: transparent !important;
 }
 a:focus, a:focus-visible, a:active,
-button:focus, button:focus-visible, button:active {
+button:focus, button:focus-visible, button:active,
+input:focus, input:focus-visible, input:active,
+textarea:focus, textarea:focus-visible, textarea:active,
+select:focus, select:focus-visible, select:active {
     outline: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
 }
 
 /* Hide native password reveal icon in Edge/IE */
