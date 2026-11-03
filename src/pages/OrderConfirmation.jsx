@@ -263,7 +263,7 @@ const OrderConfirmation = () => {
                 </div>
             </div>
 
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3.5 sm:space-y-4">
+            <div className="max-w-3xl mx-auto px-3.5 sm:px-5 lg:px-6 space-y-3 sm:space-y-3.5">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-700/60 flex items-center gap-2.5">
                         <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
@@ -272,7 +272,7 @@ const OrderConfirmation = () => {
                         <h3 className="font-medium text-gray-900 dark:text-white text-base">{t('Order Summary')}</h3>
                     </div>
 
-                    <div className="p-3.5 sm:p-4">
+                    <div className="p-3 sm:p-3.5">
                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
                             {cartItems.map((item) => (
                                 <div key={item.id} className="py-2.5 flex gap-3 first:pt-0">
@@ -284,18 +284,7 @@ const OrderConfirmation = () => {
                                             loading="lazy"
                                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
                                         />
-                                        <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
-                                            {item.isGold && (
-                                                <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
-                                                    {t('Free Delivery')}
-                                                </span>
-                                            )}
-                                            {item.isFromAd && (
-                                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
-                                                    {t('Special Offer')}
-                                                </span>
-                                            )}
-                                        </div>
+
                                     </div>
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                         <h4 className={`text-sm font-medium text-gray-900 dark:text-white mb-0.5 ${item.isFromAd ? '' : 'truncate'}`} title={item.adTitle || item.title}>
@@ -542,7 +531,7 @@ const OrderConfirmation = () => {
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 font-medium">
                                     {t('Your order has been placed successfully.')}
                                 </p>
-                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-3.5 sm:p-4 mb-4 sm:mb-5 border border-gray-100 dark:border-gray-600/50">
+                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-3 sm:p-3.5 mb-4 sm:mb-5 border border-gray-100 dark:border-gray-600/50">
                                     <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5 tracking-widest uppercase font-bold">{t('Order ID')}</p>
                                     <p className="font-mono font-bold text-gray-900 dark:text-white text-lg sm:text-xl">
                                         #{String(createdOrderId || '000').slice(-6).toUpperCase()}

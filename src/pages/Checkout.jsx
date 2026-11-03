@@ -406,12 +406,12 @@ const Checkout = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
                     {/* Checkout Form */}
-                    <div className="lg:col-span-2 space-y-3.5 sm:space-y-4">
+                    <div className="lg:col-span-2 space-y-3 sm:space-y-3.5">
                         {/* Shipping Address */}
                         {/* Shipping Address */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-5">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4">
                             <div className="flex items-center gap-2.5 mb-3.5">
                                 <div className="w-9 h-9 rounded-xl bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <MapPin size={18} />
@@ -773,18 +773,7 @@ const Checkout = () => {
                                                     loading="lazy"
                                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
                                                 />
-                                                <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
-                                                    {(item.isGold || (item.product && item.product.isGold)) && (
-                                                        <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm mb-[1px]">
-                                                            {t('Free Delivery')}
-                                                        </span>
-                                                    )}
-                                                    {item.isFromAd && (
-                                                        <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm">
-                                                            {t('Special Offer')}
-                                                        </span>
-                                                    )}
-                                                </div>
+
                                             </div>
                                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                 <h4 className={`text-sm font-medium text-gray-900 dark:text-white mb-0.5 ${item.isFromAd ? '' : 'truncate'}`} title={item.adTitle || item.title || item.name}>
@@ -847,7 +836,7 @@ const Checkout = () => {
                         </div>
 
                         {/* Payment Method */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-5">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4">
                             <div className="flex items-center gap-2.5 mb-3.5">
                                 <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-[#CBF9B2]/20 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <CreditCard size={20} />

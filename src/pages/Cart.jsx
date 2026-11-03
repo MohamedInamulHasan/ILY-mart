@@ -100,14 +100,14 @@ const Cart = () => {
             </div>
 
             {/* Scrollable Container */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-5 pt-[88px] pb-10 no-scrollbar">
+            <div className="flex-1 overflow-y-auto px-3.5 sm:px-4 pt-[80px] pb-8 no-scrollbar">
 
                 {/* Items */}
-                <div className="space-y-2.5 sm:space-y-3 mb-3.5 sm:mb-4">
+                <div className="space-y-2 sm:space-y-2.5 mb-3">
                     {cartItems.map((item) => (
-                        <div key={item.id} className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-3.5 flex gap-3.5 items-center relative shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
+                        <div key={item.id} className="bg-white dark:bg-gray-800 rounded-2xl p-2.5 sm:p-3 flex gap-3 items-center relative shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
                              {/* Image block */}
-                             <div className="h-[78px] w-[82px] sm:h-[80px] sm:w-[84px] rounded-xl overflow-hidden bg-[#F9FAFB] dark:bg-gray-800 flex-shrink-0 relative border border-gray-100/60 dark:border-gray-700/60">
+                             <div className="h-[70px] w-[72px] sm:h-[74px] sm:w-[76px] rounded-xl overflow-hidden bg-[#F9FAFB] dark:bg-gray-800 flex-shrink-0 relative border border-gray-100/60 dark:border-gray-700/60">
                                   <img 
                                       src={item.image || `${API_BASE_URL}/products/${item.id}/image`} 
                                       alt={item.title}
@@ -118,7 +118,7 @@ const Cart = () => {
                              </div>
                              
                              {/* Content block */}
-                             <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-between h-[78px] sm:h-[82px]">
+                             <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-between h-[70px] sm:h-[74px]">
                                   {/* Top row: Title and Trash */}
                                   <div className="flex justify-between items-start">
                                        <div className="flex-1 min-w-0 pr-2">
@@ -167,13 +167,13 @@ const Cart = () => {
                 </div>
                 
                 {/* Order Summary Integrated in Flow */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-                     <div className="flex justify-between items-center mb-3.5 pb-2.5 border-b border-gray-100/60 dark:border-gray-700/60">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 sm:p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                     <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-gray-100/60 dark:border-gray-700/60">
                           <h2 className="text-[15px] sm:text-[16px] font-bold text-gray-900 dark:text-white">{t('Payment')}</h2>
                           <span className="text-[12px] font-medium text-gray-400">{cartItems.length} {t('items')}</span>
                      </div>
     
-                     <div className="space-y-2.5 mb-4 sm:mb-5">
+                     <div className="space-y-2 mb-3 sm:mb-4">
                           <div className="flex justify-between items-center">
                                <span className="text-[14px] text-gray-400 font-medium">{t('Subtotal')}</span>
                                <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹ {cartTotal.toFixed(0)}</span>
@@ -192,7 +192,7 @@ const Cart = () => {
                           </div>
                      </div>
     
-                     <Link to="/checkout" className="w-full bg-black text-white rounded-full py-3 sm:py-3.5 flex items-center justify-center font-normal text-sm active:scale-[0.98] transition-transform gap-2">
+                     <Link to="/checkout" className="w-full bg-black text-white rounded-full py-2.5 sm:py-3 flex items-center justify-center font-normal text-sm active:scale-[0.98] transition-transform gap-2">
                            <span>{t('Proceed to Checkout')}</span>
                            <ShoppingBag size={18} />
                      </Link>

@@ -189,14 +189,14 @@ const Orders = () => {
                         )}
                     </div>
 
-                    {/* Tabs */}
-                    <div className="flex overflow-x-auto pb-2 mb-3 scrollbar-hide gap-2 sm:gap-2.5 w-full">
+                    {/* Tabs - perfectly fit mobile screen left to right */}
+                    <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3.5 w-full">
                         {tabs.map(tab => (
                             <button
                                 key={tab}
                                 id={activeTab === tab ? "active-order-tab" : undefined}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 shadow-sm ${
+                                className={`w-full py-2 px-1 text-center rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 shadow-sm ${
                                     activeTab === tab
                                     ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900'
                                     : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700/60'
