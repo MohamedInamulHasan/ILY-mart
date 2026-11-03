@@ -19,6 +19,8 @@ const IncomingOrderModal = ({
     onAccepted,
     onDelivered,
     onCancelled,
+    onSkip,
+    onAcceptViewOpened,
     startWithViewCard = false
 }) => {
     const { t, language } = useLanguage();
@@ -29,6 +31,7 @@ const IncomingOrderModal = ({
 
     const [isMuted, setIsMuted] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
+    const [countdown, setCountdown] = useState(8);
     const [showCancelPopup, setShowCancelPopup] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
 
@@ -54,10 +57,35 @@ const IncomingOrderModal = ({
         return registerModalBackHandler(onClose);
     }, [order, onClose]);
 
+    // 8-second auto-skip timer in View Order card (like Porter app)
+    useEffect(() => {
+        if (viewMode !== 'view' || !isProcessing) return;
+        setCountdown(8);
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    stopIncomingOrderAlertSound();
+                    if (onSkip) {
+                        onSkip(order);
+                    } else {
+                        handleDismissView();
+                    }
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [order?._id, order?.id, viewMode, isProcessing]);
+
+
     useEffect(() => {
         if (!order || !isProcessing) return;
 
-        if (!isMuted) {
+        // Sound effect ONLY in the view order card, NOT in the accept card
+        if (!isMuted && viewMode === 'view') {
             startIncomingOrderAlertSound();
         } else {
             stopIncomingOrderAlertSound();
@@ -66,7 +94,7 @@ const IncomingOrderModal = ({
         return () => {
             stopIncomingOrderAlertSound();
         };
-    }, [order, isMuted, isProcessing]);
+    }, [order, isMuted, isProcessing, viewMode]);
 
     if (!order) return null;
 
@@ -241,7 +269,14 @@ const IncomingOrderModal = ({
                         {/* Right: X Button */}
                         <button
                             type="button"
-                            onClick={handleDismissView}
+                            onClick={() => {
+                                stopIncomingOrderAlertSound();
+                                if (onSkip) {
+                                    onSkip(order);
+                                } else {
+                                    handleDismissView();
+                                }
+                            }}
                             title={t('Close')}
                             className="p-1 -mr-1 hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-90 rounded-full text-gray-900 dark:text-white transition-all flex items-center justify-center cursor-pointer shrink-0 ml-2"
                         >
@@ -331,18 +366,36 @@ const IncomingOrderModal = ({
                         </div>
                     </div>
 
-                    {/* Bottom: Swipe to VIEW ORDER (redirects into full accept details modal) */}
+                    {/* Bottom: Swipe to VIEW ORDER with 8s countdown and SKIP button below like Porter app */}
                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                         <SwipeActionButton
                             variant="yellow"
-                            label={t('VIEW ORDER')}
+                            label={`${t('VIEW ORDER')} (${countdown}s)`}
                             autoReset={true}
                             heightClass="h-[52px]"
                             knobSizeClass="w-[40px] h-[40px]"
                             onSuccess={() => {
+                                stopIncomingOrderAlertSound();
                                 setViewMode('accept');
+                                onAcceptViewOpened?.(order);
                             }}
                         />
+
+                        {/* Skip Button like Porter App */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                stopIncomingOrderAlertSound();
+                                if (onSkip) {
+                                    onSkip(order);
+                                } else {
+                                    handleDismissView();
+                                }
+                            }}
+                            className="w-full mt-2.5 py-1 text-center text-xs sm:text-[13px] font-bold text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 tracking-widest uppercase active:scale-95 transition-all cursor-pointer"
+                        >
+                            {t('SKIP')}
+                        </button>
                     </div>
                 </motion.div>
             </motion.div>

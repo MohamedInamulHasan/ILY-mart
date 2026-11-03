@@ -20,6 +20,9 @@ import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.CountDownTimer;
+import java.util.ArrayList;
+import java.util.List;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -74,6 +77,10 @@ public class FloatingLogoService extends Service {
     private ScheduledExecutorService pollingExecutor;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Set<String> alertedOrderIds = new HashSet<>();
+    private CountDownTimer orderCardTimer = null;
+    private final List<JSONObject> pendingOrdersQueue = new ArrayList<>();
+    private int currentPendingOrderIndex = 0;
+    private boolean isGapWaiting = false;
 
     private static final String ORDERS_API_URL = "https://homly-backend-aash.onrender.com/api/orders";
     private static final String NOTIFICATION_CHANNEL_ID = "ily_mart_delivery_partner_overlay";
@@ -561,14 +568,12 @@ public class FloatingLogoService extends Service {
             schedLabel.setLayoutParams(schedLabelParams);
             detailsCol.addView(schedLabel);
 
-            // 6. Time Slot (bold black matching name)
-            String scheduledTime = order.optString("scheduledDeliveryTime", order.optString("deliveryTime", ""));
-            if (shippingAddress != null && scheduledTime.isEmpty()) {
-                scheduledTime = shippingAddress.optString("deliveryTime", "");
+            // 6. Time Slot (bold black matching name - formatted range like '6 PM - 7 PM')
+            String rawScheduledTime = order.optString("scheduledDeliveryTime", order.optString("deliveryTime", ""));
+            if (shippingAddress != null && rawScheduledTime.isEmpty()) {
+                rawScheduledTime = shippingAddress.optString("deliveryTime", "");
             }
-            if (scheduledTime.isEmpty()) {
-                scheduledTime = "Standard Delivery";
-            }
+            String scheduledTime = formatDeliveryRange(rawScheduledTime);
             TextView schedTimeView = new TextView(this);
             schedTimeView.setText(scheduledTime);
             schedTimeView.setTextColor(Color.parseColor("#111827"));
@@ -579,9 +584,9 @@ public class FloatingLogoService extends Service {
             routeRow.addView(detailsCol);
             bodyLayout.addView(routeRow);
 
-            // VIEW ORDER Button: Amber / Yellow pill matching the app button
+            // VIEW ORDER Button with 8s countdown timer (like Porter app)
             Button acceptBtn = new Button(this);
-            acceptBtn.setText("VIEW ORDER  ➔");
+            acceptBtn.setText("VIEW ORDER  ➔  (8s)");
             acceptBtn.setTextColor(Color.WHITE);
             acceptBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             acceptBtn.setTypeface(Typeface.DEFAULT_BOLD);
@@ -591,13 +596,45 @@ public class FloatingLogoService extends Service {
             acceptBtn.setBackground(btnBg);
             acceptBtn.setPadding(dp(16), dp(12), dp(16), dp(12));
 
+            if (orderCardTimer != null) {
+                orderCardTimer.cancel();
+                orderCardTimer = null;
+            }
+            orderCardTimer = new CountDownTimer(8000, 1000) {
+                @Override
+                public void onTick(long millisUntilFinished) {
+                    int sec = (int) Math.ceil(millisUntilFinished / 1000.0);
+                    acceptBtn.setText("VIEW ORDER  ➔  (" + sec + "s)");
+                }
+
+                @Override
+                public void onFinish() {
+                    skipPorterOrderCard();
+                }
+            }.start();
+
             acceptBtn.setOnClickListener(v -> {
+                if (orderCardTimer != null) {
+                    orderCardTimer.cancel();
+                    orderCardTimer = null;
+                }
                 stopAlertEffects();
                 dismissPorterOrderCardInternal();
                 openApp(orderId);
             });
 
             bodyLayout.addView(acceptBtn);
+
+            // SKIP Button below VIEW ORDER (like Porter app)
+            TextView skipBtn = new TextView(this);
+            skipBtn.setText("SKIP");
+            skipBtn.setTextColor(Color.parseColor("#9CA3AF"));
+            skipBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            skipBtn.setTypeface(Typeface.DEFAULT_BOLD);
+            skipBtn.setGravity(Gravity.CENTER);
+            skipBtn.setPadding(dp(8), dp(10), dp(8), dp(4));
+            skipBtn.setOnClickListener(v -> skipPorterOrderCard());
+            bodyLayout.addView(skipBtn);
             cardLayout.addView(bodyLayout);
 
             orderCardView = cardLayout;
@@ -633,6 +670,65 @@ public class FloatingLogoService extends Service {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public synchronized void skipPorterOrderCard() {
+        if (orderCardTimer != null) {
+            orderCardTimer.cancel();
+            orderCardTimer = null;
+        }
+        stopAlertEffects();
+        dismissPorterOrderCardInternal();
+        if (!isAppInForeground) {
+            showCircleBubble();
+        }
+        // 5s gap before showing the next pending processing order
+        isGapWaiting = true;
+        mainHandler.postDelayed(() -> {
+            isGapWaiting = false;
+            currentPendingOrderIndex++;
+            showNextPendingOrderIfAny();
+        }, 5000);
+    }
+
+    public synchronized void showNextPendingOrderIfAny() {
+        if (isAppInForeground || orderCardView != null || isGapWaiting) return;
+        synchronized (pendingOrdersQueue) {
+            if (pendingOrdersQueue.isEmpty()) return;
+            int idx = currentPendingOrderIndex % pendingOrdersQueue.size();
+            JSONObject nextOrder = pendingOrdersQueue.get(idx);
+            if (nextOrder != null) {
+                showPorterOrderCard(nextOrder);
+            }
+        }
+    }
+
+    private String formatDeliveryRange(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return "Standard Delivery";
+        String trimmed = raw.trim();
+        if (trimmed.toLowerCase().contains("instant") || trimmed.toLowerCase().contains("standard")) {
+            return "Standard Delivery";
+        }
+        if (trimmed.contains("-") && (trimmed.contains("AM") || trimmed.contains("PM") || trimmed.contains("am") || trimmed.contains("pm"))) {
+            return trimmed;
+        }
+        try {
+            java.text.SimpleDateFormat isoFormat = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
+            isoFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            String cleaned = trimmed.replace(".000Z", "").replace("Z", "");
+            java.util.Date date = isoFormat.parse(cleaned);
+            if (date != null) {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(date);
+                java.text.SimpleDateFormat hrFormat = new java.text.SimpleDateFormat("h a", java.util.Locale.US);
+                hrFormat.setTimeZone(java.util.TimeZone.getDefault());
+                String start = hrFormat.format(cal.getTime());
+                cal.add(java.util.Calendar.HOUR_OF_DAY, 1);
+                String end = hrFormat.format(cal.getTime());
+                return start + " - " + end;
+            }
+        } catch (Exception ignored) {}
+        return trimmed;
     }
 
     public synchronized void dismissPorterOrderCard() {
@@ -792,24 +888,23 @@ public class FloatingLogoService extends Service {
                 }
 
                 if (ordersArray != null && ordersArray.length() > 0) {
-                    for (int i = 0; i < ordersArray.length(); i++) {
-                        JSONObject order = ordersArray.optJSONObject(i);
-                        if (order == null) continue;
+                    synchronized (pendingOrdersQueue) {
+                        pendingOrdersQueue.clear();
+                        for (int i = 0; i < ordersArray.length(); i++) {
+                            JSONObject order = ordersArray.optJSONObject(i);
+                            if (order == null) continue;
 
-                        String status = order.optString("status", "");
-                        if ("Pending".equalsIgnoreCase(status)
-                                || "Processing".equalsIgnoreCase(status)
-                                || "Order Placed".equalsIgnoreCase(status)) {
-
-                            String orderId = order.optString("_id", order.optString("id", ""));
-                            if (!orderId.isEmpty() && !alertedOrderIds.contains(orderId)) {
-                                alertedOrderIds.add(orderId);
-                                if (!isAppInForeground) {
-                                    mainHandler.post(() -> showPorterOrderCard(order));
-                                }
-                                break; // Alert latest first
+                            String status = order.optString("status", "");
+                            if ("Pending".equalsIgnoreCase(status)
+                                    || "Processing".equalsIgnoreCase(status)
+                                    || "Order Placed".equalsIgnoreCase(status)
+                                    || "Confirmed".equalsIgnoreCase(status)) {
+                                pendingOrdersQueue.add(order);
                             }
                         }
+                    }
+                    if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
+                        mainHandler.post(() -> showNextPendingOrderIfAny());
                     }
                 }
             }

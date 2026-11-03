@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSocket } from '../context/SocketContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Bell, CheckCircle, Truck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useOrders } from '../hooks/queries/useOrders';
 import IncomingOrderModal from './IncomingOrderModal';
 import { playSuccessSound } from '../utils/soundHelper';
 import { triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
@@ -27,6 +28,71 @@ const NotificationOverlay = () => {
         return normalized === 'delivery_boy' || normalized === 'deliveryboy';
     });
     const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
+
+    const { data: rawOrders = [] } = useOrders();
+    const allOrders = useMemo(() => {
+        return Array.isArray(rawOrders) ? rawOrders : (rawOrders?.data || []);
+    }, [rawOrders]);
+
+    // Active pending/processing orders for delivery boys
+    const pendingOrders = useMemo(() => {
+        if (!isDeliveryBoy) return [];
+        return allOrders.filter(o => {
+            const s = String(o?.status || '').toLowerCase().trim();
+            return s === 'pending' || s === 'processing' || s === 'order placed' || s === 'confirmed';
+        });
+    }, [allOrders, isDeliveryBoy]);
+
+    const [currentPendingIndex, setCurrentPendingIndex] = useState(0);
+    const [isGapWaiting, setIsGapWaiting] = useState(false);
+    const [isAcceptSheetOpen, setIsAcceptSheetOpen] = useState(false);
+    const gapTimeoutRef = useRef(null);
+
+    // Repeatedly cycle through pending orders: 8s alert card -> 5s gap -> next pending order
+    useEffect(() => {
+        if (!isDeliveryBoy || pendingOrders.length === 0) {
+            if (incomingOrder && !pendingOrders.some(p => (p._id || p.id) === (incomingOrder._id || incomingOrder.id))) {
+                setIncomingOrder(null);
+            }
+            return;
+        }
+
+        // Only show next pending order if no card is currently showing, not in 5s gap, and not inspecting full accept sheet
+        if (!incomingOrder && !isGapWaiting && !isAcceptSheetOpen) {
+            const idx = currentPendingIndex % pendingOrders.length;
+            const target = pendingOrders[idx];
+            if (target) {
+                setIncomingOrder(target);
+                triggerIncomingOrderAlert();
+            }
+        }
+    }, [isDeliveryBoy, pendingOrders, incomingOrder, isGapWaiting, isAcceptSheetOpen, currentPendingIndex]);
+
+    const handleOrderSkip = () => {
+        setIncomingOrder(null);
+        setIsGapWaiting(true);
+        if (gapTimeoutRef.current) clearTimeout(gapTimeoutRef.current);
+        gapTimeoutRef.current = setTimeout(() => {
+            setCurrentPendingIndex(prev => prev + 1);
+            setIsGapWaiting(false);
+        }, 5000);
+    };
+
+    const handleModalClose = () => {
+        setIncomingOrder(null);
+        setIsAcceptSheetOpen(false);
+        setIsGapWaiting(true);
+        if (gapTimeoutRef.current) clearTimeout(gapTimeoutRef.current);
+        gapTimeoutRef.current = setTimeout(() => {
+            setCurrentPendingIndex(prev => prev + 1);
+            setIsGapWaiting(false);
+        }, 5000);
+    };
+
+    const handleAcceptViewOpened = () => {
+        setIsAcceptSheetOpen(true);
+    };
+
 
     useEffect(() => {
         if (!incomingOrder) return;
@@ -162,6 +228,8 @@ const NotificationOverlay = () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
 
             // Pop up the new incoming order card modal for the delivery boy and trigger alert
+            setIsGapWaiting(false);
+            setIsAcceptSheetOpen(false);
             setIncomingOrder(order);
             triggerIncomingOrderAlert();
 
@@ -214,9 +282,12 @@ const NotificationOverlay = () => {
         <>
             {isDeliveryBoy && incomingOrder && (
                 <IncomingOrderModal
+                    key={incomingOrder._id || incomingOrder.id}
                     order={incomingOrder}
                     startWithViewCard={true}
-                    onClose={() => setIncomingOrder(null)}
+                    onClose={handleModalClose}
+                    onSkip={handleOrderSkip}
+                    onAcceptViewOpened={handleAcceptViewOpened}
                 />
             )}
 
