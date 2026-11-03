@@ -5,7 +5,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
-import { Plus, ArrowLeft, Minus, ShoppingBag, ShoppingCart, ChevronLeft, ChevronRight, Star, Share2, Bookmark, Store as StoreIcon } from 'lucide-react';
+import { Plus, ArrowLeft, Minus, ShoppingCart, ChevronLeft, ChevronRight, Star, Share2, Bookmark, Store as StoreIcon } from 'lucide-react';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 
 const ProductDetails = () => {
@@ -368,10 +368,9 @@ const ProductDetails = () => {
                         ) : (
                             <button
                                 onClick={handleCheckout}
-                                className="w-full bg-black text-white py-4 rounded-full font-normal text-[15px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                                className="w-full bg-black text-white py-4 rounded-full font-normal text-[15px] active:scale-[0.98] transition-transform flex items-center justify-center"
                             >
                                 <span>{t('Add product')}</span>
-                                <ShoppingBag size={18} />
                             </button>
                         )}
                     </div>

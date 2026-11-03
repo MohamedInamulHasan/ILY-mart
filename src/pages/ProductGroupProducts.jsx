@@ -112,7 +112,7 @@ const ProductGroupProducts = () => {
             <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 pb-20 transition-colors duration-200">
 
                 {/* Premium Header — matches home/store page style */}
-                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-6">
+                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-3 sm:mb-3.5">
                     {/* Decorative blur blob */}
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 rounded-full blur-3xl pointer-events-none" />
 
@@ -129,11 +129,11 @@ const ProductGroupProducts = () => {
 
                             {/* Centered title */}
                             <div className="flex flex-col items-center text-center px-14 pt-1 min-w-0">
-                                <h1 className="text-gray-900 text-[18px] font-bold tracking-tight truncate w-full leading-tight">
+                                <h1 className="text-gray-900 text-[14.5px] sm:text-[16px] font-bold tracking-tight truncate w-full leading-tight">
                                     {pageTitle}
                                 </h1>
                                 {groupProducts.length > 0 && (
-                                    <p className="text-[#2E5A2E] text-[12px] font-semibold mt-0.5">
+                                    <p className="text-[#2E5A2E] text-[11px] font-semibold mt-0.5">
                                         {groupProducts.length} {t('options')}
                                     </p>
                                 )}
@@ -156,9 +156,9 @@ const ProductGroupProducts = () => {
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 py-2">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 py-0">
                     {isLoading ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4">
                             {[...Array(10)].map((_, i) => (
                                 <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse flex flex-col h-full">
                                     <div className="w-full aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl mb-3"></div>
@@ -174,7 +174,7 @@ const ProductGroupProducts = () => {
                             ))}
                         </div>
                     ) : groupProducts.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4">
                             {groupProducts.map(product => (
                                 <ProductCard
                                     key={product._id || product.id}

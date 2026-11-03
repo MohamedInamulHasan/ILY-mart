@@ -189,9 +189,8 @@ const Cart = () => {
                           </div>
                      </div>
     
-                     <Link to="/checkout" className="w-full bg-black text-white rounded-full py-2.5 sm:py-3 flex items-center justify-center font-normal text-sm active:scale-[0.98] transition-transform gap-2">
+                     <Link to="/checkout" className="w-full bg-black text-white rounded-full py-2.5 sm:py-3 flex items-center justify-center font-normal text-sm active:scale-[0.98] transition-transform">
                            <span>{t('Proceed to Checkout')}</span>
-                           <ShoppingBag size={18} />
                      </Link>
                 </div>
                 

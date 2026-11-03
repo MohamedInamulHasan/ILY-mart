@@ -150,7 +150,7 @@ const Services = () => {
         <PullToRefreshLayout>
             <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200">
                 {/* Premium Light Green Header Card / Dark Mode Adjusted */}
-                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-8">
+                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-3.5 sm:mb-4">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                     
                     <div className="relative z-10">
@@ -176,23 +176,23 @@ const Services = () => {
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+                <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pb-20">
 
                     {viewMode === 'list' && (
-                        <div className="mb-8 flex justify-center md:justify-start sticky top-4 z-30">
+                        <div className="mb-3.5 sm:mb-4 flex justify-center md:justify-start sticky top-2 z-30">
                             <div className="relative w-full max-w-lg group">
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder={t('Search services...')}
-                                    className="w-full pl-12 pr-6 py-4 rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition-all duration-300 shadow-sm"
+                                    className="w-full pl-10 pr-9 py-2.5 sm:py-3 text-xs sm:text-sm rounded-2xl border border-gray-200/80 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition-all duration-300 shadow-sm"
                                 />
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] transition-colors" size={20} />
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] transition-colors" size={18} />
                                 {searchQuery && (
                                     <button
                                         onClick={() => setSearchQuery('')}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                                     >
                                         <X size={18} /> 
                                     </button>
@@ -279,12 +279,12 @@ const Services = () => {
 
                     {viewMode === 'list' ? (
                         /* MAIN SERVICES LIST - Premium Horizontal Banners */
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
                             {servicesLoading ? (
                                 [...Array(6)].map((_, i) => (
                                     <div
                                         key={i}
-                                        className="bg-white dark:bg-gray-800 rounded-[2rem] overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100 dark:border-gray-700/50 relative flex flex-col justify-between"
+                                        className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100 dark:border-gray-700/50 relative flex flex-col justify-between"
                                     >
                                         {/* Top Tag Placeholder */}
                                         <div className="p-4 z-10">
@@ -329,7 +329,7 @@ const Services = () => {
                                         <div 
                                             key={service._id || index} 
                                             onClick={() => handleViewServices(service)}
-                                            className={`group relative bg-white dark:bg-gray-800 rounded-[2rem] overflow-hidden transition-all duration-300 aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full cursor-pointer shadow-sm hover:shadow-md ${!isOpen ? 'cursor-not-allowed' : ''}`}
+                                            className={`group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden transition-all duration-300 aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full cursor-pointer shadow-sm hover:shadow-md ${!isOpen ? 'cursor-not-allowed' : ''}`}
                                         >
                                             {/* Full Background Image */}
                                             <div className={`absolute inset-0 z-0 ${!isOpen ? 'opacity-60' : ''}`}>
@@ -350,7 +350,7 @@ const Services = () => {
                                             </div>
 
                                             {/* Content Section - White Banner at Bottom */}
-                                            <div className="absolute bottom-0 left-0 right-0 py-2.5 px-4 z-20 overflow-hidden">
+                                            <div className="absolute bottom-0 left-0 right-0 py-2 px-3.5 z-20 overflow-hidden">
                                                 {/* Solid White Banner Strip */}
                                                 <div className="absolute inset-0 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700" />
                                                 
@@ -368,15 +368,15 @@ const Services = () => {
                                             </div>
 
                                             {/* Right Action Arrow - Hide or dim if closed */}
-                                            <div className={`absolute bottom-4 right-4 z-30 transition-all duration-300 ${!isOpen ? 'opacity-0 scale-50' : ''}`}>
-                                                <div className="w-8 h-8 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 flex items-center justify-center scale-90 group-hover:scale-105 active:scale-90 transition-all shadow-sm">
+                                            <div className={`absolute bottom-2.5 right-3 z-30 transition-all duration-300 ${!isOpen ? 'opacity-0 scale-50' : ''}`}>
+                                                <div className="w-7 h-7 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 flex items-center justify-center scale-90 group-hover:scale-105 active:scale-90 transition-all shadow-sm">
                                                     <ArrowLeft size={16} className="rotate-180" />
                                                 </div>
                                             </div>
 
                                             {/* Category Tag Overlay (Top Left) */}
-                                            <div className="absolute top-4 left-4 z-20">
-                                                <span className="px-3 py-1.5 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[10px] font-bold rounded-full uppercase tracking-[0.15em] shadow-lg">
+                                            <div className="absolute top-3 left-3 z-20">
+                                                <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[9.5px] font-bold rounded-full uppercase tracking-[0.15em] shadow-lg">
                                                     {service.category || t('Service')}
                                                 </span>
                                             </div>
@@ -395,7 +395,7 @@ const Services = () => {
                         </div>
                     ) : (
                         /* DETAIL VIEW: SUB-SERVICES */
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
                             {itemsLoading ? (
                                 // Blinkit-style Sub-services Skeleton
                                 [...Array(8)].map((_, i) => (
