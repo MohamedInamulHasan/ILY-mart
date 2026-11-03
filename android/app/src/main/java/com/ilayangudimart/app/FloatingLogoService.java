@@ -410,15 +410,14 @@ public class FloatingLogoService extends Service {
 
             cardLayout.addView(headerLayout);
 
-            // 2px horizontal light grey divider line matching green dot line
+            // Thin horizontal light grey divider line below order ID and time
             View headDivider = new View(this);
             GradientDrawable lineBg = new GradientDrawable();
-            lineBg.setColor(Color.parseColor("#D1D5DB"));
-            lineBg.setCornerRadius(dp(2));
+            lineBg.setColor(Color.parseColor("#E5E7EB"));
             headDivider.setBackground(lineBg);
             LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    dp(2)
+                    dp(1)
             );
             divParams.setMargins(dp(18), 0, dp(18), 0);
             cardLayout.addView(headDivider, divParams);
@@ -584,7 +583,7 @@ public class FloatingLogoService extends Service {
 
             // VIEW ORDER Button with 8s countdown timer (like Porter app)
             Button acceptBtn = new Button(this);
-            acceptBtn.setText("VIEW ORDER  ➔  (8s)");
+            acceptBtn.setText("VIEW ORDER  ➔  8s");
             acceptBtn.setTextColor(Color.WHITE);
             acceptBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             acceptBtn.setTypeface(Typeface.DEFAULT_BOLD);
@@ -602,7 +601,7 @@ public class FloatingLogoService extends Service {
                 @Override
                 public void onTick(long millisUntilFinished) {
                     int sec = (int) Math.ceil(millisUntilFinished / 1000.0);
-                    acceptBtn.setText("VIEW ORDER  ➔  (" + sec + "s)");
+                    acceptBtn.setText("VIEW ORDER  ➔  " + sec + "s");
                 }
 
                 @Override

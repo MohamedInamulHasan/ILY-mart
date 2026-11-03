@@ -555,7 +555,7 @@ const DeliveryDashboard = () => {
                                                 </span>
                                             </div>
                                             {/* Light grey line matching green dot line */}
-                                            <div className="mx-4 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
+                                            <div className="mx-4 h-px bg-gray-200 dark:bg-gray-700 shrink-0" />
 
                                             {/* Card Content: Delivery Charge in center thick, Customer & address on left */}
                                             <div className="pt-2.5 pb-2.5 px-3.5 sm:px-4">

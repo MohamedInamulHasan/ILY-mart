@@ -31,7 +31,6 @@ const IncomingOrderModal = ({
 
     const [isMuted, setIsMuted] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
-    const [countdown, setCountdown] = useState(8);
     const [showCancelPopup, setShowCancelPopup] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
 
@@ -57,28 +56,7 @@ const IncomingOrderModal = ({
         return registerModalBackHandler(onClose);
     }, [order, onClose]);
 
-    // 8-second auto-skip timer in View Order card (like Porter app)
-    useEffect(() => {
-        if (viewMode !== 'view' || !isProcessing) return;
-        setCountdown(8);
-        const timer = setInterval(() => {
-            setCountdown((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    stopIncomingOrderAlertSound();
-                    if (onSkip) {
-                        onSkip(order);
-                    } else {
-                        handleDismissView();
-                    }
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [order?._id, order?.id, viewMode, isProcessing]);
+// In-app alert shows until skipped or viewed (no 8s auto-countdown)
 
 
     useEffect(() => {
@@ -270,7 +248,7 @@ const IncomingOrderModal = ({
                     </div>
 
                     {/* Light grey line matching green dot line */}
-                    <div className="mx-5 h-[2px] bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
+                    <div className="mx-5 h-px bg-gray-200 dark:bg-gray-700 shrink-0" />
 
                     {/* Card Content: EXACT Orders List Card Structure */}
                     <div className="pt-2.5 pb-2.5 px-3.5 sm:px-4">
@@ -355,7 +333,7 @@ const IncomingOrderModal = ({
                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                         <SwipeActionButton
                             variant="yellow"
-                            label={`${t('VIEW ORDER')} (${countdown}s)`}
+                            label={t('VIEW ORDER')}
                             autoReset={true}
                             heightClass="h-[52px]"
                             knobSizeClass="w-[40px] h-[40px]"
