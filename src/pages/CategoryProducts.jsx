@@ -108,7 +108,7 @@ const CategoryProducts = () => {
 
     return (
         <PullToRefreshLayout>
-            <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 pb-20 transition-colors duration-200">
+            <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
                 {/* Premium Header Card */}
                 <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-3.5 sm:mb-4">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#2E5A2E]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -124,7 +124,7 @@ const CategoryProducts = () => {
                                 </button>
                             </div>
                             <div className="flex flex-col items-center text-center px-14 min-w-0">
-                                <h1 className="text-gray-900 dark:text-gray-900 text-[18px] font-bold tracking-tight truncate w-full leading-tight">
+                                <h1 className="text-gray-900 dark:text-gray-900 text-[16px] font-bold tracking-tight truncate w-full leading-tight">
                                     {(() => {
                                         const fullName = t(categoryName);
                                         const bracketIndex = fullName.indexOf('(');

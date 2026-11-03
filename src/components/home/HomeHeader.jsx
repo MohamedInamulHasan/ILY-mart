@@ -45,9 +45,9 @@ const HomeHeader = () => {
                     <MapPin className="text-red-500 dark:text-red-500" size={22} />
                 </div>
                 <div className="flex flex-col min-w-0">
-                    <span className="text-[11px] text-gray-700 dark:text-gray-700 font-semibold uppercase tracking-wider leading-tight">{t('Delivery to')}</span>
+                    <span className="text-[10px] text-gray-700 dark:text-gray-700 font-semibold uppercase tracking-wider leading-tight">{t('Delivery to')}</span>
                     <Link to="/edit-address" className="flex items-center gap-1 group cursor-pointer border-b border-dashed border-gray-400 dark:border-gray-600 max-w-[190px] sm:max-w-[260px] mt-0.5">
-                        <span className="text-[16px] sm:text-[17px] font-bold text-gray-900 dark:text-gray-900 truncate leading-tight">{displayAddress}</span>
+                        <span className="text-[14px] sm:text-[15px] font-bold text-gray-900 dark:text-gray-900 truncate leading-tight">{displayAddress}</span>
                         <ChevronDown size={15} className="text-gray-600 dark:text-gray-700 flex-shrink-0" />
                     </Link>
                 </div>

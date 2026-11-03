@@ -1,4 +1,6 @@
 import { X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import deliveryCharacterImg from '../assets/delivery-character.png';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { apiService } from '../utils/api';
 import { useData } from './DataContext';
@@ -345,7 +347,12 @@ export const CartProvider = ({ children }) => {
                         onClick={(e) => { if (e.target === e.currentTarget) cancelAddToCart(); }}
                     >
                         {/* Speech Bubble Above Character - wider length and clean styling */}
-                        <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 p-4 sm:p-5 max-w-[340px] sm:max-w-[380px] w-full animate-cloud-pop mb-3 z-10">
+                        <motion.div 
+                            initial={{ scale: 0, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            transition={{ delay: 0.32, type: 'spring', damping: 20, stiffness: 280 }}
+                            className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 p-4 sm:p-5 max-w-[340px] sm:max-w-[380px] w-full mb-3 z-10"
+                        >
                             {/* Speech Bubble Arrow Tail pointing down towards character's head */}
                             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[9px] border-t-white dark:border-t-gray-900 filter drop-shadow-[0_2px_1px_rgba(0,0,0,0.08)]"></div>
 
@@ -413,16 +420,21 @@ export const CartProvider = ({ children }) => {
                                     {language === 'ta' ? 'ஆமாம்' : 'Yes'}
                                 </button>
                             </div>
-                        </div>
+                        </motion.div>
 
-                        {/* Delivery Character — Half Screen Swipe-Up from Bottom */}
-                        <div className="h-[46vh] sm:h-[50vh] flex justify-center items-end select-none pointer-events-none animate-character-swipe z-0 -mt-2">
+                        {/* Delivery Character — Swipes up first from bottom */}
+                        <motion.div 
+                            initial={{ y: '100%', opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ type: 'spring', damping: 24, stiffness: 240 }}
+                            className="h-[46vh] sm:h-[50vh] flex justify-center items-end select-none pointer-events-none z-0 -mt-2"
+                        >
                             <img 
-                                src="/delivery-character.png" 
+                                src={deliveryCharacterImg} 
                                 alt="Delivery Character" 
                                 className="h-full w-auto max-w-full object-contain object-bottom drop-shadow-2xl"
                             />
-                        </div>
+                        </motion.div>
                     </div>
                 );
             })()}

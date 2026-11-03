@@ -119,7 +119,7 @@ const Orders = () => {
     // We handle 'loadingOrders' state inside the return block by showing a beautiful skeleton loader.
 
     return (
-        <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative">
+        <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -132,7 +132,7 @@ const Orders = () => {
                             </button>
                         </div>
                         <div className="flex flex-col text-center">
-                            <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight">{t('My Orders')}</h1>
+                            <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight">{t('My Orders')}</h1>
                             <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{t('Track packages')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">

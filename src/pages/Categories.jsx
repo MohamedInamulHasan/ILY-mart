@@ -47,7 +47,7 @@ const Categories = () => {
                                 <ArrowLeft size={20} />
                             </button>
                             <div className="flex flex-col items-center text-center px-12 min-w-0">
-                                <h1 className="text-gray-900 dark:text-gray-900 text-[18px] font-bold tracking-tight truncate w-full">{t('All Categories')}</h1>
+                                <h1 className="text-gray-900 dark:text-gray-900 text-[16px] font-bold tracking-tight truncate w-full">{t('All Categories')}</h1>
                                 <p className="text-[10px] text-gray-500 dark:text-gray-600 font-medium truncate w-full uppercase tracking-wider">{featuredCategories.length} {t('Categories Available')}</p>
                             </div>
                             <Link 
@@ -101,7 +101,7 @@ const Categories = () => {
                                     to={`/category/${category.name}`}
                                     className="flex flex-col items-center gap-2 group"
                                 >
-                                    <div className="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-2 bg-[#CBF9B2] dark:bg-[#CBF9B2] border-transparent">
+                                    <div className="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-2 bg-[#E8EAEF] dark:bg-gray-800 border-transparent">
                                         <img
                                             src={category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}
                                             alt={category.name}

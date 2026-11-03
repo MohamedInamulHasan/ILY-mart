@@ -254,7 +254,7 @@ const EditAddress = () => {
                             </button>
                         </div>
                         <div className="flex flex-col items-center text-center pt-1">
-                            <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight truncate">{t('My Address')}</h1>
+                            <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight truncate">{t('My Address')}</h1>
                             <p className="text-[10px] sm:text-[11px] font-semibold text-gray-700 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{t('Manage delivery locations & ensures reachability')}</p>
                         </div>
                     </div>

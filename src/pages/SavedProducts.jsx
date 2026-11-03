@@ -41,7 +41,7 @@ const SavedProducts = () => {
                             </button>
                         </div>
                         <div className="flex flex-col items-center text-center pt-1">
-                            <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight">{t('Saved Products')}</h1>
+                            <h1 className="text-[16px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight">{t('Saved Products')}</h1>
                             <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600 mt-0.5">{t('Your favorite items')}</p>
                         </div>
                     </div>
@@ -55,7 +55,7 @@ const SavedProducts = () => {
                         <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/90 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 shadow-sm">
                             <Bookmark className="text-gray-400 dark:text-gray-500" size={32} strokeWidth={1.5} />
                         </div>
-                        <h2 className="text-[18px] sm:text-[20px] font-bold text-gray-900 dark:text-white mb-1.5 text-center">
+                        <h2 className="text-[16px] sm:text-[20px] font-bold text-gray-900 dark:text-white mb-1.5 text-center">
                             {t('No saved products')}
                         </h2>
                         <p className="text-[13px] sm:text-[14px] text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-center font-normal">

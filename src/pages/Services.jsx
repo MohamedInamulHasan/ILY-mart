@@ -167,7 +167,7 @@ const Services = () => {
                             </div>
                             
                             <div className="flex flex-col items-center text-center px-12 min-w-0">
-                                <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight truncate">
+                                <h1 className="text-[16px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight truncate">
                                     {viewMode === 'details' && activeService ? activeService.name : t('Premium Services')}
                                 </h1>
                                 <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5 truncate">

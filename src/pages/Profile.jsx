@@ -142,7 +142,7 @@ const Profile = () => {
                             </button>
                         </div>
                         <div className="flex flex-col text-center">
-                            <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight">{t('Profile')}</h1>
+                            <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight">{t('Profile')}</h1>
                             <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{t('Manage account')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -354,7 +354,7 @@ const Profile = () => {
             {/* Floating WhatsApp Button */}
             <button 
                 onClick={() => window.open('https://wa.me/919500171980', '_blank')}
-                className="fixed bottom-20 right-5 sm:bottom-24 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-[60] animate-in fade-in zoom-in duration-500"
+                className="fixed bottom-[84px] right-5 sm:bottom-[92px] sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-[60]"
                 aria-label="Contact on WhatsApp"
             >
                 <svg 

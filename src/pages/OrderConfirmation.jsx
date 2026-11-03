@@ -244,8 +244,9 @@ const OrderConfirmation = () => {
 
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-40 relative">
-            {/* White Header matching Orders List Header */}
-            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-800 rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden border-b border-gray-100 dark:border-gray-700/60">
+            {/* Premium Green Header matching other pages */}
+            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none" />
                 <div className="relative z-10">
                     <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
@@ -258,28 +259,17 @@ const OrderConfirmation = () => {
                                         navigate(-1);
                                     }
                                 }} 
-                                className="w-[42px] h-[42px] flex items-center justify-center bg-gray-50 dark:bg-gray-700 rounded-full text-gray-900 dark:text-white transition-transform active:scale-95 shadow-sm border border-gray-200/60 dark:border-gray-600"
+                                className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
                             >
                                 <ArrowLeft size={22} />
                             </button>
                         </div>
                         <div className="flex flex-col text-center">
-                            <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight">{t('Confirmation')}</h1>
-                            <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">{t('Order Summary')}</p>
+                            <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight">{t('Confirmation')}</h1>
+                            <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{t('Order Summary')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <button 
-                                type="button"
-                                onClick={() => navigate('/cart')}
-                                className="w-[42px] h-[42px] flex items-center justify-center bg-gray-50 dark:bg-gray-700 rounded-full text-gray-900 dark:text-white transition-transform active:scale-95 shadow-sm border border-gray-200/60 dark:border-gray-600 relative"
-                            >
-                                <ShoppingCart size={22} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </button>
+                            <div className="w-[42px] h-[42px]" />
                         </div>
                     </div>
                 </div>

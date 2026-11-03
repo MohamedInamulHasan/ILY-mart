@@ -41,7 +41,7 @@ const DeleteAccount = () => {
                             </button>
                         </div>
                         <div className="flex flex-col items-center text-center pt-1">
-                            <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight">Delete Account</h1>
+                            <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight">Delete Account</h1>
                             <p className="text-[11px] font-medium text-gray-500 mt-0.5">ILY mart — Data Deletion Request</p>
                         </div>
                     </div>

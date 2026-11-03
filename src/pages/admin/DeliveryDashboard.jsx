@@ -46,6 +46,7 @@ import { playSuccessSound } from '../../utils/soundHelper';
 import { motion, AnimatePresence } from 'framer-motion';
 import PullToRefreshLayout from '../../components/PullToRefreshLayout';
 import DeliveryOrdersFeedModal from '../../components/DeliveryOrdersFeedModal';
+import DeliveryOrdersListFeed from '../../components/DeliveryOrdersListFeed';
 import IncomingOrderModal from '../../components/IncomingOrderModal';
 import { 
     isNativeAndroid, 
@@ -292,6 +293,7 @@ const DeliveryDashboard = () => {
         });
 
     const displayData = displayOrders;
+    const hasActiveCards = displayOrders.length > 0;
     const isLoading = loadingOrders;
 
 
@@ -415,24 +417,28 @@ const DeliveryDashboard = () => {
             {/* Header: Clean White Header */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-800 border-b border-gray-200/80 dark:border-gray-700 px-4 py-3.5 shadow-xs shrink-0">
                 <div className="w-full flex items-center justify-between min-h-[40px]">
-                    {/* Left: Bell button (opens Orders List feed) */}
-                    <button
-                        type="button"
-                        onClick={() => setShowOrdersFeed(true)}
-                        title={t('Orders List')}
-                        className="relative p-1.5 text-gray-900 dark:text-white hover:opacity-70 transition-opacity active:scale-95"
-                    >
-                        <Bell size={22} className="stroke-[2.5]" />
-                        {pendingOrdersCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 min-w-[20px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-xs">
-                                {pendingOrdersCount}
-                            </span>
-                        )}
-                    </button>
+                    {/* Left: Bell button if active delivery cards exist, else spacer */}
+                    {hasActiveCards ? (
+                        <button
+                            type="button"
+                            onClick={() => setShowOrdersFeed(true)}
+                            title={t('Orders List')}
+                            className="relative p-1.5 text-gray-900 dark:text-white hover:opacity-70 transition-opacity active:scale-95"
+                        >
+                            <Bell size={22} className="stroke-[2.5]" />
+                            {pendingOrdersCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 min-w-[20px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-xs">
+                                    {pendingOrdersCount}
+                                </span>
+                            )}
+                        </button>
+                    ) : (
+                        <div className="w-[34px] shrink-0" />
+                    )}
 
-                    {/* Center: Title */}
-                    <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center">
-                        {t('Delivery Panel')}
+                    {/* Center: Title (Delivery Panel when cards exist, Orders List when no cards) */}
+                    <h1 className="text-[16px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center">
+                        {hasActiveCards ? t('Delivery Panel') : t('Orders List')}
                     </h1>
 
                     {/* Right: Logout button */}
@@ -742,17 +748,18 @@ const DeliveryDashboard = () => {
                                     })}
                                 </div>
                             ) : (
-                                <div className="text-center py-12">
-                                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                                        <ShoppingBag size={24} className="text-gray-300" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                                        {t("No orders found")}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {t('No tasks in this category.')}
-                                    </p>
-                                </div>
+                                /* When there is no card in the delivery panel, only show the orders list page */
+                                <DeliveryOrdersListFeed
+                                    orders={orders}
+                                    searchQuery={searchQuery}
+                                    paddingBottomClass="pb-12"
+                                    onSelectOrder={(order) => {
+                                        const oId = order._id || order.id;
+                                        localStorage.setItem('active_delivery_order_id', oId);
+                                        localStorage.setItem('active_delivery_stay', 'true');
+                                        navigate(`/admin/delivery-order/${oId}`);
+                                    }}
+                                />
                             )}
                         </div>
                     </div>

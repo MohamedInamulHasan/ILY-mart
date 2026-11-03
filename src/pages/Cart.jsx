@@ -50,13 +50,11 @@ const Cart = () => {
                                 </button>
                             </div>
                             <div className="flex flex-col text-center">
-                                <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight">{t('Cart')}</h1>
+                                <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight">{t('Cart')}</h1>
                                 <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{t('Your selected items')}</p>
                             </div>
                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                                <div className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full shadow-sm border border-gray-100/50">
-                                    <ShoppingCart size={22} className="text-[#2E5A2E]" />
-                                </div>
+                                <div className="w-[42px] h-[42px]" />
                             </div>
                         </div>
                     </div>
@@ -67,7 +65,7 @@ const Cart = () => {
                     <div className="w-24 h-24 sm:w-28 sm:h-28 bg-white/90 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 shadow-sm">
                         <ShoppingBag className="text-gray-400 dark:text-gray-500" size={38} strokeWidth={1.5} />
                     </div>
-                    <h2 className="text-[18px] sm:text-[20px] font-bold text-gray-900 dark:text-white mb-1.5 text-center">
+                    <h2 className="text-[16px] sm:text-[20px] font-bold text-gray-900 dark:text-white mb-1.5 text-center">
                         {t('Your cart is empty')}
                     </h2>
                     <p className="text-[13px] sm:text-[14px] text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-center font-normal">
@@ -92,13 +90,11 @@ const Cart = () => {
                             </button>
                         </div>
                         <div className="flex flex-col text-center">
-                            <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight">{t('Cart')}</h1>
+                            <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight">{t('Cart')}</h1>
                             <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{cartItems.length} {t('items')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <div className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full shadow-sm border border-gray-100/50">
-                                <ShoppingCart size={22} className="text-[#2E5A2E]" />
-                            </div>
+                            <div className="w-[42px] h-[42px]" />
                         </div>
                     </div>
                 </div>

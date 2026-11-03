@@ -109,7 +109,7 @@ const ProductGroupProducts = () => {
 
     return (
         <PullToRefreshLayout>
-            <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 pb-20 transition-colors duration-200">
+            <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
 
                 {/* Premium Header — matches home/store page style */}
                 <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-3 sm:mb-3.5">
@@ -131,7 +131,7 @@ const ProductGroupProducts = () => {
 
                             {/* Centered title */}
                             <div className="flex flex-col items-center text-center px-14 min-w-0">
-                                <h1 className="text-gray-900 text-[18px] font-bold tracking-tight truncate w-full leading-tight">
+                                <h1 className="text-gray-900 text-[16px] font-bold tracking-tight truncate w-full leading-tight">
                                     {pageTitle}
                                 </h1>
                                 {groupProducts.length > 0 && (
@@ -164,15 +164,15 @@ const ProductGroupProducts = () => {
                     {isLoading ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4">
                             {[...Array(10)].map((_, i) => (
-                                <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse flex flex-col h-full">
-                                    <div className="w-full aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl mb-3"></div>
-                                    <div className="space-y-2 flex-grow">
-                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mt-2"></div>
+                                <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700/60 flex flex-col justify-between space-y-2.5 h-full">
+                                    <div className="aspect-square w-full rounded-xl blinkit-shimmer"></div>
+                                    <div className="space-y-1.5 flex-1">
+                                        <div className="h-3.5 w-full rounded-lg blinkit-shimmer"></div>
+                                        <div className="h-3 w-2/3 rounded-lg blinkit-shimmer"></div>
                                     </div>
-                                    <div className="mt-3">
-                                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-full"></div>
+                                    <div className="flex items-center justify-between pt-1">
+                                        <div className="h-5 w-14 rounded-md blinkit-shimmer"></div>
+                                        <div className="h-8 w-8 rounded-full blinkit-shimmer"></div>
                                     </div>
                                 </div>
                             ))}

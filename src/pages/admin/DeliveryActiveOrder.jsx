@@ -38,6 +38,7 @@ const DeliveryActiveOrder = () => {
     const { mutateAsync: updateOrderStatus } = useUpdateOrderStatus();
 
     const [singleOrder, setSingleOrder] = useState(null);
+    const [localStatus, setLocalStatus] = useState(null);
     const [fetchingSingle, setFetchingSingle] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
@@ -48,7 +49,8 @@ const DeliveryActiveOrder = () => {
         isOpen: false,
         type: 'accepted',
         title: '',
-        subtitle: ''
+        subtitle: '',
+        duration: 750
     });
 
     // Resolve order ID: from URL params or from localStorage
@@ -94,7 +96,7 @@ const DeliveryActiveOrder = () => {
     const orderIdShort = String(order?._id || order?.id || activeOrderId || '000000').slice(-6).toUpperCase();
     const orderDateFormatted = formatOrderBannerTime(order?.createdAt || order?.date) || formatOrderDateTime(order?.createdAt) || t('Active Order');
 
-    const status = order?.status || 'Out for Delivery';
+    const status = localStatus || order?.status || 'Processing';
     const isOutForDelivery = ['Out for Delivery', 'Shipped'].includes(status);
     const isProcessing = ['Processing', 'Pending', 'Order Placed'].includes(status);
     const isDelivered = ['Delivered', 'Completed'].includes(status);
@@ -160,31 +162,39 @@ const DeliveryActiveOrder = () => {
         navigate('/admin');
     };
 
-    // 1. Accept order: triggers blue flower popup + updates this card to Out for Delivery mode
+    // 1. Accept order: instantly updates this card to Out for Delivery mode + quick celebratory popup
     const handleAccept = async () => {
         if (isActionLoading) return;
         setIsActionLoading(true);
-        try {
-            const id = order?._id || order?.id || activeOrderId;
-            await updateOrderStatus({ id, status: 'Out for Delivery' });
-            localStorage.setItem('active_delivery_order_id', id);
-            localStorage.setItem('active_delivery_stay', 'true');
-            if (singleOrder) {
-                setSingleOrder({ ...singleOrder, status: 'Out for Delivery' });
-            }
-            // Trigger blue flower popup
-            setPopupState({
-                isOpen: true,
-                type: 'accepted',
-                title: t('Order Accepted!'),
-                subtitle: t('Order is ready for delivery')
-            });
-        } catch (error) {
-            console.error('Failed to accept order:', error);
-            alert(t('Failed to accept order. Please try again.'));
-        } finally {
-            setIsActionLoading(false);
+        const id = order?._id || order?.id || activeOrderId;
+        localStorage.setItem('active_delivery_order_id', id);
+        localStorage.setItem('active_delivery_stay', 'true');
+
+        // Optimistically update to delivery page right away!
+        setLocalStatus('Out for Delivery');
+        if (singleOrder) {
+            setSingleOrder(prev => ({ ...prev, status: 'Out for Delivery' }));
         }
+
+        // Trigger blue flower popup with fast snappy duration
+        setPopupState({
+            isOpen: true,
+            type: 'accepted',
+            title: t('Order Accepted!'),
+            subtitle: t('Order is ready for delivery'),
+            duration: 750
+        });
+
+        // Run network update in background
+        updateOrderStatus({ id, status: 'Out for Delivery' })
+            .catch(error => {
+                console.error('Failed to accept order:', error);
+                setLocalStatus(null);
+                alert(t('Failed to accept order. Please try again.'));
+            })
+            .finally(() => {
+                setIsActionLoading(false);
+            });
     };
 
     // 2. Deliver order: triggers green flower popup + updates status to Delivered + returns to /admin
@@ -192,50 +202,63 @@ const DeliveryActiveOrder = () => {
         if (isActionLoading) return;
         setIsActionLoading(true);
         playSuccessSound();
-        try {
-            const id = order?._id || order?.id || activeOrderId;
-            await updateOrderStatus({ id, status: 'Delivered' });
-            if (singleOrder) {
-                setSingleOrder({ ...singleOrder, status: 'Delivered' });
-            }
-            // Trigger green flower popup
-            setPopupState({
-                isOpen: true,
-                type: 'delivered',
-                title: t('Delivered Successfully!'),
-                subtitle: t('Order has been delivered')
-            });
-        } catch (error) {
-            console.error('Failed to mark order as delivered:', error);
-            alert(t('Failed to complete delivery. Please try again.'));
-            setIsActionLoading(false);
+        const id = order?._id || order?.id || activeOrderId;
+
+        setLocalStatus('Delivered');
+        if (singleOrder) {
+            setSingleOrder(prev => ({ ...prev, status: 'Delivered' }));
         }
+
+        // Trigger green flower popup
+        setPopupState({
+            isOpen: true,
+            type: 'delivered',
+            title: t('Delivered Successfully!'),
+            subtitle: t('Order has been delivered'),
+            duration: 900
+        });
+
+        updateOrderStatus({ id, status: 'Delivered' })
+            .catch(error => {
+                console.error('Failed to mark order as delivered:', error);
+                setLocalStatus(null);
+                alert(t('Failed to complete delivery. Please try again.'));
+            })
+            .finally(() => {
+                setIsActionLoading(false);
+            });
     };
 
     // 3. Cancel order: triggers red flower popup + updates status to Cancelled + returns to /admin
     const handleCancelOrder = async () => {
         if (isCancelling) return;
         setIsCancelling(true);
-        try {
-            const id = order?._id || order?.id || activeOrderId;
-            await updateOrderStatus({ id, status: 'Cancelled' });
-            setShowCancelConfirmModal(false);
-            if (singleOrder) {
-                setSingleOrder({ ...singleOrder, status: 'Cancelled' });
-            }
-            // Trigger red flower popup
-            setPopupState({
-                isOpen: true,
-                type: 'cancelled',
-                title: t('Order Cancelled'),
-                subtitle: t('Order has been cancelled')
-            });
-        } catch (error) {
-            console.error('Failed to cancel order:', error);
-            alert(t('Failed to cancel order. Please try again.'));
-        } finally {
-            setIsCancelling(false);
+        const id = order?._id || order?.id || activeOrderId;
+        setShowCancelConfirmModal(false);
+
+        setLocalStatus('Cancelled');
+        if (singleOrder) {
+            setSingleOrder(prev => ({ ...prev, status: 'Cancelled' }));
         }
+
+        // Trigger red flower popup
+        setPopupState({
+            isOpen: true,
+            type: 'cancelled',
+            title: t('Order Cancelled'),
+            subtitle: t('Order has been cancelled'),
+            duration: 900
+        });
+
+        updateOrderStatus({ id, status: 'Cancelled' })
+            .catch(error => {
+                console.error('Failed to cancel order:', error);
+                setLocalStatus(null);
+                alert(t('Failed to cancel order. Please try again.'));
+            })
+            .finally(() => {
+                setIsCancelling(false);
+            });
     };
 
     // Handle popup completion
@@ -291,7 +314,7 @@ const DeliveryActiveOrder = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-32 sm:pb-36 select-none">
+        <div className={`min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative ${isProcessing ? 'pb-52 sm:pb-56' : 'pb-32 sm:pb-36'} select-none`}>
             {/* Popups (Blue flower on accept, Green flower on delivered, Red flower on cancel) */}
             <DeliveryStatusPopup
                 isOpen={popupState.isOpen}
@@ -299,7 +322,7 @@ const DeliveryActiveOrder = () => {
                 title={popupState.title}
                 subtitle={popupState.subtitle}
                 onComplete={handlePopupComplete}
-                duration={1800}
+                duration={popupState.duration || 800}
             />
 
             {/* POPUP: Swipe to Cancel Confirmation */}
@@ -395,7 +418,7 @@ const DeliveryActiveOrder = () => {
             </header>
 
             {/* Main Content Area: (Order ID banner & Accepted tag REMOVED completely) */}
-            <main className="pt-[68px] sm:pt-[72px] px-3.5 sm:px-4 max-w-3xl mx-auto space-y-3 sm:space-y-3.5">
+            <main className="pt-[88px] sm:pt-[94px] pb-56 sm:pb-64 px-3.5 sm:px-4 max-w-3xl mx-auto space-y-3 sm:space-y-3.5">
                 {/* CARD 1: Shipping Details Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
@@ -590,27 +613,28 @@ const DeliveryActiveOrder = () => {
                             onSuccess={handleDeliver}
                         />
                     ) : isProcessing ? (
-                        /* ACCEPT MODE: ACCEPT Swipe Button + Select Cancel option */
+                        /* ACCEPT & CANCEL FOOTER LIKE BEFORE */
                         <div className="space-y-2.5 w-full">
                             <SwipeActionButton
                                 variant="yellow"
                                 label={t('ACCEPT')}
                                 loadingLabel={t('Accepting...')}
                                 isLoading={isActionLoading}
-                                heightClass="h-[64px] sm:h-[68px]"
-                                knobSizeClass="w-[52px] h-[52px] sm:w-[56px] sm:h-[56px]"
+                                heightClass="h-[60px] sm:h-[64px]"
+                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
                                 onSuccess={handleAccept}
                             />
-                            {/* Cancel Option instead of Accept: opens Swipe to Cancel confirmation */}
-                            <div className="text-center pt-0.5">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCancelConfirmModal(true)}
-                                    className="py-1 px-4 text-xs sm:text-[13px] font-bold text-red-500 hover:text-red-600 dark:text-red-400 tracking-wider uppercase active:scale-95 transition-all"
-                                >
-                                    {t('Cancel Order')}
-                                </button>
-                            </div>
+                            {/* Cancel Button styled like Accept button in Grey */}
+                            <SwipeActionButton
+                                variant="gray"
+                                label={t('CANCEL')}
+                                loadingLabel={t('Cancelling...')}
+                                isLoading={isCancelling}
+                                heightClass="h-[60px] sm:h-[64px]"
+                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                autoReset={true}
+                                onSuccess={() => setShowCancelConfirmModal(true)}
+                            />
                         </div>
                     ) : isDelivered ? (
                         <div className="relative overflow-hidden w-full py-4 rounded-full bg-[#00C988] text-white font-black text-sm flex items-center justify-center gap-2 shadow-md select-none">

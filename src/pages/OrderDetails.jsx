@@ -253,7 +253,7 @@ const OrderDetails = () => {
                      >
                          <ArrowLeft size={22} />
                      </button>
-                     <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Order Details')}</h1>
+                     <h1 className="text-[16px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Order Details')}</h1>
                      <div className="w-[42px] h-[42px]" /> {/* Spacer */}
                 </div>
 

@@ -202,7 +202,7 @@ const Games = () => {
                                 <ArrowLeft size={22} />
                             </button>
                         </div>
-                        <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight">Mind Match</h1>
+                        <h1 className="text-[16px] font-bold text-gray-900 dark:text-gray-900 tracking-tight">Mind Match</h1>
                     </div>
                 </div>
             </div>

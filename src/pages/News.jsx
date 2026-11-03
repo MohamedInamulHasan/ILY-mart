@@ -47,7 +47,7 @@ const News = () => {
                         </div>
                         
                         <div className="flex flex-col items-center text-center">
-                            <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight">
+                            <h1 className="text-[16px] font-bold text-gray-900 dark:text-gray-900 tracking-tight">
                                 {t('News & Updates')}
                             </h1>
                             <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600 mt-0.5">{t('Stay informed with the latest')}</p>

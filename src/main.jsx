@@ -20,7 +20,16 @@ import { LanguageProvider } from './context/LanguageContext.jsx'
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 2 * 60 * 1000, // 2 minutes cache: instant screen transitions without reloading
+            gcTime: 10 * 60 * 1000,
+            refetchOnWindowFocus: false,
+            refetchOnMount: false,
+        }
+    }
+});
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>

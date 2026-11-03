@@ -23,7 +23,7 @@ const PrivacyPolicy = () => {
                             </button>
                         </div>
                         <div className="flex flex-col items-center text-center pt-1">
-                            <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight">{t('Privacy Policy')}</h1>
+                            <h1 className="text-[16px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight">{t('Privacy Policy')}</h1>
                             <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600 mt-0.5">{t('Last Updated: May 2026')}</p>
                         </div>
                     </div>
