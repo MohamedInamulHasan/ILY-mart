@@ -12,6 +12,7 @@ import { startIncomingOrderAlertSound, stopIncomingOrderAlertSound, playSuccessS
 import { CartoonCoin } from './CartoonCoin';
 import { formatOrderBannerTime } from '../utils/dateUtils';
 import SwipeActionButton from './SwipeActionButton';
+import DeliveryStatusPopup from './DeliveryStatusPopup';
 import { registerModalBackHandler } from '../utils/useBackButton';
 
 const IncomingOrderModal = ({
@@ -34,6 +35,12 @@ const IncomingOrderModal = ({
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [showCancelPopup, setShowCancelPopup] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [popupState, setPopupState] = useState({
+        isOpen: false,
+        type: 'accepted',
+        title: '',
+        subtitle: ''
+    });
 
     const isOutForDelivery = order?.status === 'Out for Delivery' || order?.status === 'Shipped';
     const isProcessing = order?.status === 'Processing' || order?.status === 'Pending' || order?.status === 'Order Placed' || order?.status === 'Confirmed';
@@ -132,6 +139,36 @@ const IncomingOrderModal = ({
         return t('Ilayangudi Store');
     };
 
+    // Handle popup complete
+    const handlePopupComplete = () => {
+        const completedType = popupState.type;
+        setPopupState(prev => ({ ...prev, isOpen: false }));
+        const id = order._id || order.id;
+
+        if (completedType === 'accepted') {
+            if (onAccepted) onAccepted(order);
+            navigate(`/admin/delivery-order/${id}`);
+        } else if (completedType === 'delivered') {
+            localStorage.removeItem('active_delivery_order_id');
+            localStorage.removeItem('active_delivery_stay');
+            if (onDelivered) {
+                onDelivered(order);
+            } else {
+                onClose();
+            }
+            navigate('/admin', { replace: true });
+        } else if (completedType === 'cancelled') {
+            localStorage.removeItem('active_delivery_order_id');
+            localStorage.removeItem('active_delivery_stay');
+            if (onCancelled) {
+                onCancelled(order);
+            } else {
+                onClose();
+            }
+            navigate('/admin', { replace: true });
+        }
+    };
+
     // Main action: Deliver (if Out for Delivery) OR Accept (if Processing)
     const handleMainSwipeAction = async () => {
         if (isActionLoading) return;
@@ -144,19 +181,23 @@ const IncomingOrderModal = ({
             if (isOutForDelivery) {
                 // Out for Delivery -> Delivered
                 await updateOrderStatus({ id, status: 'Delivered' });
-                if (onDelivered) {
-                    onDelivered(order);
-                } else {
-                    onClose();
-                }
+                setPopupState({
+                    isOpen: true,
+                    type: 'delivered',
+                    title: t('Delivered Successfully!'),
+                    subtitle: t('Order has been delivered')
+                });
             } else {
                 // Processing -> Out for Delivery
                 await updateOrderStatus({ id, status: 'Out for Delivery' });
-                if (onAccepted) {
-                    onAccepted(order);
-                } else {
-                    onClose();
-                }
+                localStorage.setItem('active_delivery_order_id', id);
+                localStorage.setItem('active_delivery_stay', 'true');
+                setPopupState({
+                    isOpen: true,
+                    type: 'accepted',
+                    title: t('Order Accepted!'),
+                    subtitle: t('Order is ready for delivery')
+                });
             }
         } catch (error) {
             console.error('Error updating order status:', error);
@@ -174,11 +215,12 @@ const IncomingOrderModal = ({
             const id = order._id || order.id;
             await updateOrderStatus({ id, status: 'Cancelled' });
             setShowCancelPopup(false);
-            if (onCancelled) {
-                onCancelled(order);
-            } else {
-                onClose();
-            }
+            setPopupState({
+                isOpen: true,
+                type: 'cancelled',
+                title: t('Order Cancelled'),
+                subtitle: t('Order has been cancelled')
+            });
         } catch (error) {
             console.error('Error cancelling order:', error);
         } finally {
@@ -210,6 +252,15 @@ const IncomingOrderModal = ({
     // 1. Initial Step: Compact "VIEW ORDER" card (shown when delivery boy receives order outside or app opened)
     if (viewMode === 'view' && isProcessing) {
         return (
+            <>
+                <DeliveryStatusPopup
+                    isOpen={popupState.isOpen}
+                    type={popupState.type}
+                    title={popupState.title}
+                    subtitle={popupState.subtitle}
+                    onComplete={handlePopupComplete}
+                    duration={1800}
+                />
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -363,11 +414,21 @@ const IncomingOrderModal = ({
                     </div>
                 </motion.div>
             </motion.div>
+            </>
         );
     }
 
     // 2. Full "ACCEPT ORDER" / Order Details View
     return (
+        <>
+            <DeliveryStatusPopup
+                isOpen={popupState.isOpen}
+                type={popupState.type}
+                title={popupState.title}
+                subtitle={popupState.subtitle}
+                onComplete={handlePopupComplete}
+                duration={1800}
+            />
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -664,6 +725,7 @@ const IncomingOrderModal = ({
 
             </motion.div>
         </motion.div>
+        </>
     );
 };
 

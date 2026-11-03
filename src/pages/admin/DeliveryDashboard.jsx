@@ -85,6 +85,16 @@ const DeliveryDashboard = () => {
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
     const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
 
+    // Check if delivery boy has an active order they should stay on
+    useEffect(() => {
+        const activeOrderId = localStorage.getItem('active_delivery_order_id');
+        const activeStay = localStorage.getItem('active_delivery_stay');
+        if (activeOrderId && activeStay !== 'false') {
+            navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
+        }
+    }, [navigate]);
+
+
     // Listen for incoming orders in real-time to alert delivery boy and refresh list
     useEffect(() => {
         if (!socket) return;
@@ -718,7 +728,12 @@ const DeliveryDashboard = () => {
                                                         autoReset={true}
                                                         heightClass="h-[50px]"
                                                         knobSizeClass="w-[38px] h-[38px]"
-                                                        onSuccess={() => setSelectedOrderForAccept(order)}
+                                                        onSuccess={() => {
+                                                            const oId = order._id || order.id;
+                                                            localStorage.setItem('active_delivery_order_id', oId);
+                                                            localStorage.setItem('active_delivery_stay', 'true');
+                                                            navigate(`/admin/delivery-order/${oId}`);
+                                                        }}
                                                     />
                                                 )}
                                             </div>

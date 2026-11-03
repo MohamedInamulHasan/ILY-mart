@@ -17,6 +17,7 @@ import Services from './pages/Services';
 import SavedProducts from './pages/SavedProducts';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import DeliveryDashboard from './pages/admin/DeliveryDashboard';
+import DeliveryActiveOrder from './pages/admin/DeliveryActiveOrder';
 import CategoryProducts from './pages/CategoryProducts';
 import ProductGroupProducts from './pages/ProductGroupProducts';
 import MyStore from './pages/MyStore';
@@ -107,8 +108,15 @@ const RoleRedirectHandler = () => {
         
         console.log('RoleRedirectHandler: Checking role', { roles, pathname: location.pathname });
 
-        // Force delivery_boy to /admin, but allow them to see specific order details
+        // Force delivery_boy to /admin or active delivery order
         if (isDeliveryBoy && !isAdmin) {
+            const activeOrderId = localStorage.getItem('active_delivery_order_id');
+            const activeStay = localStorage.getItem('active_delivery_stay');
+            if (activeOrderId && activeStay !== 'false' && !location.pathname.startsWith('/admin/delivery-order')) {
+                console.log('RoleRedirectHandler: Staying on active delivery order', activeOrderId);
+                navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
+                return;
+            }
             const isAllowedPath = location.pathname.startsWith('/admin') || location.pathname.startsWith('/orders');
             if (!isAllowedPath) {
                 console.log('RoleRedirectHandler: Redirecting delivery_boy to /admin');
@@ -433,6 +441,22 @@ function App() {
                                         element={
                                             <PrivateRoute adminOnly={true}>
                                                 <AdminOrDeliveryDashboard />
+                                            </PrivateRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/admin/delivery-order/:id"
+                                        element={
+                                            <PrivateRoute adminOnly={true}>
+                                                <DeliveryActiveOrder />
+                                            </PrivateRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/admin/delivery-order"
+                                        element={
+                                            <PrivateRoute adminOnly={true}>
+                                                <DeliveryActiveOrder />
                                             </PrivateRoute>
                                         }
                                     />
