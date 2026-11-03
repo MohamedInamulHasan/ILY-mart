@@ -25,3 +25,4 @@ svg_code = '''<svg width="40" height="32" viewBox="0 0 40 32" fill="none" xmlns=
 with open('scratch/test_notes.svg', 'w', encoding='utf-8') as f:
     f.write(svg_code)
 print("Saved scratch/test_notes.svg")
+

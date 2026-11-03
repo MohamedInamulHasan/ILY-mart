@@ -244,27 +244,34 @@ const OrderConfirmation = () => {
 
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-40 relative">
-            {/* Simple Header */}
-            <div className="w-full px-5 py-4">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <button 
-                        onClick={() => {
-                            if (showSuccessModal || createdOrderId) {
-                                navigate('/', { replace: true });
-                            } else {
-                                navigate(-1);
-                            }
-                        }} 
-                        className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-900 dark:text-white transition-transform active:scale-95 border border-gray-100/50"
-                    >
-                        <ArrowLeft size={22} />
-                    </button>
-                    <h1 className="text-[17px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Confirmation')}</h1>
-                    <div className="w-[42px]" />
+            {/* White Header matching Orders List Header */}
+            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-800 rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden border-b border-gray-100 dark:border-gray-700/60">
+                <div className="relative z-10">
+                    <div className="max-w-3xl mx-auto px-2 relative flex items-center justify-center min-h-[42px]">
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    if (showSuccessModal || createdOrderId) {
+                                        navigate('/', { replace: true });
+                                    } else {
+                                        navigate(-1);
+                                    }
+                                }} 
+                                className="w-[42px] h-[42px] flex items-center justify-center bg-gray-50 dark:bg-gray-700 rounded-full text-gray-900 dark:text-white transition-transform active:scale-95 shadow-sm border border-gray-200/60 dark:border-gray-600"
+                            >
+                                <ArrowLeft size={22} />
+                            </button>
+                        </div>
+                        <div className="flex flex-col text-center">
+                            <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight">{t('Confirmation')}</h1>
+                            <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">{t('Order Summary')}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="max-w-3xl mx-auto px-3.5 sm:px-5 lg:px-6 space-y-3 sm:space-y-3.5">
+            <div className="pt-[86px] sm:pt-[88px] max-w-3xl mx-auto px-3.5 sm:px-5 lg:px-6 space-y-3 sm:space-y-3.5">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-700/60 flex items-center gap-2.5">
                         <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">

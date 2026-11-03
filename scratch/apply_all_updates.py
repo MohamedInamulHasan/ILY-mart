@@ -498,3 +498,4 @@ with open(services_path, 'w', encoding='utf-8') as f:
     f.write(services_code)
 
 print("All updates script finished successfully!")
+

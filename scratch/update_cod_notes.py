@@ -90,3 +90,4 @@ if target in c:
     print("Updated Checkout.jsx with 3 green notes and white cash text!")
 else:
     print("ERROR: target not found in Checkout.jsx")
+

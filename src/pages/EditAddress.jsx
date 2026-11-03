@@ -227,8 +227,7 @@ const EditAddress = () => {
                 // Update local auth state with returned data
                 setUser(result);
                 localStorage.setItem('userInfo', JSON.stringify(result));
-                setMessage({ type: 'success', text: t('Address updated successfully!') });
-                setTimeout(() => navigate('/profile'), 1500);
+                navigate('/profile');
             }
         } catch (err) {
             console.error('Update Profile Error:', err);
@@ -263,10 +262,10 @@ const EditAddress = () => {
             </div>
 
             <div className="pt-[86px] sm:pt-[88px] max-w-xl mx-auto px-3.5 sm:px-4">
-                {/* Status Message */}
-                {message.text && (
-                    <div className={`mb-3.5 p-3 sm:p-3.5 rounded-xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2 ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
-                        {message.type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />}
+                {/* Status Message (errors only) */}
+                {message.text && message.type === 'error' && (
+                    <div className="mb-3.5 p-3 sm:p-3.5 rounded-xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2 bg-red-50 text-red-700 border border-red-100">
+                        <AlertCircle size={18} />
                         <span className="text-sm font-semibold">{message.text}</span>
                     </div>
                 )}

@@ -384,18 +384,28 @@ const Checkout = () => {
 
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-40 relative">
-            {/* Simple Header */}
-            <div className="w-full px-5 py-4">
-                <div className="max-w-md mx-auto flex items-center justify-between">
-                     <button onClick={() => navigate(-1)} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-900 dark:text-white transition-transform active:scale-95 border border-gray-100/50">
-                         <ArrowLeft size={22} />
-                     </button>
-                     <h1 className="text-[17px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Checkout')}</h1>
-                     <div className="w-[42px]" /> 
+            {/* White Header matching Orders List Header */}
+            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-800 rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden border-b border-gray-100 dark:border-gray-700/60">
+                <div className="relative z-10">
+                    <div className="max-w-md mx-auto px-2 relative flex items-center justify-center min-h-[42px]">
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                            <button
+                                type="button"
+                                onClick={() => navigate(-1)}
+                                className="w-[42px] h-[42px] flex items-center justify-center bg-gray-50 dark:bg-gray-700 rounded-full text-gray-900 dark:text-white transition-transform active:scale-95 shadow-sm border border-gray-200/60 dark:border-gray-600"
+                            >
+                                <ArrowLeft size={22} />
+                            </button>
+                        </div>
+                        <div className="flex flex-col text-center">
+                            <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight">{t('Checkout')}</h1>
+                            <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">{t('Shipping & Payment')}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="pt-[86px] sm:pt-[88px] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {/* Location Toast Message (errors only) */}
                 {locationMessage.show && locationMessage.type === 'error' && (

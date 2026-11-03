@@ -22,3 +22,4 @@ else:
         with open(cart_path, "w", encoding="utf-8") as f:
             f.write(content)
         print("Replaced Cancel with No using fallback patterns")
+

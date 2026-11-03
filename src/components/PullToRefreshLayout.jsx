@@ -31,7 +31,7 @@ const PullToRefreshLayout = ({ children }) => {
             }
             backgroundColor="transparent"
         >
-            <div className="min-h-screen">
+            <div className="w-full">
                 {children}
             </div>
         </PullToRefresh>
