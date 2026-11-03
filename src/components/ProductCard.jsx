@@ -53,7 +53,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
     const featuredVariant = isGroup ? variants[currentVariantIndex] : product;
 
     return (
-        <div className={`relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-3xl overflow-hidden group transition-all duration-300`}>
+        <div className={`relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-2xl overflow-hidden group transition-all duration-300`}>
             
             <Link 
                 to={(!isOpen || !isAvailable || !isScheduled) ? '#' : (product.isGroup ? `/product-group/${encodeURIComponent(product.title)}` : `/product/${productId}`)} 
@@ -82,7 +82,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
 
 
                 {/* Image Container (Full Bleed) */}
-                <div className={`aspect-square bg-[#F9FAFB] m-1 rounded-2xl overflow-hidden flex items-center justify-center relative ${!isOpen || !isAvailable ? 'opacity-60' : !isScheduled ? 'opacity-75' : ''}`}>
+                <div className={`aspect-square bg-[#F9FAFB] m-1 rounded-xl overflow-hidden flex items-center justify-center relative ${!isOpen || !isAvailable ? 'opacity-60' : !isScheduled ? 'opacity-75' : ''}`}>
                     {showHeart && (
                         <button
                             onClick={(e) => {
@@ -119,22 +119,22 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                 </div>
 
                 {/* Content Section */}
-                <div className="px-3.5 pb-4 pt-1 flex flex-col items-start flex-1 min-w-0 transition-opacity duration-300">
-                    <div className="flex-1 min-h-[42px] mb-1 w-full flex flex-col justify-center transition-opacity duration-300">
+                <div className="px-2.5 pb-3 pt-0.5 flex flex-col items-start flex-1 min-w-0 transition-opacity duration-300">
+                    <div className="flex-1 min-h-[34px] mb-0.5 w-full flex flex-col justify-center transition-opacity duration-300">
                         {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, language, {
-                            mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white truncate w-full',
-                            subClassName: 'text-xs font-semibold text-gray-800 dark:text-white truncate w-full opacity-80'
+                            mainClassName: 'text-[12px] sm:text-[13px] font-semibold text-gray-800 dark:text-white truncate w-full',
+                            subClassName: 'text-[10px] sm:text-[11px] font-semibold text-gray-800 dark:text-white truncate w-full opacity-80'
                         })}
                     </div>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium truncate mb-2 w-full">
+                    <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 font-medium truncate mb-1.5 w-full">
                        {getStoreName(product.storeId, stores) || "ILY mart Direct"}
                     </p>
                     
-                    <div className="flex items-center justify-between mt-2 w-full">
+                    <div className="flex items-center justify-between mt-1 w-full">
                         <div className="flex flex-col">
                             <div className="flex items-center gap-1.5">
                                 {product.isGroup ? (
-                                    <span className="text-base font-bold text-gray-900 dark:text-white">
+                                    <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                                         {Number(product.minPrice) === Number(product.maxPrice)
                                             ? `₹${Number(product.minPrice).toFixed(0)}`
                                             : `₹${Number(product.minPrice).toFixed(0)} - ₹${Number(product.maxPrice).toFixed(0)}`
@@ -142,14 +142,14 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                     </span>
                                 ) : (
                                     <>
-                                        <span className="text-base font-bold text-gray-900 dark:text-white">
+                                        <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                                             ₹{Number(product.price * (quantity || 1)).toFixed(0)}
                                         </span>
                                     </>
                                 )}
                             </div>
                             {(product.isGroup || product.unit) && (
-                                <span className="text-[10px] font-semibold text-gray-900 dark:text-white">
+                                <span className="text-[9px] sm:text-[10px] font-semibold text-gray-900 dark:text-white">
                                     {product.isGroup ? `${product.variantExtraCount + 1} ${t('options')}` : product.unit}
                                 </span>
                             )}
@@ -175,11 +175,11 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                                 removeFromCart(productId);
                                             }
                                         }}
-                                        className="w-8 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
+                                        className="w-6 h-7 sm:w-7 sm:h-8 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
                                     >
-                                        <Minus size={16} />
+                                        <Minus size={14} />
                                     </button>
-                                    <span className="font-bold text-sm min-w-[20px] text-center select-none text-[#2E5A2E] dark:text-[#CBF9B2]">{quantity}</span>
+                                    <span className="font-bold text-xs sm:text-sm min-w-[16px] text-center select-none text-[#2E5A2E] dark:text-[#CBF9B2]">{quantity}</span>
                                     <button 
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -187,9 +187,9 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                             if (!user) { navigate('/login'); return; }
                                             updateQuantity(productId, quantity + 1);
                                         }}
-                                        className="w-8 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors"
+                                        className="w-6 h-7 sm:w-7 sm:h-8 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors"
                                     >
-                                        <Plus size={16} />
+                                        <Plus size={14} />
                                     </button>
                                 </div>
                             ) : (
@@ -200,14 +200,14 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                         if (!user) { navigate('/login'); return; }
                                         addToCart(product);
                                     }}
-                                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 select-none ${
+                                     className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all active:scale-90 select-none ${
                                         (!isAvailable || !isOpen || !isScheduled)
                                             ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                                             : 'bg-[#2E5A2E] dark:bg-[#CBF9B2] hover:opacity-90 text-white dark:text-gray-900'
                                     }`}
                                     disabled={!isAvailable || !isOpen || !isScheduled}
                                 >
-                                    <ShoppingCart size={18} />
+                                    <ShoppingCart size={15} />
                                 </button>
                             )
                         )}

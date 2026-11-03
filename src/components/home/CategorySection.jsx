@@ -12,14 +12,14 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
 
     if (isLoading && categories.length === 0) {
         return (
-            <section className="py-4 mt-2">
-                <div className="flex justify-between items-center mb-3 px-4">
+            <section className="pt-1 pb-2">
+                <div className="flex justify-between items-center mb-2 px-4">
                     <div className="h-5 w-36 rounded-lg blinkit-shimmer"></div>
                     <div className="h-4 w-12 rounded-full blinkit-shimmer"></div>
                 </div>
                 
                 {/* Horizontal Category Items list - Blinkit shimmer */}
-                <div className="flex gap-4 overflow-x-auto scrollbar-hide py-2 px-4">
+                <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1 px-4">
                     {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                         <div key={i} className="flex flex-col items-center gap-2 min-w-[72px] md:min-w-[88px]">
                             {/* Circle shape placeholder with Blinkit shimmer */}
@@ -36,8 +36,8 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
     if (categories.length === 0) return null;
 
     return (
-        <section className="py-4 mt-2">
-            <div className="flex justify-between items-center mb-4 px-4">
+        <section className="pt-1 pb-2">
+            <div className="flex justify-between items-center mb-2 px-4">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                     {t('Shop By Categories')}
                 </h2>
@@ -51,13 +51,13 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
 
             <div className={isExpanded
                 ? "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-x-2 gap-y-6 px-4 py-2"
-                : "flex gap-4 overflow-x-auto scrollbar-hide py-2 px-4"
+                : "flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1 px-4"
             }>
 
                 {/* All Categories Option — styled like other category items */}
                 <div
                     onClick={() => onSelectCategory('All')}
-                    className={`${isExpanded ? 'w-full' : 'min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-2 md:gap-3 group cursor-pointer`}
+                    className={`${isExpanded ? 'w-full' : 'min-w-[76px] sm:min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer`}
                 >
                     <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-2 bg-[#CBF9B2] dark:bg-[#CBF9B2] ${selectedCategory === 'All' ? 'border-[#2E5A2E] dark:border-[#2E5A2E]' : 'border-transparent'}`}>
                         {allCategoryImage ? (
@@ -85,7 +85,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                         <div
                             key={category._id || category.id}
                             onClick={() => onSelectCategory(category.name)}
-                            className={`${isExpanded ? 'w-full' : 'min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-2 md:gap-3 group cursor-pointer`}
+                            className={`${isExpanded ? 'w-full' : 'min-w-[76px] sm:min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer`}
                         >
                             <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-2 bg-[#CBF9B2] dark:bg-[#CBF9B2] ${isSelected ? 'border-[#2E5A2E] dark:border-[#2E5A2E]' : 'border-transparent'}`}>
                                 <img
@@ -96,52 +96,10 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                 />
                             </div>
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[80px] md:max-w-[110px] transition-colors ${isSelected ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
-                                {(() => {
-                                    const fullTitle = t(category.name);
-                                    let mainPart = fullTitle;
-                                    let bracketPart = null;
-
-                                    const bracketIndex = fullTitle.indexOf('(');
-                                    if (bracketIndex !== -1) {
-                                        const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                        const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-
-                                        const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                        const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-
-                                        let tamStr = '';
-                                        let engStr = '';
-
-                                        if (isPart1Tamil && !isPart2Tamil) {
-                                            tamStr = part1;
-                                            engStr = part2;
-                                        } else if (isPart2Tamil && !isPart1Tamil) {
-                                            tamStr = part2;
-                                            engStr = part1;
-                                        } else {
-                                            engStr = part1;
-                                            tamStr = part2;
-                                        }
-
-                                        if (language === 'ta') {
-                                            mainPart = tamStr || engStr;
-                                            bracketPart = tamStr && engStr ? `(${engStr})` : null;
-                                        } else {
-                                            mainPart = engStr || tamStr;
-                                            bracketPart = engStr && tamStr ? `(${tamStr})` : null;
-                                        }
-                                    }
-
-                                    return (
-                                        <>
-                                            <span className={`text-[11px] md:text-xs lg:text-sm w-full break-words text-center ${isSelected ? 'font-bold' : 'font-semibold'}`}>{mainPart}</span>
-                                            {bracketPart && (
-                                                <span className={`text-[9px] md:text-[10px] lg:text-[11px] w-full break-words text-center opacity-80 ${isSelected ? 'font-semibold' : 'font-medium'}`}>{bracketPart}</span>
-                                            )}
-                                        </>
-                                    );
-                                })()}
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[76px] sm:max-w-[84px] md:max-w-[105px] transition-colors ${isSelected ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
+                                <span className={`text-[11px] md:text-xs font-semibold truncate w-full text-center block whitespace-nowrap overflow-hidden ${isSelected ? 'font-bold' : ''}`} title={t(category.name)}>
+                                    {t(category.name)}
+                                </span>
                             </div>
                         </div>
                     );

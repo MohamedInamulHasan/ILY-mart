@@ -30,7 +30,7 @@ const SortDropdown = ({ currentSort, onSortChange }) => {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 flex-shrink-0 flex items-center justify-center rounded-full border transition-all duration-300 active:scale-95 ${isOpen
+                className={`w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center rounded-full border transition-all duration-300 active:scale-95 ${isOpen
                     ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/10'
                     : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800'
                     }`}

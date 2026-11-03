@@ -111,9 +111,9 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
     }, [products, singleStore, contextStores, section.type, section.id]);
 
     return (
-        <section className={`px-4 py-3 md:py-6 dark:bg-gray-900 transition-opacity duration-300 ${!isOpen ? 'opacity-80' : ''}`}>
+        <section className={`px-4 pt-1.5 pb-3 md:py-4 dark:bg-gray-900 transition-opacity duration-300 ${!isOpen ? 'opacity-80' : ''}`}>
             {/* Header */}
-            <div className="flex justify-between items-end mb-6 px-1">
+            <div className="flex justify-between items-end mb-2.5 sm:mb-3 px-1">
                 <div className="flex flex-col min-w-0 flex-1 pr-3">
                     <div className="flex items-center gap-2">
                         {section.id === 'free_delivery' ? (
@@ -170,7 +170,7 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
                         {displayProducts.map((product, idx) => (
                             <div 
                                 key={`${product._id || product.id}-${idx}-${cycleIndex}`} 
-                                className="w-[165px] md:w-[190px] lg:w-[210px] shrink-0 animate-in fade-in slide-in-from-right-2 duration-500"
+                                className="w-[142px] sm:w-[155px] md:w-[175px] lg:w-[195px] shrink-0 animate-in fade-in slide-in-from-right-2 duration-500"
                             >
                                 <ProductCard 
                                     product={product} 

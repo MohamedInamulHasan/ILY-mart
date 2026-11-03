@@ -206,10 +206,10 @@ const Home = () => {
 
 
             <PullToRefreshLayout>
-                <div className="pt-[95px]">
+                <div className="pt-[84px]">
                 {/* Search Bar (Now Below the Design with Filter) */}
-                <section className="px-4 relative z-50 mb-8">
-                    <div className="flex items-center gap-3 max-w-2xl mx-auto relative">
+                <section className="px-4 relative z-50 mb-2.5 sm:mb-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto relative">
                         <div className="relative group flex-1">
                             <form
                                 onSubmit={(e) => {
@@ -224,12 +224,9 @@ const Home = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder={t('Search by fresh groceries...')}
-                                    className="w-full pl-12 pr-4 py-4 rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition-all duration-300 shadow-sm"
+                                    className="w-full pl-10 pr-4 py-2.5 sm:py-3 text-sm rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition-all duration-300 shadow-sm"
                                 />
-                                <Search 
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] transition-colors" 
-                                    size={20} 
-                                />
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] transition-colors" size={18} />
                             </form>
                         </div>
                         
@@ -370,9 +367,9 @@ const Home = () => {
                 {isLoadingAll ? (
                     <div className="space-y-4 py-2">
                         {[1, 2].map((sectionIndex) => (
-                            <section key={sectionIndex} className="px-4 py-3">
+                            <section key={sectionIndex} className="px-4 pt-1.5 pb-3">
                                 {/* Section Header — shop name + See All */}
-                                <div className="flex justify-between items-end mb-4 px-1">
+                                <div className="flex justify-between items-end mb-2.5 px-1">
                                     <div className="flex flex-col gap-2 flex-1">
                                         <div className="h-6 w-48 rounded-xl blinkit-shimmer"></div>
                                         <div className="h-3 w-32 rounded-lg blinkit-shimmer"></div>
@@ -381,11 +378,11 @@ const Home = () => {
                                 </div>
 
                                 {/* Horizontal Product Cards — Blinkit shimmer style */}
-                                <div className="flex gap-3 overflow-hidden pb-2 px-1">
+                                <div className="flex gap-2.5 sm:gap-3 overflow-hidden pb-1 px-1">
                                     {[1, 2, 3, 4].map((cardIndex) => (
                                         <div
                                             key={cardIndex}
-                                            className="w-[160px] md:w-[185px] shrink-0 bg-white dark:bg-gray-800 rounded-3xl p-3 shadow-sm border border-gray-100 dark:border-gray-700/50 flex flex-col space-y-3"
+                                            className="w-[142px] sm:w-[155px] md:w-[175px] shrink-0 bg-white dark:bg-gray-800 rounded-2xl p-2.5 shadow-sm border border-gray-100 dark:border-gray-700/50 flex flex-col space-y-2.5"
                                         >
                                             {/* Product Image placeholder */}
                                             <div className="aspect-square w-full rounded-2xl blinkit-shimmer"></div>
