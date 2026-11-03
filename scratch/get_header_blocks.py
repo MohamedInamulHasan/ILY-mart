@@ -23,3 +23,4 @@ for name, fpath in files.items():
             for k in range(max(0, i-1), min(len(lines), i+30)):
                 print(f'{k+1}: {lines[k]}', end='')
             break
+

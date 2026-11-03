@@ -786,7 +786,11 @@ const DeliveryDashboard = () => {
                 onClose={() => setShowOrdersFeed(false)}
                 orders={orders}
                 onSelectOrder={(order) => {
-                    setSelectedOrderForAccept(order);
+                    setShowOrdersFeed(false);
+                    const oId = order._id || order.id;
+                    localStorage.setItem('active_delivery_order_id', oId);
+                    localStorage.setItem('active_delivery_stay', 'true');
+                    navigate(`/admin/delivery-order/${oId}`);
                 }}
             />
 

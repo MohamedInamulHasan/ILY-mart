@@ -160,7 +160,7 @@ const DeliveryActiveOrder = () => {
         navigate('/admin');
     };
 
-    // 1. Accept order: triggers blue flower popup + updates status to Out for Delivery
+    // 1. Accept order: triggers blue flower popup + updates this card to Out for Delivery mode
     const handleAccept = async () => {
         if (isActionLoading) return;
         setIsActionLoading(true);
@@ -257,9 +257,8 @@ const DeliveryActiveOrder = () => {
                 {/* Header Skeleton */}
                 <div className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-800 border-b border-gray-200/80 dark:border-gray-700 px-4 py-3 shadow-xs">
                     <div className="max-w-3xl mx-auto flex items-center justify-between">
-                        <div className="h-4 w-28 rounded-md blinkit-shimmer" />
-                        <div className="h-5 w-32 rounded-lg blinkit-shimmer" />
-                        <div className="h-8 w-20 rounded-xl blinkit-shimmer" />
+                        <div className="h-6 w-36 rounded-md blinkit-shimmer" />
+                        <div className="h-9 w-20 rounded-xl blinkit-shimmer" />
                     </div>
                 </div>
                 <div className="pt-20 px-4 max-w-3xl mx-auto space-y-3">
@@ -303,105 +302,100 @@ const DeliveryActiveOrder = () => {
                 duration={1800}
             />
 
-            {/* Cancel Confirmation Modal */}
+            {/* POPUP: Swipe to Cancel Confirmation */}
             <AnimatePresence>
                 {showCancelConfirmModal && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[110000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                         onClick={() => setShowCancelConfirmModal(false)}
+                        className="fixed inset-0 z-[110000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
                     >
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4"
                             onClick={(e) => e.stopPropagation()}
+                            className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-3"
                         >
-                            <div className="w-14 h-14 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto">
-                                <XCircle size={32} />
+                            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
+                                <AlertCircle size={32} />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                {t('Cancel this Order?')}
-                            </h3>
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                                {t('Are you sure you want to cancel order')} #{orderIdShort}? {t('This action cannot be undone.')}
-                            </p>
-                            <div className="grid grid-cols-2 gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCancelConfirmModal(false)}
-                                    className="py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 font-bold text-sm text-gray-700 dark:text-gray-300 active:scale-95 transition-all"
-                                >
-                                    {t('No, Keep')}
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={isCancelling}
-                                    onClick={handleCancelOrder}
-                                    className="py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-md active:scale-95 transition-all disabled:opacity-50"
-                                >
-                                    {isCancelling ? t('Cancelling...') : t('Yes, Cancel')}
-                                </button>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    {t('Cancel Order')} #{orderIdShort}?
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {t('Are you sure you want to cancel this order?')}
+                                </p>
                             </div>
+
+                            {/* Customer snippet in confirmation */}
+                            <div className="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-3 text-xs text-gray-700 dark:text-gray-200 text-left">
+                                <p className="font-bold text-gray-900 dark:text-white truncate">
+                                    {customerName}
+                                </p>
+                                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                    {street}{city ? `, ${city}` : ''}
+                                </p>
+                            </div>
+
+                            {/* RED Swipe to Cancel Confirmation Button */}
+                            <div className="pt-2">
+                                <SwipeActionButton
+                                    variant="red"
+                                    label={t('Swipe to Cancel')}
+                                    loadingLabel={t('Cancelling...')}
+                                    isLoading={isCancelling}
+                                    heightClass="h-[60px] sm:h-[64px]"
+                                    knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                    onSuccess={handleCancelOrder}
+                                />
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowCancelConfirmModal(false)}
+                                className="w-full mt-2 py-1 text-center text-xs font-bold text-gray-400 hover:text-gray-600 dark:text-gray-500 uppercase tracking-wider"
+                            >
+                                {t('Keep Order')}
+                            </button>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* HEADER: Delivery Panel, Date/Time on left, Red LEAVE button on right */}
-            <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-800 border-b border-gray-200/80 dark:border-gray-700 px-3.5 sm:px-4 py-3 shadow-xs shrink-0">
-                <div className="max-w-3xl mx-auto flex items-center justify-between gap-2 min-h-[40px]">
-                    {/* Left: Clock Icon + Date and Time */}
-                    <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 min-w-0">
-                        <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
-                        <span className="text-xs sm:text-[14px] font-bold text-gray-600 dark:text-gray-300 tracking-wide truncate">
+            {/* HEADER: Big & Bold Date/Time on left, Red LEAVE button on right (NO Delivery Panel title) */}
+            <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-800 border-b border-gray-200/80 dark:border-gray-700 px-4 py-3 shadow-xs shrink-0">
+                <div className="max-w-3xl mx-auto flex items-center justify-between gap-3 min-h-[42px]">
+                    {/* Left: Big & Bold Date and Time */}
+                    <div className="flex items-center gap-2 text-gray-900 dark:text-white min-w-0">
+                        <Clock size={20} className="text-gray-700 dark:text-gray-200 stroke-[2.5] shrink-0" />
+                        <span className="text-[17px] sm:text-[19px] font-black text-gray-900 dark:text-white tracking-tight truncate">
                             {orderDateFormatted}
                         </span>
                     </div>
-
-                    {/* Center: Title "Delivery Panel" */}
-                    <h1 className="text-[17px] sm:text-[18px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center shrink-0">
-                        {t('Delivery Panel')}
-                    </h1>
 
                     {/* Right: Red LEAVE button styled like CALL button */}
                     <button
                         type="button"
                         onClick={handleLeave}
-                        className="relative overflow-hidden flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-red-700 shrink-0"
+                        className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-red-700 shrink-0"
                     >
                         <motion.div
                             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
                             animate={{ x: ['-100%', '150%'] }}
                             transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                         />
-                        <LogOut size={13} className="stroke-[2.5] relative z-10 text-white" />
+                        <LogOut size={14} className="stroke-[2.5] relative z-10 text-white" />
                         <span className="relative z-10">{t('Leave')}</span>
                     </button>
                 </div>
             </header>
 
-            {/* Main Content Area */}
-            <main className="pt-20 px-3.5 sm:px-4 max-w-3xl mx-auto space-y-3 sm:space-y-3.5">
-                {/* Status Bar / Order ID banner */}
-                <div className="flex items-center justify-between px-1">
-                    <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 font-mono">
-                        #{orderIdShort}
-                    </span>
-                    <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                        isDelivered 
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
-                            : isCancelled 
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                            : 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
-                    }`}>
-                        {t(status)}
-                    </span>
-                </div>
-
+            {/* Main Content Area: (Order ID banner & Accepted tag REMOVED completely) */}
+            <main className="pt-[68px] sm:pt-[72px] px-3.5 sm:px-4 max-w-3xl mx-auto space-y-3 sm:space-y-3.5">
                 {/* CARD 1: Shipping Details Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
@@ -576,19 +570,6 @@ const DeliveryActiveOrder = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Cancel Order Link / Action */}
-                {!isDelivered && !isCancelled && (
-                    <div className="text-center pt-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowCancelConfirmModal(true)}
-                            className="text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline tracking-wider uppercase py-1"
-                        >
-                            {t('Cancel this order')}
-                        </button>
-                    </div>
-                )}
             </main>
 
             {/* Bottom Fixed Action Footer */}
@@ -598,6 +579,7 @@ const DeliveryActiveOrder = () => {
             >
                 <div className="max-w-md mx-auto px-4 space-y-2">
                     {isOutForDelivery ? (
+                        /* OUT FOR DELIVERY MODE: DELIVERED Swipe Button (Cancel removed) */
                         <SwipeActionButton
                             variant="green"
                             label={t('DELIVERED')}
@@ -608,26 +590,27 @@ const DeliveryActiveOrder = () => {
                             onSuccess={handleDeliver}
                         />
                     ) : isProcessing ? (
+                        /* ACCEPT MODE: ACCEPT Swipe Button + Select Cancel option */
                         <div className="space-y-2.5 w-full">
                             <SwipeActionButton
                                 variant="yellow"
                                 label={t('ACCEPT')}
                                 loadingLabel={t('Accepting...')}
                                 isLoading={isActionLoading}
-                                heightClass="h-[60px] sm:h-[64px]"
-                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
+                                heightClass="h-[64px] sm:h-[68px]"
+                                knobSizeClass="w-[52px] h-[52px] sm:w-[56px] sm:h-[56px]"
                                 onSuccess={handleAccept}
                             />
-                            <SwipeActionButton
-                                variant="gray"
-                                label={t('CANCEL')}
-                                loadingLabel={t('Cancelling...')}
-                                isLoading={isCancelling}
-                                heightClass="h-[60px] sm:h-[64px]"
-                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
-                                autoReset={true}
-                                onSuccess={() => setShowCancelConfirmModal(true)}
-                            />
+                            {/* Cancel Option instead of Accept: opens Swipe to Cancel confirmation */}
+                            <div className="text-center pt-0.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCancelConfirmModal(true)}
+                                    className="py-1 px-4 text-xs sm:text-[13px] font-bold text-red-500 hover:text-red-600 dark:text-red-400 tracking-wider uppercase active:scale-95 transition-all"
+                                >
+                                    {t('Cancel Order')}
+                                </button>
+                            </div>
                         </div>
                     ) : isDelivered ? (
                         <div className="relative overflow-hidden w-full py-4 rounded-full bg-[#00C988] text-white font-black text-sm flex items-center justify-center gap-2 shadow-md select-none">
