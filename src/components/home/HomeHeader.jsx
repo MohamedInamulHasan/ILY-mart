@@ -38,17 +38,17 @@ const HomeHeader = () => {
     })();
 
     return (
-        <header className="flex items-center justify-between px-4 py-2 bg-transparent transition-colors duration-200">
+        <header className="flex items-center justify-between px-2 sm:px-4 py-0 bg-transparent transition-colors duration-200 min-h-[42px]">
             {/* Location Selector */}
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50">
-                    <MapPin className="text-red-500 dark:text-red-500" size={20} />
+                <div className="w-[42px] h-[42px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0">
+                    <MapPin className="text-red-500 dark:text-red-500" size={22} />
                 </div>
-                <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 dark:text-gray-600 font-bold uppercase tracking-wider">{t('Delivery to')}</span>
-                    <Link to="/edit-address" className="flex items-center gap-1 group cursor-pointer border-b border-dashed border-gray-400 dark:border-gray-600 max-w-[180px]">
-                        <span className="text-sm font-bold text-gray-900 dark:text-gray-900 truncate">{displayAddress}</span>
-                        <ChevronDown size={14} className="text-gray-600 dark:text-gray-700" />
+                <div className="flex flex-col min-w-0">
+                    <span className="text-[11px] text-gray-700 dark:text-gray-700 font-semibold uppercase tracking-wider leading-tight">{t('Delivery to')}</span>
+                    <Link to="/edit-address" className="flex items-center gap-1 group cursor-pointer border-b border-dashed border-gray-400 dark:border-gray-600 max-w-[190px] sm:max-w-[260px] mt-0.5">
+                        <span className="text-[16px] sm:text-[17px] font-bold text-gray-900 dark:text-gray-900 truncate leading-tight">{displayAddress}</span>
+                        <ChevronDown size={15} className="text-gray-600 dark:text-gray-700 flex-shrink-0" />
                     </Link>
                 </div>
             </div>
@@ -57,11 +57,11 @@ const HomeHeader = () => {
             <div className="flex items-center gap-3">
                 <Link 
                     to="/cart"
-                    className="w-10 h-10 bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 relative hover:bg-gray-50 dark:hover:bg-white/70 transition-all active:scale-95"
+                    className="w-[42px] h-[42px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 relative hover:bg-gray-50 dark:hover:bg-white/70 shadow-sm transition-all active:scale-95 flex-shrink-0"
                 >
-                    <ShoppingCart size={20} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
+                    <ShoppingCart size={22} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
                     {cartCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white dark:border-gray-800">
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
                             {cartCount}
                         </span>
                     )}

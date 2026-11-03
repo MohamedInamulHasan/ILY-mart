@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Wrench, ShieldCheck, MapPin, CheckCircle, Phone, Send, Check, Search, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Wrench, ShieldCheck, MapPin, CheckCircle, Phone, Send, Check, Search, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useCart } from '../context/CartContext';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { playSuccessSound, unlockAudio } from '../utils/soundHelper'; // Import useAuth
@@ -14,6 +15,7 @@ import { isStoreOpen as isServiceOpen } from '../utils/storeHelpers';
 const Services = () => {
     const navigate = useNavigate();
     const { t } = useLanguage();
+    const { cartCount } = useCart();
     const { requestService, setIsFooterHidden } = useData();
     const { user } = useAuth(); // Get user for default address
     const [selectedService, setSelectedService] = useState(null);
@@ -154,7 +156,7 @@ const Services = () => {
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                     
                     <div className="relative z-10">
-                        <div className="max-w-7xl mx-auto px-2 relative">
+                        <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button 
                                     onClick={() => viewMode === 'details' ? handleBackToList() : navigate(-1)} 
@@ -164,13 +166,27 @@ const Services = () => {
                                 </button>
                             </div>
                             
-                            <div className="flex flex-col items-center text-center">
-                                <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight">
+                            <div className="flex flex-col items-center text-center px-12 min-w-0">
+                                <h1 className="text-[18px] font-bold text-gray-900 dark:text-gray-900 tracking-tight leading-tight truncate">
                                     {viewMode === 'details' && activeService ? activeService.name : t('Premium Services')}
                                 </h1>
-                                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600 mt-0.5">
+                                <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5 truncate">
                                     {viewMode === 'details' && activeService ? activeService.category : t('Professional help at your doorstep')}
                                 </p>
+                            </div>
+
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                <button 
+                                    onClick={() => navigate('/cart')}
+                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
+                                >
+                                    <ShoppingCart size={22} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
+                                    {cartCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
+                                            {cartCount}
+                                        </span>
+                                    )}
+                                </button>
                             </div>
                         </div>
                     </div>

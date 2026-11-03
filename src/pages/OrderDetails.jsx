@@ -70,9 +70,9 @@ const OrderDetails = () => {
                 <div className="px-5 pt-4">
                     {/* Header Skeleton matching real header */}
                     <div className="flex items-center justify-between mb-4">
-                        <div className="w-[46px] h-[46px] rounded-full blinkit-shimmer shrink-0" />
+                        <div className="w-[42px] h-[42px] rounded-full blinkit-shimmer shrink-0" />
                         <div className="h-5 w-32 rounded-lg blinkit-shimmer" />
-                        <div className="w-[46px] h-[46px]" />
+                        <div className="w-[42px] h-[42px]" />
                     </div>
 
                     <div className="space-y-3 sm:space-y-3.5">
@@ -249,12 +249,12 @@ const OrderDetails = () => {
                 <div className="flex items-center justify-between mb-4">
                      <button 
                          onClick={() => navigate(-1)}
-                         className="w-[46px] h-[46px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full text-gray-900 dark:text-white transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-700/50"
+                         className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full text-gray-900 dark:text-white transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-700/50"
                      >
                          <ArrowLeft size={22} />
                      </button>
-                     <h1 className="text-[17px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Order Details')}</h1>
-                     <div className="w-[46px] h-[46px]" /> {/* Spacer */}
+                     <h1 className="text-[18px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Order Details')}</h1>
+                     <div className="w-[42px] h-[42px]" /> {/* Spacer */}
                 </div>
 
                 <div className="space-y-3 sm:space-y-3.5">

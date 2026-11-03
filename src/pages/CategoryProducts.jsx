@@ -114,15 +114,17 @@ const CategoryProducts = () => {
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#2E5A2E]/20 rounded-full blur-3xl pointer-events-none"></div>
                     
                     <div className="relative z-10">
-                        <div className="max-w-2xl mx-auto px-2 relative flex items-center justify-center min-h-[42px]">
-                            <button
-                                onClick={() => navigate(-1)}
-                                className="absolute left-4 w-10 h-10 flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50 flex-shrink-0 z-10"
-                            >
-                                <ArrowLeft size={20} />
-                            </button>
-                            <div className="flex flex-col items-center text-center px-16 min-w-0">
-                                <h1 className="text-gray-900 dark:text-gray-900 text-[18px] font-bold tracking-tight truncate w-full">
+                        <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
+                            <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                                <button
+                                    onClick={() => navigate(-1)}
+                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
+                                >
+                                    <ArrowLeft size={22} />
+                                </button>
+                            </div>
+                            <div className="flex flex-col items-center text-center px-14 min-w-0">
+                                <h1 className="text-gray-900 dark:text-gray-900 text-[18px] font-bold tracking-tight truncate w-full leading-tight">
                                     {(() => {
                                         const fullName = t(categoryName);
                                         const bracketIndex = fullName.indexOf('(');
@@ -134,19 +136,21 @@ const CategoryProducts = () => {
                                         return fullName;
                                     })()}
                                 </h1>
-                                <p className="text-[10px] text-gray-500 dark:text-gray-600 font-medium truncate w-full uppercase tracking-wider">{displayProducts.length} {t('Products Available')}</p>
+                                <p className="text-[11px] text-gray-700 dark:text-gray-700 font-semibold truncate w-full mt-0.5">{displayProducts.length} {t('Products Available')}</p>
                             </div>
-                            <Link 
-                                to="/cart"
-                                className="absolute right-4 w-10 h-10 flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50 flex-shrink-0 z-10"
-                            >
-                                <ShoppingCart size={20} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white dark:border-gray-800">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </Link>
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                <Link 
+                                    to="/cart"
+                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50 relative"
+                                >
+                                    <ShoppingCart size={22} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
+                                    {cartCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
+                                            {cartCount}
+                                        </span>
+                                    )}
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>

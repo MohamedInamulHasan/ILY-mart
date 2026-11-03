@@ -40,7 +40,7 @@ const Cart = () => {
                 <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 rounded-full blur-3xl pointer-events-none" />
                     <div className="relative z-10">
-                        <div className="max-w-7xl mx-auto px-2 relative min-h-[42px]">
+                        <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button 
                                     onClick={handleBackNav} 
@@ -49,9 +49,14 @@ const Cart = () => {
                                     <ArrowLeft size={22} />
                                 </button>
                             </div>
-                            <div className="flex flex-col items-center text-center pt-1">
+                            <div className="flex flex-col text-center">
                                 <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight">{t('Cart')}</h1>
                                 <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{t('Your selected items')}</p>
+                            </div>
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                <div className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full shadow-sm border border-gray-100/50">
+                                    <ShoppingCart size={22} className="text-[#2E5A2E]" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -92,7 +97,7 @@ const Cart = () => {
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
                             <div className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full shadow-sm border border-gray-100/50">
-                                <ShoppingCart size={20} className="text-[#2E5A2E]" />
+                                <ShoppingCart size={22} className="text-[#2E5A2E]" />
                             </div>
                         </div>
                     </div>
