@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { Phone, MapPin, Package, ChevronsRight, X, Volume2, VolumeX, Navigation, Clock, CreditCard, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
+import { Phone, MapPin, Package, ChevronsRight, Volume2, VolumeX, Navigation, Clock, CreditCard, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
@@ -253,35 +253,20 @@ const IncomingOrderModal = ({
                     onPointerDown={(e) => e.stopPropagation()}
                     className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col justify-between"
                 >
-                    {/* Top Header Row: Time and ID on Left, X Button on Right */}
+                    {/* Top Header Row: Time Left & ID Right in grey same thickness (matching Order List card, no X icon) */}
                     <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
-                        {/* Left: Time and #Order ID in grey */}
-                        <div className="flex items-center gap-2 min-w-0">
+                        {/* Left: 🕒 Nov 3, 1.47 PM */}
+                        <div className="flex items-center gap-1.5 min-w-0">
                             <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
                             <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 tracking-wide truncate">
                                 {formatOrderBannerTime(order.createdAt || order.date) || formattedOrderTime || t('New Order')}
                             </span>
-                            <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 font-mono shrink-0">
-                                #{orderIdShort}
-                            </span>
                         </div>
 
-                        {/* Right: X Button */}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                stopIncomingOrderAlertSound();
-                                if (onSkip) {
-                                    onSkip(order);
-                                } else {
-                                    handleDismissView();
-                                }
-                            }}
-                            title={t('Close')}
-                            className="p-1 -mr-1 hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-90 rounded-full text-gray-900 dark:text-white transition-all flex items-center justify-center cursor-pointer shrink-0 ml-2"
-                        >
-                            <X size={18} className="text-gray-900 dark:text-white stroke-[2.5]" />
-                        </button>
+                        {/* Right: #Order ID (same font-bold thickness and grey color) */}
+                        <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 font-mono shrink-0">
+                            #{orderIdShort}
+                        </span>
                     </div>
 
                     {/* Light grey line matching green dot line */}

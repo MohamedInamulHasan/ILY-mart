@@ -391,24 +391,22 @@ public class FloatingLogoService extends Service {
                 formattedTime = fallbackFormat.format(new java.util.Date());
             }
 
-            // Left: Time & ID (same thickness and grey color)
-            TextView headerLeft = new TextView(this);
-            headerLeft.setText("🕒 " + formattedTime + "   #" + shortId);
-            headerLeft.setTextColor(Color.parseColor("#6B7280"));
-            headerLeft.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            headerLeft.setTypeface(Typeface.DEFAULT_BOLD);
-            LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            headerLayout.addView(headerLeft, titleParams);
+            // Left: Time with Clock Icon (same font-bold thickness and grey color)
+            TextView headerTime = new TextView(this);
+            headerTime.setText("🕒 " + formattedTime);
+            headerTime.setTextColor(Color.parseColor("#6B7280"));
+            headerTime.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            headerTime.setTypeface(Typeface.DEFAULT_BOLD);
+            LinearLayout.LayoutParams timeParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            headerLayout.addView(headerTime, timeParams);
 
-            // Right: Dismiss Button '✕'
-            TextView closeBtn = new TextView(this);
-            closeBtn.setText("✕");
-            closeBtn.setTextColor(Color.parseColor("#374151"));
-            closeBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-            closeBtn.setTypeface(Typeface.DEFAULT_BOLD);
-            closeBtn.setPadding(dp(8), dp(4), dp(8), dp(4));
-            closeBtn.setOnClickListener(v -> dismissPorterOrderCard());
-            headerLayout.addView(closeBtn);
+            // Right: #Order ID (same font-bold thickness and grey color, no X icon)
+            TextView headerId = new TextView(this);
+            headerId.setText("#" + shortId);
+            headerId.setTextColor(Color.parseColor("#6B7280"));
+            headerId.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            headerId.setTypeface(Typeface.DEFAULT_BOLD);
+            headerLayout.addView(headerId);
 
             cardLayout.addView(headerLayout);
 
