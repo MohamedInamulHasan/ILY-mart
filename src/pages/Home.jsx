@@ -206,9 +206,9 @@ const Home = () => {
 
 
             <PullToRefreshLayout>
-                <div className="pt-[84px]">
+                <div className="pt-[88px]">
                 {/* Search Bar (Now Below the Design with Filter) */}
-                <section className="px-4 relative z-50 mb-2.5 sm:mb-3">
+                <section className="px-4 relative z-50 mb-4 sm:mb-5">
                     <div className="flex items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto relative">
                         <div className="relative group flex-1">
                             <form

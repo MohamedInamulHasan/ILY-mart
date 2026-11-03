@@ -111,9 +111,9 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
     }, [products, singleStore, contextStores, section.type, section.id]);
 
     return (
-        <section className={`px-4 pt-1.5 pb-3 md:py-4 dark:bg-gray-900 transition-opacity duration-300 ${!isOpen ? 'opacity-80' : ''}`}>
+        <section className={`px-4 pt-2.5 pb-4 md:py-5 dark:bg-gray-900 transition-opacity duration-300 ${!isOpen ? 'opacity-80' : ''}`}>
             {/* Header */}
-            <div className="flex justify-between items-end mb-2.5 sm:mb-3 px-1">
+            <div className="flex justify-between items-end mb-3.5 sm:mb-4 px-1">
                 <div className="flex flex-col min-w-0 flex-1 pr-3">
                     <div className="flex items-center gap-2">
                         {section.id === 'free_delivery' ? (
@@ -139,11 +139,11 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
                 </div>
                 {section.id !== 'free_delivery' && (
                     isOpen ? (
-                        <Link to={navigateTo} className="text-[13px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-70 transition-all underline decoration-[2.5px] underline-offset-[6px] shrink-0">
+                        <Link to={navigateTo} className="text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-70 transition-all underline decoration-[1.5px] underline-offset-[4px] shrink-0">
                             {t('See All')}
                         </Link>
                     ) : (
-                        <span className="text-[13px] font-bold text-gray-400 dark:text-gray-650 cursor-not-allowed select-none underline decoration-[2.5px] underline-offset-[6px] shrink-0">
+                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-650 cursor-not-allowed select-none underline decoration-[1.5px] underline-offset-[4px] shrink-0">
                             {t('See All')}
                         </span>
                     )
