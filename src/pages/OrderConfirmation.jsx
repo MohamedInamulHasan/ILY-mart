@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const OrderConfirmation = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { clearCart } = useCart();
+    const { clearCart, cartCount } = useCart();
     const { addOrder, stores, setIsFooterHidden } = useData();
     const { t, language } = useLanguage();
     const { setUser } = useAuth();

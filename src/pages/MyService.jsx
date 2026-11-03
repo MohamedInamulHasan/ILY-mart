@@ -3,13 +3,14 @@ import { Wrench, ArrowLeft, LogOut, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
+import { useCart } from '../context/CartContext';
 import ServiceManagement from './admin/ServiceManagement';
 
 const MyService = () => {
     const { user, loading } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
-    const { cartCount } = useData();
+    const { cartCount } = useCart();
 
     // Protection: Redirect if not service_admin
     if (loading) {

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Store, ArrowLeft, LogOut, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import StoreManagement from './admin/StoreManagement';
 
@@ -9,7 +10,7 @@ const MyStore = () => {
     const { user, loading } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
-    const { cartCount } = useData(); // Use useData for cartCount if available or useCart
+    const { cartCount } = useCart();
 
     // Protection: Redirect if not store_admin
     if (loading) {

@@ -18,7 +18,7 @@ const Checkout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const directPurchase = location.state?.directPurchase;
-    const { cartItems, cartTotal, clearCart, removeFromCart } = useCart();
+    const { cartItems, cartTotal, clearCart, removeFromCart, cartCount } = useCart();
     const { user, setUser, loading: authLoading, updateGuest } = useAuth();
     const { data: userProfile } = useUserProfile(); // Fetch fresh user data with coins
     const { t, language } = useLanguage();
