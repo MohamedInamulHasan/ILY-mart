@@ -59,7 +59,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                     onClick={() => onSelectCategory('All')}
                     className={`${isExpanded ? 'w-full' : 'min-w-[76px] sm:min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer`}
                 >
-                    <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-[3.5px] ${selectedCategory === 'All' ? 'border-[#2E5A2E] dark:border-[#2E5A2E] bg-[#CBF9B2] dark:bg-[#CBF9B2]' : 'border-transparent bg-[#E8EAEF] dark:bg-gray-800'}`}>
+                    <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-[1.5px] ${selectedCategory === 'All' ? 'border-[#2E5A2E] dark:border-[#2E5A2E] bg-[#CBF9B2] dark:bg-[#CBF9B2]' : 'border-transparent bg-[#E8EAEF] dark:bg-gray-800'}`}>
                         {allCategoryImage ? (
                             <img
                                 src={allCategoryImage}
@@ -87,7 +87,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             onClick={() => onSelectCategory(category.name)}
                             className={`${isExpanded ? 'w-full' : 'min-w-[76px] sm:min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer`}
                         >
-                            <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-[3.5px] ${isSelected ? 'border-[#2E5A2E] dark:border-[#2E5A2E] bg-[#CBF9B2] dark:bg-[#CBF9B2]' : 'border-transparent bg-[#E8EAEF] dark:bg-gray-800'}`}>
+                            <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-[1.5px] ${isSelected ? 'border-[#2E5A2E] dark:border-[#2E5A2E] bg-[#CBF9B2] dark:bg-[#CBF9B2]' : 'border-transparent bg-[#E8EAEF] dark:bg-gray-800'}`}>
                                 <img
                                     src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                     alt={category.name}
