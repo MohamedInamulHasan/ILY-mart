@@ -308,11 +308,11 @@ const StoreProducts = () => {
                     </div>
                 </div>
 
-                <div className="pt-[100px]">
+                <div className="pt-[88px]">
 
                 {/* Store Search & Filter (Now Below the Design) */}
-                <section className="px-4 relative z-20 mb-10">
-                    <div className="flex items-center gap-3 max-w-2xl mx-auto relative">
+                <section className="px-4 relative z-20 mb-3.5 sm:mb-4">
+                    <div className="flex items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto relative">
                     <div className="relative group flex-1">
                         <form onSubmit={(e) => e.preventDefault()}>
                             <input
@@ -320,9 +320,9 @@ const StoreProducts = () => {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder={`${t('Search in')} ${store?.name}...`}
-                                className="w-full pl-12 pr-6 py-4 rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none transition-all duration-300 shadow-sm"
+                                className="w-full pl-10 pr-4 py-2.5 sm:py-3 text-sm rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none transition-all duration-300 shadow-sm"
                             />
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] transition-colors" size={20} />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] transition-colors" size={18} />
                         </form>
                     </div>
                     
@@ -431,7 +431,7 @@ const StoreProducts = () => {
             </section>
 
             {subcategoryData.length > 0 && (
-                <div className="max-w-7xl mx-auto px-4 mb-6">
+                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-4">
                     <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
                         <button
                             onClick={() => setSelectedSubcategory(null)}
@@ -516,11 +516,11 @@ const StoreProducts = () => {
                         ))}
                     </div>
                 ) : sections.length > 0 ? (
-                    <div className="space-y-8">
+                    <div className="space-y-5 sm:space-y-6">
                         {sections.map(([groupName, groupProducts]) => (
                             <div key={groupName}>
                                 {groupName !== '_all_' && !selectedSubcategory && (
-                                    <div className="flex justify-between items-center mb-6 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm -mx-4 px-4 py-2.5">
+                                    <div className="flex justify-between items-center mb-3.5 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm -mx-4 px-4 py-2.5">
                                         <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                             <div className="w-1.5 h-6 bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full"></div>
                                             {(() => {

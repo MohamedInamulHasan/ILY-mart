@@ -101,19 +101,19 @@ const Shop = () => {
             </div>
             
             <PullToRefreshLayout>
-                <div className="pt-[95px]">
-                <div className="max-w-7xl mx-auto px-4 mt-2">
+                <div className="pt-[88px]">
+                <div className="max-w-7xl mx-auto px-4 mt-0">
                     <div className="mb-2">
                         {/* Removed Store/Service toggle for a cleaner experience */}
-                        <div className="relative group mb-8">
+                        <div className="relative group mb-3.5 sm:mb-4">
                             <input
                                 type="text"
                                 placeholder={t('Search by store name or location...')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-6 py-4 rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none transition-all duration-300 shadow-sm"
+                                className="w-full pl-10 pr-4 py-2.5 sm:py-3 text-sm rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none transition-all duration-300 shadow-sm"
                             />
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] transition-colors" size={20} />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] transition-colors" size={18} />
                             {searchQuery && (
                                 <button
                                     onClick={() => setSearchQuery('')}
@@ -306,7 +306,7 @@ const Shop = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="max-w-7xl mx-auto mb-6 mt-2">
+                                <div className="max-w-7xl mx-auto mb-4 mt-0">
                                     <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
                                         {categoryData.map((category) => {
                                             const isActive = category.name === categoryFilter;

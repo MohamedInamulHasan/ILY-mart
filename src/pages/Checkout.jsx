@@ -308,7 +308,7 @@ const Checkout = () => {
                 // Step B: Calculate delivery & slot parameters
                 const currentUser = userProfile?.data || updatedUserData;
                 const hasCoins = currentUser?.coins > 0;
-                const hasGoldProduct = displayItems.some(item => item.isGold);
+                const hasGoldProduct = displayItems.some(item => item.isGold || (item.product && item.product.isGold)) || location.state?.hasGoldProduct;
                 const baseDeliveryCharge = calculateDeliveryCharge(displayItems);
                 const finalDeliveryCharge = (hasCoins || hasGoldProduct) ? 0 : baseDeliveryCharge;
 
@@ -406,13 +406,13 @@ const Checkout = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
                     {/* Checkout Form */}
-                    <div className="lg:col-span-2 space-y-8">
+                    <div className="lg:col-span-2 space-y-3.5 sm:space-y-4">
                         {/* Shipping Address */}
                         {/* Shipping Address */}
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sm:p-8">
-                            <div className="flex items-center gap-3 mb-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-5">
+                            <div className="flex items-center gap-2.5 mb-3.5">
                                 <div className="w-9 h-9 rounded-xl bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <MapPin size={18} />
                                 </div>
@@ -424,7 +424,7 @@ const Checkout = () => {
                                      <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded-2xl w-full"></div>
                                 </div>
                             ) : !isEditingAddress ? (
-                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-600 relative group">
+                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3.5 sm:p-4 border border-gray-100 dark:border-gray-600 relative group">
                                     <button 
                                         type="button"
                                         onClick={() => setIsEditingAddress(true)}
@@ -753,19 +753,19 @@ const Checkout = () => {
                         )}
 
                         {/* Order Summary (Items List) */}
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
-                            <div className="p-5 flex items-center gap-3">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
+                            <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-700/60 flex items-center gap-2.5">
                                 <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#2E5A2E]">
                                     <Package size={18} />
                                 </div>
-                                <h3 className="font-medium text-gray-900 dark:text-white text-base">{t('Total Summary')}</h3>
+                                <h3 className="font-medium text-gray-900 dark:text-white text-base">{t('Order Summary')}</h3>
                             </div>
 
-                            <div className="p-4 sm:p-6">
+                            <div className="p-3.5 sm:p-4">
                                 <div className="space-y-4">
                                     {displayItems.map((item, index) => (
-                                        <div key={item.id || index} className="py-4 flex gap-4 first:pt-0">
-                                            <div className="h-16 w-16 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0 relative">
+                                        <div key={item.id || index} className="py-2.5 flex gap-3 first:pt-0">
+                                            <div className="h-13 w-13 sm:h-14 sm:w-14 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 relative">
                                                 <img
                                                     src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
                                                     alt={item.adTitle || item.title || item.name}
@@ -847,8 +847,8 @@ const Checkout = () => {
                         </div>
 
                         {/* Payment Method */}
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sm:p-8">
-                            <div className="flex items-center gap-4 mb-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-5">
+                            <div className="flex items-center gap-2.5 mb-3.5">
                                 <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-[#CBF9B2]/20 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2]">
                                     <CreditCard size={20} />
                                 </div>
@@ -856,7 +856,7 @@ const Checkout = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <label className={`flex items-center p-4 rounded-3xl border-2 cursor-pointer transition-all ${formData.paymentMethod === 'cod' ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/5' : 'border-gray-100 dark:border-gray-700 hover:border-gray-200'}`}>
+                                <label className={`flex items-center p-3 sm:p-3.5 rounded-xl border-2 cursor-pointer transition-all ${formData.paymentMethod === 'cod' ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/5' : 'border-gray-100 dark:border-gray-700 hover:border-gray-200'}`}>
                                     <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-[#CBF9B2]/20 border border-green-200/50 dark:border-[#CBF9B2]/20 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center mr-4 flex-shrink-0 shadow-xs">
                                         <Banknote size={22} />
                                     </div>
@@ -879,13 +879,13 @@ const Checkout = () => {
 
                     {/* Order Summary / Payment Card */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">{t('Total Summary')}</h2>
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
+                            <div className="flex justify-between items-center mb-3.5">
+                                <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">{t('Payment Summary')}</h2>
                                 <span className="text-[13px] font-medium text-gray-400 tracking-tight">{displayItems.length} {t('items')}</span>
                             </div>
 
-                            <div className="space-y-4 mb-8">
+                            <div className="space-y-2.5 mb-5">
                                 <div className="flex justify-between items-center">
                                     <span className="text-[14px] text-gray-400 font-medium">{t('Subtotal')}</span>
                                     <span className="text-[15px] font-extrabold text-gray-900 dark:text-white">₹{displayTotal.toFixed(0)}</span>
@@ -907,7 +907,7 @@ const Checkout = () => {
                             <button
                                 type="submit"
                                 disabled={isNavigating}
-                                className="w-full bg-black text-white rounded-full py-4 flex items-center justify-center font-normal text-[15px] active:scale-[0.98] transition-transform disabled:opacity-50"
+                                className="w-full bg-black text-white rounded-full py-3 sm:py-3.5 flex items-center justify-center font-normal text-sm active:scale-[0.98] transition-transform disabled:opacity-50"
                             >
                                 {isNavigating ? (
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

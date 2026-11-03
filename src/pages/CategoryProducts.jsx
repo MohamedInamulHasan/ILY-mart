@@ -110,7 +110,7 @@ const CategoryProducts = () => {
         <PullToRefreshLayout>
             <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 pb-20 transition-colors duration-200">
                 {/* Premium Header Card */}
-                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-8">
+                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-3.5 sm:mb-4">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#2E5A2E]/20 rounded-full blur-3xl pointer-events-none"></div>
                     
                     <div className="relative z-10">
@@ -153,7 +153,7 @@ const CategoryProducts = () => {
 
                 <div className="pt-1 pb-6">
                     <div className="max-w-7xl mx-auto px-4">
-                        <div className="flex items-center gap-3 relative z-[100] mb-8">
+                        <div className="flex items-center gap-2.5 sm:gap-3 relative z-[100] mb-3.5 sm:mb-4">
                             <div className="relative flex-1 group">
                                 <form onSubmit={(e) => e.preventDefault()}>
                                     <input
@@ -161,9 +161,9 @@ const CategoryProducts = () => {
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder={t('Search products...')}
-                                        className="w-full pl-12 pr-4 py-4 rounded-full border-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:outline-none transition-all duration-300"
+                                        className="w-full pl-10 pr-4 py-2.5 sm:py-3 text-sm rounded-full border-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:outline-none transition-all duration-300"
                                     />
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] transition-colors" size={20} />
+                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] transition-colors" size={18} />
                                 </form>
                             </div>
                             <SortDropdown currentSort={globalSortOrder} onSortChange={setGlobalSortOrder} />
@@ -171,7 +171,7 @@ const CategoryProducts = () => {
 
                         {/* Subcategory Navigation Bar */}
                         {subcategories.length > 0 && (
-                            <div className="max-w-7xl mx-auto px-4 mb-8">
+                            <div className="max-w-7xl mx-auto px-4 mb-4">
                                 <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
                                     <button
                                         onClick={() => setSelectedSubcategory(null)}

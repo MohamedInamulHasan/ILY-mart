@@ -170,22 +170,22 @@ const Orders = () => {
             </div>
 
             <PullToRefreshLayout>
-                <div className="pt-[95px]">
-                <div className="px-5 mt-2 max-w-3xl mx-auto">
+                <div className="pt-[88px]">
+                <div className="px-4 mt-0 max-w-3xl mx-auto">
                     {/* Search Pill */}
-                    <div className="relative mb-6">
+                    <div className="relative mb-3 sm:mb-3.5">
                         <input
                             type="text"
                             placeholder={t('Search orders, items...')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-10 py-3.5 rounded-full border border-gray-100/50 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] text-gray-900 dark:text-white focus:outline-none shadow-sm dark:placeholder-gray-500 transition-all duration-300"
+                            className="w-full pl-10 pr-9 py-2.5 sm:py-3 rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none shadow-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300"
                         />
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                             >
                                 <X size={16} />
                             </button>
@@ -193,16 +193,16 @@ const Orders = () => {
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex overflow-x-auto pb-4 mb-4 scrollbar-hide gap-3 w-full">
+                    <div className="flex overflow-x-auto pb-2 mb-3 scrollbar-hide gap-2 sm:gap-2.5 w-full">
                         {tabs.map(tab => (
                             <button
                                 key={tab}
                                 id={activeTab === tab ? "active-order-tab" : undefined}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-5 py-2.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors duration-300 ${
+                                className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 shadow-sm ${
                                     activeTab === tab
                                     ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900'
-                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-transparent'
+                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700/60'
                                 }`}
                             >
                                 {t(tab)}
@@ -211,14 +211,14 @@ const Orders = () => {
                     </div>
 
                     {/* Orders List */}
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-3.5">
                         {loadingOrders ? (
                             // Blinkit-style Orders Skeleton Loader
                             <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
                                 {[1, 2, 3].map((i) => (
                                     <div
                                         key={i}
-                                        className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700/60 p-6 shadow-sm space-y-5"
+                                        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-4 sm:p-5 shadow-sm space-y-3.5"
                                     >
                                         {/* Top Header: Package Icon + Order ID/Date + Status Pill */}
                                         <div className="flex justify-between items-start gap-2">
@@ -235,8 +235,8 @@ const Orders = () => {
                                         {/* Items Section: Product image + Details */}
                                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
                                             {[1, 2].map((itemIdx) => (
-                                                <div key={itemIdx} className="py-3 flex items-center gap-4 first:pt-0">
-                                                    <div className="h-16 w-16 rounded-2xl blinkit-shimmer flex-shrink-0" />
+                                                <div key={itemIdx} className="py-2.5 flex items-center gap-3 first:pt-0">
+                                                    <div className="h-14 w-14 rounded-xl blinkit-shimmer flex-shrink-0" />
                                                     <div className="flex-1 space-y-2">
                                                         <div className="h-4 w-3/4 rounded-md blinkit-shimmer" />
                                                         <div className="h-3 w-1/3 rounded-md blinkit-shimmer" />
@@ -247,7 +247,7 @@ const Orders = () => {
                                         </div>
 
                                         {/* Bottom Footer: Total Amount + View Details */}
-                                        <div className="pt-4 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center">
+                                        <div className="pt-2.5 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center">
                                             <div className="space-y-1">
                                                 <div className="h-2.5 w-16 rounded-full blinkit-shimmer" />
                                                 <div className="h-5 w-20 rounded-md blinkit-shimmer" />
@@ -263,13 +263,13 @@ const Orders = () => {
                                 <div
                                     key={order._id || order.id}
                                     onClick={() => navigate(`/orders/${order._id || order.id}`)}
-                                    className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 cursor-pointer group relative"
+                                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 cursor-pointer group relative"
                                 >
 
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start gap-2 mb-4">
+                                    <div className="p-4 sm:p-5">
+                                        <div className="flex justify-between items-start gap-2 mb-3 pb-2 border-b border-gray-100/60 dark:border-gray-700/40">
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0">
+                                                <div className="p-1.5 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0">
                                                     <Package size={18} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -306,8 +306,8 @@ const Orders = () => {
 
                                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
                                             {order.items?.slice(0, 2).map((item, idx) => (
-                                                <div key={idx} className="py-4 flex items-center gap-4 first:pt-0">
-                                                    <div className="h-16 w-16 rounded-2xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
+                                                <div key={idx} className="py-2.5 flex items-center gap-3">
+                                                    <div className="h-14 w-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
                                                         <img
                                                             src={item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
                                                                 ? item.image
@@ -333,7 +333,7 @@ const Orders = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                        <p className={`text-sm font-medium text-gray-900 dark:text-white ${item.isFromAd ? '' : 'truncate'}`}>
+                                                        <p className={`text-[13px] font-medium leading-tight text-gray-900 dark:text-white ${item.isFromAd ? '' : 'truncate'}`}>
                                                             {(() => {
                                                                 const fullTitle = t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title;
                                                                 if (language !== 'ta') return fullTitle;
@@ -353,11 +353,11 @@ const Orders = () => {
                                                             })()}
                                                         </p>
                                                         {(item.storeId || item.storeName) && (
-                                                            <p className="text-xs font-normal text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                                                            <p className="text-[11px] font-normal text-gray-400 dark:text-gray-500 truncate mt-0.5">
                                                                 {getStoreName(item.storeId, stores) || item.storeName}
                                                             </p>
                                                         )}
-                                                        <div className="flex items-center justify-between mt-1">
+                                                        <div className="flex items-center justify-between mt-0.5">
                                                             <div>
                                                                 <p className="text-sm font-bold text-gray-900 dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
                                                                 {(item.unit || item.product?.unit) && (
@@ -380,12 +380,12 @@ const Orders = () => {
                                             )}
                                         </div>
 
-                                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-end mb-1">
+                                        <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
                                             <div>
-                                                <p className="text-[12px] text-gray-500 dark:text-gray-400 font-medium mb-0.5">{t('Total Amount')}</p>
-                                                <p className="font-bold text-[16px] text-gray-900 dark:text-white leading-none">₹{order.total.toFixed(0)}</p>
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-none mb-1">{t('Total Amount')}</p>
+                                                <p className="font-bold text-[15px] sm:text-[16px] text-gray-900 dark:text-white leading-tight">₹{order.total.toFixed(0)}</p>
                                             </div>
-                                            <div className="text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] font-bold underline decoration-[#2E5A2E] dark:decoration-[#CBF9B2] decoration-2 underline-offset-2 hover:opacity-80 transition-opacity">
+                                            <div className="text-[#2E5A2E] dark:text-[#CBF9B2] text-xs font-semibold underline decoration-[#2E5A2E] dark:decoration-[#CBF9B2] decoration-[1.5px] underline-offset-2 hover:opacity-80 transition-opacity">
                                                 {t('Details')}
                                             </div>
                                         </div>
