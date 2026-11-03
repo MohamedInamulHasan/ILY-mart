@@ -4,6 +4,7 @@ import { Package, Search, Truck, CheckCircle, Clock, RotateCcw, ShoppingCart, Tr
 import { useOrders, useDeleteOrder } from '../hooks/queries/useOrders';
 import { useStores } from '../hooks/queries/useStores';
 import { useData } from '../context/DataContext';
+import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getStoreName } from '../utils/storeHelpers';
 import { useLanguage } from '../context/LanguageContext';
 import { formatOrderDateTime, formatDeliveryTime } from '../utils/dateUtils';
@@ -290,25 +291,13 @@ const Orders = () => {
 
                                                     </div>
                                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                        <p className={`text-[13px] font-medium leading-tight text-gray-900 dark:text-white ${item.isFromAd ? '' : 'truncate'}`}>
-                                                            {(() => {
-                                                                const fullTitle = t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title;
-                                                                if (language !== 'ta') return fullTitle;
-                                                                
-                                                                const bracketIndex = fullTitle.indexOf('(');
-                                                                if (bracketIndex === -1) return fullTitle;
-
-                                                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                                                
-                                                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                                                
-                                                                if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                                                if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                                                return fullTitle;
-                                                            })()}
-                                                        </p>
+                                                        <p className="mb-0.5 leading-tight">
+                                                    {renderBilingualTitle(t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title, language, {
+                                                        hideTag: true,
+                                                        mainClassName: 'text-[13px] font-medium leading-tight text-gray-900 dark:text-white',
+                                                        subClassName: 'text-[11px] text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
+                                                    })}
+                                                </p>
                                                         {(item.storeId || item.storeName) && (
                                                             <p className="text-[11px] font-normal text-gray-400 dark:text-gray-500 truncate mt-0.5">
                                                                 {getStoreName(item.storeId, stores) || item.storeName}

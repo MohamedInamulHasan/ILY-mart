@@ -6,6 +6,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { apiService, API_BASE_URL } from '../utils/api';
+import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getStoreName, formatDeliveryRangeFromDate } from '../utils/storeHelpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CancelOrderModal from '../components/CancelOrderModal';
@@ -66,37 +67,57 @@ const OrderDetails = () => {
     if (!order && (loading.orders || loadingSingle)) {
         return (
             <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 mx-auto max-w-3xl w-full relative pb-12">
-                <div className="px-5 pt-8">
-                    {/* Header Skeleton */}
-                    <div className="flex items-center justify-between mb-8 mt-2">
-                        <div className="w-[46px] h-[46px] rounded-full blinkit-shimmer"></div>
-                        <div className="h-6 w-36 rounded-xl blinkit-shimmer"></div>
-                        <div className="w-[46px] h-[46px]"></div>
+                <div className="px-5 pt-4">
+                    {/* Header Skeleton matching real header */}
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-[46px] h-[46px] rounded-full blinkit-shimmer shrink-0" />
+                        <div className="h-5 w-32 rounded-lg blinkit-shimmer" />
+                        <div className="w-[46px] h-[46px]" />
                     </div>
 
                     <div className="space-y-3 sm:space-y-3.5">
-                        {/* Status Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
-                            <div className="h-5 w-40 rounded-lg blinkit-shimmer" />
-                            <div className="h-3 w-60 rounded-md blinkit-shimmer" />
-                            <div className="h-10 w-full rounded-2xl blinkit-shimmer mt-4" />
+                        {/* Status Card Skeleton: Top Banner + 3-Node Timeline */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                            {/* Status Banner */}
+                            <div className="p-5 sm:p-6 bg-gray-50/70 dark:bg-gray-750 flex items-center justify-between">
+                                <div className="space-y-2">
+                                    <div className="h-3.5 w-28 rounded-md blinkit-shimmer" />
+                                    <div className="h-7 w-36 rounded-xl blinkit-shimmer" />
+                                    <div className="h-3 w-44 rounded-md blinkit-shimmer" />
+                                </div>
+                                <div className="w-12 h-12 rounded-full blinkit-shimmer shrink-0" />
+                            </div>
+
+                            {/* 3-Step Timeline Skeleton */}
+                            <div className="px-4 py-4 relative">
+                                <div className="absolute top-[34px] left-8 right-8 h-1 bg-gray-100 dark:bg-gray-700 rounded-full" />
+                                <div className="relative flex justify-between">
+                                    {[1, 2, 3].map((step) => (
+                                        <div key={step} className="flex flex-col items-center z-10 space-y-2">
+                                            <div className="w-9 h-9 rounded-full blinkit-shimmer border-4 border-white dark:border-gray-800" />
+                                            <div className="h-3 w-16 rounded-md blinkit-shimmer" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Items Card Skeleton */}
+                        {/* Items Ordered Card Skeleton */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                            <div className="p-4 border-b border-gray-50 dark:border-gray-700">
-                                <div className="h-6 w-40 rounded-lg blinkit-shimmer"></div>
+                            <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg blinkit-shimmer shrink-0" />
+                                <div className="h-4 w-32 rounded-md blinkit-shimmer" />
                             </div>
-                            <div className="p-5 space-y-6">
+                            <div className="divide-y divide-gray-50 dark:divide-gray-700">
                                 {[1, 2].map((i) => (
-                                    <div key={i} className="flex gap-4">
-                                        <div className="h-16 w-16 rounded-2xl blinkit-shimmer flex-shrink-0"></div>
-                                        <div className="flex-1 space-y-2">
-                                            <div className="h-4 w-3/4 rounded-lg blinkit-shimmer"></div>
-                                            <div className="h-3 w-1/2 rounded-md blinkit-shimmer"></div>
-                                            <div className="flex justify-between items-center pt-1">
-                                                <div className="h-5 w-16 rounded-lg blinkit-shimmer"></div>
-                                                <div className="h-5 w-10 rounded-lg blinkit-shimmer"></div>
+                                    <div key={i} className="p-3 sm:p-3.5 flex gap-3">
+                                        <div className="w-14 h-14 rounded-xl blinkit-shimmer shrink-0" />
+                                        <div className="flex-1 space-y-1.5 min-w-0">
+                                            <div className="h-4 w-3/4 rounded-md blinkit-shimmer" />
+                                            <div className="h-3 w-1/3 rounded-md blinkit-shimmer" />
+                                            <div className="flex items-center justify-between pt-1">
+                                                <div className="h-4 w-16 rounded-md blinkit-shimmer" />
+                                                <div className="h-5 w-8 rounded-md blinkit-shimmer" />
                                             </div>
                                         </div>
                                     </div>
@@ -104,20 +125,29 @@ const OrderDetails = () => {
                             </div>
                         </div>
 
-                        {/* Address Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3">
-                            <div className="h-4 w-28 rounded-md blinkit-shimmer" />
-                            <div className="h-3.5 w-3/4 rounded-md blinkit-shimmer" />
-                            <div className="h-3.5 w-1/2 rounded-md blinkit-shimmer" />
+                        {/* Delivery Address Card Skeleton */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-8 h-8 rounded-lg blinkit-shimmer shrink-0" />
+                                <div className="h-4 w-36 rounded-md blinkit-shimmer" />
+                            </div>
+                            <div className="space-y-1.5 pl-1">
+                                <div className="h-4 w-40 rounded-md blinkit-shimmer" />
+                                <div className="h-3.5 w-60 rounded-md blinkit-shimmer" />
+                                <div className="h-3.5 w-32 rounded-md blinkit-shimmer" />
+                            </div>
                         </div>
 
                         {/* Payment Summary Skeleton */}
-                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
-                            <div className="h-5 w-36 rounded-lg blinkit-shimmer" />
-                            <div className="space-y-3">
-                                <div className="flex justify-between"><div className="h-3.5 w-20 rounded blinkit-shimmer" /><div className="h-3.5 w-16 rounded blinkit-shimmer" /></div>
-                                <div className="flex justify-between"><div className="h-3.5 w-24 rounded blinkit-shimmer" /><div className="h-3.5 w-12 rounded blinkit-shimmer" /></div>
-                                <div className="flex justify-between pt-2 border-t border-gray-50 dark:border-gray-700"><div className="h-4 w-24 rounded blinkit-shimmer" /><div className="h-4 w-20 rounded blinkit-shimmer" /></div>
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-8 h-8 rounded-lg blinkit-shimmer shrink-0" />
+                                <div className="h-4 w-36 rounded-md blinkit-shimmer" />
+                            </div>
+                            <div className="space-y-2.5">
+                                <div className="flex justify-between items-center"><div className="h-3.5 w-20 rounded blinkit-shimmer" /><div className="h-3.5 w-16 rounded blinkit-shimmer" /></div>
+                                <div className="flex justify-between items-center"><div className="h-3.5 w-24 rounded blinkit-shimmer" /><div className="h-3.5 w-12 rounded blinkit-shimmer" /></div>
+                                <div className="flex justify-between items-center pt-2.5 border-t border-gray-100 dark:border-gray-700/60"><div className="h-5 w-24 rounded blinkit-shimmer" /><div className="h-5 w-20 rounded blinkit-shimmer" /></div>
                             </div>
                         </div>
                     </div>
@@ -326,25 +356,13 @@ const OrderDetails = () => {
 
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                    <h4 className={`font-medium text-gray-900 dark:text-white text-sm ${item.isFromAd ? '' : 'truncate'} mb-0.5`} title={item.adTitle || item.name}>
-                                        {(() => {
-                                            const fullTitle = t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title;
-                                            if (language !== 'ta') return fullTitle;
-                                            
-                                            const bracketIndex = fullTitle.indexOf('(');
-                                            if (bracketIndex === -1) return fullTitle;
-
-                                            const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                            const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                            
-                                            const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                            const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                            
-                                            if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                            if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                            return fullTitle;
-                                        })()}
-                                    </h4>
+                                    <h4 className="mb-0.5 leading-tight">
+                                                    {renderBilingualTitle(t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title, language, {
+                                                        hideTag: true,
+                                                        mainClassName: 'text-sm font-medium text-gray-900 dark:text-white leading-snug',
+                                                        subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
+                                                    })}
+                                                </h4>
 
                                     {(item.storeId || item.storeName) && (
                                         <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">

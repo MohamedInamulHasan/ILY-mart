@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useData } from '../context/DataContext';
+import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getStoreName, formatDeliveryRange, formatDeliveryRangeFromDate, calculateDeliveryCharge } from '../utils/storeHelpers';
 import { useLanguage } from '../context/LanguageContext';
 import { API_BASE_URL } from '../utils/api';
@@ -287,25 +288,13 @@ const OrderConfirmation = () => {
 
                                     </div>
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                        <h4 className={`text-sm font-medium text-gray-900 dark:text-white mb-0.5 ${item.isFromAd ? '' : 'truncate'}`} title={item.adTitle || item.title}>
-                                            {(() => {
-                                                const fullTitle = t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name;
-                                                if (language !== 'ta') return fullTitle;
-
-                                                const bracketIndex = fullTitle.indexOf('(');
-                                                if (bracketIndex === -1) return fullTitle;
-
-                                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-
-                                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-
-                                                if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                                if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                                return fullTitle;
-                                            })()}
-                                        </h4>
+                                        <h4 className="mb-0.5 leading-tight">
+                                                    {renderBilingualTitle(t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name, language, {
+                                                        hideTag: true,
+                                                        mainClassName: 'text-sm font-medium text-gray-900 dark:text-white leading-snug',
+                                                        subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
+                                                    })}
+                                                </h4>
                                         {(item.storeId || item.storeName) && (
                                             <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate">
                                                 {getStoreName(item.storeId, stores) || item.storeName}

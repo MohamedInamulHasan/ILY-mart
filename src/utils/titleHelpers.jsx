@@ -47,34 +47,29 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
     const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
 
-    let tamStr = '';
-    let engStr = '';
-    let firstPartIsTamil = false;
-
-    if (isPart1Tamil && !isPart2Tamil) {
-        tamStr = part1;
-        engStr = part2;
-        firstPartIsTamil = true;
-    } else if (isPart2Tamil && !isPart1Tamil) {
-        tamStr = part2;
-        engStr = part1;
-        firstPartIsTamil = false;
-    } else {
-        engStr = part1;
-        tamStr = part2;
-        firstPartIsTamil = false;
-    }
-
-    // Determine main and subtitle based on active language preference
     let mainText = '';
     let subText = '';
 
-    if (language === 'ta') {
-        mainText = tamStr || engStr;
-        subText = tamStr && engStr ? engStr : '';
+    if (isPart1Tamil && !isPart2Tamil) {
+        if (language === 'ta') {
+            mainText = part1;
+            subText = part2;
+        } else {
+            mainText = part2;
+            subText = part1;
+        }
+    } else if (isPart2Tamil && !isPart1Tamil) {
+        if (language === 'ta') {
+            mainText = part2;
+            subText = part1;
+        } else {
+            mainText = part1;
+            subText = part2;
+        }
     } else {
-        mainText = engStr || tamStr;
-        subText = engStr && tamStr ? tamStr : '';
+        // Neither or both have Tamil: keep part1 as main, part2 as bracketed subtext below
+        mainText = part1;
+        subText = part2;
     }
 
     return (

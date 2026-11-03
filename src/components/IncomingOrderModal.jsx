@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { useUpdateOrderStatus } from '../hooks/queries/useOrders';
+import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getStoreName, formatDeliveryRangeFromDate } from '../utils/storeHelpers';
 import { API_BASE_URL } from '../utils/api';
 import { startIncomingOrderAlertSound, stopIncomingOrderAlertSound, playSuccessSound } from '../utils/soundHelper';
@@ -530,9 +531,13 @@ const IncomingOrderModal = ({
 
                                     </div>
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                        <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate mb-0.5" title={item.name}>
-                                            {item.name}
-                                        </h4>
+                                        <div className="mb-0.5 leading-tight" title={item.name}>
+                                            {renderBilingualTitle(item.name || item.title, language, {
+                                                hideTag: true,
+                                                mainClassName: 'text-sm font-medium text-gray-900 dark:text-white leading-snug',
+                                                subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
+                                            })}
+                                        </div>
                                         {(item.storeId || item.storeName) && (
                                             <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">
                                                 {getItemStoreName(item)}
