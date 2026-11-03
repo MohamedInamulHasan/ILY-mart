@@ -18,6 +18,7 @@ const OrderDetails = () => {
     const { orders, loading, stores, cancelOrder, setIsFooterHidden } = useData();
     const { user, refreshUser } = useAuth();
     const [cancelConfirmation, setCancelConfirmation] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     // Hide footer when cancel confirmation modal is open
     useEffect(() => {
@@ -164,8 +165,6 @@ const OrderDetails = () => {
             default: return null;
         }
     };
-
-    const [isCancelling, setIsCancelling] = useState(false);
 
     const confirmCancelOrder = async () => {
         if (isCancelling) return;
