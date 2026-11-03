@@ -282,12 +282,12 @@ const StoreProducts = () => {
                                     <ArrowLeft size={22} />
                                 </button>
                             </div>
-                            <div className="flex flex-col items-center text-center px-14 min-w-0">
-                                <h1 className="text-[18px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[200px] sm:max-w-[300px]">{store?.name}</h1>
+                            <div className="flex flex-col items-center text-center px-12 min-w-0">
+                                <h1 className="text-[15px] sm:text-[16px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[240px] sm:max-w-[340px]">{store?.name}</h1>
                                 {store?.address && (
-                                    <div className="flex items-center justify-center gap-1 mt-0.5 max-w-[200px] sm:max-w-[300px] truncate">
-                                        <MapPin size={11} className="text-[#2E5A2E] flex-shrink-0" />
-                                        <p className="text-[11px] font-semibold text-gray-700 truncate">{store?.address}</p>
+                                    <div className="flex items-center justify-center gap-1 mt-0.5 max-w-[240px] sm:max-w-[340px] truncate">
+                                        <MapPin size={10} className="text-[#2E5A2E] flex-shrink-0" />
+                                        <p className="text-[10px] sm:text-[11px] font-medium text-gray-700 truncate">{store?.address}</p>
                                     </div>
                                 )}
                             </div>
@@ -431,7 +431,7 @@ const StoreProducts = () => {
             </section>
 
             {subcategoryData.length > 0 && (
-                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-4">
+                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
                     <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
                         <button
                             onClick={() => setSelectedSubcategory(null)}
@@ -483,14 +483,12 @@ const StoreProducts = () => {
                 </div>
             )}
 
-                <div className="max-w-7xl mx-auto px-4 -mt-4">
-                    {/* The search dropdown was previously here but moved inside the relative container above */}
-                </div>
+
 
             {/* Store Closed Banner (Moved here) */}
-            <div className="max-w-7xl mx-auto px-4">
-                {!storeIsOpen && (
-                    <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-3">
+            {!storeIsOpen && (
+                <div className="max-w-7xl mx-auto px-4 mb-2">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-3">
                         <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0" size={20} />
                         <div>
                             <p className="font-semibold text-red-900 dark:text-red-200 text-sm">{t('Store Closed')}</p>
@@ -501,13 +499,13 @@ const StoreProducts = () => {
                             )}
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
 
 
             {/* Content Area */}
-            <div className="max-w-7xl mx-auto px-4 pt-1 pb-4">
+            <div className="max-w-7xl mx-auto px-4 pt-1 sm:pt-2 pb-4">
                 {/* Loading State Skeleton */}
                 {loading.products ? (
                     <div className={`grid gap-3 sm:gap-4 ${fastMode ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
@@ -516,7 +514,7 @@ const StoreProducts = () => {
                         ))}
                     </div>
                 ) : sections.length > 0 ? (
-                    <div className="space-y-5 sm:space-y-6">
+                    <div className="space-y-3.5 sm:space-y-4">
                         {sections.map(([groupName, groupProducts]) => (
                             <div key={groupName}>
                                 {groupName !== '_all_' && !selectedSubcategory && (

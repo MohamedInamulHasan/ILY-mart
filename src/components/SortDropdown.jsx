@@ -9,9 +9,9 @@ const SortDropdown = ({ currentSort, onSortChange }) => {
     const { t } = useLanguage();
 
     const sortOptions = [
-        { id: 'none', label: 'Default', icon: <ListFilter size={16} /> },
-        { id: 'lowToHigh', label: 'Price: Low to High', icon: <ArrowUpNarrowWide size={16} /> },
-        { id: 'highToLow', label: 'Price: High to Low', icon: <ArrowDownWideNarrow size={16} /> },
+        { id: 'none', label: 'Default', icon: <ListFilter size={14} /> },
+        { id: 'lowToHigh', label: 'Price: Low to High', icon: <ArrowUpNarrowWide size={14} /> },
+        { id: 'highToLow', label: 'Price: High to Low', icon: <ArrowDownWideNarrow size={14} /> },
     ];
 
     useEffect(() => {
@@ -48,9 +48,9 @@ const SortDropdown = ({ currentSort, onSortChange }) => {
                         animate={{ opacity: 1, y: 5, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 backdrop-blur-xl border border-gray-100 dark:border-gray-700 rounded-2xl z-[100] overflow-hidden"
+                        className="absolute right-0 top-full mt-1.5 w-44 sm:w-48 bg-white dark:bg-gray-800 backdrop-blur-xl border border-gray-100 dark:border-gray-700 rounded-xl z-[100] overflow-hidden shadow-lg"
                     >
-                        <div className="p-2 space-y-1">
+                        <div className="p-1.5 space-y-0.5">
                             {sortOptions.map((option) => (
                                 <button
                                     key={option.id}
@@ -58,7 +58,7 @@ const SortDropdown = ({ currentSort, onSortChange }) => {
                                         onSortChange(option.id);
                                         setIsOpen(false);
                                     }}
-                                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-normal transition-all duration-200 ${currentSort === option.id
+                                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${currentSort === option.id
                                         ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900'
                                         : 'text-gray-600 dark:text-gray-300 hover:bg-[#2E5A2E]/5 dark:hover:bg-white/5 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2]'
                                         }`}

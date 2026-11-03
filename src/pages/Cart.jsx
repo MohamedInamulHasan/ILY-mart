@@ -100,7 +100,7 @@ const Cart = () => {
             </div>
 
             {/* Scrollable Container */}
-            <div className="flex-1 overflow-y-auto px-3.5 sm:px-4 pt-[80px] pb-8 no-scrollbar">
+            <div className="flex-1 overflow-y-auto px-3.5 sm:px-4 pt-[96px] pb-8 no-scrollbar">
 
                 {/* Items */}
                 <div className="space-y-2 sm:space-y-2.5 mb-3">
@@ -123,7 +123,7 @@ const Cart = () => {
                                   <div className="flex justify-between items-start">
                                        <div className="flex-1 min-w-0 pr-2">
                                             <h3 className="text-[13px] sm:text-[14px] font-semibold text-gray-900 dark:text-white truncate">
-                                                {renderBilingualTitle(t(item, 'title') || item.title || item.name, language)}
+                                                {renderBilingualTitle(t(item, 'title') || item.title || item.name, language, { hideTag: true })}
                                             </h3>
                                             <p className="text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                                                 {getStoreName(item.storeId, stores) || "ILY mart Direct"}

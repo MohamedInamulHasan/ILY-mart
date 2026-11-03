@@ -165,8 +165,7 @@ const Layout = ({ children, onRefresh }) => {
     const { cartItems, deliveryCharge } = useCart();
     const { t } = useLanguage();
 
-    const hideFloatingBadgeRoutes = ['/cart', '/checkout', '/order-confirmation'];
-    const showFloatingDeliveryBadge = cartItems && cartItems.length > 0 && !isAdminRoute && !isAuthPage && !hideFloatingBadgeRoutes.includes(location.pathname) && !location.pathname.startsWith('/order');
+    const showFloatingDeliveryBadge = false;
 
     return (
         <div className="flex flex-col min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200">
