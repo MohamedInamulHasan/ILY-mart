@@ -32,3 +32,4 @@ else:
     with open('src/components/NotificationOverlay.jsx', 'w', encoding='utf-8') as f:
         f.write(content)
     print("Regex clean done")
+

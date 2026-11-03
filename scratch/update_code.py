@@ -44,3 +44,4 @@ with open('src/components/NotificationOverlay.jsx', 'w', encoding='utf-8') as f:
     f.write(notif_code)
 
 print("NotificationOverlay updated successfully!")
+

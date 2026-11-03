@@ -91,7 +91,7 @@ const Shop = () => {
     const isCategoriesLoading = loading?.categories || initialLoading;
 
     return (
-        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 pb-24 transition-colors duration-200">
+        <div className="flex-1 min-h-[calc(100vh-8rem)] md:min-h-0 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200">
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-2 pt-2 pb-3 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -389,17 +389,32 @@ const Shop = () => {
                                 transition={{ duration: 0.2 }}
                             >
                                 {isStoresLoading ? (
-                                    // Blinkit style store card skeleton
+                                    // Store card skeleton matching StoreCard layout 1:1
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
-                                            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700/50 flex flex-col space-y-3">
-                                                <div className="aspect-[16/9] w-full rounded-xl blinkit-shimmer"></div>
-                                                <div className="flex items-center justify-between pt-1">
-                                                    <div className="space-y-1.5 flex-1 pr-3">
-                                                        <div className="h-4 w-3/4 rounded-lg blinkit-shimmer"></div>
-                                                        <div className="h-3 w-1/2 rounded-md blinkit-shimmer"></div>
+                                            <div
+                                                key={i}
+                                                className="group relative bg-white dark:bg-gray-800 rounded-[2rem] overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
+                                            >
+                                                {/* Full Card Shimmer Image Background */}
+                                                <div className="absolute inset-0 blinkit-shimmer" />
+
+                                                {/* Top-Right Timing Badge Skeleton */}
+                                                <div className="absolute top-2.5 right-2.5 z-10">
+                                                    <div className="h-5 w-20 rounded-full bg-black/20 dark:bg-white/10 backdrop-blur-sm" />
+                                                </div>
+
+                                                {/* Overlaid Bottom White Banner Strip */}
+                                                <div className="absolute bottom-0 left-0 right-0 py-2.5 px-4 z-10 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
+                                                    <div className="space-y-1.5 flex-1 min-w-0 pr-3">
+                                                        <div className="h-4 w-40 rounded-md blinkit-shimmer" />
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-2.5 h-2.5 rounded-full blinkit-shimmer flex-shrink-0" />
+                                                            <div className="h-3 w-28 rounded-md blinkit-shimmer" />
+                                                        </div>
                                                     </div>
-                                                    <div className="w-8 h-8 rounded-full blinkit-shimmer flex-shrink-0"></div>
+                                                    {/* Bottom-right circular button */}
+                                                    <div className="w-8 h-8 rounded-full blinkit-shimmer flex-shrink-0" />
                                                 </div>
                                             </div>
                                         ))}
@@ -437,9 +452,27 @@ const Shop = () => {
                                 transition={{ duration: 0.2 }}
                             >
                                 {servicesLoading ? (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
-                                            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100 dark:border-gray-700/50 overflow-hidden animate-pulse" />
+                                            <div
+                                                key={i}
+                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
+                                            >
+                                                <div className="absolute inset-0 blinkit-shimmer" />
+                                                <div className="absolute top-3 left-3 z-10">
+                                                    <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
+                                                </div>
+                                                <div className="absolute bottom-0 left-0 right-0 py-2 px-3.5 z-10 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
+                                                    <div className="space-y-1.5 flex-1 min-w-0 pr-3">
+                                                        <div className="h-4 w-36 rounded-md blinkit-shimmer" />
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-2.5 h-2.5 rounded-full blinkit-shimmer flex-shrink-0" />
+                                                            <div className="h-3 w-28 rounded-md blinkit-shimmer" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-7 h-7 rounded-full blinkit-shimmer flex-shrink-0" />
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 ) : (() => {

@@ -191,7 +191,7 @@ const Home = () => {
     const isLoadingAll = loadingProducts || loadingStores || loadingCategories;
 
     return (
-        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200">
+        <div className="flex-1 min-h-[calc(100vh-8rem)] md:min-h-0 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200">
             
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
             <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-2 pt-2 pb-3 overflow-hidden">

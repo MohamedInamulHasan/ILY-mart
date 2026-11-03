@@ -286,23 +286,27 @@ const Services = () => {
                                 [...Array(6)].map((_, i) => (
                                     <div
                                         key={i}
-                                        className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100 dark:border-gray-700/50 relative flex flex-col justify-between"
+                                        className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
                                     >
-                                        {/* Top Tag Placeholder */}
-                                        <div className="p-4 z-10">
-                                            <div className="h-6 w-24 rounded-full blinkit-shimmer" />
+                                        {/* Full Card Shimmer Image Background */}
+                                        <div className="absolute inset-0 blinkit-shimmer" />
+
+                                        {/* Category Tag Overlay (Top Left) */}
+                                        <div className="absolute top-3 left-3 z-10">
+                                            <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
                                         </div>
 
-                                        {/* Middle Area */}
-                                        <div className="absolute inset-0 blinkit-shimmer opacity-40" />
-
-                                        {/* Bottom Content Bar */}
-                                        <div className="relative z-10 bg-white dark:bg-gray-800 py-3 px-4 border-t border-gray-50 dark:border-gray-700/60 flex items-center justify-between">
-                                            <div className="space-y-2 flex-1 min-w-0 pr-4">
-                                                <div className="h-4 w-3/4 rounded-md blinkit-shimmer" />
-                                                <div className="h-3 w-1/2 rounded-md blinkit-shimmer" />
+                                        {/* Content Section - White Banner at Bottom */}
+                                        <div className="absolute bottom-0 left-0 right-0 py-2 px-3.5 z-10 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
+                                            <div className="space-y-1.5 flex-1 min-w-0 pr-3">
+                                                <div className="h-4 w-36 rounded-md blinkit-shimmer" />
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="w-2.5 h-2.5 rounded-full blinkit-shimmer flex-shrink-0" />
+                                                    <div className="h-3 w-28 rounded-md blinkit-shimmer" />
+                                                </div>
                                             </div>
-                                            <div className="w-8 h-8 rounded-full blinkit-shimmer flex-shrink-0" />
+                                            {/* Right Action Arrow Skeleton */}
+                                            <div className="w-7 h-7 rounded-full blinkit-shimmer flex-shrink-0" />
                                         </div>
                                     </div>
                                 ))
@@ -399,16 +403,20 @@ const Services = () => {
                         /* DETAIL VIEW: SUB-SERVICES */
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
                             {itemsLoading ? (
-                                // Blinkit-style Sub-services Skeleton
+                                // Sub-services Skeleton matching detail view
                                 [...Array(8)].map((_, i) => (
-                                    <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl aspect-square shadow-sm overflow-hidden relative flex flex-col justify-between p-3 border border-gray-100 dark:border-gray-700/50">
-                                        <div className="absolute inset-0 blinkit-shimmer opacity-50" />
-                                        <div className="relative z-10 flex justify-between">
-                                            <div className="h-4 w-16 rounded-full blinkit-shimmer" />
-                                        </div>
-                                        <div className="relative z-10 space-y-1.5 bg-black/20 backdrop-blur-sm p-2 rounded-xl">
-                                            <div className="h-3.5 w-3/4 rounded-md blinkit-shimmer" />
-                                            <div className="h-3 w-1/2 rounded-md blinkit-shimmer" />
+                                    <div
+                                        key={i}
+                                        className="bg-white dark:bg-gray-800 rounded-2xl aspect-square shadow-sm overflow-hidden relative border border-gray-100 dark:border-gray-700/50"
+                                    >
+                                        {/* Full Card Shimmer Background */}
+                                        <div className="absolute inset-0 blinkit-shimmer" />
+                                        {/* Dark gradient overlay matching real card */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                                        {/* Bottom Content Skeleton */}
+                                        <div className="absolute bottom-0 left-0 right-0 p-3.5 z-10 space-y-1.5">
+                                            <div className="h-4 w-3/4 rounded-md bg-white/20 backdrop-blur-sm" />
+                                            <div className="h-3.5 w-1/3 rounded-md bg-white/20 backdrop-blur-sm" />
                                         </div>
                                     </div>
                                 ))

@@ -845,9 +845,13 @@ const Checkout = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <label className={`flex items-center p-3 sm:p-3.5 rounded-xl border-2 cursor-pointer transition-all ${formData.paymentMethod === 'cod' ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/5' : 'border-gray-100 dark:border-gray-700 hover:border-gray-200'}`}>
-                                    <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-[#CBF9B2]/20 border border-green-200/50 dark:border-[#CBF9B2]/20 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center mr-4 flex-shrink-0 shadow-xs">
-                                        <Banknote size={22} />
+                                <label className={`flex items-center p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                                    formData.paymentMethod === 'cod'
+                                        ? 'bg-black text-white border-black shadow-md'
+                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300'
+                                }`}>
+                                    <div className="w-11 h-11 rounded-2xl bg-[#00B329]/20 border border-[#00B329]/40 text-[#00B329] flex items-center justify-center mr-3.5 flex-shrink-0 shadow-xs">
+                                        <Banknote size={23} className="text-[#00B329] stroke-[2.2]" />
                                     </div>
                                     <input
                                         type="radio"
@@ -858,8 +862,17 @@ const Checkout = () => {
                                         className="hidden"
                                     />
                                     <div className="flex-1">
-                                        <span className="block font-bold text-[15px] text-gray-900 dark:text-white">{t('Cash on Delivery')}</span>
-                                        <span className="block text-[13px] text-gray-400 dark:text-gray-500">{t('Pay when you receive your order')}</span>
+                                        <span className="block font-bold text-[15.5px] leading-tight">
+                                            <span className="text-[#00B329]">
+                                                {language === 'ta' ? 'பணம்' : 'Cash'}
+                                            </span>{' '}
+                                            <span className={formData.paymentMethod === 'cod' ? 'text-white' : 'text-gray-900 dark:text-white'}>
+                                                {language === 'ta' ? 'செலுத்தும் டெலிவரி' : 'on Delivery'}
+                                            </span>
+                                        </span>
+                                        <span className={`block text-[12.5px] font-medium mt-0.5 ${formData.paymentMethod === 'cod' ? 'text-gray-300' : 'text-gray-400 dark:text-gray-500'}`}>
+                                            {t('Pay when you receive your order')}
+                                        </span>
                                     </div>
                                 </label>
                             </div>

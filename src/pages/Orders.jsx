@@ -118,7 +118,7 @@ const Orders = () => {
     // We handle 'loadingOrders' state inside the return block by showing a beautiful skeleton loader.
 
     return (
-        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-48">
+        <div className="flex-1 min-h-[calc(100vh-8rem)] md:min-h-0 bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-8">
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -184,41 +184,48 @@ const Orders = () => {
                                 {[1, 2, 3].map((i) => (
                                     <div
                                         key={i}
-                                        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-4 sm:p-5 shadow-sm space-y-3.5"
+                                        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-4 sm:p-5 shadow-sm"
                                     >
-                                        {/* Top Header: Package Icon + Order ID/Date + Status Pill */}
-                                        <div className="flex justify-between items-start gap-2">
-                                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                <div className="w-10 h-10 rounded-xl blinkit-shimmer flex-shrink-0" />
+                                        {/* Top Header: Package icon box + Order ID/Date + Status Badge */}
+                                        <div className="flex justify-between items-start gap-2 mb-3 pb-2.5 border-b border-gray-100/80 dark:border-gray-700/40">
+                                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                <div className="w-8 h-8 rounded-lg blinkit-shimmer flex-shrink-0" />
                                                 <div className="space-y-1.5 flex-1 min-w-0">
-                                                    <div className="h-4 w-28 rounded-md blinkit-shimmer" />
-                                                    <div className="h-3 w-36 rounded-md blinkit-shimmer" />
+                                                    <div className="h-4 w-24 rounded-md blinkit-shimmer" />
+                                                    <div className="h-3 w-32 rounded-md blinkit-shimmer" />
                                                 </div>
                                             </div>
-                                            <div className="h-6 w-24 rounded-full blinkit-shimmer flex-shrink-0" />
+                                            <div className="h-6 w-20 rounded-full blinkit-shimmer flex-shrink-0" />
                                         </div>
 
-                                        {/* Items Section: Product image + Details */}
+                                        {/* Items Section: 2 item rows matching real card */}
                                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
                                             {[1, 2].map((itemIdx) => (
                                                 <div key={itemIdx} className="py-2.5 flex items-center gap-3 first:pt-0">
+                                                    {/* 14x14 (56px) rounded product image skeleton */}
                                                     <div className="h-14 w-14 rounded-xl blinkit-shimmer flex-shrink-0" />
-                                                    <div className="flex-1 space-y-2">
+                                                    <div className="flex-1 space-y-1.5 min-w-0">
+                                                        {/* Product title */}
                                                         <div className="h-4 w-3/4 rounded-md blinkit-shimmer" />
-                                                        <div className="h-3 w-1/3 rounded-md blinkit-shimmer" />
-                                                        <div className="h-3.5 w-20 rounded-md blinkit-shimmer" />
+                                                        {/* Store name */}
+                                                        <div className="h-3 w-2/5 rounded-md blinkit-shimmer" />
+                                                        {/* Price & Quantity badge */}
+                                                        <div className="flex items-center justify-between pt-0.5">
+                                                            <div className="h-4 w-14 rounded-md blinkit-shimmer" />
+                                                            <div className="h-5 w-8 rounded-md blinkit-shimmer" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
 
-                                        {/* Bottom Footer: Total Amount + View Details */}
-                                        <div className="pt-2.5 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center">
-                                            <div className="space-y-1">
+                                        {/* Bottom Footer: Total Amount + Details underline */}
+                                        <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
+                                            <div className="space-y-1.5">
                                                 <div className="h-2.5 w-16 rounded-full blinkit-shimmer" />
                                                 <div className="h-5 w-20 rounded-md blinkit-shimmer" />
                                             </div>
-                                            <div className="h-9 w-28 rounded-full blinkit-shimmer" />
+                                            <div className="h-4 w-14 rounded-md blinkit-shimmer" />
                                         </div>
                                     </div>
                                 ))}

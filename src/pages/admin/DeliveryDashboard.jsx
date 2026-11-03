@@ -488,19 +488,60 @@ const DeliveryDashboard = () => {
                                     {[1, 2, 3].map(i => (
                                         <div
                                             key={i}
-                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700/60 overflow-hidden flex flex-col justify-between p-5 space-y-2.5 sm:space-y-3 shadow-sm"
+                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700/60 overflow-hidden flex flex-col justify-between shadow-xs"
                                         >
-                                            {/* Delivery charge & customer details skeleton */}
-                                            <div className="flex flex-col items-center space-y-2 py-2">
-                                                <div className="h-3 w-28 rounded-full blinkit-shimmer" />
-                                                <div className="h-10 w-24 rounded-xl blinkit-shimmer" />
-                                                <div className="h-3 w-36 rounded-full blinkit-shimmer mt-1" />
-                                                <div className="h-4 w-44 rounded-md blinkit-shimmer mt-2" />
-                                                <div className="h-3 w-56 rounded-md blinkit-shimmer" />
+                                            {/* Top Header Row Skeleton: Time Left & ID Right */}
+                                            <div className="px-4 pt-3.5 pb-2.5 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-4 h-4 rounded-full blinkit-shimmer shrink-0" />
+                                                    <div className="h-4 w-28 rounded-md blinkit-shimmer" />
+                                                </div>
+                                                <div className="h-4 w-16 rounded-md blinkit-shimmer shrink-0" />
                                             </div>
-                                            {/* Bottom action button skeleton */}
-                                            <div className="pt-3 border-t border-gray-100 dark:border-gray-700/60">
-                                                <div className="h-12 w-full rounded-full blinkit-shimmer" />
+
+                                            {/* Divider Line */}
+                                            <div className="mx-4 h-px bg-gray-100 dark:bg-gray-700/50 shrink-0" />
+
+                                            {/* Card Content Skeleton */}
+                                            <div className="pt-3 pb-3 px-4">
+                                                {/* Delivery Charge in Center */}
+                                                <div className="flex flex-col items-center py-1.5 mb-2 border-b border-gray-100 dark:border-gray-700/60">
+                                                    <div className="h-3 w-28 rounded-full blinkit-shimmer mb-2" />
+                                                    <div className="h-10 w-24 rounded-xl blinkit-shimmer" />
+                                                </div>
+
+                                                {/* Left-Aligned Details with Route Timeline */}
+                                                <div className="flex gap-3 text-left mt-3">
+                                                    {/* Timeline Track with dots and line */}
+                                                    <div className="flex flex-col items-center pt-1.5 shrink-0">
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30 dark:bg-emerald-400/20 ring-2 ring-emerald-100 dark:ring-emerald-950/40 shrink-0" />
+                                                        <div className="w-[2px] flex-1 bg-gray-200 dark:bg-gray-700 my-1 min-h-[44px]" />
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30 dark:bg-emerald-400/20 ring-2 ring-emerald-100 dark:ring-emerald-950/40 shrink-0" />
+                                                    </div>
+
+                                                    {/* Customer & Address lines */}
+                                                    <div className="flex-1 min-w-0 space-y-2 py-0.5">
+                                                        {/* Customer Name */}
+                                                        <div className="h-4 w-36 rounded-md blinkit-shimmer" />
+                                                        {/* Address Street */}
+                                                        <div className="h-3 w-48 rounded-md blinkit-shimmer" />
+                                                        {/* City */}
+                                                        <div className="h-3 w-24 rounded-md blinkit-shimmer" />
+                                                        {/* Items count */}
+                                                        <div className="h-3 w-20 rounded-md blinkit-shimmer pt-0.5" />
+
+                                                        {/* Scheduled Delivery Time block */}
+                                                        <div className="pt-2 space-y-1.5">
+                                                            <div className="h-2.5 w-24 rounded-full blinkit-shimmer" />
+                                                            <div className="h-4 w-32 rounded-md blinkit-shimmer" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Bottom action button skeleton (Swipe button) */}
+                                            <div className="p-3 sm:p-3.5 border-t border-gray-100 dark:border-gray-700/60">
+                                                <div className="h-[50px] w-full rounded-full blinkit-shimmer" />
                                             </div>
                                         </div>
                                     ))}
