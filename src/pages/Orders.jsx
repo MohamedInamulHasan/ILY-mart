@@ -67,9 +67,6 @@ const Orders = () => {
     });
 
     const getStatusText = (status) => {
-        if (status === 'Out for Delivery' || status === 'Shipped') {
-            return t('Accepted');
-        }
         return t(status);
     };
 
@@ -140,7 +137,7 @@ const Orders = () => {
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
-                
+
                 <div className="relative z-10">
                     <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
@@ -153,7 +150,7 @@ const Orders = () => {
                             <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{t('Track packages')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <button 
+                            <button
                                 onClick={() => navigate('/cart')}
                                 className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
                             >
@@ -170,55 +167,55 @@ const Orders = () => {
             </div>
 
             <PullToRefreshLayout>
-                <div className="pt-[88px]">
-                <div className="px-4 mt-0 max-w-3xl mx-auto">
-                    {/* Search Pill */}
-                    <div className="relative mb-3 sm:mb-3.5">
-                        <input
-                            type="text"
-                            placeholder={t('Search orders, items...')}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-9 py-2.5 sm:py-3 rounded-full border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none shadow-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300"
-                        />
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery('')}
-                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                <X size={16} />
-                            </button>
-                        )}
-                    </div>
+                <div className="pt-[95px]">
+                    <div className="px-5 mt-2 max-w-3xl mx-auto">
+                        {/* Search Pill */}
+                        <div className="relative mb-6">
+                            <input
+                                type="text"
+                                placeholder={t('Search orders, items...')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-10 py-3.5 rounded-full border border-gray-100/50 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] text-gray-900 dark:text-white focus:outline-none shadow-sm dark:placeholder-gray-500 transition-all duration-300"
+                            />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
 
-                    {/* Tabs */}
-                    <div className="flex overflow-x-auto pb-2 mb-3 scrollbar-hide gap-2 sm:gap-2.5 w-full">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab}
-                                id={activeTab === tab ? "active-order-tab" : undefined}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 shadow-sm ${
-                                    activeTab === tab
-                                    ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900'
-                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700/60'
-                                }`}
-                            >
-                                {t(tab)}
-                            </button>
-                        ))}
-                    </div>
+                        {/* Tabs - perfectly fit mobile screen left to right */}
+                        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3.5 w-full">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab}
+                                    id={activeTab === tab ? "active-order-tab" : undefined}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`w-full py-2 px-1 text-center rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 shadow-sm ${
+                                        activeTab === tab
+                                        ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900'
+                                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700/60'
+                                    }`}
+                                >
+                                    {t(tab)}
+                                </button>
+                            ))}
+                        </div>
 
                     {/* Orders List */}
-                    <div className="space-y-3 sm:space-y-3.5">
+                    <div className="space-y-3.5 sm:space-y-4">
                         {loadingOrders ? (
                             // Blinkit-style Orders Skeleton Loader
                             <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
                                 {[1, 2, 3].map((i) => (
                                     <div
                                         key={i}
-                                        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-4 sm:p-5 shadow-sm space-y-3.5"
+                                        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-5 sm:p-6 shadow-sm space-y-4"
                                     >
                                         {/* Top Header: Package Icon + Order ID/Date + Status Pill */}
                                         <div className="flex justify-between items-start gap-2">
@@ -228,234 +225,216 @@ const Orders = () => {
                                                     <div className="h-4 w-28 rounded-md blinkit-shimmer" />
                                                     <div className="h-3 w-36 rounded-md blinkit-shimmer" />
                                                 </div>
+                                                <div className="h-6 w-24 rounded-full blinkit-shimmer flex-shrink-0" />
                                             </div>
-                                            <div className="h-6 w-24 rounded-full blinkit-shimmer flex-shrink-0" />
-                                        </div>
 
-                                        {/* Items Section: Product image + Details */}
-                                        <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                                            {[1, 2].map((itemIdx) => (
-                                                <div key={itemIdx} className="py-2.5 flex items-center gap-3 first:pt-0">
-                                                    <div className="h-14 w-14 rounded-xl blinkit-shimmer flex-shrink-0" />
-                                                    <div className="flex-1 space-y-2">
-                                                        <div className="h-4 w-3/4 rounded-md blinkit-shimmer" />
-                                                        <div className="h-3 w-1/3 rounded-md blinkit-shimmer" />
-                                                        <div className="h-3.5 w-20 rounded-md blinkit-shimmer" />
+                                            {/* Items Section: Product image + Details */}
+                                            <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                                                {[1, 2].map((itemIdx) => (
+                                                    <div key={itemIdx} className="py-3 flex items-center gap-4 first:pt-0">
+                                                        <div className="h-16 w-16 rounded-2xl blinkit-shimmer flex-shrink-0" />
+                                                        <div className="flex-1 space-y-2">
+                                                            <div className="h-4 w-3/4 rounded-md blinkit-shimmer" />
+                                                            <div className="h-3 w-1/3 rounded-md blinkit-shimmer" />
+                                                            <div className="h-3.5 w-20 rounded-md blinkit-shimmer" />
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Bottom Footer: Total Amount + View Details */}
-                                        <div className="pt-2.5 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center">
-                                            <div className="space-y-1">
-                                                <div className="h-2.5 w-16 rounded-full blinkit-shimmer" />
-                                                <div className="h-5 w-20 rounded-md blinkit-shimmer" />
+                                                ))}
                                             </div>
-                                            <div className="h-9 w-28 rounded-full blinkit-shimmer" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : filteredOrders.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
-                            {filteredOrders.map(order => (
-                                <div
-                                    key={order._id || order.id}
-                                    onClick={() => navigate(`/orders/${order._id || order.id}`)}
-                                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 cursor-pointer group relative"
-                                >
 
-                                    <div className="p-4 sm:p-5">
-                                        <div className="flex justify-between items-start gap-2 mb-3 pb-2 border-b border-gray-100/60 dark:border-gray-700/40">
+                                    <div className="p-5 sm:p-6">
+                                        <div className="flex justify-between items-start gap-2 mb-4 pb-2 border-b border-gray-100/60 dark:border-gray-700/40">
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
                                                 <div className="p-1.5 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0">
                                                     <Package size={18} />
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white truncate">#{String(order._id || order.id).slice(-6).toUpperCase()}</p>
-                                                    <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                        {formatOrderDateTime(order.createdAt || order.date)}
-                                                        {order.scheduledDeliveryTime && (
-                                                            <span className="text-[#2E5A2E] dark:text-[#CBF9B2] ml-1">
-                                                                • {formatDeliveryTime(order.scheduledDeliveryTime)}
-                                                            </span>
-                                                        )}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] md:text-xs font-bold border-0 shadow-none select-none ${getStatusColor(order.status)}`}>
-                                                    {getStatusIcon(order.status)}
-                                                    <span className="font-bold">{getStatusText(order.status)}</span>
-                                                </div>
-                                                {!['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setDeleteConfirmation({ isOpen: true, orderId: order._id || order.id });
-                                                        }}
-                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                        title={t("Delete Order")}
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                )}
+                                                <div className="h-9 w-28 rounded-full blinkit-shimmer" />
                                             </div>
                                         </div>
+                                    ))}
+                                </div>
+                            ) : filteredOrders.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
+                                    {filteredOrders.map(order => (
+                                        <div
+                                            key={order._id || order.id}
+                                            onClick={() => navigate(`/orders/${order._id || order.id}`)}
+                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 cursor-pointer group relative"
+                                        >
 
-                                        <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                                            {order.items?.slice(0, 2).map((item, idx) => (
-                                                <div key={idx} className="py-2.5 flex items-center gap-3">
-                                                    <div className="h-14 w-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
-                                                        <img
-                                                            src={item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
-                                                                ? item.image
-                                                                : ((item.product?._id || item.product)
-                                                                    ? `${API_BASE_URL}/products/${item.product._id || item.product}/image`
-                                                                    : "https://via.placeholder.com/150?text=No+Image")}
-                                                            alt={item.adTitle || item.name}
-                                                            className="h-full w-full object-cover"
-                                                            loading="lazy"
-                                                            onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/150?text=No+Image"; }}
-                                                        />
-                                                        <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-10">
-                                                            {((item.isGold) || (item.product && item.product.isGold)) && (
-                                                                <span className="bg-[#16A34A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg mb-[1px]">
-                                                                    {t('Free Delivery')}
-                                                                </span>
-                                                            )}
-                                                            {item.isFromAd && !item.isGold && !(item.product && item.product.isGold) && (
-                                                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg">
-                                                                    {t('Special Offer')}
-                                                                </span>
-                                                            )}
+                                            <div className="p-4 sm:p-5">
+                                                <div className="flex justify-between items-start gap-2 mb-3 pb-2 border-b border-gray-100/60 dark:border-gray-700/40">
+                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                        <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0">
+                                                            <Package size={18} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white truncate">#{String(order._id || order.id).slice(-6).toUpperCase()}</p>
+                                                            <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                                {formatOrderDateTime(order.createdAt || order.date)}
+                                                            </p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                        <p className={`text-[13px] font-medium leading-tight text-gray-900 dark:text-white ${item.isFromAd ? '' : 'truncate'}`}>
-                                                            {(() => {
-                                                                const fullTitle = t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title;
-                                                                if (language !== 'ta') return fullTitle;
-                                                                
-                                                                const bracketIndex = fullTitle.indexOf('(');
-                                                                if (bracketIndex === -1) return fullTitle;
-
-                                                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                                                
-                                                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                                                
-                                                                if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                                                if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                                                return fullTitle;
-                                                            })()}
-                                                        </p>
-                                                        {(item.storeId || item.storeName) && (
-                                                            <p className="text-[11px] font-normal text-gray-400 dark:text-gray-500 truncate mt-0.5">
-                                                                {getStoreName(item.storeId, stores) || item.storeName}
-                                                            </p>
+                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] md:text-xs font-bold border-0 shadow-none select-none ${getStatusColor(order.status)}`}>
+                                                            {getStatusIcon(order.status)}
+                                                            <span className="font-bold">{getStatusText(order.status)}</span>
+                                                        </div>
+                                                        {!['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setDeleteConfirmation({ isOpen: true, orderId: order._id || order.id });
+                                                                }}
+                                                                className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                title={t("Delete Order")}
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
                                                         )}
-                                                        <div className="flex items-center justify-between mt-0.5">
-                                                            <div>
-                                                                <p className="text-sm font-bold text-gray-900 dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
-                                                                {(item.unit || item.product?.unit) && (
-                                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                                                                        {item.unit || item.product?.unit}
+                                                    </div>
+                                                </div>
+
+                                                <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                                                    {order.items?.slice(0, 2).map((item, idx) => (
+                                                        <div key={idx} className="py-2.5 flex items-center gap-3">
+                                                            <div className="h-14 w-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
+                                                                <img
+                                                                    src={item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
+                                                                        ? item.image
+                                                                        : ((item.product?._id || item.product)
+                                                                            ? `${API_BASE_URL}/products/${item.product._id || item.product}/image`
+                                                                            : "https://via.placeholder.com/150?text=No+Image")}
+                                                                    alt={item.adTitle || item.name}
+                                                                    className="h-full w-full object-cover"
+                                                                    loading="lazy"
+                                                                    onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/150?text=No+Image"; }}
+                                                                />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                                <p className={`text-sm font-medium text-gray-900 dark:text-white ${item.isFromAd ? '' : 'truncate'}`}>
+                                                                    {(() => {
+                                                                        const fullTitle = t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title;
+                                                                        if (language !== 'ta') return fullTitle;
+
+                                                                        const bracketIndex = fullTitle.indexOf('(');
+                                                                        if (bracketIndex === -1) return fullTitle;
+
+                                                                        const part1 = fullTitle.substring(0, bracketIndex).trim();
+                                                                        const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
+
+                                                                        const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
+                                                                        const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
+
+                                                                        if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
+                                                                        if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
+                                                                        return fullTitle;
+                                                                    })()}
+                                                                </p>
+                                                                {(item.storeId || item.storeName) && (
+                                                                    <p className="text-xs font-normal text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                                                                        {getStoreName(item.storeId, stores) || item.storeName}
                                                                     </p>
                                                                 )}
-                                                            </div>
-                                                            <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400">
-                                                                x{item.quantity}
+                                                                <div className="flex items-center justify-between mt-1">
+                                                                    <div>
+                                                                        <p className="text-sm font-bold text-gray-900 dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
+                                                                        {(item.unit || item.product?.unit) && (
+                                                                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                                                                                {item.unit || item.product?.unit}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400">
+                                                                        x{item.quantity}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                    ))}
+                                                    {order.items.length > 2 && (
+                                                        <div className="py-2 text-sm text-gray-500 dark:text-gray-400">
+                                                            +{order.items.length - 2} {t('more items')}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
+                                                    <div>
+                                                        <p className="text-[12px] text-gray-500 dark:text-gray-400 font-medium mb-0.5">{t('Total Amount')}</p>
+                                                        <p className="font-bold text-[16px] text-gray-900 dark:text-white leading-none">₹{order.total.toFixed(0)}</p>
+                                                    </div>
+                                                    <div className="text-[#2E5A2E] dark:text-[#CBF9B2] text-[13px] font-bold underline decoration-[#2E5A2E] dark:decoration-[#CBF9B2] decoration-2 underline-offset-2 hover:opacity-80 transition-opacity">
+                                                        {t('Details')}
                                                     </div>
                                                 </div>
-                                            ))}
-                                            {order.items.length > 2 && (
-                                                <div className="py-2 text-sm text-gray-500 dark:text-gray-400">
-                                                    +{order.items.length - 2} {t('more items')}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
-                                            <div>
-                                                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-none mb-1">{t('Total Amount')}</p>
-                                                <p className="font-bold text-[15px] sm:text-[16px] text-gray-900 dark:text-white leading-tight">₹{order.total.toFixed(0)}</p>
-                                            </div>
-                                            <div className="text-[#2E5A2E] dark:text-[#CBF9B2] text-xs font-semibold underline decoration-[#2E5A2E] dark:decoration-[#CBF9B2] decoration-[1.5px] underline-offset-2 hover:opacity-80 transition-opacity">
-                                                {t('Details')}
                                             </div>
                                         </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <ShoppingBag size={24} className="text-gray-400" />
                                     </div>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">{t('No orders found')}</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mb-6">{t('Try adjusting your search or filter to find what you\'re looking for.')}</p>
+                                    <Link
+                                        to="/"
+                                        className="inline-flex items-center px-4 py-2 bg-[#2E5A2E] dark:bg-[#CBF9B2] hover:bg-[#1E3A1E] dark:hover:bg-[#a6d98e] text-white dark:text-gray-900 rounded-xl transition-all duration-300 text-sm font-bold active:scale-95"
+                                    >
+                                        {t('Start Shopping')}
+                                    </Link>
                                 </div>
-                            ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-12">
-                                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <ShoppingBag size={24} className="text-gray-400" />
-                                </div>
-                                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">{t('No orders found')}</h3>
-                                <p className="text-gray-500 dark:text-gray-400 mb-6">{t('Try adjusting your search or filter to find what you\'re looking for.')}</p>
-                                <Link
-                                    to="/"
-                                    className="inline-flex items-center px-4 py-2 bg-[#2E5A2E] dark:bg-[#CBF9B2] hover:bg-[#1E3A1E] dark:hover:bg-[#a6d98e] text-white dark:text-gray-900 rounded-xl transition-all duration-300 text-sm font-bold active:scale-95"
-                                >
-                                    {t('Start Shopping')}
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Delete Confirmation Modal */}
-                {deleteConfirmation.isOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all scale-100">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
-                                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
-                                        <AlertTriangle size={24} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('Delete Order')}</h3>
-                                </div>
-                                <button
-                                    onClick={() => setDeleteConfirmation({ isOpen: false, orderId: null })}
-                                    className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <p className="text-gray-600 dark:text-gray-300 mb-6">
-                                {t('Are you sure you want to delete this order? This action cannot be undone.')}
-                            </p>
-
-                            <div className="flex justify-end gap-3">
-                                <button
-                                    onClick={() => setDeleteConfirmation({ isOpen: false, orderId: null })}
-                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl font-medium transition-colors"
-                                >
-                                    {t('Cancel')}
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (deleteConfirmation.orderId) {
-                                            deleteOrder(deleteConfirmation.orderId);
-                                            setDeleteConfirmation({ isOpen: false, orderId: null });
-                                        }
-                                    }}
-                                    className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-xl font-medium transition-colors"
-                                >
-                                    {t('Delete')}
-                                </button>
-                            </div>
+                            )}
                         </div>
                     </div>
-                )}
+
+                    {/* Delete Confirmation Modal */}
+                    {deleteConfirmation.isOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all scale-100">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+                                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+                                            <AlertTriangle size={24} />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('Delete Order')}</h3>
+                                    </div>
+                                    <button
+                                        onClick={() => setDeleteConfirmation({ isOpen: false, orderId: null })}
+                                        className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                                    {t('Are you sure you want to delete this order? This action cannot be undone.')}
+                                </p>
+
+                                <div className="flex justify-end gap-3">
+                                    <button
+                                        onClick={() => setDeleteConfirmation({ isOpen: false, orderId: null })}
+                                        className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl font-medium transition-colors"
+                                    >
+                                        {t('Cancel')}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (deleteConfirmation.orderId) {
+                                                deleteOrder(deleteConfirmation.orderId);
+                                                setDeleteConfirmation({ isOpen: false, orderId: null });
+                                            }
+                                        }}
+                                        className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-xl font-medium transition-colors"
+                                    >
+                                        {t('Delete')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </PullToRefreshLayout>
         </div>

@@ -765,7 +765,7 @@ const Checkout = () => {
                                 <div className="space-y-4">
                                     {displayItems.map((item, index) => (
                                         <div key={item.id || index} className="py-2.5 flex gap-3 first:pt-0">
-                                            <div className="h-13 w-13 sm:h-14 sm:w-14 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 relative">
+                                            <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
                                                 <img
                                                     src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
                                                     alt={item.adTitle || item.title || item.name}
