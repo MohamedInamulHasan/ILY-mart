@@ -1,3 +1,4 @@
+import React, { memo } from 'react';
 import { getThumbnailUrl } from '../utils/imageOptimizer';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, ArrowRight } from 'lucide-react';
@@ -94,4 +95,4 @@ const StoreCard = ({ store }) => {
     );
 };
 
-export default React.memo(StoreCard);
+export default memo(StoreCard);

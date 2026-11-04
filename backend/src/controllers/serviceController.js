@@ -132,7 +132,7 @@ export const deleteService = async (req, res) => {
                 if (item.image) await deleteFromCloudinary(item.image);
             }
             await ServiceItem.deleteMany({ serviceId: service._id });
-            await service.deleteOne();
+            await Service.findByIdAndDelete(req.params.id);
             res.json({ message: 'Service removed' });
             getIO().emit('service:updated');
         } else {

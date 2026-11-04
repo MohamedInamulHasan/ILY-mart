@@ -52,6 +52,7 @@ import ConnectionStatus from './components/ConnectionStatus';
 import { useState } from 'react';
 
 import ScrollToTop from './components/ScrollToTop';
+import ErrorBoundary from './components/ErrorBoundary';
 import { getUserRoles, hasAdminAccess } from './utils/userHelpers';
 import LoadingSpinner from './components/LoadingSpinner';
 
@@ -292,6 +293,7 @@ function App() {
                     <div style={{ display: (initialLoading || isOffline) ? 'none' : 'block' }}>
                         <CartProvider>
                             <Layout onRefresh={handleRefresh}>
+                                <ErrorBoundary>
                                 <Routes>
                                     <Route path="/" element={
                                         <HomeWithRedirect />
@@ -427,6 +429,7 @@ function App() {
                                     />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
+                                </ErrorBoundary>
                             </Layout>
                         </CartProvider>
                     </div>

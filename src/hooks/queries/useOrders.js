@@ -9,14 +9,16 @@ export const orderKeys = {
 };
 
 export const useOrders = () => {
+    const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('authToken');
     return useQuery({
         queryKey: orderKeys.lists(),
         queryFn: async () => {
             const response = await apiService.getOrders();
-            return response.data;
+            return response?.data || response || [];
         },
-        staleTime: 5 * 1000, // Reduced stale time
-        refetchInterval: 1000, // Auto-refresh every 1 second for "instant" updates
+        enabled: hasToken,
+        staleTime: 5 * 1000,
+        refetchInterval: hasToken ? 3000 : false,
     });
 };
 

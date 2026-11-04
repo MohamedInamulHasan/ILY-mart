@@ -13,7 +13,6 @@ import { useLanguage } from '../context/LanguageContext';
 import AuthContext, { useAuth } from '../context/AuthContext';
 import { useUserProfile, useUpdateProfile } from '../hooks/queries/useUsers';
 import { useData } from '../context/DataContext';
-import { useOrders } from '../hooks/queries/useOrders';
 import LogoutModal from '../components/LogoutModal';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
@@ -49,7 +48,6 @@ const Profile = () => {
     const { cartCount } = useCart();
 
     const { data: userProfile } = useUserProfile();
-    const { data: ordersData } = useOrders();
     
     // Robust resolution of user from userProfile (React Query) and authUser (AuthContext)
     const user = useMemo(() => {
@@ -65,7 +63,6 @@ const Profile = () => {
         return userProfile || authUser || {};
     }, [userProfile, authUser]);
 
-    const orders = ordersData?.data || ordersData || [];
     const navigate = useNavigate();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);

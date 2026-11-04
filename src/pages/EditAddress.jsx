@@ -463,7 +463,7 @@ const EditAddress = () => {
                         <div className="pt-2 sm:pt-3">
                             <button
                                 type="submit"
-                                className="w-full bg-black text-white py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base active:scale-[0.98] transition-all shadow-sm"
+                                className="w-full bg-black text-white py-3.5 sm:py-4 rounded-full font-bold text-sm sm:text-base active:scale-[0.98] transition-all shadow-sm"
                             >
                                 {isSaving ? t('Saving Changes...') : t('Update Address')}
                             </button>

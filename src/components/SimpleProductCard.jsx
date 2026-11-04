@@ -1,3 +1,4 @@
+import React, { memo } from 'react';
 import { getThumbnailUrl } from '../utils/imageOptimizer';
 import { Plus, Minus, Store, ShoppingCart, Zap, Bookmark } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -392,4 +393,4 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
     );
 };
 
-export default React.memo(SimpleProductCard);
+export default memo(SimpleProductCard);

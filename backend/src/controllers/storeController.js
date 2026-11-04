@@ -23,7 +23,7 @@ export const getStores = async (req, res, next) => {
 
         // Smart Image Filtering for Stores
         const processedStores = stores.map(store => {
-            const storeObj = store.toObject();
+            const storeObj = store;
             if (storeObj.image && storeObj.image.startsWith('data:image')) {
                 storeObj.image = null;
             }

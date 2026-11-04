@@ -12,7 +12,7 @@ export const getCategories = async (req, res, next) => {
 
         // Smart Image Filtering for Categories
         const processedCategories = categories.map(cat => {
-            const catObj = cat.toObject();
+            const catObj = cat;
             if (catObj.image && catObj.image.startsWith('data:image')) {
                 catObj.image = null;
             }
@@ -210,7 +210,7 @@ export const deleteCategory = async (req, res, next) => {
             await deleteFromCloudinary(category.image);
         }
 
-        await category.deleteOne();
+        await Category.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             success: true,
