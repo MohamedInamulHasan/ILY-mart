@@ -59,3 +59,4 @@ if (startIndex !== -1 && endIndex !== -1) {
 } else {
     console.error('Could not find start/end indices in Shop.jsx');
 }
+

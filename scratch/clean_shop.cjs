@@ -18,3 +18,4 @@ if (foundIdx !== -1) {
 } else {
     console.log('No duplicate found');
 }
+

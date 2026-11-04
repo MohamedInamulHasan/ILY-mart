@@ -125,3 +125,4 @@ if (shop.includes(oldSkeletonBlock)) {
 
 fs.writeFileSync('src/pages/Shop.jsx', shop, 'utf8');
 console.log('Successfully updated Shop.jsx store skeleton');
+
