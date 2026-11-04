@@ -267,3 +267,4 @@ co_content = co_content.replace(old_payment_block.replace('\r\n', '\n'), new_pay
 with open('src/pages/Checkout.jsx', 'w', encoding='utf-8') as f:
     f.write(co_content)
 print("Updated Checkout.jsx: shipping details without inner grey card, and COD direct white card with black outline & black text!")
+

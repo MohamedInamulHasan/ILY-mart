@@ -73,11 +73,20 @@ const Home = () => {
         return list.filter(s => s.isActive !== false);
     }, [rawStores]);
 
-    // Categories appear stably without jumping or delayed 'correcting'
+    // Filter categories by products (as before), stably rendered once data is ready
     const featuredCategories = useMemo(() => {
         const raw = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
-        return raw.filter(cat => !cat.isHidden);
-    }, [rawCategories]);
+        const allProducts = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
+
+        if (raw.length === 0) return [];
+        if (loadingProducts || allProducts.length === 0) {
+            // While products are still loading, don't flash unfiltered categories
+            return [];
+        }
+
+        const productCategories = new Set(allProducts.map(p => p.category?.toLowerCase()));
+        return raw.filter(cat => !cat.isHidden && productCategories.has(cat.name?.toLowerCase()));
+    }, [rawCategories, rawProducts, loadingProducts]);
 
 
     // Grouping Logic (show all available products - timed-out ones show overlay, manually disabled are hidden)
@@ -366,7 +375,7 @@ const Home = () => {
                 {/* Categories */}
                 <CategorySection 
                     categories={featuredCategories} 
-                    isLoading={loadingCategories} 
+                    isLoading={loadingCategories || loadingProducts} 
                     selectedCategory={selectedCategory}
                     onSelectCategory={handleSelectCategory}
                 />

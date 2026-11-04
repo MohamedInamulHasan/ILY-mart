@@ -387,7 +387,7 @@ const EditAddress = () => {
                                 value={formData.fullName}
                                 onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, fullName: false })); }}
                                 placeholder="Enter full name"
-                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-xs sm:text-sm shadow-none"
+                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-xs sm:text-sm shadow-none"
                             />
                             {fieldErrors.fullName && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
@@ -407,7 +407,7 @@ const EditAddress = () => {
                                 value={formData.mobile}
                                 onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, mobile: false })); }}
                                 placeholder="10-digit mobile number"
-                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-xs sm:text-sm shadow-none"
+                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-xs sm:text-sm shadow-none"
                             />
                             {fieldErrors.mobile && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
@@ -427,7 +427,7 @@ const EditAddress = () => {
                                 value={formData.street}
                                 onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, street: false })); }}
                                 placeholder="House no, Street name, Landmark"
-                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-xs sm:text-sm resize-none shadow-none"
+                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-xs sm:text-sm resize-none shadow-none"
                             />
                             {fieldErrors.street && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
@@ -450,7 +450,7 @@ const EditAddress = () => {
                                     setFieldErrors(prev => ({ ...prev, city: false }));
                                 }}
                                 placeholder={t('Enter city name')}
-                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all text-xs sm:text-sm shadow-none"
+                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-xs sm:text-sm shadow-none"
                             />
                             {fieldErrors.city && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">

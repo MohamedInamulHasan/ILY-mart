@@ -8,15 +8,28 @@
 }
 
 /* Remove unwanted default browser outline boxes, tap highlights and focus rings */
-a, button, input, textarea, select {
+*, *::before, *::after {
     -webkit-tap-highlight-color: transparent !important;
 }
-a:focus, a:focus-visible, a:active,
-button:focus, button:focus-visible, button:active,
+
+input, textarea, select, button {
+    outline: none !important;
+    outline-color: transparent !important;
+    outline-style: none !important;
+    outline-width: 0 !important;
+    box-shadow: none;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
 input:focus, input:focus-visible, input:active,
 textarea:focus, textarea:focus-visible, textarea:active,
-select:focus, select:focus-visible, select:active {
+select:focus, select:focus-visible, select:active,
+button:focus, button:focus-visible, button:active,
+a:focus, a:focus-visible, a:active {
     outline: none !important;
+    outline-color: transparent !important;
+    outline-style: none !important;
+    outline-width: 0 !important;
     box-shadow: none !important;
     -webkit-tap-highlight-color: transparent !important;
 }

@@ -42,7 +42,10 @@ const HomeHeader = () => {
             {/* Location Selector */}
             <div className="flex items-center gap-3">
                 <div className="w-[42px] h-[42px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0">
-                    <MapPin className="text-red-500 dark:text-red-500" size={22} />
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13401 2 5 5.13401 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13401 15.866 2 12 2Z" fill="#EF4444" />
+                        <circle cx="12" cy="9" r="2.8" fill="white" />
+                    </svg>
                 </div>
                 <div className="flex flex-col min-w-0">
                     <span className="text-[10px] text-gray-700 dark:text-gray-700 font-semibold uppercase tracking-wider leading-tight">{t('Delivery to')}</span>

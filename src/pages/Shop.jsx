@@ -4,7 +4,6 @@ import { MapPin, Search, Star, Clock, Phone, Store, Wrench, ArrowRight, X } from
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { isStoreOpen, formatTime12h } from '../utils/storeHelpers';
-import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import StoreCard from '../components/StoreCard';
 import { API_BASE_URL } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -100,9 +99,9 @@ const Shop = () => {
                 </div>
             </div>
             
-            <PullToRefreshLayout>
+            
                 <div className="pt-[88px]">
-                <div className="max-w-7xl mx-auto px-4 mt-0">
+                <div className="max-w-7xl mx-auto px-4 mt-0 pb-12 sm:pb-16">
                     <div className="mb-2">
                         {/* Removed Store/Service toggle for a cleaner experience */}
                         <div className="relative group mb-3.5 sm:mb-4">
@@ -571,7 +570,7 @@ const Shop = () => {
                     </AnimatePresence>
                 </div>
                 </div>
-            </PullToRefreshLayout>
+            
         </div>
     );
 };

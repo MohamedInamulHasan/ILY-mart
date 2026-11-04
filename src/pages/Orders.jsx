@@ -119,7 +119,7 @@ const Orders = () => {
     // We handle 'loadingOrders' state inside the return block by showing a beautiful skeleton loader.
 
     return (
-        <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
+        <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-20 sm:pb-24 transition-colors duration-200 w-full relative">
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -154,7 +154,7 @@ const Orders = () => {
 
             <PullToRefreshLayout>
                 <div className="pt-[88px]">
-                <div className="px-4 mt-0 max-w-3xl mx-auto">
+                <div className="px-4 mt-0 max-w-3xl mx-auto pb-10 sm:pb-14">
                     {/* Zepto-style Search Bar */}
                     <div className="relative mb-4 sm:mb-5">
                         <input

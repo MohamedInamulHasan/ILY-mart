@@ -142,3 +142,4 @@ if 'export default StoreSection;' in store_sec_content:
     with open('src/components/home/StoreSection.jsx', 'w', encoding='utf-8') as f:
         f.write(store_sec_content)
     print("Updated StoreSection.jsx: wrapped with React.memo!")
+

@@ -15,6 +15,7 @@ import { useUserProfile, useUpdateProfile } from '../hooks/queries/useUsers';
 import { useData } from '../context/DataContext';
 import { useOrders } from '../hooks/queries/useOrders';
 import LogoutModal from '../components/LogoutModal';
+import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
 import api from '../utils/api';
 
@@ -121,7 +122,7 @@ const Profile = () => {
     const confirmLogout = () => { logout(); };
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative overflow-hidden overscroll-none select-none">
+        <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-20 sm:pb-24 transition-colors duration-200 w-full relative select-none">
             
             {/* Logout Modal */}
             <LogoutModal 
@@ -131,7 +132,7 @@ const Profile = () => {
             />
 
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
-            <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden flex-shrink-0 relative">
+            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                 
                 <div className="relative z-10">
@@ -162,8 +163,9 @@ const Profile = () => {
                 </div>
             </div>
 
-            {/* Stable Content Container - comfortably fits standard screens without scrolling */}
-            <div className="flex-1 overflow-y-auto overscroll-none scrollbar-hide px-4 pt-3 pb-3 sm:pb-5 max-w-3xl mx-auto w-full">
+            <PullToRefreshLayout>
+                <div className="pt-[88px]">
+                <div className="px-4 mt-0 max-w-3xl mx-auto space-y-3 pb-12 sm:pb-16 w-full">
                 {/* Profile Widget */}
                 <div className="bg-white dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between mb-3 shadow-sm border border-gray-100 dark:border-gray-700">
                      <div className="flex items-center gap-3.5 flex-1 min-w-0">
@@ -350,6 +352,8 @@ const Profile = () => {
                      </div>
                 </div>
             </div>
+                </div>
+            </PullToRefreshLayout>
 
             {/* Floating WhatsApp Button */}
             <button 
