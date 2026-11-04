@@ -26,6 +26,7 @@ import { CartoonCoin } from '../../components/CartoonCoin';
 import SwipeActionButton from '../../components/SwipeActionButton';
 import DeliveryStatusPopup from '../../components/DeliveryStatusPopup';
 import { playSuccessSound } from '../../utils/soundHelper';
+import { isNativeAndroid, setOverlayHasAcceptedOrder, hideFloatingOverlay } from '../../utils/floatingOverlay';
 
 const DeliveryActiveOrder = () => {
     const { id: paramId } = useParams();
@@ -49,6 +50,20 @@ const DeliveryActiveOrder = () => {
     const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
     // Popup state: 'accepted' | 'delivered' | 'cancelled' | null
+    
+    const isAcceptedOrder = useMemo(() => {
+        const curStatus = localStatus || singleOrder?.status;
+        return ['Accepted', 'Out for Delivery', 'Shipped'].includes(curStatus);
+    }, [localStatus, singleOrder?.status]);
+
+    useEffect(() => {
+        if (!isNativeAndroid()) return;
+        setOverlayHasAcceptedOrder(isAcceptedOrder);
+        if (!isAcceptedOrder) {
+            hideFloatingOverlay();
+        }
+    }, [isAcceptedOrder]);
+
     const [popupState, setPopupState] = useState({
         isOpen: false,
         type: 'accepted',

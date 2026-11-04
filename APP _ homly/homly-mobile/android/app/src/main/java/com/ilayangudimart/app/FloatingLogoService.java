@@ -922,6 +922,21 @@ public class FloatingLogoService extends Service {
     /**
      * 3. Background Order Poller (Runs every 5 seconds even when app is closed)
      */
+    
+    public void updateAcceptedOrderState(boolean hasAccepted) {
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("has_accepted_order", hasAccepted).apply();
+        mainHandler.post(() -> {
+            if (hasAccepted) {
+                if (!isAppInForeground && orderCardView == null) {
+                    showCircleBubble();
+                }
+            } else {
+                hideCircleBubble();
+            }
+        });
+    }
+
     private void startOrderPolling() {
         pollingExecutor = Executors.newSingleThreadScheduledExecutor();
         pollingExecutor.scheduleWithFixedDelay(() -> {
@@ -988,6 +1003,9 @@ public class FloatingLogoService extends Service {
                             }
                         }
                     }
+                    final boolean hasAccepted = foundAccepted;
+                    mainHandler.post(() -> updateAcceptedOrderState(hasAccepted));
+
                     if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
                         mainHandler.post(() -> showNextPendingOrderIfAny());
                     }

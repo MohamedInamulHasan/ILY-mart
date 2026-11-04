@@ -110,3 +110,16 @@ export const dismissPorterOrderCard = async () => {
         console.warn('Error dismissing Porter order card:', err);
     }
 };
+
+/**
+ * Notify the native service whether there is an active accepted delivery order.
+ * The floating logo will ONLY display when this is true.
+ */
+export const setOverlayHasAcceptedOrder = async (hasAcceptedOrder) => {
+    if (!isNativeAndroid()) return;
+    try {
+        await FloatingOverlay.setHasAcceptedOrder({ hasAcceptedOrder: !!hasAcceptedOrder });
+    } catch (err) {
+        console.warn('Error setting overlay accepted order state:', err);
+    }
+};

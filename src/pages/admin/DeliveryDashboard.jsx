@@ -53,7 +53,8 @@ import {
     requestOverlayPermission, 
     showFloatingOverlay, 
     hideFloatingOverlay,
-    setOverlayAuthToken 
+    setOverlayAuthToken,
+    setOverlayHasAcceptedOrder
 } from '../../utils/floatingOverlay';
 import { registerModalBackHandler } from '../../utils/useBackButton';
 
@@ -140,6 +141,20 @@ const DeliveryDashboard = () => {
         }
     };
 
+    // Check if there is an accepted delivery card in the panel (Out for Delivery, Shipped, Accepted)
+    const hasAcceptedCard = useMemo(() => {
+        return orders.some(o => ['Accepted', 'Out for Delivery', 'Shipped'].includes(o.status));
+    }, [orders]);
+
+    // Keep native overlay accepted order state synced whenever orders change
+    useEffect(() => {
+        if (!isNativeAndroid()) return;
+        setOverlayHasAcceptedOrder(hasAcceptedCard);
+        if (!hasAcceptedCard) {
+            hideFloatingOverlay();
+        }
+    }, [hasAcceptedCard]);
+
     // Porter Partner Style Floating Logo: check permission & listen to app state change
     useEffect(() => {
         let isMounted = true;
@@ -159,8 +174,11 @@ const DeliveryDashboard = () => {
                 setOverlayAuthToken(currentToken);
             }
 
-            if (isFloatingEnabled && granted) {
+            // Only show floating overlay if enabled AND there is an accepted order
+            if (isFloatingEnabled && granted && hasAcceptedCard) {
                 showFloatingOverlay();
+            } else {
+                hideFloatingOverlay();
             }
 
             try {
@@ -168,9 +186,11 @@ const DeliveryDashboard = () => {
                 appStateListener = await App.addListener('appStateChange', ({ isActive }) => {
                     const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
                     if (!isActive) {
-                        // When app is closed/minimized -> show floating logo only if enabled
-                        if (enabled) {
+                        // When app is closed/minimized -> show floating logo ONLY if enabled AND there is an accepted card
+                        if (enabled && hasAcceptedCard) {
                             showFloatingOverlay();
+                        } else {
+                            hideFloatingOverlay();
                         }
                     } else {
                         // When app is reopened -> hide floating logo
@@ -191,7 +211,7 @@ const DeliveryDashboard = () => {
             }
             hideFloatingOverlay();
         };
-    }, []);
+    }, [hasAcceptedCard, isFloatingEnabled]);
 
     const getItemImage = (item) => {
         if (item.image && typeof item.image === 'string' && (item.image.startsWith('http') || item.image.startsWith('/') || item.image.startsWith('data:'))) {

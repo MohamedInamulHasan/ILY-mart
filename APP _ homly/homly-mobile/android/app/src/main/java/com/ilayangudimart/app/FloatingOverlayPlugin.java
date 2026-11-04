@@ -168,4 +168,18 @@ public class FloatingOverlayPlugin extends Plugin {
             call.reject("FAILED_ALERT", e.getMessage());
         }
     }
+
+    @PluginMethod
+    public void setHasAcceptedOrder(PluginCall call) {
+        boolean hasAcceptedOrder = call.getBoolean("hasAcceptedOrder", false);
+        SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("has_accepted_order", hasAcceptedOrder).apply();
+        if (FloatingLogoService.instance != null) {
+            FloatingLogoService.instance.updateAcceptedOrderState(hasAcceptedOrder);
+        }
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
 }
