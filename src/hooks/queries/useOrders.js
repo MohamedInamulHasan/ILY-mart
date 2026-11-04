@@ -49,8 +49,27 @@ export const useUpdateOrderStatus = () => {
     return useMutation({
         mutationFn: ({ id, status, deliveredBy }) => apiService.updateOrderStatus(id, status, deliveredBy),
         onSuccess: (data, variables) => {
-            queryClient.invalidateQueries(orderKeys.lists());
-            queryClient.invalidateQueries(orderKeys.detail(variables.id));
+            const updated = data?.data || { _id: variables.id, status: variables.status };
+            
+            // Immediately sync React Query lists cache
+            queryClient.setQueriesData({ queryKey: orderKeys.lists() }, (oldOrders) => {
+                if (!Array.isArray(oldOrders)) return oldOrders;
+                return oldOrders.map(o => (String(o._id || o.id) === String(variables.id) ? { ...o, ...updated, status: variables.status } : o));
+            });
+
+            // Immediately sync single order detail cache
+            queryClient.setQueryData(orderKeys.detail(variables.id), (old) => {
+                if (!old) return old;
+                return { ...old, ...updated, status: variables.status };
+            });
+
+            // Broadcast status update event to DataContext and other listeners
+            window.dispatchEvent(new CustomEvent('orders:status_updated', {
+                detail: { id: variables.id, status: variables.status, order: updated }
+            }));
+
+            // Invalidate to fetch latest from server
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
         }
     });
 };
@@ -60,8 +79,13 @@ export const useDeleteOrder = () => {
 
     return useMutation({
         mutationFn: (id) => apiService.deleteOrder(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries(orderKeys.lists());
+        onSuccess: (data, deletedId) => {
+            queryClient.setQueriesData({ queryKey: orderKeys.lists() }, (oldOrders) => {
+                if (!Array.isArray(oldOrders)) return oldOrders;
+                return oldOrders.filter(o => String(o._id || o.id) !== String(deletedId));
+            });
+            window.dispatchEvent(new CustomEvent('orders:refresh'));
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
         }
     });
 };

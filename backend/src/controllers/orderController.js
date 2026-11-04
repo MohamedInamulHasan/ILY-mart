@@ -361,7 +361,13 @@ export const getOrder = async (req, res, next) => {
 // @access  Private/Admin
 export const updateOrderStatus = async (req, res, next) => {
     try {
-        const order = await Order.findById(req.params.id);
+        const orderId = req.params.id;
+        if (!orderId) {
+            res.status(400);
+            throw new Error('Order ID is required');
+        }
+
+        const order = await Order.findById(orderId);
 
         if (!order) {
             res.status(404);
@@ -380,23 +386,36 @@ export const updateOrderStatus = async (req, res, next) => {
         // Check if we are cancelling the order
         if (req.body.status === 'Cancelled' && order.status !== 'Cancelled') {
             console.log(`❌ Cancelling order ${order._id}. Current shipping: ${order.shipping}, Status: ${order.status}`);
-            // Check if coins were used (implied by shipping === 0)
-            // But verify it wasn't a Gold Order
-            const isGoldOrder = order.items.some(item => item.isGold) ||
-                (await import('../models/Product.js').then(m => m.default.find({ _id: { $in: order.items.map(i => i.product) } }).select('isGold'))).some(p => p.isGold);
-
-            if (order.shipping === 0 && !isGoldOrder) {
-                const user = await User.findById(order.user);
-                if (user) {
-                    const oldCoins = user.coins || 0;
-                    user.coins = oldCoins + 1;
-                    await user.save();
-                    console.log(`💰 Refunded 1 coin to user ${user._id} | ${oldCoins} -> ${user.coins} | Order: ${order._id}`);
-                } else {
-                    console.error(`⚠️ User ${order.user} not found for coin refund.`);
+            try {
+                // Check if coins were used (implied by shipping === 0)
+                // But verify it wasn't a Gold Order
+                let isGoldOrder = false;
+                try {
+                    const productIds = (order.items || []).map(i => i.product).filter(Boolean);
+                    if (productIds.length > 0) {
+                        const Product = (await import('../models/Product.js')).default;
+                        const goldProds = await Product.find({ _id: { $in: productIds } }).select('isGold');
+                        isGoldOrder = order.items.some(item => item.isGold) || goldProds.some(p => p.isGold);
+                    }
+                } catch (gErr) {
+                    console.warn('Gold product check failed, continuing cancellation:', gErr.message);
                 }
-            } else {
-                console.log(`ℹ️ No coin refund needed (Shipping: ${order.shipping}).`);
+
+                if (order.shipping === 0 && !isGoldOrder) {
+                    const user = await User.findById(order.user);
+                    if (user) {
+                        const oldCoins = user.coins || 0;
+                        user.coins = oldCoins + 1;
+                        await user.save();
+                        console.log(`💰 Refunded 1 coin to user ${user._id} | ${oldCoins} -> ${user.coins} | Order: ${order._id}`);
+                    } else {
+                        console.error(`⚠️ User ${order.user} not found for coin refund.`);
+                    }
+                } else {
+                    console.log(`ℹ️ No coin refund needed (Shipping: ${order.shipping}).`);
+                }
+            } catch (coinErr) {
+                console.error('Error during coin refund check:', coinErr);
             }
         }
 
@@ -417,7 +436,23 @@ export const updateOrderStatus = async (req, res, next) => {
             order.deliveredAt = Date.now();
         }
 
-        const updatedOrder = await order.save();
+        let updatedOrder;
+        try {
+            updatedOrder = await order.save();
+        } catch (saveErr) {
+            console.warn('⚠️ order.save() failed validation, falling back to findByIdAndUpdate:', saveErr.message);
+            const updateFields = {
+                status: order.status
+            };
+            if (order.deliveredBy) updateFields.deliveredBy = order.deliveredBy;
+            if (order.deliveredAt) updateFields.deliveredAt = order.deliveredAt;
+
+            updatedOrder = await Order.findByIdAndUpdate(
+                order._id,
+                { $set: updateFields },
+                { new: true }
+            );
+        }
 
         // Send notifications (with deduplication for Cancellations)
         if (updatedOrder.status === 'Cancelled') {

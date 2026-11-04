@@ -83,3 +83,4 @@ cart_content = cart_content.replace(
 with open('src/context/CartContext.jsx', 'w', encoding='utf-8') as f:
     f.write(cart_content)
 print("Successfully optimized CartContext.jsx popup")
+

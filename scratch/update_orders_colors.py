@@ -99,3 +99,4 @@ content = content.replace(old_tag_jsx, new_tag_jsx)
 with open('src/pages/Orders.jsx', 'w', encoding='utf-8') as f:
     f.write(content)
 print("Updated Orders.jsx colors successfully")
+

@@ -52,12 +52,23 @@ export const SocketProvider = ({ children }) => {
         });
 
         // Data Update Events
-        newSocket.on('order:created', () => {
+        newSocket.on('order:created', (newOrder) => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            window.dispatchEvent(new CustomEvent('orders:refresh', { detail: newOrder }));
         });
 
-        newSocket.on('order:updated', () => {
+        newSocket.on('order:updated', (updatedOrder) => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            if (updatedOrder && (updatedOrder._id || updatedOrder.id)) {
+                window.dispatchEvent(new CustomEvent('orders:status_updated', {
+                    detail: {
+                        id: updatedOrder._id || updatedOrder.id,
+                        status: updatedOrder.status,
+                        order: updatedOrder
+                    }
+                }));
+            }
+            window.dispatchEvent(new CustomEvent('orders:refresh', { detail: updatedOrder }));
         });
 
         newSocket.on('product:updated', () => {

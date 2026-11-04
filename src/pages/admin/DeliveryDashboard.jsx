@@ -47,7 +47,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PullToRefreshLayout from '../../components/PullToRefreshLayout';
 import DeliveryOrdersFeedModal from '../../components/DeliveryOrdersFeedModal';
 import DeliveryOrdersListFeed from '../../components/DeliveryOrdersListFeed';
-import IncomingOrderModal from '../../components/IncomingOrderModal';
 import { 
     isNativeAndroid, 
     checkOverlayPermission, 
@@ -82,7 +81,6 @@ const DeliveryDashboard = () => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showOrdersFeed, setShowOrdersFeed] = useState(false);
-    const [selectedOrderForAccept, setSelectedOrderForAccept] = useState(null);
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
     const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
 
@@ -114,12 +112,6 @@ const DeliveryDashboard = () => {
         const saved = localStorage.getItem('delivery_floating_overlay_enabled');
         return saved !== null ? saved === 'true' : true;
     });
-
-    // Register Android back button handlers to dismiss modals before navigating
-    useEffect(() => {
-        if (!selectedOrderForAccept) return;
-        return registerModalBackHandler(() => setSelectedOrderForAccept(null));
-    }, [selectedOrderForAccept]);
 
     useEffect(() => {
         if (!showOrdersFeed) return;
@@ -250,6 +242,7 @@ const DeliveryDashboard = () => {
 
     const getStatusRank = (status) => {
         switch (status) {
+            case 'Accepted':
             case 'Out for Delivery':
             case 'Shipped':
                 return 1;
@@ -269,16 +262,39 @@ const DeliveryDashboard = () => {
     // Filter to delivery order cards in delivery panel
     const displayOrders = orders
         .filter(order => {
-            // Only show active deliveries in Delivery Panel (do not show processing cards here)
-            if (!['Out for Delivery', 'Shipped'].includes(order.status)) return false;
+            const isSearching = Boolean(searchQuery && searchQuery.trim());
 
-            if (!searchQuery) return true;
-            const q = searchQuery.toLowerCase();
+            // If searching, show Accepted orders in addition to Out for Delivery / Shipped
+            const allowedStatuses = isSearching
+                ? ['Out for Delivery', 'Shipped', 'Accepted']
+                : ['Out for Delivery', 'Shipped'];
+
+            if (!allowedStatuses.includes(order.status)) return false;
+
+            if (!isSearching) return true;
+            const q = searchQuery.toLowerCase().trim();
             const orderId = String(order._id || order.id).toLowerCase();
             const customerName = (order.shippingAddress?.name || order.user || '').toLowerCase();
             const customerMobile = (order.shippingAddress?.mobile || '').toLowerCase();
-            return orderId.includes(q) || customerName.includes(q) || customerMobile.includes(q) ||
-                order.items?.some(item => (item.name || '').toLowerCase().includes(q));
+            const status = (order.status || '').toLowerCase();
+
+            const matchesProcess = (q.includes('process') || q.includes('pend')) && ['processing', 'pending', 'order placed'].includes(status);
+            const matchesCancelled = (q.includes('cancel')) && status === 'cancelled';
+            const matchesDelivered = (q.includes('deliver') || q.includes('complete')) && ['delivered', 'completed'].includes(status);
+            const matchesAccepted = (q.includes('accept')) && status === 'accepted';
+            const matchesStatusDirect = status.includes(q);
+
+            return (
+                orderId.includes(q) ||
+                customerName.includes(q) ||
+                customerMobile.includes(q) ||
+                matchesStatusDirect ||
+                matchesProcess ||
+                matchesCancelled ||
+                matchesDelivered ||
+                matchesAccepted ||
+                order.items?.some(item => (item.name || '').toLowerCase().includes(q))
+            );
         })
         .slice()
         .sort((a, b) => {
@@ -477,22 +493,24 @@ const DeliveryDashboard = () => {
                             </div>
                         )}
 
-                        {/* Search Pill */}
-                        <div className="relative mb-6">
+                        {/* Zepto-style Search Bar like Order page */}
+                        <div className="relative mb-4 sm:mb-5">
                             <input
                                 type="text"
-                                placeholder={t('Search ID, customer, item...')}
+                                placeholder={t('Search ID, customer, item, status...')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-10 py-3.5 rounded-full border border-gray-100/50 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] text-gray-900 dark:text-white focus:outline-none shadow-sm dark:placeholder-gray-500 transition-all duration-300"
+                                className="w-full pl-11 sm:pl-12 pr-11 py-3.5 sm:py-4 text-[14.5px] sm:text-[15.5px] font-medium rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none transition-colors duration-200"
                             />
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 stroke-[2.2]" size={20} />
                             {searchQuery && (
                                 <button
+                                    type="button"
                                     onClick={() => setSearchQuery('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                    className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 active:scale-90 transition-all rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer"
+                                    title={t('Clear')}
                                 >
-                                    <X size={16} />
+                                    <X size={18} className="stroke-[2.5]" />
                                 </button>
                             )}
                         </div>
@@ -504,7 +522,7 @@ const DeliveryDashboard = () => {
                                     {[1, 2, 3].map(i => (
                                         <div
                                             key={i}
-                                            className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700/60 overflow-hidden flex flex-col justify-between shadow-xs"
+                                            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700/60 overflow-hidden flex flex-col justify-between shadow-xs"
                                         >
                                             {/* Top Header Row Skeleton: Time Left & ID Right */}
                                             <div className="px-4 pt-3.5 pb-2.5 flex items-center justify-between">
@@ -578,10 +596,11 @@ const DeliveryDashboard = () => {
                                         const isCancelled = order.status === 'Cancelled';
                                         const isDelivered = order.status === 'Delivered' || order.status === 'Completed';
                                         const isOutForDelivery = order.status === 'Out for Delivery' || order.status === 'Shipped';
+                                        const isAccepted = order.status === 'Accepted';
 
                                         const shineVariant = isCancelled
                                             ? 'cancelled'
-                                            : isOutForDelivery
+                                            : (isOutForDelivery || isAccepted)
                                                 ? 'blue'
                                                 : isDelivered
                                                     ? 'green'
@@ -594,7 +613,7 @@ const DeliveryDashboard = () => {
                                                 isCancelled
                                                     ? 'bg-gray-100/90 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700/80'
                                                     : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
-                                            } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
+                                            } rounded-xl border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
                                         >
                                             {/* Top Header Row: Time Left & ID Right in grey same thickness, light grey line like green dot line */}
                                             <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
@@ -729,7 +748,7 @@ const DeliveryDashboard = () => {
                                                     </div>
                                                 ) : (
                                                     <SwipeActionButton
-                                                        variant={isOutForDelivery ? 'blue' : 'yellow'}
+                                                        variant={(isOutForDelivery || isAccepted) ? 'blue' : 'yellow'}
                                                         label={t('VIEW ORDER')}
                                                         autoReset={true}
                                                         heightClass="h-[50px]"
@@ -754,15 +773,12 @@ const DeliveryDashboard = () => {
                                     searchQuery={searchQuery}
                                     paddingBottomClass="pb-12"
                                     onSelectOrder={(order) => {
-                                        const isPending = order.status === 'Processing' || order.status === 'Pending' || order.status === 'Order Placed';
-                                        if (isPending) {
-                                            setSelectedOrderForAccept(order);
-                                        } else {
-                                            const oId = order._id || order.id;
-                                            localStorage.setItem('active_delivery_order_id', oId);
-                                            localStorage.setItem('active_delivery_stay', 'true');
-                                            navigate(`/admin/delivery-order/${oId}`);
-                                        }
+                                        const oId = order._id || order.id;
+                                        localStorage.setItem('active_delivery_order_id', oId);
+                                        localStorage.setItem('active_delivery_stay', 'true');
+                                        navigate(`/admin/delivery-order/${oId}`, {
+                                            state: { order, status: order.status }
+                                        });
                                     }}
                                 />
                             )}
@@ -799,40 +815,14 @@ const DeliveryDashboard = () => {
                 orders={orders}
                 onSelectOrder={(order) => {
                     setShowOrdersFeed(false);
-                    const isPending = order.status === 'Processing' || order.status === 'Pending' || order.status === 'Order Placed';
-                    if (isPending) {
-                        setSelectedOrderForAccept(order);
-                    } else {
-                        const oId = order._id || order.id;
-                        localStorage.setItem('active_delivery_order_id', oId);
-                        localStorage.setItem('active_delivery_stay', 'true');
-                        navigate(`/admin/delivery-order/${oId}`);
-                    }
+                    const oId = order._id || order.id;
+                    localStorage.setItem('active_delivery_order_id', oId);
+                    localStorage.setItem('active_delivery_stay', 'true');
+                    navigate(`/admin/delivery-order/${oId}`, {
+                        state: { order, status: order.status }
+                    });
                 }}
             />
-
-            {/* Incoming Order Accept Modal (opened when clicking View on any card) */}
-            <AnimatePresence>
-                {selectedOrderForAccept && (
-                    <IncomingOrderModal
-                        key={selectedOrderForAccept._id || selectedOrderForAccept.id}
-                        order={selectedOrderForAccept}
-                        onClose={() => setSelectedOrderForAccept(null)}
-                        onAccepted={(order) => {
-                            setSelectedOrderForAccept(null);
-                            setActiveTab('Out for Delivery');
-                        }}
-                        onDelivered={(order) => {
-                            setSelectedOrderForAccept(null);
-                            setActiveTab('Delivered');
-                        }}
-                        onCancelled={(order) => {
-                            setSelectedOrderForAccept(null);
-                            setActiveTab('Cancelled');
-                        }}
-                    />
-                )}
-            </AnimatePresence>
         </div>
     );
 };

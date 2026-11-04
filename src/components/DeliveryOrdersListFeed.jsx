@@ -63,12 +63,27 @@ const DeliveryOrdersListFeed = ({
         .filter((o) => {
             if (!['Processing', 'Pending', 'Order Placed', 'Delivered', 'Completed', 'Cancelled'].includes(o.status)) return false;
             if (!searchQuery) return true;
-            const q = searchQuery.toLowerCase();
+            const q = searchQuery.toLowerCase().trim();
             const orderId = String(o._id || o.id).toLowerCase();
             const customerName = (o.shippingAddress?.name || o.user || '').toLowerCase();
             const customerMobile = (o.shippingAddress?.mobile || '').toLowerCase();
-            return orderId.includes(q) || customerName.includes(q) || customerMobile.includes(q) ||
-                o.items?.some(item => (item.name || '').toLowerCase().includes(q));
+            const status = (o.status || '').toLowerCase();
+
+            const matchesProcess = (q.includes('process') || q.includes('pend')) && ['processing', 'pending', 'order placed'].includes(status);
+            const matchesCancelled = (q.includes('cancel')) && status === 'cancelled';
+            const matchesDelivered = (q.includes('deliver') || q.includes('complete')) && ['delivered', 'completed'].includes(status);
+            const matchesStatusDirect = status.includes(q);
+
+            return (
+                orderId.includes(q) ||
+                customerName.includes(q) ||
+                customerMobile.includes(q) ||
+                matchesStatusDirect ||
+                matchesProcess ||
+                matchesCancelled ||
+                matchesDelivered ||
+                o.items?.some(item => (item.name || '').toLowerCase().includes(q))
+            );
         })
         .slice()
         .sort((a, b) => {
@@ -130,7 +145,7 @@ const DeliveryOrdersListFeed = ({
     return (
         <div className={`space-y-2.5 sm:space-y-3 w-full ${paddingBottomClass}`}>
             {feedOrders.length === 0 ? (
-                <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
+                <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
                     <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
                         <Package size={30} />
                     </div>
@@ -163,7 +178,7 @@ const DeliveryOrdersListFeed = ({
                                 isCancelled
                                     ? 'bg-gray-100/90 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700/80'
                                     : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
-                            } rounded-[2rem] border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
+                            } rounded-xl border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm`}
                         >
                             {/* Top Header Row: Time Left & ID Right in grey same thickness */}
                             <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
@@ -338,7 +353,7 @@ const DeliveryOrdersListFeed = ({
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-2.5 sm:space-y-3"
+                            className="bg-white dark:bg-gray-900 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-2.5 sm:space-y-3"
                         >
                             <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
                                 <AlertTriangle size={32} />
@@ -405,7 +420,7 @@ const DeliveryOrdersListFeed = ({
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white dark:bg-gray-900 rounded-[2.2rem] max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-2.5 sm:space-y-3"
+                            className="bg-white dark:bg-gray-900 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-2.5 sm:space-y-3"
                         >
                             <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
                                 <Trash2 size={32} />

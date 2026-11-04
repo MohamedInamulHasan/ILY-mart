@@ -284,3 +284,4 @@ export default SwipeActionButton;
 with open('src/components/SwipeActionButton.jsx', 'w', encoding='utf-8') as f:
     f.write(content)
 print("Updated SwipeActionButton.jsx successfully")
+

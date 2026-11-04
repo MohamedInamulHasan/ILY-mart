@@ -4,6 +4,7 @@ import { Phone, MapPin, Package, ChevronsRight, Volume2, VolumeX, Navigation, Cl
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { useUpdateOrderStatus } from '../hooks/queries/useOrders';
 import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getStoreName, formatDeliveryRangeFromDate } from '../utils/storeHelpers';
@@ -27,6 +28,7 @@ const IncomingOrderModal = ({
 }) => {
     const { t, language } = useLanguage();
     const { stores } = useData();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const { mutateAsync: updateOrderStatus } = useUpdateOrderStatus();
     const dragControls = useDragControls();
@@ -47,16 +49,12 @@ const IncomingOrderModal = ({
     const isDelivered = order?.status === 'Delivered';
     const isCancelled = order?.status === 'Cancelled';
 
-    // Step state: 'view' shows the compact View Order card; 'accept' shows the full Accept Order view
-    const [viewMode, setViewMode] = useState(startWithViewCard && isProcessing ? 'view' : 'accept');
+    // Mobile alert card shows the compact incoming view and navigates directly to the Accept Page
+    const [viewMode, setViewMode] = useState('view');
 
     useEffect(() => {
-        if (order && isProcessing && startWithViewCard) {
-            setViewMode('view');
-        } else {
-            setViewMode('accept');
-        }
-    }, [order?._id, order?.status, startWithViewCard, isProcessing]);
+        setViewMode('view');
+    }, [order?._id, order?.status]);
 
     // Only play alert sound for fresh pending/processing orders
     useEffect(() => {
@@ -146,8 +144,11 @@ const IncomingOrderModal = ({
         const id = order._id || order.id;
 
         if (completedType === 'accepted') {
-            if (onAccepted) onAccepted(order);
-            navigate(`/admin/delivery-order/${id}`);
+            const acceptedOrder = { ...order, status: 'Out for Delivery' };
+            if (onAccepted) onAccepted(acceptedOrder);
+            navigate(`/admin/delivery-order/${id}`, {
+                state: { order: acceptedOrder, status: 'Out for Delivery' }
+            });
         } else if (completedType === 'delivered') {
             localStorage.removeItem('active_delivery_order_id');
             localStorage.removeItem('active_delivery_stay');
@@ -174,13 +175,17 @@ const IncomingOrderModal = ({
         if (isActionLoading) return;
         setIsActionLoading(true);
         stopIncomingOrderAlertSound();
-        playSuccessSound();
 
         try {
             const id = order._id || order.id;
             if (isOutForDelivery) {
                 // Out for Delivery -> Delivered
-                await updateOrderStatus({ id, status: 'Delivered' });
+                await updateOrderStatus({
+                    id,
+                    status: 'Delivered',
+                    deliveredBy: user?._id
+                });
+                playSuccessSound();
                 setPopupState({
                     isOpen: true,
                     type: 'delivered',
@@ -189,7 +194,12 @@ const IncomingOrderModal = ({
                 });
             } else {
                 // Processing -> Out for Delivery
-                await updateOrderStatus({ id, status: 'Out for Delivery' });
+                await updateOrderStatus({
+                    id,
+                    status: 'Out for Delivery',
+                    deliveredBy: user?._id
+                });
+                playSuccessSound();
                 localStorage.setItem('active_delivery_order_id', id);
                 localStorage.setItem('active_delivery_stay', 'true');
                 setPopupState({
@@ -201,6 +211,8 @@ const IncomingOrderModal = ({
             }
         } catch (error) {
             console.error('Error updating order status:', error);
+            const errMsg = error?.response?.data?.message || error?.message || t('Failed to update order status. Please try again.');
+            alert(errMsg);
             setIsActionLoading(false);
         }
     };
@@ -223,6 +235,8 @@ const IncomingOrderModal = ({
             });
         } catch (error) {
             console.error('Error cancelling order:', error);
+            const errMsg = error?.response?.data?.message || error?.message || t('Failed to cancel order. Please try again.');
+            alert(errMsg);
         } finally {
             setIsCancelling(false);
         }
@@ -281,7 +295,7 @@ const IncomingOrderModal = ({
                     transition={{ type: 'spring', damping: 28, stiffness: 350 }}
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col justify-between"
+                    className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-xl border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col justify-between"
                 >
                     {/* Top Header Row: Time Left & ID Right in grey same thickness (matching Order List card, no X icon) */}
                     <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
@@ -392,8 +406,13 @@ const IncomingOrderModal = ({
                             iconSize={22}
                             onSuccess={() => {
                                 stopIncomingOrderAlertSound();
-                                setViewMode('accept');
-                                onAcceptViewOpened?.(order);
+                                const oId = order._id || order.id;
+                                localStorage.setItem('active_delivery_order_id', oId);
+                                localStorage.setItem('active_delivery_stay', 'true');
+                                onClose?.();
+                                navigate(`/admin/delivery-order/${oId}`, {
+                                    state: { order, status: order.status }
+                                });
                             }}
                         />
 
@@ -501,15 +520,10 @@ const IncomingOrderModal = ({
                             {customerPhone && (
                                 <a
                                     href={`tel:${customerPhone}`}
-                                    className="relative overflow-hidden flex items-center gap-2 px-4 py-2 rounded-xl bg-black dark:bg-black text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-black/80"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black dark:bg-black text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-black/80"
                                 >
-                                    <motion.div
-                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
-                                        animate={{ x: ['-100%', '150%'] }}
-                                        transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-                                    />
-                                    <Phone size={14} className="stroke-[2.5] relative z-10 text-white" />
-                                    <span className="relative z-10">{t('Call')}</span>
+                                    <Phone size={14} className="stroke-[2.5] text-white" />
+                                    <span>{t('Call')}</span>
                                 </a>
                             )}
                         </div>

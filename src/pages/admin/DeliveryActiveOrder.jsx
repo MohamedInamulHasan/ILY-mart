@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
     Clock, 
     MapPin, 
@@ -30,6 +30,7 @@ import { playSuccessSound } from '../../utils/soundHelper';
 const DeliveryActiveOrder = () => {
     const { id: paramId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { t, language } = useLanguage();
     const { user } = useAuth();
 
@@ -37,8 +38,11 @@ const DeliveryActiveOrder = () => {
     const { data: stores = [] } = useStores();
     const { mutateAsync: updateOrderStatus } = useUpdateOrderStatus();
 
-    const [singleOrder, setSingleOrder] = useState(null);
-    const [localStatus, setLocalStatus] = useState(null);
+    const stateOrder = location.state?.order;
+    const initialStatus = location.state?.status || stateOrder?.status || null;
+
+    const [singleOrder, setSingleOrder] = useState(stateOrder || null);
+    const [localStatus, setLocalStatus] = useState(initialStatus);
     const [fetchingSingle, setFetchingSingle] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
@@ -50,11 +54,11 @@ const DeliveryActiveOrder = () => {
         type: 'accepted',
         title: '',
         subtitle: '',
-        duration: 750
+        duration: 900
     });
 
-    // Resolve order ID: from URL params or from localStorage
-    const activeOrderId = paramId || localStorage.getItem('active_delivery_order_id');
+    // Resolve order ID: from URL params, state, or from localStorage
+    const activeOrderId = paramId || stateOrder?._id || stateOrder?.id || localStorage.getItem('active_delivery_order_id');
 
     // Find order in React Query cache
     const cachedOrder = useMemo(() => {
@@ -62,8 +66,8 @@ const DeliveryActiveOrder = () => {
         return orders.find(o => String(o._id || o.id) === String(activeOrderId));
     }, [orders, activeOrderId]);
 
-    // Active order is either cache or fetched single order
-    const order = cachedOrder || singleOrder;
+    // Active order priority: singleOrder (has fresh state) || stateOrder || cachedOrder
+    const order = singleOrder || stateOrder || cachedOrder;
 
     // Persist this active order ID and stay flag in localStorage while here
     useEffect(() => {
@@ -162,103 +166,132 @@ const DeliveryActiveOrder = () => {
         navigate('/admin');
     };
 
-    // 1. Accept order: instantly updates this card to Out for Delivery mode + quick celebratory popup
+    // 1. Accept order: saves to backend first, then updates card to Out for Delivery mode + celebratory popup
     const handleAccept = async () => {
         if (isActionLoading) return;
         setIsActionLoading(true);
         const id = order?._id || order?.id || activeOrderId;
-        localStorage.setItem('active_delivery_order_id', id);
-        localStorage.setItem('active_delivery_stay', 'true');
-
-        // Optimistically update to delivery page right away!
-        setLocalStatus('Out for Delivery');
-        if (singleOrder) {
-            setSingleOrder(prev => ({ ...prev, status: 'Out for Delivery' }));
+        if (!id) {
+            setIsActionLoading(false);
+            return;
         }
 
-        // Trigger blue flower popup with fast snappy duration
-        setPopupState({
-            isOpen: true,
-            type: 'accepted',
-            title: t('Order Accepted!'),
-            subtitle: t('Order is ready for delivery'),
-            duration: 750
-        });
-
-        // Run network update in background
-        updateOrderStatus({ id, status: 'Out for Delivery' })
-            .catch(error => {
-                console.error('Failed to accept order:', error);
-                setLocalStatus(null);
-                alert(t('Failed to accept order. Please try again.'));
-            })
-            .finally(() => {
-                setIsActionLoading(false);
+        try {
+            // Persist to backend MongoDB via API
+            const res = await updateOrderStatus({
+                id,
+                status: 'Out for Delivery',
+                deliveredBy: user?._id
             });
+
+            const updatedOrder = res?.data || res || { ...order, status: 'Out for Delivery' };
+
+            localStorage.setItem('active_delivery_order_id', id);
+            localStorage.setItem('active_delivery_stay', 'true');
+
+            // Update local states with confirmed backend status
+            setLocalStatus('Out for Delivery');
+            setSingleOrder(prev => ({ ...(prev || {}), ...updatedOrder, status: 'Out for Delivery' }));
+
+            // Trigger blue flower celebration popup
+            setPopupState({
+                isOpen: true,
+                type: 'accepted',
+                title: t('Order Accepted!'),
+                subtitle: t('Order is ready for delivery'),
+                duration: 900
+            });
+        } catch (error) {
+            console.error('Failed to accept order:', error);
+            const errMsg = error?.response?.data?.message || error?.message || t('Failed to accept order. Please try again.');
+            alert(errMsg);
+        } finally {
+            setIsActionLoading(false);
+        }
     };
 
-    // 2. Deliver order: triggers green flower popup + updates status to Delivered + returns to /admin
+    // 2. Deliver order: saves to backend first, plays sound, triggers green flower popup, then safely returns to /admin
     const handleDeliver = async () => {
         if (isActionLoading) return;
         setIsActionLoading(true);
-        playSuccessSound();
         const id = order?._id || order?.id || activeOrderId;
-
-        setLocalStatus('Delivered');
-        if (singleOrder) {
-            setSingleOrder(prev => ({ ...prev, status: 'Delivered' }));
+        if (!id) {
+            setIsActionLoading(false);
+            return;
         }
 
-        // Trigger green flower popup
-        setPopupState({
-            isOpen: true,
-            type: 'delivered',
-            title: t('Delivered Successfully!'),
-            subtitle: t('Order has been delivered'),
-            duration: 900
-        });
-
-        updateOrderStatus({ id, status: 'Delivered' })
-            .catch(error => {
-                console.error('Failed to mark order as delivered:', error);
-                setLocalStatus(null);
-                alert(t('Failed to complete delivery. Please try again.'));
-            })
-            .finally(() => {
-                setIsActionLoading(false);
+        try {
+            // Persist to backend MongoDB via API
+            const res = await updateOrderStatus({
+                id,
+                status: 'Delivered',
+                deliveredBy: user?._id
             });
+
+            const updatedOrder = res?.data || res || { ...order, status: 'Delivered' };
+
+            playSuccessSound();
+            setLocalStatus('Delivered');
+            setSingleOrder(prev => ({ ...(prev || {}), ...updatedOrder, status: 'Delivered' }));
+
+            // Clean active order from storage immediately
+            localStorage.removeItem('active_delivery_order_id');
+            localStorage.removeItem('active_delivery_stay');
+
+            // Trigger real green flower popup
+            setPopupState({
+                isOpen: true,
+                type: 'delivered',
+                title: t('Delivered Successfully!'),
+                subtitle: t('Order has been delivered'),
+                duration: 1200
+            });
+        } catch (error) {
+            console.error('Failed to mark order as delivered:', error);
+            const errMsg = error?.response?.data?.message || error?.message || t('Failed to complete delivery. Please try again.');
+            alert(errMsg);
+        } finally {
+            setIsActionLoading(false);
+        }
     };
 
-    // 3. Cancel order: triggers red flower popup + updates status to Cancelled + returns to /admin
+    // 3. Cancel order: saves to backend first, triggers red flower popup, then returns to /admin
     const handleCancelOrder = async () => {
         if (isCancelling) return;
         setIsCancelling(true);
         const id = order?._id || order?.id || activeOrderId;
         setShowCancelConfirmModal(false);
-
-        setLocalStatus('Cancelled');
-        if (singleOrder) {
-            setSingleOrder(prev => ({ ...prev, status: 'Cancelled' }));
+        if (!id) {
+            setIsCancelling(false);
+            return;
         }
 
-        // Trigger red flower popup
-        setPopupState({
-            isOpen: true,
-            type: 'cancelled',
-            title: t('Order Cancelled'),
-            subtitle: t('Order has been cancelled'),
-            duration: 900
-        });
+        try {
+            // Persist to backend MongoDB via API
+            const res = await updateOrderStatus({ id, status: 'Cancelled' });
+            const updatedOrder = res?.data || res || { ...order, status: 'Cancelled' };
 
-        updateOrderStatus({ id, status: 'Cancelled' })
-            .catch(error => {
-                console.error('Failed to cancel order:', error);
-                setLocalStatus(null);
-                alert(t('Failed to cancel order. Please try again.'));
-            })
-            .finally(() => {
-                setIsCancelling(false);
+            setLocalStatus('Cancelled');
+            setSingleOrder(prev => ({ ...(prev || {}), ...updatedOrder, status: 'Cancelled' }));
+
+            localStorage.removeItem('active_delivery_order_id');
+            localStorage.removeItem('active_delivery_stay');
+
+            // Trigger red flower popup
+            setPopupState({
+                isOpen: true,
+                type: 'cancelled',
+                title: t('Order Cancelled'),
+                subtitle: t('Order has been cancelled'),
+                duration: 1200
             });
+        } catch (error) {
+            console.error('Failed to cancel order:', error);
+            const errMsg = error?.response?.data?.message || error?.message || t('Failed to cancel order. Please try again.');
+            alert(errMsg);
+        } finally {
+            setIsCancelling(false);
+        }
     };
 
     // Handle popup completion
@@ -266,7 +299,6 @@ const DeliveryActiveOrder = () => {
         const completedType = popupState.type;
         setPopupState(prev => ({ ...prev, isOpen: false }));
         if (completedType === 'delivered' || completedType === 'cancelled') {
-            // Clean active order from storage
             localStorage.removeItem('active_delivery_order_id');
             localStorage.removeItem('active_delivery_stay');
             navigate('/admin', { replace: true });
@@ -314,7 +346,7 @@ const DeliveryActiveOrder = () => {
     }
 
     return (
-        <div className={`min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative ${isProcessing ? 'pb-52 sm:pb-56' : 'pb-32 sm:pb-36'} select-none`}>
+        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative select-none">
             {/* Popups (Blue flower on accept, Green flower on delivered, Red flower on cancel) */}
             <DeliveryStatusPopup
                 isOpen={popupState.isOpen}
@@ -400,25 +432,20 @@ const DeliveryActiveOrder = () => {
                         </span>
                     </div>
 
-                    {/* Right: Red LEAVE button styled like CALL button */}
+                    {/* Right: Red LEAVE button without shine */}
                     <button
                         type="button"
                         onClick={handleLeave}
-                        className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-red-700 shrink-0"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-red-700 shrink-0"
                     >
-                        <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
-                            animate={{ x: ['-100%', '150%'] }}
-                            transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-                        />
-                        <LogOut size={14} className="stroke-[2.5] relative z-10 text-white" />
-                        <span className="relative z-10">{t('Leave')}</span>
+                        <LogOut size={14} className="stroke-[2.5] text-white" />
+                        <span>{t('Leave')}</span>
                     </button>
                 </div>
             </header>
 
             {/* Main Content Area: (Order ID banner & Accepted tag REMOVED completely) */}
-            <main className="pt-[88px] sm:pt-[94px] pb-56 sm:pb-64 px-3.5 sm:px-4 max-w-3xl mx-auto space-y-3 sm:space-y-3.5">
+            <main className={`pt-[84px] sm:pt-[90px] px-3.5 sm:px-4 max-w-3xl mx-auto space-y-3 sm:space-y-3.5 ${isProcessing ? 'pb-40 sm:pb-44' : 'pb-24 sm:pb-28'}`}>
                 {/* CARD 1: Shipping Details Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
@@ -431,15 +458,10 @@ const DeliveryActiveOrder = () => {
                         {customerPhone && (
                             <a
                                 href={`tel:${customerPhone}`}
-                                className="relative overflow-hidden flex items-center gap-2 px-4 py-2 rounded-xl bg-black dark:bg-black text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-black/80"
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black dark:bg-black text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-black/80"
                             >
-                                <motion.div
-                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
-                                    animate={{ x: ['-100%', '150%'] }}
-                                    transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-                                />
-                                <Phone size={14} className="stroke-[2.5] relative z-10 text-white" />
-                                <span className="relative z-10">{t('Call')}</span>
+                                <Phone size={14} className="stroke-[2.5] text-white" />
+                                <span>{t('Call')}</span>
                             </a>
                         )}
                     </div>

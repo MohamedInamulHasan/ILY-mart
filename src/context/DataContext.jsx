@@ -239,6 +239,37 @@ export const DataProvider = ({ children }) => {
         };
     }, []);
 
+    // Listen for order status updates from Delivery Panel, Admin, or Sockets
+    useEffect(() => {
+        const handleStatusUpdate = (e) => {
+            const { id, status, order } = e.detail || {};
+            if (!id) return;
+            setOrders(prev => {
+                if (!Array.isArray(prev)) return prev;
+                return prev.map(o => {
+                    if (String(o._id || o.id) === String(id)) {
+                        return order ? { ...o, ...order, status: status || order.status } : { ...o, status };
+                    }
+                    return o;
+                });
+            });
+        };
+
+        const handleRefreshOrders = () => {
+            if (localStorage.getItem('authToken')) {
+                fetchOrders();
+            }
+        };
+
+        window.addEventListener('orders:status_updated', handleStatusUpdate);
+        window.addEventListener('orders:refresh', handleRefreshOrders);
+
+        return () => {
+            window.removeEventListener('orders:status_updated', handleStatusUpdate);
+            window.removeEventListener('orders:refresh', handleRefreshOrders);
+        };
+    }, []);
+
     // Category Management - Define before use
     const fetchCategories = async () => {
         setLoading(prev => ({ ...prev, categories: true }));

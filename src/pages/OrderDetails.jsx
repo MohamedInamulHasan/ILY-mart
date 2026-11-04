@@ -31,38 +31,48 @@ const OrderDetails = () => {
     const [singleOrder, setSingleOrder] = useState(null);
     const [loadingSingle, setLoadingSingle] = useState(true);
 
-    // Try to find in context first, fallback to fetched single order
-    const order = orders.find(o => (o._id || o.id) === id) || singleOrder;
+    // Try to find fresh single order first, fallback to context
+    const contextOrder = orders.find(o => (o._id || o.id) === id);
+    const order = singleOrder || contextOrder;
 
+    // Fetch fresh order from server on mount to ensure status is 100% up-to-date
     useEffect(() => {
-        const foundInContext = orders.find(o => (o._id || o.id) === id);
+        if (!id) return;
+        let isMounted = true;
 
-        if (foundInContext) {
-            setLoadingSingle(false);
-            return;
-        }
-
-        // If context is still loading, wait
-        if (loading.orders) {
-            return;
-        }
-
-        // Not in context, fetch explicitly
-        setLoadingSingle(true);
         apiService.getOrder(id)
             .then(res => {
-                if (res.success && res.data) {
+                if (isMounted && res.success && res.data) {
                     setSingleOrder(res.data);
                 }
             })
             .catch(err => {
-                console.error('Failed to fetch single order:', err);
+                console.error('Failed to fetch fresh order details:', err);
             })
             .finally(() => {
-                console.log('Order fetch attempt finished'); // Debug log
-                setLoadingSingle(false);
+                if (isMounted) setLoadingSingle(false);
             });
-    }, [id, orders, loading.orders]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [id]);
+
+    // Live sync with real-time status updates
+    useEffect(() => {
+        const handleStatusUpdate = (e) => {
+            const { id: updatedId, status, order: updatedOrder } = e.detail || {};
+            if (String(updatedId) === String(id)) {
+                if (updatedOrder) {
+                    setSingleOrder(prev => ({ ...(prev || {}), ...updatedOrder }));
+                } else if (status) {
+                    setSingleOrder(prev => ({ ...(prev || {}), status }));
+                }
+            }
+        };
+        window.addEventListener('orders:status_updated', handleStatusUpdate);
+        return () => window.removeEventListener('orders:status_updated', handleStatusUpdate);
+    }, [id]);
 
     // Show skeleton ONLY if we don't have the order AND we are loading.
     if (!order && (loading.orders || loadingSingle)) {

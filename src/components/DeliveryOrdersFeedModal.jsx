@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LogOut } from 'lucide-react';
+import { ArrowLeft, LogOut, Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -13,9 +13,14 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
     const navigate = useNavigate();
     const { logout } = useAuth();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        if (!isOpen || !onClose) return;
+        if (!isOpen) {
+            setSearchQuery('');
+            return;
+        }
+        if (!onClose) return;
         return registerModalBackHandler(onClose);
     }, [isOpen, onClose]);
 
@@ -71,8 +76,31 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
 
                 {/* Scrollable Order Cards List */}
                 <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 max-w-2xl mx-auto w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    {/* Zepto-style Search Bar like Order page */}
+                    <div className="relative mb-4 sm:mb-5">
+                        <input
+                            type="text"
+                            placeholder={t('Search ID, customer, item, status...')}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-11 sm:pl-12 pr-11 py-3.5 sm:py-4 text-[14.5px] sm:text-[15.5px] font-medium rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none transition-colors duration-200"
+                        />
+                        <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 stroke-[2.2]" size={20} />
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 active:scale-90 transition-all rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer"
+                                title={t('Clear')}
+                            >
+                                <X size={18} className="stroke-[2.5]" />
+                            </button>
+                        )}
+                    </div>
+
                     <DeliveryOrdersListFeed
                         orders={orders}
+                        searchQuery={searchQuery}
                         onSelectOrder={onSelectOrder}
                         paddingBottomClass="pb-36"
                     />

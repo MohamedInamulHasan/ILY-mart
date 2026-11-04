@@ -195,7 +195,7 @@ const SwipeActionButton = ({
                 />
             )}
 
-            {/* Draggable Clean Round Knob - completely still & stable, no irregular nudging */}
+            {/* Draggable Porter White Round Knob with idle shake effect */}
             <motion.div
                 ref={knobRef}
                 drag={!isLoading && !isCompleted && !isSuccessState ? 'x' : false}
@@ -207,14 +207,27 @@ const SwipeActionButton = ({
                 onDragStart={handleDragStart}
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
-                animate={{
-                    x: (isLoading || isCompleted || isSuccessState) ? maxDrag : 0
-                }}
-                transition={{
-                    type: 'spring',
-                    damping: 26,
-                    stiffness: 260
-                }}
+                animate={
+                    isLoading || isCompleted || isSuccessState
+                        ? { x: maxDrag }
+                        : isDragging || isEnableDisable
+                        ? { x: 0 }
+                        : {
+                            x: [0, 9, -2, 7, 0, 0, 0, 0]
+                        }
+                }
+                transition={
+                    isLoading || isCompleted || isSuccessState
+                        ? { type: 'spring', damping: 25, stiffness: 220 }
+                        : isDragging || isEnableDisable
+                        ? undefined
+                        : {
+                            repeat: Infinity,
+                            repeatDelay: 1.8,
+                            duration: 1.1,
+                            ease: 'easeInOut'
+                        }
+                }
                 className={`${knobSizeClass} aspect-square rounded-full ${colors.knobBg || "bg-white"} ${colors.knob} flex items-center justify-center shrink-0 z-20 cursor-grab active:cursor-grabbing select-none shadow-md transform-gpu`}
                 style={{ touchAction: 'none' }}
                 onClick={(e) => e.stopPropagation()}

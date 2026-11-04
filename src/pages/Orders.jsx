@@ -41,9 +41,22 @@ const Orders = () => {
 
     const filteredOrders = orders.filter(order => {
         if (!searchQuery.trim()) return true;
-        const query = searchQuery.toLowerCase();
+        const query = searchQuery.toLowerCase().trim();
+        const status = (order.status || '').toLowerCase();
+
+        const matchesProcess = (query.includes('process') || query.includes('pend')) && ['processing', 'pending', 'order placed'].includes(status);
+        const matchesCancelled = (query.includes('cancel')) && status === 'cancelled';
+        const matchesDelivered = (query.includes('deliver') || query.includes('complete')) && ['delivered', 'completed'].includes(status);
+        const matchesAccepted = (query.includes('accept') || query.includes('ship')) && ['accepted', 'shipped', 'out for delivery'].includes(status);
+        const matchesStatusDirect = status.includes(query);
+
         return (
             String(order._id || order.id).toLowerCase().includes(query) ||
+            matchesStatusDirect ||
+            matchesProcess ||
+            matchesCancelled ||
+            matchesDelivered ||
+            matchesAccepted ||
             order.items?.some(item => {
                 const itemName = (item.name || item.adTitle || '').toLowerCase();
                 const storeName = (item.storeName || item.storeId?.name || getStoreName(item.storeId, stores) || '').toLowerCase();
