@@ -16,7 +16,7 @@ export const getAllNews = async (req, res, next) => {
             query.featured = featured === 'true';
         }
 
-        const news = await News.find(query).sort({ createdAt: -1 });
+        const news = await News.find(query).lean().sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
@@ -33,7 +33,7 @@ export const getAllNews = async (req, res, next) => {
 // @access  Public
 export const getNews = async (req, res, next) => {
     try {
-        const news = await News.findById(req.params.id);
+        const news = await News.findById(req.params.id).lean();
 
         if (!news) {
             res.status(404);

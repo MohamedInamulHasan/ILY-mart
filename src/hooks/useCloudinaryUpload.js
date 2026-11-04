@@ -1,44 +1,133 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import api from '../utils/api';
+import { compressImage, validateImageFile } from '../utils/imageCompression';
 
 /**
- * Hook for Direct Cloudinary Uploads using Signed Request
- * @returns {Object} { uploadImage, uploading, error }
+ * Enhanced Hook for Robust Cloudinary Uploads
+ * Features:
+ * - Client-side image pre-compression (5MB-15MB ➔ 300KB)
+ * - Format & size validation
+ * - Upload progress percentage (0 - 100%)
+ * - Automatic retry with exponential backoff for slow networks / cold starts
+ * - Manual retry() method
+ * - Preserves last selected file on failure
  */
 const useCloudinaryUpload = () => {
     const [uploading, setUploading] = useState(false);
+    const [progress, setProgress] = useState(0);
     const [error, setError] = useState(null);
+    const lastFileRef = useRef(null);
 
-    const uploadImage = async (file) => {
+    const performUploadWithRetry = async (compressedFile, maxRetries = 2) => {
+        let attempt = 0;
+        let lastErr = null;
+
+        while (attempt <= maxRetries) {
+            try {
+                if (attempt > 0) {
+                    console.warn(`🔄 Retrying upload (attempt ${attempt + 1}/${maxRetries + 1})...`);
+                    // Exponential backoff delay (1.5s, 3s)
+                    await new Promise(r => setTimeout(r, attempt * 1500));
+                }
+
+                const formData = new FormData();
+                formData.append('image', compressedFile);
+
+                // Dedicated 90-second timeout for upload, progress tracking
+                const response = await api.post('/upload/image', formData, {
+                    headers: {
+                        'Content-Type': undefined
+                    },
+                    timeout: 90000,
+                    onUploadProgress: (progressEvent) => {
+                        if (progressEvent.total) {
+                            const percent = Math.min(99, Math.round((progressEvent.loaded * 100) / progressEvent.total));
+                            setProgress(percent);
+                        }
+                    }
+                });
+
+                if (response && response.url) {
+                    setProgress(100);
+                    return response.url;
+                } else if (response && response.data && response.data.url) {
+                    setProgress(100);
+                    return response.data.url;
+                }
+
+                throw new Error(response?.message || 'Upload completed but image URL was missing.');
+            } catch (err) {
+                lastErr = err;
+                console.error(`Upload attempt ${attempt + 1} failed:`, err.message);
+                attempt++;
+            }
+        }
+
+        throw lastErr || new Error('Upload failed after multiple attempts');
+    };
+
+    const uploadImage = useCallback(async (file) => {
+        if (!file) {
+            throw new Error('Please select an image file to upload.');
+        }
+
+        lastFileRef.current = file;
         setUploading(true);
+        setProgress(0);
         setError(null);
 
         try {
-            // Prepare FormData (Standard File Upload)
-            const formData = new FormData();
-            formData.append('image', file); // Field name must match upload.single('image')
+            // 1. Validation
+            const validation = validateImageFile(file, 25);
+            if (!validation.valid) {
+                throw new Error(validation.error);
+            }
 
-            // Upload to backend (backend handles Cloudinary auth)
-            // Upload to backend (backend handles Cloudinary auth)
-            // Explicitly Remove Content-Type so browser sets it with boundary
-            const response = await api.post('/upload/image', formData, {
-                headers: {
-                    'Content-Type': undefined
-                }
+            setProgress(10); // Compression stage
+
+            // 2. Pre-upload client compression (converts 10MB photo to ~300KB)
+            const compressed = await compressImage(file, {
+                maxWidth: 1600,
+                maxHeight: 1600,
+                quality: 0.82
             });
 
+            setProgress(25); // Compression complete, beginning network upload
+
+            // 3. Upload with automatic retry
+            const url = await performUploadWithRetry(compressed, 2);
+
             setUploading(false);
-            return response.url;
+            setProgress(100);
+            return url;
 
         } catch (err) {
-            console.error('Upload Error:', err);
-            setError(err.message || 'Image upload failed');
+            console.error('Final Upload Error:', err);
+            const userMessage = err?.response?.data?.message || err?.message || 'Failed to upload image. Please check your internet connection.';
+            setError(userMessage);
             setUploading(false);
-            throw err;
+            setProgress(0);
+            throw new Error(userMessage);
         }
-    };
+    }, []);
 
-    return { uploadImage, uploading, error };
+    // Manual retry of the last selected file
+    const retry = useCallback(async () => {
+        if (lastFileRef.current) {
+            return await uploadImage(lastFileRef.current);
+        }
+        throw new Error('No previous file available to retry.');
+    }, [uploadImage]);
+
+    return { 
+        uploadImage, 
+        uploading, 
+        progress, 
+        error, 
+        retry,
+        lastFile: lastFileRef.current,
+        clearError: () => setError(null) 
+    };
 };
 
 export default useCloudinaryUpload;

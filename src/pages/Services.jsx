@@ -7,6 +7,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { playSuccessSound, unlockAudio } from '../utils/soundHelper'; // Import useAuth
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
+import SwipeActionButton from '../components/SwipeActionButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useServices, useServiceItems } from '../hooks/queries/useServices';
 import { API_BASE_URL } from '../utils/api';
@@ -75,6 +76,15 @@ const Services = () => {
             setSelectedItem(null); // Deselect if already selected
         } else {
             setSelectedItem(sub);
+        }
+    };
+
+        const handleCallProvider = () => {
+        const phone = (activeService?.mobile || activeService?.phone || '').toString().trim();
+        if (phone) {
+            window.location.href = `tel:${phone.replace(/\s+/g, '')}`;
+        } else {
+            handleRequestSubService(selectedItem || { name: activeService?.name || 'General Service', price: 'TBD', description: 'Standard service request' });
         }
     };
 
@@ -192,7 +202,7 @@ const Services = () => {
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pb-20">
+                <div className={`max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 ${viewMode === 'details' ? 'pb-36 sm:pb-32' : 'pb-20'}`}>
 
                     {viewMode === 'list' && (
                         <div className="mb-3.5 sm:mb-4 flex justify-center md:justify-start sticky top-2 z-30">
@@ -416,23 +426,23 @@ const Services = () => {
                             })()}
                         </div>
                     ) : (
-                        /* DETAIL VIEW: SUB-SERVICES */
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        /* DETAIL VIEW: SUB-SERVICES - Rectangular cards, 1 per row in mobile */
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
                             {itemsLoading ? (
                                 // Sub-services Skeleton matching detail view
-                                [...Array(8)].map((_, i) => (
+                                [...Array(4)].map((_, i) => (
                                     <div
                                         key={i}
-                                        className="bg-white dark:bg-gray-800 rounded-2xl aspect-square shadow-sm overflow-hidden relative border border-gray-100 dark:border-gray-700/50"
+                                        className="bg-white dark:bg-gray-800 rounded-2xl aspect-[16/9] shadow-sm overflow-hidden relative border border-gray-100 dark:border-gray-700/50"
                                     >
                                         {/* Full Card Shimmer Background */}
                                         <div className="absolute inset-0 blinkit-shimmer" />
                                         {/* Dark gradient overlay matching real card */}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                                         {/* Bottom Content Skeleton */}
-                                        <div className="absolute bottom-0 left-0 right-0 p-3.5 z-10 space-y-1.5">
-                                            <div className="h-4 w-3/4 rounded-md bg-white/20 backdrop-blur-sm" />
-                                            <div className="h-3.5 w-1/3 rounded-md bg-white/20 backdrop-blur-sm" />
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 z-10 space-y-1.5">
+                                            <div className="h-5 w-3/4 rounded-md bg-white/20 backdrop-blur-sm" />
+                                            <div className="h-4 w-1/3 rounded-md bg-white/20 backdrop-blur-sm" />
                                         </div>
                                     </div>
                                 ))
@@ -440,7 +450,8 @@ const Services = () => {
                                 serviceItems.map((sub, idx) => (
                                     <div
                                         key={sub._id || idx}
-                                         className={`group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md transition-all duration-300 aspect-square w-full border-2 border-transparent hover:shadow-xl hover:border-gray-200 dark:hover:border-gray-700`}
+                                        onClick={() => handleRequestSubService(sub)}
+                                        className={`group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md transition-all duration-300 aspect-[16/9] w-full border-2 border-transparent hover:shadow-xl hover:border-gray-200 dark:hover:border-gray-700 cursor-pointer active:scale-[0.99]`}
                                     >
                                         {/* Full Background Image */}
                                         <div className="absolute inset-0">
@@ -448,22 +459,24 @@ const Services = () => {
                                             <img
                                                 src={sub.image}
                                                 alt={sub.name}
-                                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/300x400?text=No+Image'; }}
+                                                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x250?text=No+Image'; }}
                                             />
                                             {/* Gradient Overlay */}
-                                            <div className={`absolute inset-0 transition-opacity bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-80`} />
+                                            <div className={`absolute inset-0 transition-opacity bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-85`} />
                                         </div>
 
                                         {/* Content Overlay */}
-                                        <div className="absolute bottom-0 left-0 right-0 p-4 z-20 flex flex-col justify-end h-full">
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 z-20 flex flex-col justify-end h-full">
                                             <div className="transform translate-y-0 transition-transform duration-300">
-                                                <h3 className="text-lg font-bold text-white mb-1 line-clamp-2 leading-tight drop-shadow-md">
+                                                <h3 className="text-base sm:text-lg font-black text-white mb-0.5 line-clamp-1 leading-tight drop-shadow-md">
                                                     {sub.name}
                                                 </h3>
-                                                <p className="text-sm text-gray-200 font-medium">
-                                                    {sub.price}
-                                                </p>
+                                                {sub.price && (
+                                                    <p className="text-xs sm:text-sm text-gray-200 font-semibold drop-shadow-sm">
+                                                        {typeof sub.price === 'number' ? `₹${sub.price}` : sub.price}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -485,29 +498,28 @@ const Services = () => {
 
                 </div>
 
+                {/* Floating Swipe Call Pill: Green button with white round knob + Phone icon */}
                 <div
-                    className={`fixed bottom-32 md:bottom-8 left-0 right-0 px-6 z-[60] flex justify-center pointer-events-none`}
+                    className="fixed bottom-24 sm:bottom-8 left-0 right-0 px-4 sm:px-6 z-[60] flex justify-center pointer-events-none"
                 >
-                    <div className={`transition-all duration-500 ease-in-out transform ${viewMode === 'details' && !showConfirmation && !requestSuccess
-                        ? 'translate-y-0 opacity-100 pointer-events-auto'
-                        : 'translate-y-12 opacity-0 pointer-events-none'
-                        }`}>
-                        <button
-                            onClick={() => handleRequestSubService(selectedItem || { name: 'General Service', price: 'TBD', description: 'Standard service request' })}
-                            className="bg-white dark:bg-gray-800 backdrop-blur-xl text-gray-900 dark:text-white px-8 py-4 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center gap-4 group hover:scale-105 transition-all duration-300 border border-gray-100 dark:border-gray-700"
-                        >
-                            <div className="flex flex-col items-start mr-2 text-left">
-                                <span className="text-[10px] uppercase tracking-wider font-bold text-[#2E5A2E] dark:text-[#CBF9B2] opacity-70 leading-none mb-1">
-                                    {t('Request Now')}
-                                </span>
-                                <span className="text-[15px] font-bold leading-none tracking-tight">
-                                    {selectedItem ? selectedItem.name : t('Service')}
-                                </span>
-                            </div>
-                             <div className="w-10 h-10 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full flex items-center justify-center group-hover:bg-[#1a381a] dark:group-hover:bg-[#CBF9B2]/80 transition-colors shadow-sm">
-                                 <Send size={18} className="ml-0.5 text-white dark:text-gray-900" />
-                             </div>
-                        </button>
+                    <div className={`w-[260px] sm:w-[280px] transition-all duration-500 ease-in-out transform ${
+                        viewMode === 'details' && !showConfirmation && !requestSuccess
+                            ? 'translate-y-0 opacity-100 pointer-events-auto'
+                            : 'translate-y-12 opacity-0 pointer-events-none'
+                    }`}>
+                        <SwipeActionButton
+                            variant="green"
+                            label={t('SWIPE TO CALL')}
+                            loadingLabel={t('Calling...')}
+                            autoReset={true}
+                            heightClass="h-[52px] sm:h-[54px]"
+                            knobSizeClass="w-[42px] h-[42px] sm:w-[44px] sm:h-[44px]"
+                            textSizeClass="text-xs sm:text-sm font-black tracking-wider"
+                            iconSize={18}
+                            knobIcon={<Phone size={18} />}
+                            className="shadow-none"
+                            onSuccess={handleCallProvider}
+                        />
                     </div>
                 </div>
 

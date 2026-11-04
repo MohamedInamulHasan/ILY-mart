@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { Readable } from 'stream';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -10,21 +11,44 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Helper: Stream buffer directly to Cloudinary without memory-heavy base64 stringification
+const streamUploadToCloudinary = (fileBuffer, options = {}) => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: 'homly_products',
+                resource_type: 'image',
+                quality: 'auto',
+                fetch_format: 'auto',
+                ...options
+            },
+            (error, result) => {
+                if (error) {
+                    return reject(error);
+                }
+                resolve(result);
+            }
+        );
+
+        const readableStream = Readable.from(fileBuffer);
+        readableStream.pipe(uploadStream);
+    });
+};
+
 // @desc    Get Cloudinary Signature for client-side upload
 // @route   GET /api/upload/signature
-// @access  Private (Admin only recommended, or authenticated users)
+// @access  Private
 export const getUploadSignature = (req, res) => {
     try {
         const timestamp = Math.round((new Date()).getTime() / 1000);
         const folder = 'homly_products';
 
-        // Parameters to sign (must match what's sent to Cloudinary)
+        // Parameters to sign
         const paramsToSign = {
             timestamp: timestamp,
             folder: folder
         };
 
-        // Generate signature using Cloudinary's utility
         const signature = cloudinary.utils.api_sign_request(
             paramsToSign,
             process.env.CLOUDINARY_API_SECRET
@@ -38,62 +62,63 @@ export const getUploadSignature = (req, res) => {
             folder: folder
         };
 
-        console.log('📤 Sending upload signature:', {
-            ...responseData,
-            apiSecret: '***hidden***'
-        });
-
         res.json(responseData);
     } catch (error) {
         console.error('❌ Cloudinary Signature Error:', error);
-        res.status(500).json({ message: 'Could not generate upload signature' });
+        res.status(500).json({ message: 'Could not generate upload signature', error: error.message });
     }
 };
 
-// @desc    Upload image to Cloudinary (server-side via Multer)
+// @desc    Upload image to Cloudinary (server-side streaming via Multer memoryStorage)
 // @route   POST /api/upload/image
 // @access  Private
 export const uploadImage = async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ message: 'No image file provided' });
+        if (!req.file || !req.file.buffer) {
+            return res.status(400).json({ success: false, message: 'No image file provided or buffer empty' });
         }
 
-        console.log('📤 Uploading image buffer to Cloudinary...');
+        // Validate Cloudinary credentials exist
+        if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+            console.error('❌ Cloudinary configuration missing on server');
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Cloudinary storage credentials not properly configured on server' 
+            });
+        }
 
-        // Debug Log Credentials (Safe)
-        console.log('🔧 Cloudinary Config Check:', {
-            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-            api_key: process.env.CLOUDINARY_API_KEY ? '***' + process.env.CLOUDINARY_API_KEY.slice(-4) : 'MISSING',
-            api_secret: process.env.CLOUDINARY_API_SECRET ? '***' + process.env.CLOUDINARY_API_SECRET.slice(-4) : 'MISSING'
-        });
-
-        // Explicitly set config to ensure it's loaded
+        // Re-affirm config in case environment was reloaded
         cloudinary.config({
             cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
             api_key: process.env.CLOUDINARY_API_KEY,
             api_secret: process.env.CLOUDINARY_API_SECRET
         });
 
-        // Convert buffer to base64 for Cloudinary upload
-        const b64 = Buffer.from(req.file.buffer).toString('base64');
-        let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-
-        const result = await cloudinary.uploader.upload(dataURI, {
+        // Fast streaming upload
+        const result = await streamUploadToCloudinary(req.file.buffer, {
             folder: 'homly_products',
-            resource_type: 'auto',
+            resource_type: 'image',
             quality: 'auto',
             fetch_format: 'auto'
         });
 
-        console.log('✅ Image uploaded successfully:', result.secure_url);
+        console.log('✅ Image uploaded successfully to Cloudinary:', result.secure_url);
 
-        res.json({
+        res.status(200).json({
             success: true,
-            url: result.secure_url
+            url: result.secure_url,
+            public_id: result.public_id,
+            width: result.width,
+            height: result.height,
+            format: result.format,
+            bytes: result.bytes
         });
     } catch (error) {
-        console.error('❌ Cloudinary Upload Error:', error);
-        res.status(500).json({ message: 'Image upload failed', error: error.message });
+        console.error('❌ Cloudinary Stream Upload Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Image upload failed. Please try again.',
+            details: error.http_code ? `Cloudinary error (${error.http_code})` : 'Network/service error'
+        });
     }
 };

@@ -1,3 +1,4 @@
+import { getThumbnailUrl } from '../utils/imageOptimizer';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -28,7 +29,7 @@ const StoreCard = ({ store }) => {
                     src={store.image || `${API_BASE_URL}/stores/${store._id || store.id}/image`}
                     alt={store.name}
                     className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 z-10"
-                    loading="lazy"
+                    loading="lazy" decoding="async"
                     onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = "https://placehold.co/800x450?text=Store";
@@ -93,4 +94,4 @@ const StoreCard = ({ store }) => {
     );
 };
 
-export default StoreCard;
+export default React.memo(StoreCard);

@@ -7,7 +7,7 @@ import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
 // @access  Public
 export const getCategories = async (req, res, next) => {
     try {
-        const categories = await Category.find({ isActive: true })
+        const categories = await Category.find({ isActive: true }).lean()
             .sort({ order: 1, name: 1 });
 
         // Smart Image Filtering for Categories
@@ -34,7 +34,7 @@ export const getCategories = async (req, res, next) => {
 // @access  Public
 export const getCategoryById = async (req, res, next) => {
     try {
-        const category = await Category.findById(req.params.id);
+        const category = await Category.findById(req.params.id).lean();
 
         if (!category) {
             res.status(404);
@@ -91,7 +91,7 @@ export const createCategory = async (req, res, next) => {
 // @access  Private/Admin
 export const updateCategory = async (req, res, next) => {
     try {
-        let category = await Category.findById(req.params.id);
+        let category = await Category.findById(req.params.id).lean();
 
         if (!category) {
             res.status(404);
@@ -199,7 +199,7 @@ export const updateCategoriesOrder = async (req, res, next) => {
 // @access  Private/Admin
 export const deleteCategory = async (req, res, next) => {
     try {
-        const category = await Category.findById(req.params.id);
+        const category = await Category.findById(req.params.id).lean();
 
         if (!category) {
             res.status(404);
@@ -228,7 +228,7 @@ export const deleteCategory = async (req, res, next) => {
 // @access  Public
 export const getCategoryImage = async (req, res, next) => {
     try {
-        const category = await Category.findById(req.params.id).select('image');
+        const category = await Category.findById(req.params.id).lean().select('image');
 
         if (!category || !category.image) {
             return res.status(404).send('Image not found');

@@ -172,35 +172,6 @@ const Layout = ({ children, onRefresh }) => {
     return (
         <div className="flex flex-col min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200">
             <ScrollToTop />
-            {/* Admin Maintenance Mode Active Banner */}
-            {isMaintenanceMode && isAdmin && (
-                <div className="sticky top-0 z-[9990] bg-amber-500 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 flex items-center justify-between shadow-md flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping shrink-0" />
-                        <span>
-                            <strong>Maintenance Mode is ACTIVE for customers.</strong> {settings?.maintenanceMessage ? `Message: "${settings.maintenanceMessage}"` : 'Standard message displayed.'}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowAdminPreview(true)}
-                            className="px-2.5 py-1 bg-white text-amber-900 rounded-lg text-xs font-bold hover:bg-amber-50 transition-colors shadow-sm"
-                        >
-                            Preview Screen
-                        </button>
-                        <button
-                            type="button"
-                            onClick={async () => {
-                                await updateMaintenanceMode(false);
-                            }}
-                            className="px-2.5 py-1 bg-amber-800 text-white rounded-lg text-xs font-bold hover:bg-amber-900 transition-colors shadow-sm"
-                        >
-                            Turn Online
-                        </button>
-                    </div>
-                </div>
-            )}
             {showAdminPreview && (
                 <MaintenanceScreen
                     isPreview={true}

@@ -8,7 +8,7 @@ import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
 // @access  Public
 export const getServices = async (req, res) => {
     try {
-        const services = await Service.find({ isActive: true }).sort({ order: 1, name: 1 });
+        const services = await Service.find({ isActive: true }).lean().sort({ order: 1, name: 1 });
         res.json(services);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -20,7 +20,7 @@ export const getServices = async (req, res) => {
 // @access  Public
 export const getService = async (req, res) => {
     try {
-        const service = await Service.findById(req.params.id);
+        const service = await Service.findById(req.params.id).lean();
         if (service) {
             res.json(service);
         } else {
@@ -61,7 +61,7 @@ export const createService = async (req, res) => {
 // @access  Private/Admin
 export const updateService = async (req, res) => {
     try {
-        const service = await Service.findById(req.params.id);
+        const service = await Service.findById(req.params.id).lean();
         if (service) {
             // Ownership check for service_admin
             const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
@@ -122,7 +122,7 @@ export const updateServicesOrder = async (req, res) => {
 // @access  Private/Admin
 export const deleteService = async (req, res) => {
     try {
-        const service = await Service.findById(req.params.id);
+        const service = await Service.findById(req.params.id).lean();
         if (service) {
             if (service.image) await deleteFromCloudinary(service.image);
             

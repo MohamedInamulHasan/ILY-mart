@@ -133,6 +133,11 @@ const orderSchema = new mongoose.Schema({
 orderSchema.index({ user: 1, createdAt: -1 });
 // Index for admin dashboard to fetch latest orders efficiently
 orderSchema.index({ createdAt: -1 });
+// Indexes for status queries and delivery queries
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ user: 1, status: 1, createdAt: -1 });
+orderSchema.index({ deliveredBy: 1, status: 1, createdAt: -1 });
+orderSchema.index({ 'items.storeId': 1, createdAt: -1 });
 
 const Order = mongoose.model('Order', orderSchema);
 

@@ -18,7 +18,7 @@ export const getStores = async (req, res, next) => {
             query.city = { $regex: city, $options: 'i' };
         }
 
-        const stores = await Store.find({})
+        const stores = await Store.find({}).lean()
             .sort({ order: 1, createdAt: -1 });
 
         // Smart Image Filtering for Stores
@@ -75,7 +75,7 @@ export const updateStoresOrder = async (req, res, next) => {
 // @access  Public
 export const getStore = async (req, res, next) => {
     try {
-        const store = await Store.findById(req.params.id);
+        const store = await Store.findById(req.params.id).lean();
 
         if (!store) {
             res.status(404);
@@ -165,7 +165,7 @@ export const deleteStore = async (req, res, next) => {
         const deleteResult = await Product.deleteMany({ storeId: storeId });
         console.log(`✅ Deleted ${deleteResult.deletedCount} products and their images.`);
 
-        const store = await Store.findById(storeId);
+        const store = await Store.findById(storeId).lean();
         if (!store) {
             res.status(404);
             throw new Error('Store not found');
@@ -199,7 +199,7 @@ export const verifyStorePassword = async (req, res, next) => {
             throw new Error('Please provide a password');
         }
 
-        const store = await Store.findById(req.params.id).select('+password');
+        const store = await Store.findById(req.params.id).lean().select('+password');
 
         if (!store) {
             res.status(404);
@@ -227,7 +227,7 @@ export const verifyStorePassword = async (req, res, next) => {
 export const getStoreImage = async (req, res, next) => {
     try {
         console.log(`🏪 Fetching image for store: ${req.params.id}`);
-        const store = await Store.findById(req.params.id).select('image');
+        const store = await Store.findById(req.params.id).lean().select('image');
 
         if (!store || !store.image) {
             console.warn(`⚠️ Image not found for store: ${req.params.id}`);

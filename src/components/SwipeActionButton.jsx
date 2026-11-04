@@ -19,7 +19,8 @@ const SwipeActionButton = ({
     iconSize = 22,
     variant = 'green', // 'yellow' | 'amber' | 'blue' | 'sky' | 'green' | 'red'
     autoReset = false,
-    className = ''
+    className = '',
+    knobIcon = null
 }) => {
     const trackRef = useRef(null);
     const knobRef = useRef(null);
@@ -253,7 +254,14 @@ const SwipeActionButton = ({
                             transition={{ duration: 0.15, ease: 'easeOut' }}
                             className="flex items-center justify-center w-full h-full"
                         >
-                            <ChevronRight size={iconSize} className={`stroke-[3.8] ${colors.knob}`} />
+                            {knobIcon ? (
+                                React.cloneElement(knobIcon, {
+                                    size: iconSize,
+                                    className: `stroke-[2.8] ${colors.knob}`
+                                })
+                            ) : (
+                                <ChevronRight size={iconSize} className={`stroke-[3.8] ${colors.knob}`} />
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>

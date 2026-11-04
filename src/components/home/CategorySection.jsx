@@ -1,3 +1,4 @@
+import { getThumbnailUrl } from '../../utils/imageOptimizer';
 import React, { useState } from 'react';
 import { API_BASE_URL } from '../../utils/api';
 import { useLanguage } from '../../context/LanguageContext';
@@ -92,7 +93,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                     alt={category.name}
                                     className={`w-full h-full object-cover rounded-full transition-transform `}
-                                    loading="lazy"
+                                    loading="lazy" decoding="async"
                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                 />
                             </div>

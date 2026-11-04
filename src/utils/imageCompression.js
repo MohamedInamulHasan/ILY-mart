@@ -1,63 +1,117 @@
 /**
- * Compress and resize image to prevent backend crashes
- * @param {File} file - The image file to compress
- * @param {number} maxSizeKB - Maximum size in KB (default 500KB)
- * @param {number} maxWidth - Maximum width in pixels (default 800px)
- * @returns {Promise<string>} - Base64 encoded compressed image
+ * Client-Side Image Compression & Pre-Processing
+ * Resizes high-resolution phone camera images and compresses them
+ * before network upload, dramatically cutting upload times and preventing timeouts.
  */
-export const compressImage = (file, maxSizeKB = 500, maxWidth = 800) => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
 
-        reader.onload = (e) => {
-            const img = new Image();
+export const validateImageFile = (file, maxSizeMB = 25) => {
+    if (!file) return { valid: false, error: 'No file selected' };
 
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    const validExtensions = /\.(jpg|jpeg|png|webp)$/i;
 
-                // Resize if image is too large
-                if (width > maxWidth) {
-                    height = (height * maxWidth) / width;
-                    width = maxWidth;
-                }
+    const hasValidMime = file.type ? validTypes.includes(file.type.toLowerCase()) : false;
+    const hasValidExt = file.name ? validExtensions.test(file.name) : false;
 
-                canvas.width = width;
-                canvas.height = height;
+    if (!hasValidMime && !hasValidExt) {
+        return { valid: false, error: 'Please select a valid image format (JPEG, PNG, or WebP).' };
+    }
 
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
+    if (file.size > maxSizeMB * 1024 * 1024) {
+        return { valid: false, error: `Image is too large (maximum ${maxSizeMB}MB allowed).` };
+    }
 
-                // Start with high quality
-                let quality = 0.9;
-                let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+    return { valid: true };
+};
 
-                // Reduce quality until size is acceptable
-                while (compressedDataUrl.length > maxSizeKB * 1024 * 1.37 && quality > 0.1) {
-                    quality -= 0.1;
-                    compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-                }
-
-                resolve(compressedDataUrl);
-            };
-
-            img.onerror = () => reject(new Error('Failed to load image'));
-            img.src = e.target.result;
-        };
-
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-    });
+export const validateImageSize = (file, maxSizeMB = 25) => {
+    if (!file) return false;
+    return file.size <= maxSizeMB * 1024 * 1024;
 };
 
 /**
- * Validate image file size
- * @param {File} file - The image file to validate
- * @param {number} maxSizeMB - Maximum size in MB
- * @returns {boolean} - True if valid, false otherwise
+ * Compress and resize an image file using browser Canvas API
+ * @param {File} file - Original file from input
+ * @param {Object} options - Configuration { maxWidth, maxHeight, quality, maxSizeBytes }
+ * @returns {Promise<File>} - Compressed File object
  */
-export const validateImageSize = (file, maxSizeMB = 5) => {
-    const maxSizeBytes = maxSizeMB * 1024 * 1024;
-    return file.size <= maxSizeBytes;
+export const compressImage = async (file, options = {}) => {
+    const {
+        maxWidth = 1600,
+        maxHeight = 1600,
+        quality = 0.82,
+        maxSizeBytes = 1024 * 1024 // 1MB target ceiling
+    } = options;
+
+    // If file is already small (e.g. < 200KB), return as is
+    if (file.size <= 200 * 1024) {
+        return file;
+    }
+
+    return new Promise((resolve) => {
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                // Calculate aspect-ratio-preserving dimensions
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d', { alpha: false });
+                // Fill with white background in case of transparent PNG converted to JPEG
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Try converting to blob
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) {
+                            // Fallback to original file if toBlob fails
+                            return resolve(file);
+                        }
+
+                        // Create clean File object with original name and .jpg extension
+                        const cleanName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                        const compressedFile = new File([blob], cleanName, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+
+                        console.log(`🖼️ Image compressed: ${(file.size / 1024).toFixed(0)}KB ➔ ${(compressedFile.size / 1024).toFixed(0)}KB (${width}x${height})`);
+                        resolve(compressedFile);
+                    },
+                    'image/jpeg',
+                    quality
+                );
+            };
+
+            img.onerror = () => {
+                // If decoding fails, return original file
+                resolve(file);
+            };
+
+            img.src = e.target.result;
+        };
+
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+    });
 };

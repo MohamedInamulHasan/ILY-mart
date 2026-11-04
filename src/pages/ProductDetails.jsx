@@ -1,3 +1,4 @@
+import { getMediumImageUrl, getThumbnailUrl } from '../utils/imageOptimizer';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';

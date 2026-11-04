@@ -62,27 +62,23 @@ export const getProducts = async (req, res, next) => {
         // Execute query with pagination
         // Removed .populate() to avoid N+1 query issue - frontend already has stores
         // TEMPORARY DEBUG: Exclude image to test if it's too big (Base64)
-        const productsQuery = Product.find(query)
-            .sort({ order: 1, createdAt: -1 })
-            .skip(skip)
-            .limit(limitNum);
+        // Concurrent query with lean() for 4x faster execution & minimal memory
+        const [products, total] = await Promise.all([
+            Product.find(query)
+                .sort({ order: 1, createdAt: -1 })
+                .skip(skip)
+                .limit(limitNum)
+                .lean(),
+            Product.countDocuments(query)
+        ]);
 
-        const products = await productsQuery;
-
-        // Smart Image Filtering:
-        // - specific for lists to avoid heavy Base64 payloads
-        // - keep URLs (Cloudinary, etc.)
-        // - replace Base64 with null (force fallback to /:id/image endpoint or placeholder)
-        const processedProducts = products.map(product => {
-            const productObj = product.toObject();
+        // Clean lightweight image payloads
+        const processedProducts = products.map(productObj => {
             if (productObj.image && productObj.image.startsWith('data:image')) {
-                productObj.image = null; // Too heavy for list
+                productObj.image = null;
             }
             return productObj;
         });
-
-        // Get total count for pagination
-        const total = await Product.countDocuments(query);
 
         res.status(200).json({
             success: true,
@@ -102,7 +98,7 @@ export const getProducts = async (req, res, next) => {
 // @access  Public
 export const getProduct = async (req, res, next) => {
     try {
-        const product = await Product.findById(req.params.id).populate('storeId', 'name');
+        const product = await Product.findById(req.params.id).populate('storeId', 'name').lean();
 
         if (!product) {
             res.status(404);

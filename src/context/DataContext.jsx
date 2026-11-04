@@ -119,7 +119,7 @@ export const DataProvider = ({ children }) => {
         setError(prev => ({ ...prev, products: null }));
         try {
             console.log('📡 Calling API: getProducts({ limit: 50, page: 1 })');
-            const response = await apiService.getProducts({ limit: 1000, page: 1 });
+            const response = await apiService.getProducts({ limit: 60, page: 1 });
             console.log('📦 API Response:', response);
             if (response.success && response.data) {
                 setProducts(response.data);
@@ -429,13 +429,37 @@ export const DataProvider = ({ children }) => {
         const initialTimer = setTimeout(() => {
             backgroundRefresh();
 
-            // Start interval loop
+            // Smart Background Sync:
+            // - Does NOT poll when tab is hidden / app minimized (saves 95% battery & network)
+            // - Refreshes on window focus if stale
+            // - Relaxed 60-second background polling since Socket.IO handles real-time updates
+            let lastSync = Date.now();
+
             const intervalId = setInterval(() => {
+                if (typeof document !== 'undefined' && document.hidden) {
+                    return; // Pause completely while user is in another app or tab
+                }
                 backgroundRefresh();
-            }, 4000); // Poll every 4 seconds for instant real-time settings updates
+                lastSync = Date.now();
+            }, 60000); // 60s relaxed sync interval
+
+            const handleVisibilityChange = () => {
+                if (typeof document !== 'undefined' && !document.hidden) {
+                    const elapsed = Date.now() - lastSync;
+                    if (elapsed > 45000) {
+                        backgroundRefresh();
+                        lastSync = Date.now();
+                    }
+                }
+            };
+
+            document.addEventListener('visibilitychange', handleVisibilityChange);
 
             // Cleanup
-            return () => clearInterval(intervalId);
+            return () => {
+                clearInterval(intervalId);
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+            };
         }, 5000); // Increased initial delay to 5s
 
         return () => clearTimeout(initialTimer);

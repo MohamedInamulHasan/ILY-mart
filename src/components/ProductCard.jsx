@@ -9,6 +9,7 @@ import { isStoreOpen, getStoreName, isProductScheduled, getProductTimeLabel } fr
 
 import { useData } from '../context/DataContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
+import { getThumbnailUrl } from '../utils/imageOptimizer';
 
 const ProductCard = ({ product, showCartControls = true, showHeart = false, stores: propStores }) => {
     const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
@@ -101,10 +102,10 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                     )}
                     <img
                         key={featuredVariant.image || currentVariantIndex}
-                        src={featuredVariant.image || `${API_BASE_URL}/products/${productId}/image`}
+                        src={getThumbnailUrl(featuredVariant.image, 340) || `${API_BASE_URL}/products/${productId}/image`}
                         alt={t(featuredVariant, 'title')}
                         className={`w-full h-full object-cover transition-transform duration-300 ${isAvailable && isOpen ? 'group-hover:scale-110' : ''} ${isAvailable && isOpen && !isScheduled ? 'blur-sm' : ''}`}
-                        loading="lazy"
+                        loading="lazy" decoding="async"
                         onError={(e) => { e.target.onerror = null; e.target.src = 'https://atlas-content-cdn.pixelbin.io/ast/feed_v2/static_assets/common/vegetable_placeholder.png'; }}
                     />
                     {/* Available time overlay — inside image container so it centers on the image */}
@@ -218,4 +219,4 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
     );
 };
 
-export default ProductCard;
+export default React.memo(ProductCard);

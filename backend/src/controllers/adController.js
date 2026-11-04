@@ -7,7 +7,7 @@ import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
 // @access  Public
 export const getAds = async (req, res, next) => {
     try {
-        const ads = await Ad.find({ isActive: true })
+        const ads = await Ad.find({ isActive: true }).lean()
             .select('-image') // Exclude heavy image data
             .sort({ order: 1, createdAt: -1 });
 
@@ -26,7 +26,7 @@ export const getAds = async (req, res, next) => {
 // @access  Public
 export const getAd = async (req, res, next) => {
     try {
-        const ad = await Ad.findById(req.params.id);
+        const ad = await Ad.findById(req.params.id).lean();
 
         if (!ad) {
             res.status(404);
@@ -98,7 +98,7 @@ export const updateAd = async (req, res, next) => {
 // @access  Private/Admin
 export const deleteAd = async (req, res, next) => {
     try {
-        const ad = await Ad.findById(req.params.id);
+        const ad = await Ad.findById(req.params.id).lean();
 
         if (!ad) {
             res.status(404);
@@ -125,7 +125,7 @@ export const deleteAd = async (req, res, next) => {
 // @access  Public
 export const getAdImage = async (req, res, next) => {
     try {
-        const ad = await Ad.findById(req.params.id).select('image');
+        const ad = await Ad.findById(req.params.id).lean().select('image');
 
         if (!ad || !ad.image) {
             return res.status(404).send('Image not found');

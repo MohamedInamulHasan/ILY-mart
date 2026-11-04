@@ -43,10 +43,11 @@ const SettingsManagement = () => {
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
     const [hasInitialized, setHasInitialized] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
     useEffect(() => {
-        if (settings) {
+        if (settings && Object.keys(settings).length > 0) {
             if (!hasInitialized) {
                 if (settings.deliveryTimes && Array.isArray(settings.deliveryTimes)) {
                     setAllowedSlots(settings.deliveryTimes);
@@ -54,16 +55,24 @@ const SettingsManagement = () => {
                 if (settings.deliveryTimingType) {
                     setDeliveryTimingMode(settings.deliveryTimingType);
                 }
+                if (settings.maintenanceMode !== undefined) {
+                    setMaintenanceMode(settings.maintenanceMode);
+                }
+                if (settings.maintenanceMessage !== undefined) {
+                    setMaintenanceMessage(settings.maintenanceMessage);
+                }
                 setHasInitialized(true);
-            }
-            if (settings.maintenanceMode !== undefined) {
-                setMaintenanceMode(settings.maintenanceMode);
-            }
-            if (settings.maintenanceMessage !== undefined) {
-                setMaintenanceMessage(settings.maintenanceMessage);
+            } else if (!isDirty) {
+                // Keep synced with background updates only if user hasn't edited the field
+                if (settings.maintenanceMode !== undefined) {
+                    setMaintenanceMode(settings.maintenanceMode);
+                }
+                if (settings.maintenanceMessage !== undefined) {
+                    setMaintenanceMessage(settings.maintenanceMessage);
+                }
             }
         }
-    }, [settings, hasInitialized]);
+    }, [settings, hasInitialized, isDirty]);
 
     // Toggle Maintenance On/Off
     const toggleMaintenanceMode = async () => {
@@ -75,6 +84,7 @@ const SettingsManagement = () => {
                 updateMaintenanceMessage(maintenanceMessage)
             ]);
             setMaintenanceMode(newState);
+            setIsDirty(false);
             setMessage({
                 type: 'success',
                 text: newState
@@ -99,6 +109,7 @@ const SettingsManagement = () => {
                 updateMaintenanceMode(maintenanceMode),
                 updateMaintenanceMessage(maintenanceMessage)
             ]);
+            setIsDirty(false);
             setMessage({ type: 'success', text: t('Maintenance settings saved successfully!') });
         } catch (error) {
             console.error('Error saving maintenance message:', error);
@@ -224,7 +235,15 @@ const SettingsManagement = () => {
                         <input
                             type="text"
                             value={maintenanceMessage}
-                            onChange={(e) => setMaintenanceMessage(e.target.value)}
+                            onChange={(e) => {
+                                setIsDirty(true);
+                                setMaintenanceMessage(e.target.value);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleSaveMaintenance();
+                                }
+                            }}
                             placeholder={t('e.g., We are closed for updates. Reopening at 5 PM.')}
                             className="flex-1 min-w-0 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2E5A2E]"
                         />

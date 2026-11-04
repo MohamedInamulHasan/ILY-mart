@@ -445,7 +445,7 @@ const DeliveryActiveOrder = () => {
             </header>
 
             {/* Main Content Area: (Order ID banner & Accepted tag REMOVED completely) */}
-            <main className={`pt-[84px] sm:pt-[90px] px-3.5 sm:px-4 max-w-3xl mx-auto space-y-3 sm:space-y-3.5 ${isProcessing ? 'pb-40 sm:pb-44' : 'pb-24 sm:pb-28'}`}>
+            <main className={`pt-[84px] sm:pt-[90px] px-3.5 sm:px-4 max-w-3xl mx-auto space-y-3 sm:space-y-3.5 ${isProcessing ? 'pb-52 sm:pb-56' : 'pb-36 sm:pb-40'}`}>
                 {/* CARD 1: Shipping Details Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">

@@ -1,3 +1,4 @@
+import { getThumbnailUrl } from '../utils/imageOptimizer';
 import { Plus, Minus, Store, ShoppingCart, Zap, Bookmark } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -148,7 +149,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                         key={featuredVariant.image || currentVariantIndex}
                         src={featuredVariant.image || `${API_BASE_URL}/products/${productId}/image`}
                         alt={t(featuredVariant, 'title')}
-                        loading="lazy"
+                        loading="lazy" decoding="async"
                         className={`absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 ${(isStoreOpenCheck && product.anyStoreOpen) ? 'hover:scale-105' : 'grayscale'}`}
                         onError={(e) => { e.target.src = 'https://via.placeholder.com/300x300?text=No+Image'; }}
                     />
@@ -273,9 +274,9 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                         )}
                     </div>
                     <img
-                    src={product.image || `${API_BASE_URL}/products/${productId}/image`}
+                    src={getThumbnailUrl(product.image, 300) || `${API_BASE_URL}/products/${productId}/image`}
                     alt={t(product, 'title')}
-                    loading="lazy"
+                    loading="lazy" decoding="async"
                     className={`absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 ${isStoreOpenCheck && isAvailable ? 'group-hover:scale-105' : 'grayscale'} ${isAvailable && isStoreOpenCheck && !isScheduled ? 'blur-sm' : ''}`}
                     onError={(e) => { e.target.src = 'https://via.placeholder.com/300x300?text=No+Image'; }}
                 />
@@ -391,4 +392,4 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
     );
 };
 
-export default SimpleProductCard;
+export default React.memo(SimpleProductCard);

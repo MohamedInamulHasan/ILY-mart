@@ -86,6 +86,10 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ createdAt: -1 });
 productSchema.index({ storeId: 1 });
 productSchema.index({ category: 1 });
+productSchema.index({ isAvailable: 1, order: 1, createdAt: -1 });
+productSchema.index({ isAvailable: 1, category: 1, order: 1, createdAt: -1 });
+productSchema.index({ isAvailable: 1, storeId: 1, order: 1, createdAt: -1 });
+productSchema.index({ title: 'text', description: 'text' });
 
 const Product = mongoose.model('Product', productSchema);
 

@@ -271,18 +271,17 @@ const EditAddress = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
-                    {/* Location Detection Block — slim horizontal bar */}
+                    {/* Location Detection Block */}
                     <div ref={locationRef}>
-                        <div className="flex items-center justify-between mb-2 px-1">
-                            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-300 uppercase tracking-widest">{t('GPS Location')}</span>
-
+                        <div className="flex items-center justify-between mb-1.5 px-0.5">
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('GPS Location')}</span>
                         </div>
 
                         <button
                             type="button"
                             onClick={handleDetectLocation}
                             disabled={isDetecting}
-                            className={`w-full border rounded-xl px-3.5 py-2.5 sm:py-3 flex items-center gap-3 transition-all duration-300 active:scale-[0.98] ${isDetecting
+                            className={`w-full border rounded-xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] shadow-none ${isDetecting
                                     ? 'bg-black/70 dark:bg-black/70 border border-black/30 text-white backdrop-blur-sm shadow-md'
                                     : formData.location
                                         ? 'bg-black dark:bg-black border-black text-white shadow-md'
@@ -290,7 +289,7 @@ const EditAddress = () => {
                                 }`}
                         >
                             {/* Icon Container: Round with low opacity white color */}
-                            <div className="relative flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10">
+                            <div className="relative flex-shrink-0 flex items-center justify-center w-11 h-11">
                                 {isDetecting ? (
                                     /* Location Loading Animation */
                                     <div className="relative flex items-center justify-center w-11 h-11">
@@ -376,18 +375,18 @@ const EditAddress = () => {
                         )}
                     </div>
 
-                    {/* Form Fields */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-4.5 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3.5 sm:space-y-4">
+                    {/* Form Fields - Big Checkout Style */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4 sm:space-y-5">
                         <div>
-                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 px-1">{t('Recipient Name')}</label>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('Full Name')}</label>
                             <input
                                 ref={fullNameRef}
                                 type="text"
                                 name="fullName"
                                 value={formData.fullName}
                                 onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, fullName: false })); }}
-                                placeholder="Enter full name"
-                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-xs sm:text-sm shadow-none"
+                                placeholder={t('Enter your full name')}
+                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm shadow-none"
                             />
                             {fieldErrors.fullName && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
@@ -399,15 +398,15 @@ const EditAddress = () => {
                         </div>
 
                         <div>
-                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 px-1">{t('Mobile Number')}</label>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('Mobile Number')}</label>
                             <input
                                 ref={mobileRef}
                                 type="tel"
                                 name="mobile"
                                 value={formData.mobile}
                                 onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, mobile: false })); }}
-                                placeholder="10-digit mobile number"
-                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-xs sm:text-sm shadow-none"
+                                placeholder={t('Enter 10-digit mobile number')}
+                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm shadow-none"
                             />
                             {fieldErrors.mobile && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
@@ -419,15 +418,15 @@ const EditAddress = () => {
                         </div>
 
                         <div>
-                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 px-1">{t('Address')}</label>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('Address')}</label>
                             <textarea
                                 ref={streetRef}
                                 name="street"
-                                rows="2"
+                                rows="3"
                                 value={formData.street}
                                 onChange={e => { handleChange(e); setFieldErrors(p => ({ ...p, street: false })); }}
-                                placeholder="House no, Street name, Landmark"
-                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-xs sm:text-sm resize-none shadow-none"
+                                placeholder={t('House no, Flat, Street name, Landmark')}
+                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm resize-none shadow-none"
                             />
                             {fieldErrors.street && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
@@ -439,7 +438,7 @@ const EditAddress = () => {
                         </div>
 
                         <div>
-                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 px-1">{t('City')}</label>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('City')}</label>
                             <input
                                 ref={cityRef}
                                 type="text"
@@ -450,7 +449,7 @@ const EditAddress = () => {
                                     setFieldErrors(prev => ({ ...prev, city: false }));
                                 }}
                                 placeholder={t('Enter city name')}
-                                className="w-full px-3.5 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-xs sm:text-sm shadow-none"
+                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm shadow-none"
                             />
                             {fieldErrors.city && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
@@ -461,10 +460,10 @@ const EditAddress = () => {
                             )}
                         </div>
 
-                        <div className="pt-2 sm:pt-2.5">
+                        <div className="pt-2 sm:pt-3">
                             <button
                                 type="submit"
-                                className="w-full bg-black text-white py-3 sm:py-3.5 rounded-full font-bold text-sm sm:text-[15px] active:scale-[0.98] transition-all"
+                                className="w-full bg-black text-white py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base active:scale-[0.98] transition-all shadow-sm"
                             >
                                 {isSaving ? t('Saving Changes...') : t('Update Address')}
                             </button>
