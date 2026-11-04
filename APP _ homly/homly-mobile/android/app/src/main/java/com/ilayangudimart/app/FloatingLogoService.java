@@ -987,6 +987,7 @@ public class FloatingLogoService extends Service {
                     }
                 }
 
+                boolean foundAccepted = false;
                 if (ordersArray != null && ordersArray.length() > 0) {
                     synchronized (pendingOrdersQueue) {
                         pendingOrdersQueue.clear();
@@ -995,6 +996,9 @@ public class FloatingLogoService extends Service {
                             if (order == null) continue;
 
                             String status = order.optString("status", "");
+                            if ("Accepted".equalsIgnoreCase(status) || "Out for Delivery".equalsIgnoreCase(status) || "Shipped".equalsIgnoreCase(status)) {
+                                foundAccepted = true;
+                            }
                             if ("Pending".equalsIgnoreCase(status)
                                     || "Processing".equalsIgnoreCase(status)
                                     || "Order Placed".equalsIgnoreCase(status)

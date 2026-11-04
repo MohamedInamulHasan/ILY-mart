@@ -79,14 +79,12 @@ const Home = () => {
         const allProducts = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
 
         if (raw.length === 0) return [];
-        if (loadingProducts || allProducts.length === 0) {
-            // While products are still loading, don't flash unfiltered categories
-            return [];
-        }
+        // Show categories from cached data immediately, even if still fetching fresh data
+        if (allProducts.length === 0) return [];
 
         const productCategories = new Set(allProducts.map(p => p.category?.toLowerCase()));
         return raw.filter(cat => !cat.isHidden && productCategories.has(cat.name?.toLowerCase()));
-    }, [rawCategories, rawProducts, loadingProducts]);
+    }, [rawCategories, rawProducts]);
 
 
     // Grouping Logic (show all available products - timed-out ones show overlay, manually disabled are hidden)
@@ -195,7 +193,10 @@ const Home = () => {
         });
     }, [stores, groupedByStore, selectedCategory, freeProducts, featuredCategories]);
 
-    const isLoadingAll = loadingProducts || loadingStores || loadingCategories;
+    // Only show skeleton when there is NO data at all (not even cached)
+    const hasAnyProducts = (Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || [])).length > 0;
+    const hasAnyStores = (Array.isArray(rawStores) ? rawStores : (rawStores?.data || [])).length > 0;
+    const isLoadingAll = (loadingProducts && !hasAnyProducts) || (loadingStores && !hasAnyStores);
 
     return (
         <div className="flex-1 min-h-[calc(100vh-8rem)] md:min-h-0 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200">

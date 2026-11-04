@@ -1,3 +1,12 @@
+// In-memory cache for categories (TTL 60s)
+let categoryCache = null;
+let categoryCacheTimestamp = 0;
+const CATEGORY_CACHE_TTL = 60 * 1000;
+
+export const invalidateCategoryCache = () => {
+    categoryCache = null;
+    categoryCacheTimestamp = 0;
+};
 import Category from '../models/Category.js';
 import { getIO } from '../socket.js';
 import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
@@ -7,6 +16,9 @@ import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
 // @access  Public
 export const getCategories = async (req, res, next) => {
     try {
+        if (categoryCache && (Date.now() - categoryCacheTimestamp < CATEGORY_CACHE_TTL)) {
+            return res.status(200).json(categoryCache);
+        }
         const categories = await Category.find({ isActive: true }).lean()
             .sort({ order: 1, name: 1 });
 
@@ -19,11 +31,14 @@ export const getCategories = async (req, res, next) => {
             return catObj;
         });
 
-        res.status(200).json({
+        const payload = {
             success: true,
             count: processedCategories.length,
             data: processedCategories
-        });
+        };
+        categoryCache = payload;
+        categoryCacheTimestamp = Date.now();
+        res.status(200).json(payload);
     } catch (error) {
         next(error);
     }
@@ -74,6 +89,7 @@ export const createCategory = async (req, res, next) => {
             subcategories: subcategories || []
         });
 
+        invalidateCategoryCache();
         res.status(201).json({
             success: true,
             data: category
@@ -103,7 +119,8 @@ export const updateCategory = async (req, res, next) => {
         // Strip immutable fields to prevent Mongoose errors
         const { _id, __v, createdAt, ...updateFields } = req.body;
 
-        category = await Category.findByIdAndUpdate(
+        invalidateCategoryCache();
+        const category = await Category.findByIdAndUpdate(
             req.params.id,
             { $set: updateFields },
             {
@@ -210,6 +227,7 @@ export const deleteCategory = async (req, res, next) => {
             await deleteFromCloudinary(category.image);
         }
 
+        invalidateCategoryCache();
         await Category.findByIdAndDelete(req.params.id);
 
         res.status(200).json({

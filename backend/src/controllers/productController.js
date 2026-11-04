@@ -1,3 +1,10 @@
+// In-memory catalog cache for public GET queries (TTL 60s)
+const productCatalogCache = new Map();
+const PRODUCT_CACHE_TTL = 60 * 1000;
+
+export const invalidateProductCache = () => {
+    productCatalogCache.clear();
+};
 import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import { getIO } from '../socket.js';
@@ -7,15 +14,30 @@ import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
 // @route   GET /api/products
 // @access  Public
 export const getProducts = async (req, res, next) => {
-    console.log('🔍 GET /api/products - Request received');
     try {
         const { category, search, featured, page, limit, fields } = req.query;
         let query = {};
 
-        // By default, only show available products
-        // Unless user is admin/store_admin AND explicitly asks for all (or we just show all for them?)
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
         const isAdmin = req.user && (roles.includes('admin') || roles.includes('store_admin'));
+
+        const pageNum = parseInt(page, 10) || 1;
+        const limitNum = parseInt(limit, 10) || 12;
+
+        // Check in-memory cache for standard public catalog queries
+        const isPublicCacheable = !isAdmin && !search;
+        const cacheKey = isPublicCacheable 
+            ? `cat_${category || 'all'}_feat_${featured || 'all'}_store_${req.query.storeId || 'all'}_p_${pageNum}_l_${limitNum}_f_${fields || 'all'}`
+            : null;
+
+        if (cacheKey && productCatalogCache.has(cacheKey)) {
+            const cached = productCatalogCache.get(cacheKey);
+            if (Date.now() - cached.timestamp < PRODUCT_CACHE_TTL) {
+                return res.status(200).json(cached.payload);
+            } else {
+                productCatalogCache.delete(cacheKey);
+            }
+        }
 
         if (!isAdmin) {
             query.isAvailable = true;
@@ -49,8 +71,6 @@ export const getProducts = async (req, res, next) => {
         }
 
         // Pagination
-        const pageNum = parseInt(page, 10) || 1;
-        const limitNum = parseInt(limit, 10) || 12; // Default 12 items per page (reduced from 50 for performance)
         const skip = (pageNum - 1) * limitNum;
 
         // Field selection (if specified)
@@ -80,14 +100,23 @@ export const getProducts = async (req, res, next) => {
             return productObj;
         });
 
-        res.status(200).json({
+        const payload = {
             success: true,
             count: processedProducts.length,
             total,
             page: pageNum,
             pages: Math.ceil(total / limitNum),
             data: processedProducts
-        });
+        };
+
+        if (cacheKey) {
+            productCatalogCache.set(cacheKey, {
+                timestamp: Date.now(),
+                payload
+            });
+        }
+
+        res.status(200).json(payload);
     } catch (error) {
         next(error);
     }
@@ -141,6 +170,7 @@ export const createProduct = async (req, res, next) => {
         });
 
         // Real-time update
+        invalidateProductCache();
         getIO().emit('product:updated', product);
     } catch (error) {
         next(error);
@@ -197,6 +227,7 @@ export const updateProduct = async (req, res, next) => {
         });
 
         // Real-time update
+        invalidateProductCache();
         getIO().emit('product:updated', product);
     } catch (error) {
         next(error);
@@ -285,6 +316,7 @@ export const deleteProduct = async (req, res, next) => {
         });
 
         // Real-time update
+        invalidateProductCache();
         getIO().emit('product:updated');
     } catch (error) {
         next(error);
@@ -332,6 +364,7 @@ export const updateProductsOrder = async (req, res, next) => {
         });
 
         // Real-time update
+        invalidateProductCache();
         getIO().emit('product:updated');
     } catch (error) {
         next(error);

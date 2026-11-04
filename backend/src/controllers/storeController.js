@@ -1,3 +1,12 @@
+// In-memory cache for stores (TTL 60s)
+let storeCache = null;
+let storeCacheTimestamp = 0;
+const STORE_CACHE_TTL = 60 * 1000;
+
+export const invalidateStoreCache = () => {
+    storeCache = null;
+    storeCacheTimestamp = 0;
+};
 import Store from '../models/Store.js';
 import bcrypt from 'bcryptjs';
 import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
@@ -30,11 +39,16 @@ export const getStores = async (req, res, next) => {
             return storeObj;
         });
 
-        res.status(200).json({
+        const payload = {
             success: true,
             count: processedStores.length,
             data: processedStores
-        });
+        };
+        if (!search) {
+            storeCache = payload;
+            storeCacheTimestamp = Date.now();
+        }
+        res.status(200).json(payload);
     } catch (error) {
         next(error);
     }
@@ -98,6 +112,7 @@ export const createStore = async (req, res, next) => {
     try {
         const store = await Store.create(req.body);
 
+        invalidateStoreCache();
         res.status(201).json({
             success: true,
             data: store
@@ -121,6 +136,7 @@ export const updateStore = async (req, res, next) => {
         // Explicitly handle fields if needed, but findByIdAndUpdate is generally fine
         // for fields that exist in the schema.
 
+        invalidateStoreCache();
         const store = await Store.findByIdAndUpdate(
             req.params.id,
             updateData,
@@ -176,6 +192,7 @@ export const deleteStore = async (req, res, next) => {
         if (store.logo) await deleteFromCloudinary(store.logo);
         if (store.bannerImage) await deleteFromCloudinary(store.bannerImage);
 
+        invalidateStoreCache();
         await Store.findByIdAndDelete(storeId);
 
         res.status(200).json({

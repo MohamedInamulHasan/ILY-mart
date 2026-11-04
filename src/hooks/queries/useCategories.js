@@ -6,13 +6,36 @@ export const categoryKeys = {
     lists: () => [...categoryKeys.all, 'list'],
 };
 
+const CAT_CACHE_KEY = 'homly_cached_categories_v1';
+const getCachedCategories = () => {
+    try {
+        const raw = localStorage.getItem(CAT_CACHE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+    } catch (e) {}
+    return undefined;
+};
+const setCachedCategories = (list) => {
+    try {
+        if (Array.isArray(list) && list.length > 0) {
+            localStorage.setItem(CAT_CACHE_KEY, JSON.stringify(list));
+        }
+    } catch (e) {}
+};
+
 export const useCategories = () => {
     return useQuery({
         queryKey: categoryKeys.lists(),
         queryFn: async () => {
             const response = await apiService.categories.getAll();
-            return response.data;
+            const list = response.data;
+            setCachedCategories(list);
+            return list;
         },
+        initialData: getCachedCategories,
+        initialDataUpdatedAt: () => 0,
         staleTime: 60 * 1000,
         refetchInterval: 60000,
     });

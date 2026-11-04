@@ -8,13 +8,36 @@ export const storeKeys = {
     detail: (id) => [...storeKeys.details(), id]
 };
 
+const STORE_CACHE_KEY = 'homly_cached_stores_v1';
+const getCachedStores = () => {
+    try {
+        const raw = localStorage.getItem(STORE_CACHE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+    } catch (e) {}
+    return undefined;
+};
+const setCachedStores = (list) => {
+    try {
+        if (Array.isArray(list) && list.length > 0) {
+            localStorage.setItem(STORE_CACHE_KEY, JSON.stringify(list));
+        }
+    } catch (e) {}
+};
+
 export const useStores = () => {
     return useQuery({
         queryKey: storeKeys.lists(),
         queryFn: async () => {
             const response = await apiService.getStores();
-            return response.data;
+            const list = response.data;
+            setCachedStores(list);
+            return list;
         },
+        initialData: getCachedStores,
+        initialDataUpdatedAt: () => 0,
         staleTime: 60 * 1000,
         refetchInterval: 60000,
     });
