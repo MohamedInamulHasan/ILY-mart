@@ -256,3 +256,4 @@ else:
 with open('src/pages/Profile.jsx', 'w', encoding='utf-8') as f:
     f.write(code)
 print('[DONE] Profile.jsx updated successfully!')
+

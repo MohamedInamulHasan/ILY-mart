@@ -471,16 +471,29 @@ const Checkout = () => {
                                         {formData.address}{formData.city ? `, ${formData.city}` : ''}
                                     </p>
                                     
-                                    {/* 4. Pin / View on Map */}
+                                    {/* 4. Pin / View on Map - Shining Card with Map SVG */}
                                     {formData.location && (
-                                        <div className="pt-1.5">
+                                        <div className="pt-2">
                                             <button
                                                 type="button"
                                                 onClick={() => openExternalLink(formData.location)}
-                                                className="inline-flex items-center gap-1.5 text-[#2E5A2E] dark:text-[#CBF9B2] text-[11px] font-bold bg-green-50 dark:bg-[#CBF9B2]/10 px-3 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-[#CBF9B2]/20 transition-all border border-[#2E5A2E]/10 dark:border-[#CBF9B2]/20"
+                                                className="relative overflow-hidden inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#2E5A2E] hover:bg-[#234623] text-white text-[12px] font-bold active:scale-95 transition-transform shadow-sm select-none border border-[#234623]"
                                             >
-                                                <MapPin size={13} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                                                <span>{t('View on Map')}</span>
+                                                <motion.div
+                                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
+                                                    animate={{ x: ['-100%', '150%'] }}
+                                                    transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                                                />
+                                                <svg 
+                                                    viewBox="0 0 24 24" 
+                                                    width="16" 
+                                                    height="16" 
+                                                    fill="currentColor" 
+                                                    className="relative z-10 text-white shrink-0"
+                                                >
+                                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                                </svg>
+                                                <span className="relative z-10 font-bold">{t('View on Map')}</span>
                                             </button>
                                         </div>
                                     )}

@@ -252,7 +252,7 @@ const Home = () => {
 
                         {/* Search Results Dropdown (Matching CategoryProducts design) */}
                         {searchQuery.trim() && (
-                            <div className="absolute top-[calc(100%+12px)] left-0 right-0 bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 max-h-96 overflow-y-auto z-[200] animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
+                            <div className="absolute top-[calc(100%+12px)] left-0 right-0 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-[200] animate-in fade-in slide-in-from-top-2 duration-300 shadow-xl">
                                 {(() => {
                                     const filteredDropdown = products
                                         .filter(p => 
@@ -327,7 +327,7 @@ const Home = () => {
                                                 className={`flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors ${isClosed ? 'cursor-not-allowed opacity-80' : ''}`}
                                             >
                                                 <div className="relative flex-shrink-0">
-                                                    <div className={`w-12 h-12 rounded-[1rem] bg-gray-50 dark:bg-gray-700 p-1 flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-600 ${isClosed ? 'blur-[1px] grayscale' : ''}`}>
+                                                    <div className={`w-12 h-12 rounded-lg bg-gray-50 dark:bg-gray-700 p-1 flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-600 ${isClosed ? 'blur-[1px] grayscale' : ''}`}>
                                                         <img
                                                             src={product.image || `${API_BASE_URL}/products/${productId}/image`}
                                                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
@@ -336,7 +336,7 @@ const Home = () => {
                                                         />
                                                     </div>
                                                     {isClosed && (
-                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-[1rem]">
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-lg">
                                                             <span className="bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
                                                                 {t('Closed')}
                                                             </span>

@@ -52,6 +52,8 @@ import ConnectionStatus from './components/ConnectionStatus';
 import { useState } from 'react';
 
 import ScrollToTop from './components/ScrollToTop';
+import { getUserRoles, hasAdminAccess } from './utils/userHelpers';
+import LoadingSpinner from './components/LoadingSpinner';
 
 
 const HomeWithRedirect = () => {
@@ -60,12 +62,9 @@ const HomeWithRedirect = () => {
 
     // Guests are auto-created on app launch, so !user is only a rare fallback.
     // Don't redirect to /login — just show Home for all users (including guests).
-    const roles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
-    const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
-    const isDeliveryBoy = roles.some(r => {
-        const normalized = String(r || '').toLowerCase().trim();
-        return normalized === 'delivery_boy' || normalized === 'deliveryboy';
-    });
+    const roles = getUserRoles(user);
+    const isAdmin = roles.includes('admin');
+    const isDeliveryBoy = roles.includes('delivery_boy');
 
     if (isDeliveryBoy && !isAdmin) {
         return <Navigate to="/admin" replace />;
@@ -75,15 +74,13 @@ const HomeWithRedirect = () => {
 
 const AdminOrDeliveryDashboard = () => {
     const { user, loading } = useAuth();
-    if (loading) return null;
+    if (loading && !hasAdminAccess(user)) return <LoadingSpinner />;
 
-    const roles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
-    const isDeliveryBoy = roles.some(r => {
-        const normalized = String(r || '').toLowerCase().trim();
-        return normalized === 'delivery_boy' || normalized === 'deliveryboy';
-    });
+    const roles = getUserRoles(user);
+    const isDeliveryBoy = roles.includes('delivery_boy');
+    const isAdmin = roles.includes('admin');
 
-    if (isDeliveryBoy) {
+    if (isDeliveryBoy && !isAdmin) {
         return <DeliveryDashboard />;
     }
     return <AdminDashboard />;
@@ -95,16 +92,12 @@ const RoleRedirectHandler = () => {
     const location = useLocation();
 
     useEffect(() => {
-        // Wait for auth to finish loading
-        if (loading) return;
-        if (!user) return;
+        // Wait for auth to finish loading unless already authenticated
+        if (loading && !hasAdminAccess(user)) return;
 
-        const roles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
-        const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
-        const isDeliveryBoy = roles.some(r => {
-            const normalized = String(r || '').toLowerCase().trim();
-            return normalized === 'delivery_boy' || normalized === 'deliveryboy';
-        });
+        const roles = getUserRoles(user);
+        const isAdmin = roles.includes('admin');
+        const isDeliveryBoy = roles.includes('delivery_boy');
         
         console.log('RoleRedirectHandler: Checking role', { roles, pathname: location.pathname });
 
@@ -154,7 +147,8 @@ const Layout = ({ children, onRefresh }) => {
 
     const { isMaintenance: isLiveMaintenance } = useSocket();
     const isMaintenanceMode = settings?.maintenanceMode === true || isLiveMaintenance;
-    const isAdmin = Array.isArray(user?.role) ? user?.role.includes('admin') : user?.role === 'admin'; // Specific check for 'admin' role
+    const roles = getUserRoles(user);
+    const isAdmin = roles.includes('admin');
 
     const isExemptRoute =
         location.pathname === '/forgot-password' ||

@@ -18,6 +18,7 @@ import LogoutModal from '../components/LogoutModal';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
 import api from '../utils/api';
+import { getUserRoles } from '../utils/userHelpers';
 
 const MenuLink = ({ icon, title, to, onClick, isRed = false }) => {
     const Wrapper = to ? Link : 'button';
@@ -107,49 +108,11 @@ const Profile = () => {
         }
     };
 
-    // Filter relevant statuses for admins
-    const statusCounts = orders.reduce((acc, order) => {
-        const s = order.status;
-        if (s === 'Delivered') acc.delivered++;
-        if (s === 'Cancelled') acc.cancelled++;
-        if (s === 'Out for Delivery') acc.outForDelivery++;
-        if (s === 'Processing') acc.processing++;
-        return acc;
-    }, { delivered: 0, cancelled: 0, outForDelivery: 0, processing: 0 });
+
 
     // Robust extraction of all roles from every available source
     const roles = useMemo(() => {
-        const set = new Set();
-        const addRoles = (obj) => {
-            if (!obj) return;
-            const r = obj.role || obj.roles;
-            if (Array.isArray(r)) r.forEach(item => item && set.add(item));
-            else if (r) set.add(r);
-            if (obj.isAdmin) set.add('admin');
-            if (obj.isStoreAdmin) set.add('store_admin');
-            if (obj.isServiceAdmin) set.add('service_admin');
-            if (obj.isDeliveryBoy) set.add('delivery_boy');
-        };
-
-        addRoles(user);
-        addRoles(userProfile);
-        addRoles(userProfile?.data);
-        addRoles(authUser);
-        addRoles(authUser?.data);
-        try {
-            const cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
-            addRoles(cached);
-            addRoles(cached?.data);
-        } catch {}
-
-        // Fallback for owner / admin mobile
-        const cleanMobile = (user?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '');
-        if (cleanMobile.endsWith('9500171980') || cleanMobile === '9500171980') {
-            set.add('admin');
-        }
-
-        const result = Array.from(set);
-        return result.length > 0 ? result : ['customer'];
+        return getUserRoles(userProfile?.data || userProfile || user || authUser);
     }, [user, userProfile, authUser]);
 
     const isAdmin = roles.includes('admin');
@@ -260,46 +223,7 @@ const Profile = () => {
                      </div>
                 </div>
 
-                {/* Performance Summary for Global Admin / Store Admin / Delivery */}
-                {(isAdmin || isStoreAdmin || isDeliveryBoy) && (
-                    <div className="grid grid-cols-4 gap-2 mb-3">
-                        {/* Processing */}
-                        <div className="bg-white dark:bg-gray-800/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
-                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-500 mb-1.5">
-                                <Clock size={16} />
-                            </div>
-                            <span className="text-[14.5px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.processing}</span>
-                            <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">{t('Process')}</span>
-                        </div>
 
-                        {/* Out for Delivery */}
-                        <div className="bg-white dark:bg-gray-800/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
-                            <div className="w-8 h-8 rounded-full bg-[#FFCE31]/10 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2] mb-1.5">
-                                <Truck size={16} />
-                            </div>
-                            <span className="text-[14.5px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.outForDelivery}</span>
-                            <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">{t('Transit')}</span>
-                        </div>
-
-                        {/* Delivered */}
-                        <div className="bg-white dark:bg-gray-800/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
-                            <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-green-900/10 flex items-center justify-center text-green-600 mb-1.5">
-                                <CheckCircle2 size={16} />
-                            </div>
-                            <span className="text-[14.5px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.delivered}</span>
-                            <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">{t('Deliver')}</span>
-                        </div>
-
-                        {/* Cancelled */}
-                        <div className="bg-white dark:bg-gray-800/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
-                            <div className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/10 flex items-center justify-center text-red-500 mb-1.5">
-                                <XCircle size={16} />
-                            </div>
-                            <span className="text-[14.5px] font-black text-gray-900 dark:text-white leading-none mb-1">{statusCounts.cancelled}</span>
-                            <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">{t('Cancel')}</span>
-                        </div>
-                    </div>
-                )}
 
                 {/* Administration Section Card */}
                 {isAdminView && (
@@ -398,29 +322,7 @@ const Profile = () => {
                               </div>
                           )}
                           
-                          {/* Dynamic Roles */}
-                          {roles.includes('store_admin') && (
-                              <>
-                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
-                                <MenuLink to="/my-store" icon={<Store size={17} strokeWidth={2} />} title={t('My Store')} />
-                              </>
-                          )}
-                          {(roles.includes('admin') || roles.includes('delivery_boy')) && (
-                              <>
-                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
-                                <MenuLink 
-                                    to="/admin" 
-                                    icon={roles.includes('delivery_boy') ? <Truck size={17} strokeWidth={2} /> : <Shield size={17} strokeWidth={2} />} 
-                                    title={roles.includes('delivery_boy') ? t('Manage Deliveries') : t('Admin Dashboard')} 
-                                />
-                              </>
-                          )}
-                          {roles.includes('service_admin') && (
-                              <>
-                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
-                                <MenuLink to="/my-service" icon={<Wrench size={17} strokeWidth={2} />} title={t('My Service')} />
-                              </>
-                          )}
+
                      </div>
                 </div>
 

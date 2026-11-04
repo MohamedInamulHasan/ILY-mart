@@ -87,3 +87,4 @@ with open('src/index.css', 'w', encoding='utf-8') as f:
     f.write(css)
 print('[OK] src/index.css updated!')
 print('[DONE] Zepto typography applied!')
+

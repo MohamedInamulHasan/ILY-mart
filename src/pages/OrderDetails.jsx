@@ -1,4 +1,5 @@
 import { CartoonCoin } from '../components/CartoonCoin';
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, Truck, CheckCircle, Clock, MapPin, CreditCard, RotateCcw, Store, ChevronLeft } from 'lucide-react';
@@ -89,12 +90,14 @@ const OrderDetails = () => {
                             </div>
 
                             {/* 3-Step Timeline Skeleton */}
-                            <div className="px-4 py-4 relative">
-                                <div className="absolute top-[34px] left-8 right-8 h-1 bg-gray-100 dark:bg-gray-700 rounded-full" />
-                                <div className="relative flex justify-between">
-                                    {[1, 2, 3].map((step) => (
-                                        <div key={step} className="flex flex-col items-center z-10 space-y-2">
-                                            <div className="w-9 h-9 rounded-full blinkit-shimmer border-4 border-white dark:border-gray-800" />
+                            <div className="px-3 sm:px-4 py-3.5">
+                                <div className="relative flex justify-between items-start">
+                                    {[1, 2, 3].map((step, idx) => (
+                                        <div key={step} className="flex-1 flex flex-col items-center relative space-y-2">
+                                            {idx < 2 && (
+                                                <div className="absolute top-[18px] -translate-y-1/2 left-[50%] right-[-50%] h-1 bg-gray-100 dark:bg-gray-700 z-0" />
+                                            )}
+                                            <div className="w-9 h-9 rounded-full blinkit-shimmer border-4 border-white dark:border-gray-800 z-10 relative" />
                                             <div className="h-3 w-16 rounded-md blinkit-shimmer" />
                                         </div>
                                     ))}
@@ -297,28 +300,32 @@ const OrderDetails = () => {
 
                     {/* Visual Timeline (Hidden for Cancelled) */}
                     {order.status !== 'Cancelled' && (
-                        <div className="px-4 py-3.5 relative">
-                            {/* Connecting Line */}
-                            <div className="absolute top-[42px] left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-[#2E5A2E] dark:bg-[#CBF9B2] transition-all duration-1000 ease-out"
-                                    style={{
-                                        width: `${timelineSteps.filter(s => s.completed).length === 1 ? '0%' :
-                                            timelineSteps.filter(s => s.completed).length === 2 ? '50%' : '100%'}`
-                                    }}
-                                />
-                            </div>
-
-                            <div className="relative flex justify-between">
+                        <div className="px-3 sm:px-4 py-3.5">
+                            <div className="relative flex justify-between items-start">
                                 {timelineSteps.map((step, idx) => (
-                                    <div key={idx} className="flex flex-col items-center z-10">
-                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 transition-all duration-300 ${step.completed
-                                            ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] border-white dark:border-gray-800 text-white dark:text-gray-900'
+                                    <div key={idx} className="flex-1 flex flex-col items-center relative">
+                                        {/* Connector line to next step (centered at round's vertical middle: 18px, perfectly between circles) */}
+                                        {idx < timelineSteps.length - 1 && (
+                                            <div className="absolute top-[18px] -translate-y-1/2 left-[50%] right-[-50%] h-1 bg-gray-100 dark:bg-gray-700 overflow-hidden z-0">
+                                                <div
+                                                    className="h-full bg-[#2E5A2E] dark:bg-[#CBF9B2] transition-all duration-700 ease-out"
+                                                    style={{
+                                                        width: timelineSteps[idx + 1]?.completed ? '100%' : '0%'
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Step Circle Icon */}
+                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 transition-all duration-300 z-10 relative ${step.completed
+                                            ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] border-white dark:border-gray-800 text-white dark:text-gray-900 shadow-sm'
                                             : 'bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600 text-gray-300'
                                             }`}>
                                             <step.icon size={14} strokeWidth={3} />
                                         </div>
-                                        <p className={`text-xs mt-2 font-bold text-center w-20 leading-tight ${step.completed
+
+                                        {/* Step Label */}
+                                        <p className={`text-xs mt-2 font-bold text-center leading-tight px-1 max-w-[90px] ${step.completed
                                             ? 'text-gray-900 dark:text-white'
                                             : 'text-gray-400 dark:text-gray-600'
                                             }`}>
@@ -416,22 +423,35 @@ const OrderDetails = () => {
                                 {order.shippingAddress?.street}{order.shippingAddress?.city ? `, ${order.shippingAddress.city}` : ''}{order.shippingAddress?.zip ? ` - ${order.shippingAddress.zip}` : ''}
                             </p>
 
-                            {/* 4. Pin / View on Map */}
+                            {/* 4. Pin / View on Map - Shining Card with Map SVG */}
                             {order.shippingAddress?.location && (
-                                <div className="pt-1">
+                                <div className="pt-2">
                                     <button
                                         type="button"
                                         onClick={() => openExternalLink(order.shippingAddress.location)}
-                                        className="inline-flex items-center gap-1.5 text-[#2E5A2E] dark:text-[#CBF9B2] text-[11px] font-bold bg-green-50 dark:bg-[#CBF9B2]/10 px-3 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-[#CBF9B2]/20 transition-all border border-[#2E5A2E]/10 dark:border-[#CBF9B2]/20"
+                                        className="relative overflow-hidden inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#2E5A2E] hover:bg-[#234623] text-white text-[12px] font-bold active:scale-95 transition-transform shadow-sm select-none border border-[#234623]"
                                     >
-                                        <MapPin size={13} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                                        <span>{t('View on Map')}</span>
+                                        <motion.div
+                                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
+                                            animate={{ x: ['-100%', '150%'] }}
+                                            transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                                        />
+                                        <svg 
+                                            viewBox="0 0 24 24" 
+                                            width="16" 
+                                            height="16" 
+                                            fill="currentColor" 
+                                            className="relative z-10 text-white shrink-0"
+                                        >
+                                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                        </svg>
+                                        <span className="relative z-10 font-bold">{t('View on Map')}</span>
                                     </button>
                                 </div>
                             )}
                         </div>
 
-                        {/* 5. Scheduled Delivery Time */}
+                        {/* 5. Scheduled Delivery Time (Time logo removed) */}
                         {(() => {
                             const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
                             if (!rawTime) return null;
@@ -442,18 +462,11 @@ const OrderDetails = () => {
                             if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
 
                             return (
-                                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700">
-                                    <div className="flex items-center gap-3 text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                        <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center">
-                                            <Clock size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('Scheduled Delivery')}</p>
-                                            <p className="font-medium text-gray-900 dark:text-white">
-                                                {formattedRange}
-                                            </p>
-                                        </div>
-                                    </div>
+                                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700 pl-2 sm:pl-3">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">{t('Scheduled Delivery')}</p>
+                                    <p className="font-bold text-gray-900 dark:text-white text-[15px] mt-0.5">
+                                        {formattedRange}
+                                    </p>
                                 </div>
                             );
                         })()}

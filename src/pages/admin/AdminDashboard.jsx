@@ -1,4 +1,5 @@
 import { CartoonCoin } from '../../components/CartoonCoin';
+import { getUserRoles } from '../../utils/userHelpers';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -80,11 +81,12 @@ import LogoutModal from '../../components/LogoutModal';
 const AdminDashboard = () => {
     const { user, logout } = useAuth(); // Get current user & logout method
     const navigate = useNavigate();
-    const isStoreAdmin = Array.isArray(user?.role) ? user?.role.includes('store_admin') : user?.role === 'store_admin';
-    const isServiceAdmin = Array.isArray(user?.role) ? user?.role.includes('service_admin') : user?.role === 'service_admin';
-    const isDeliveryBoy = Array.isArray(user?.role) ? user?.role.includes('delivery_boy') : user?.role === 'delivery_boy';
-    const isAdmin = Array.isArray(user?.role) ? user?.role.includes('admin') : user?.role === 'admin';
-    const isCustomer = Array.isArray(user?.role) ? user?.role.includes('customer') : user?.role === 'customer';
+    const roles = getUserRoles(user);
+    const isStoreAdmin = roles.includes('store_admin');
+    const isServiceAdmin = roles.includes('service_admin');
+    const isDeliveryBoy = roles.includes('delivery_boy');
+    const isAdmin = roles.includes('admin');
+    const isCustomer = roles.includes('customer');
     const defaultTab = isStoreAdmin ? 'stores' : isServiceAdmin ? 'services' : isDeliveryBoy ? 'orders' : (isAdmin ? 'products' : 'products');
     const [activeTab, setActiveTab] = useState(defaultTab);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
