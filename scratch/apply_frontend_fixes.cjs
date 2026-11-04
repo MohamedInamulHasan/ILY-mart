@@ -112,3 +112,4 @@ if (!appCode.includes("<ErrorBoundary>")) {
 }
 fs.writeFileSync('src/App.jsx', appCode, 'utf8');
 console.log('Updated App.jsx with ErrorBoundary');
+

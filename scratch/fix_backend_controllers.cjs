@@ -18,3 +18,4 @@ let serviceCode = fs.readFileSync('backend/src/controllers/serviceController.js'
 serviceCode = serviceCode.replace('await service.deleteOne();', 'await Service.findByIdAndDelete(req.params.id);');
 fs.writeFileSync('backend/src/controllers/serviceController.js', serviceCode, 'utf8');
 console.log('Fixed serviceController.js');
+

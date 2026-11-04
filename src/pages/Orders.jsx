@@ -271,18 +271,6 @@ const Orders = () => {
                                                     {getStatusIcon(order.status)}
                                                     <span className="font-bold text-white">{getStatusText(order.status)}</span>
                                                 </div>
-                                                {!['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setDeleteConfirmation({ isOpen: true, orderId: order._id || order.id });
-                                                        }}
-                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                        title={t("Delete Order")}
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                )}
                                             </div>
                                         </div>
 
