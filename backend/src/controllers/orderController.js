@@ -237,17 +237,20 @@ export const getOrders = async (req, res, next) => {
         // If no phone number is set, falls back to this user's _id.
         const getPersonalOrderQuery = () => {
             const userId = req.user?._id;
-            const rawPhone = (req.user?.mobile || req.user?.phone || '').toString().replace(/\D/g, '');
+            const rawPhone = (req.query.mobile || req.user?.mobile || req.user?.phone || '').toString().replace(/\D/g, '');
             const phone10 = rawPhone.slice(-10);
 
             if (phone10) {
-                // Strictly return orders placed with THIS active mobile number
-                // (Prevents old orders placed with a previous number from leaking into current profile)
+                // Strictly return orders placed with THIS active mobile number.
+                // If found -> returns matching order cards.
+                // If not found -> returns empty array (shows "No orders found").
                 const phoneRegex = new RegExp(`${phone10}$`);
                 return {
                     $or: [
                         { 'shippingAddress.mobile': phoneRegex },
-                        { 'shippingAddress.phone': phoneRegex }
+                        { 'shippingAddress.phone': phoneRegex },
+                        { 'shippingAddress.mobile': phone10 },
+                        { 'shippingAddress.phone': phone10 }
                     ]
                 };
             }

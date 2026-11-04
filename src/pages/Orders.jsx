@@ -10,12 +10,15 @@ import { useLanguage } from '../context/LanguageContext';
 import { formatOrderDateTime, formatDeliveryTime } from '../utils/dateUtils';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const Orders = () => {
     const navigate = useNavigate();
-    const { data: orders = [], isLoading: loadingOrders } = useOrders({ myOrders: true });
+    const { user } = useAuth();
+    const currentMobile = user?.mobile || user?.phone || '';
+    const { data: orders = [], isLoading: loadingOrders } = useOrders({ myOrders: true, mobile: currentMobile });
     const { cartCount } = useCart();
     const { data: stores = [] } = useStores();
     const { mutate: deleteOrder } = useDeleteOrder();
