@@ -219,6 +219,9 @@ const EditAddress = () => {
         setUser(optimisticUser);
         localStorage.setItem('userInfo', JSON.stringify(optimisticUser));
         queryClient.setQueryData(['users', 'profile'], optimisticUser);
+        // Clear order cache so old number's orders are wiped immediately
+        queryClient.removeQueries({ queryKey: ['orders'] });
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
         window.dispatchEvent(new Event('userChanged'));
         navigate('/profile');
 

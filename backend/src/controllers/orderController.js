@@ -233,33 +233,30 @@ export const getOrders = async (req, res, next) => {
         let query = {};
 
         // Helper for personal customer order queries
-        // Returns orders that belong to this user by:
-        //   1. Orders placed while logged in (user field = this user's _id)
-        //   2. Orders placed with this user's mobile number
+        // Returns orders placed strictly for this user's active mobile number.
+        // If no phone number is set, falls back to this user's _id.
         const getPersonalOrderQuery = () => {
             const userId = req.user?._id;
             const rawPhone = (req.user?.mobile || req.user?.phone || '').toString().replace(/\D/g, '');
             const phone10 = rawPhone.slice(-10);
-            const phone91 = '91' + phone10;
-
-            const conditions = [];
-
-            if (userId) {
-                conditions.push({ user: userId });
-            }
 
             if (phone10) {
-                conditions.push({ 'shippingAddress.mobile': phone10 });
-                conditions.push({ 'shippingAddress.mobile': phone91 });
-                conditions.push({ 'shippingAddress.phone': phone10 });
-                conditions.push({ 'shippingAddress.phone': phone91 });
+                // Strictly return orders placed with THIS active mobile number
+                // (Prevents old orders placed with a previous number from leaking into current profile)
+                const phoneRegex = new RegExp(`${phone10}$`);
+                return {
+                    $or: [
+                        { 'shippingAddress.mobile': phoneRegex },
+                        { 'shippingAddress.phone': phoneRegex }
+                    ]
+                };
             }
 
-            if (conditions.length === 0) {
-                return { user: null };
+            if (userId) {
+                return { user: userId };
             }
 
-            return { $or: conditions };
+            return { user: null };
         };
 
         // STRICT RBAC: Filter orders based on user role and context

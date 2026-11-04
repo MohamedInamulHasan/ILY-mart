@@ -11,8 +11,12 @@ export const orderKeys = {
 
 export const useOrders = (params = {}) => {
     const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('authToken');
+    const storedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('userInfo') || '{}') : {};
+    const userPhone = storedUser?.mobile || storedUser?.phone || '';
+
     return useQuery({
-        queryKey: orderKeys.list(params),
+        // Include userPhone in key so changing phone number isolates order cache instantly
+        queryKey: [...orderKeys.list(params), userPhone],
         queryFn: async () => {
             const response = await apiService.getOrders(params);
             return response?.data || response || [];
