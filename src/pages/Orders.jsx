@@ -165,7 +165,7 @@ const Orders = () => {
                 </div>
             </div>
 
-            <PullToRefreshLayout>
+            <div>
                 <div className="pt-[88px]">
                 <div className="px-4 mt-0 max-w-3xl mx-auto pb-10 sm:pb-14">
                     {/* Zepto-style Search Bar */}
@@ -404,7 +404,7 @@ const Orders = () => {
                     </div>
                 )}
                 </div>
-            </PullToRefreshLayout>
+            </div>
         </div>
     );
 };

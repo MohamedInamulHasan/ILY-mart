@@ -4,13 +4,13 @@ import User from '../models/User.js';
 export const protect = async (req, res, next) => {
     let token;
 
-    if (req.cookies.jwt) {
-        token = req.cookies.jwt;
-    } else if (
+    if (
         req.headers.authorization &&
         req.headers.authorization.startsWith('Bearer')
     ) {
         token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.jwt) {
+        token = req.cookies.jwt;
     } else if (req.query.token) {
         token = req.query.token;
     }
@@ -41,13 +41,13 @@ export const protect = async (req, res, next) => {
 export const optionalAuth = async (req, res, next) => {
     let token;
 
-    if (req.cookies.jwt) {
-        token = req.cookies.jwt;
-    } else if (
+    if (
         req.headers.authorization &&
         req.headers.authorization.startsWith('Bearer')
     ) {
         token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.jwt) {
+        token = req.cookies.jwt;
     }
 
     if (token) {

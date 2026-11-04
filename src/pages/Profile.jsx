@@ -191,8 +191,7 @@ const Profile = () => {
                 </div>
             </div>
 
-            <PullToRefreshLayout>
-                <div className="pt-[88px]">
+            <div>`n                <div className="pt-[88px]">
                 <div className="px-4 mt-0 max-w-3xl mx-auto space-y-3 pb-12 sm:pb-16 w-full">
                 {/* Profile Widget */}
                 <div className="bg-white dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between mb-3 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -366,7 +365,7 @@ const Profile = () => {
                 </div>
             </div>
                 </div>
-            </PullToRefreshLayout>
+            </div>
 
             {/* Floating WhatsApp Button */}
             <button 

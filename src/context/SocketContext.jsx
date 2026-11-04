@@ -89,8 +89,9 @@ export const SocketProvider = ({ children }) => {
 
         newSocket.on('user:updated', (updatedUser) => {
             console.log('👤 User profile updated via real-time');
-            queryClient.invalidateQueries(['user-profile']);
-            // Optionally update local auth state if needed, but invalidating profile usually triggers a re-fetch
+            // Invalidate both possible profile query key variants
+            queryClient.invalidateQueries({ queryKey: ['users', 'profile'] });
+            queryClient.invalidateQueries({ queryKey: ['user-profile'] });
         });
 
         setSocket(newSocket);

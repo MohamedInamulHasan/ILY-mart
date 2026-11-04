@@ -4,17 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useData } from '../context/DataContext';
 import { ArrowLeft, MapPin, Check, Navigation, AlertCircle } from 'lucide-react';
-import { API_BASE_URL } from '../utils/api';
+import { API_BASE_URL, apiService } from '../utils/api';
 import { getCurrentLocation } from '../utils/locationHelpers';
 
 const EditAddress = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { user, setUser, updateGuest } = useAuth();
+    const { user, setUser } = useAuth();
     const { t, language } = useLanguage();
-    const { updateProfile } = useData();
     const [showLocationError, setShowLocationError] = useState(false);
     const locationRef = useRef(null);
     const fullNameRef = useRef(null);
@@ -220,28 +218,51 @@ const EditAddress = () => {
 
         setUser(optimisticUser);
         localStorage.setItem('userInfo', JSON.stringify(optimisticUser));
-        queryClient.setQueryData(['users', 'profile'], { success: true, data: optimisticUser });
-        queryClient.invalidateQueries({ queryKey: ['users', 'profile'] });
+        queryClient.setQueryData(['users', 'profile'], optimisticUser);
+        window.dispatchEvent(new Event('userChanged'));
         navigate('/profile');
 
-        // 2. Background server synchronization
+        // 2. Fast background server synchronization
         (async () => {
             try {
-                const freshUser = await updateGuest(formData.fullName, formData.mobile);
-                const token = localStorage.getItem('authToken');
-                const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
                 const profileData = {
                     name: formData.fullName,
                     mobile: formData.mobile,
                     address: updatedAddress,
                     location: formData.location
                 };
-                const result = await updateProfile(profileData, config);
-                if (result) {
-                    const finalUser = { ...optimisticUser, ...(result?.data || result) };
+
+                // Guest users → use updateGuest (triggers delivery boy account switching)
+                // Real registered users → use updateProfile (no account switching)
+                const isGuest = !user?.email || user.email.startsWith('guest_') || user.email.startsWith('mobile_');
+                let result;
+                if (isGuest) {
+                    result = await apiService.updateGuest({ name: formData.fullName, mobile: formData.mobile });
+                } else {
+                    result = await apiService.updateProfile(profileData);
+                }
+
+                const serverData = result?.data || result;
+                const newToken = result?.token;
+
+                if (serverData && typeof serverData === 'object') {
+                    const finalUser = { ...optimisticUser, ...serverData };
                     setUser(finalUser);
                     localStorage.setItem('userInfo', JSON.stringify(finalUser));
-                    queryClient.setQueryData(['users', 'profile'], { success: true, data: finalUser });
+                    queryClient.setQueryData(['users', 'profile'], finalUser);
+
+                    // If server returned a NEW token (delivery boy account switch happened)
+                    // save it so next request uses the delivery boy's token
+                    if (newToken) {
+                        localStorage.setItem('authToken', newToken);
+                        // Also update address separately since updateGuest doesn't save address
+                        try {
+                            await apiService.updateProfile({ address: updatedAddress, location: formData.location });
+                        } catch (_) {}
+                        // Force a full profile refresh so role/nav updates
+                        queryClient.invalidateQueries({ queryKey: ['users', 'profile'] });
+                        window.dispatchEvent(new Event('userChanged'));
+                    }
                 }
             } catch (err) {
                 console.warn('Background address sync warning:', err);

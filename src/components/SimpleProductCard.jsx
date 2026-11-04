@@ -319,7 +319,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                     <div className="absolute top-0 left-0 w-full h-full z-20 flex flex-col items-center justify-center backdrop-blur-[1px] bg-black/10 gap-1">
                         <div className="bg-black/70 shadow-lg rounded-xl px-3 py-2 flex flex-col items-center gap-0.5 mx-2">
                             <span className="text-[9px] font-bold uppercase tracking-wider text-gray-300">{t('Available')}</span>
-                            <span className="text-[11px] font-bold text-gray-300 leading-tight text-center">{timeLabel}</span>
+                            <span className="text-[11px] font-bold text-white leading-none text-center block whitespace-nowrap">{timeLabel}</span>
                         </div>
                     </div>
                 )}

@@ -75,9 +75,41 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             />
                         )}
                     </div>
-                    <span className={`text-[11px] md:text-xs lg:text-sm font-bold transition-colors truncate ${selectedCategory === 'All' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-400'}`}>
-                        {allCategoryName || t('All')}
-                    </span>
+                    {(() => {
+                        const fullTitle = allCategoryName || t('All');
+                        let mainPart = fullTitle;
+                        let bracketPart = null;
+                        const bracketIndex = fullTitle.indexOf('(');
+                        if (bracketIndex !== -1) {
+                            const part1 = fullTitle.substring(0, bracketIndex).trim();
+                            const part2 = fullTitle.substring(bracketIndex).replace(/^\(/, '').replace(/\)$/, '').trim();
+                            const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
+                            const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
+                            let tamStr = '', engStr = '';
+                            if (isPart1Tamil && !isPart2Tamil) { tamStr = part1; engStr = part2; }
+                            else if (isPart2Tamil && !isPart1Tamil) { tamStr = part2; engStr = part1; }
+                            else { engStr = part1; tamStr = part2; }
+                            if (language === 'ta') {
+                                mainPart = tamStr || engStr;
+                                bracketPart = tamStr && engStr ? `(${engStr})` : null;
+                            } else {
+                                mainPart = engStr || tamStr;
+                                bracketPart = engStr && tamStr ? `(${tamStr})` : null;
+                            }
+                        }
+                        return (
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[78px] sm:max-w-[86px] md:max-w-[105px] transition-colors ${selectedCategory === 'All' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
+                                <span className={`text-[11px] md:text-xs leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-bold' : 'font-semibold'}`} title={mainPart}>
+                                    {mainPart}
+                                </span>
+                                {bracketPart && (
+                                    <span className={`text-[9.5px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center opacity-75 mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-medium'}`} title={bracketPart}>
+                                        {bracketPart}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {categories.map((category) => {

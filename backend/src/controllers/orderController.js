@@ -232,25 +232,34 @@ export const getOrders = async (req, res, next) => {
         const isMyOrders = req.query.myOrders === 'true';
         let query = {};
 
-        // Helper for personal customer order queries (by user ID or matching phone number)
+        // Helper for personal customer order queries
+        // Returns orders that belong to this user by:
+        //   1. Orders placed while logged in (user field = this user's _id)
+        //   2. Orders placed with this user's mobile number
         const getPersonalOrderQuery = () => {
-            const userPhone = (req.user?.mobile || req.user?.phone || '').toString().trim();
-            const phoneConditions = userPhone ? [
-                { 'shippingAddress.phone': userPhone },
-                { 'shippingAddress.mobile': userPhone }
-            ] : [];
+            const userId = req.user?._id;
+            const rawPhone = (req.user?.mobile || req.user?.phone || '').toString().replace(/\D/g, '');
+            const phone10 = rawPhone.slice(-10);
+            const phone91 = '91' + phone10;
 
-            if (req.user?._id) {
-                return {
-                    $or: [
-                        { user: req.user._id },
-                        ...phoneConditions
-                    ]
-                };
-            } else if (phoneConditions.length > 0) {
-                return { $or: phoneConditions };
+            const conditions = [];
+
+            if (userId) {
+                conditions.push({ user: userId });
             }
-            return { user: req.user?._id };
+
+            if (phone10) {
+                conditions.push({ 'shippingAddress.mobile': phone10 });
+                conditions.push({ 'shippingAddress.mobile': phone91 });
+                conditions.push({ 'shippingAddress.phone': phone10 });
+                conditions.push({ 'shippingAddress.phone': phone91 });
+            }
+
+            if (conditions.length === 0) {
+                return { user: null };
+            }
+
+            return { $or: conditions };
         };
 
         // STRICT RBAC: Filter orders based on user role and context

@@ -418,25 +418,9 @@ const rewardSignupBonus = async (user) => {
     return false;
 };
 
-// Helper: delete any auto-generated guest account that shares the same mobile number
+// Helper: safe no-op (never delete other user accounts or steal orders across accounts)
 const cleanupGuestAccount = async (mobileNumber, currentUserId) => {
-    if (!mobileNumber || !mobileNumber.trim()) return;
-    const raw = mobileNumber.trim().replace(/[^0-9]/g, '');
-    if (!raw) return;
-    try {
-        // Guest accounts created by OTP flow have email: mobile_XXXX@ily-mart.com
-        const guestEmail = `mobile_${raw}@ily-mart.com`;
-        const guest = await User.findOne({ email: guestEmail });
-        if (guest && guest._id.toString() !== currentUserId.toString()) {
-            // Reassign any orders from the ghost account to the real user
-            const Order = (await import('../models/Order.js')).default;
-            await Order.updateMany({ user: guest._id }, { $set: { user: currentUserId } });
-            await guest.deleteOne();
-            console.log(`🧹 Deleted ghost account ${guestEmail} and reassigned its orders to ${currentUserId}`);
-        }
-    } catch (err) {
-        console.error('cleanupGuestAccount error (non-fatal):', err.message);
-    }
+    return;
 };
 
 export const updateUserProfile = async (req, res, next) => {
@@ -447,20 +431,34 @@ export const updateUserProfile = async (req, res, next) => {
             user.name = req.body.name || req.body.fullName || user.name;
             user.email = req.body.email || user.email;
 
-            if (req.body.mobile && req.body.mobile !== user.mobile) {
-                const rawMobile = req.body.mobile.replace(/[^0-9]/g, '');
-                const existingUser = await User.findOne({
-                    _id: { $ne: user._id },
-                    $or: [
-                        { mobile: rawMobile },
-                        { mobile: rawMobile.replace(/^91/, '') },
-                        { mobile: '91' + rawMobile.replace(/^91/, '') }
-                    ]
-                });
+            if (req.body.mobile !== undefined) {
+                const rawMobile = req.body.mobile ? req.body.mobile.replace(/[^0-9]/g, '') : '';
+                const standardMobile = rawMobile.slice(-10);
 
-                if (existingUser) {
-                    res.status(400);
-                    throw new Error('This mobile number is already registered to another account');
+                if (standardMobile) {
+                    // Check if mobile belongs to an existing staff account (delivery_boy, admin, store_admin)
+                    // or another registered account
+                    const existingUser = await User.findOne({
+                        _id: { $ne: user._id },
+                        $or: [
+                            { mobile: standardMobile },
+                            { mobile: '91' + standardMobile },
+                            { email: 'mobile_' + standardMobile + '@ily-mart.com' }
+                        ]
+                    });
+
+                    if (existingUser) {
+                        const existingRoles = Array.isArray(existingUser.role) ? existingUser.role : [existingUser.role || 'customer'];
+                        const isStaff = existingRoles.some(r => ['delivery_boy', 'admin', 'store_admin', 'service_admin'].includes(r));
+                        const isRegisteredUser = existingUser.email && !existingUser.email.startsWith('guest_');
+
+                        if (isStaff || isRegisteredUser) {
+                            if (req.body.address) existingUser.address = req.body.address;
+                            if (req.body.location) existingUser.location = req.body.location;
+                            await existingUser.save();
+                            return sendTokenResponse(existingUser, 200, res);
+                        }
+                    }
                 }
                 user.mobile = rawMobile;
             }
@@ -484,13 +482,11 @@ export const updateUserProfile = async (req, res, next) => {
             }
 
             const updatedUser = await user.save();
-            // Clean up ghost guest account with same mobile
-            if (req.body.mobile) await cleanupGuestAccount(req.body.mobile, user._id);
             // Award signup bonus if this is the first time they set their mobile
             if (req.body.mobile) await rewardSignupBonus(updatedUser);
             sendTokenResponse(updatedUser, 200, res);
 
-            // Real-time update to the user
+            // Real-time update to this specific user only
             getIO().to(`user:${updatedUser._id}`).emit('user:updated', updatedUser);
         } else {
             res.status(404);
@@ -1081,40 +1077,40 @@ export const updateGuest = async (req, res, next) => {
         }
 
         const rawMobile = mobile.replace(/[^0-9]/g, '');
+        const standardMobile = rawMobile.slice(-10);
+        const currentUserId = req.user.id || req.user._id;
 
-        // Check if a user with this mobile number already exists
+        // Check if the entered mobile belongs to an existing DIFFERENT account
         const existingUser = await User.findOne({
+            _id: { $ne: currentUserId },
             $or: [
-                { mobile: rawMobile },
-                { mobile: rawMobile.replace(/^91/, '') },
-                { mobile: '91' + rawMobile.replace(/^91/, '') }
+                { mobile: standardMobile },
+                { mobile: '91' + standardMobile },
+                { email: 'mobile_' + standardMobile + '@ily-mart.com' }
             ]
         });
 
         if (existingUser) {
-            // Reassign any orders placed during this guest session to the permanent account
-            if (req.user?._id && req.user._id.toString() !== existingUser._id.toString()) {
-                try {
-                    const Order = (await import('../models/Order.js')).default;
-                    await Order.updateMany({ user: req.user._id }, { $set: { user: existingUser._id } });
-                } catch (orderErr) {
-                    console.warn('Non-fatal: could not reassign guest orders:', orderErr.message);
-                }
+            // Check if this existing account is a staff account (delivery_boy, admin, store_admin)
+            // or an existing registered account (NOT a temporary guest_ account)
+            const existingRoles = Array.isArray(existingUser.role) ? existingUser.role : [existingUser.role || 'customer'];
+            const isStaff = existingRoles.some(r => ['delivery_boy', 'admin', 'store_admin', 'service_admin'].includes(r));
+            const isRegisteredUser = existingUser.email && !existingUser.email.startsWith('guest_');
+
+            if (isStaff || isRegisteredUser) {
+                // Switch session to this existing account (delivery boy, admin, or existing customer claiming their account)
+                return sendTokenResponse(existingUser, 200, res);
             }
-            // Mobile is already registered! Log in as that existing user
-            return sendTokenResponse(existingUser, 200, res);
         }
 
-        // Update current guest user
-        const user = await User.findById(req.user.id);
+        // Update current user's name and mobile
+        const user = await User.findById(currentUserId);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const standardMobile = rawMobile.slice(-10);
         user.name = name;
         user.mobile = standardMobile;
-        user.email = `mobile_${standardMobile}@ily-mart.com`;
         await user.save();
 
         // Award signup bonus if eligible (first time setting mobile)

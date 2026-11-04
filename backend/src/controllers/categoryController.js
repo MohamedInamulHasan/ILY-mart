@@ -120,7 +120,7 @@ export const updateCategory = async (req, res, next) => {
         const { _id, __v, createdAt, ...updateFields } = req.body;
 
         invalidateCategoryCache();
-        const category = await Category.findByIdAndUpdate(
+        category = await Category.findByIdAndUpdate(
             req.params.id,
             { $set: updateFields },
             {

@@ -3,11 +3,8 @@ import axios from 'axios';
 const hostname = window.location.hostname;
 const isProduction = import.meta.env.MODE === 'production';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-    hostname === 'localhost' || hostname === '127.0.0.1'
-        ? 'http://127.0.0.1:5000/api'
-        : `http://${hostname}:5000/api`
-);
+// Directly connect to the Render production backend
+export const API_BASE_URL = 'https://homly-backend-aash.onrender.com/api';
 
 if (import.meta.env.DEV) {
     console.log('%c🔗 API Configuration', 'color: #3b82f6; font-weight: bold; font-size: 14px;');

@@ -27,8 +27,8 @@ export const useUserProfile = () => {
             const response = await apiService.getProfile();
             return response.data;
         },
-        staleTime: 30 * 60 * 1000, // Profile rarely changes
-        refetchInterval: 5000,
+        staleTime: 10 * 1000, // 10s — profile updates should reflect quickly
+        refetchInterval: 30 * 1000, // poll every 30s instead of 5s (reduce network load)
     });
 };
 
@@ -46,8 +46,18 @@ export const useUpdateProfile = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (data) => apiService.updateProfile(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries(userKeys.profile());
+        onSuccess: (response) => {
+            // Immediately update the profile cache with the server response
+            const serverUser = response?.data || response;
+            if (serverUser && typeof serverUser === 'object') {
+                queryClient.setQueryData(userKeys.profile(), serverUser);
+                // Also update localStorage so profile page reflects instantly
+                try {
+                    const existing = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                    localStorage.setItem('userInfo', JSON.stringify({ ...existing, ...serverUser }));
+                } catch {}
+            }
+            queryClient.invalidateQueries({ queryKey: userKeys.profile() });
         }
     });
 };

@@ -213,7 +213,7 @@ const Home = () => {
 
 
 
-            <PullToRefreshLayout>
+            <div>
                 <div className="pt-[88px]">
                 {/* Search Bar (Now Below the Design with Filter) */}
                 <section className="px-4 relative z-50 mb-4 sm:mb-5">
@@ -439,7 +439,7 @@ const Home = () => {
                 )}
 
                 </div>
-            </PullToRefreshLayout>
+            </div>
         </div>
     );
 };
