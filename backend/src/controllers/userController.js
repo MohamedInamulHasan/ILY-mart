@@ -143,8 +143,8 @@ export const googleAuth = async (req, res, next) => {
             // Log Login
             await LoginLog.create({
                 user: user._id,
-                ipAddress: req.ip,
-                device: req.headers['user-agent']
+                ipAddress: req.ip || '',
+                device: req.headers ? req.headers['user-agent'] : ''
             });
             sendTokenResponse(user, 200, res);
         } else {
@@ -180,8 +180,8 @@ export const googleAuth = async (req, res, next) => {
                 // Log Login
                 await LoginLog.create({
                     user: user._id,
-                    ipAddress: req.ip,
-                    device: req.headers['user-agent']
+                    ipAddress: req.ip || '',
+                    device: req.headers ? req.headers['user-agent'] : ''
                 });
                 sendTokenResponse(user, 201, res);
             }
@@ -191,22 +191,143 @@ export const googleAuth = async (req, res, next) => {
     }
 };
 
-// @desc    Login user
+// @desc    Mobile number login (no OTP required)
+// @route   POST /api/users/mobile-login
+// @access  Public
+export const mobileLogin = async (req, res, next) => {
+    try {
+        const { mobile, mobileNumber, password } = req.body;
+        const inputMobile = (mobile || mobileNumber || '').toString().trim();
+
+        if (!inputMobile) {
+            return res.status(400).json({ success: false, message: 'Please enter a valid mobile number' });
+        }
+
+        const raw = inputMobile.replace(/\D/g, '');
+        if (raw.length < 10) {
+            return res.status(400).json({ success: false, message: 'Please enter a 10-digit mobile number' });
+        }
+
+        const standardMobile = raw.slice(-10);
+        const mobileQueries = [
+            standardMobile,
+            '91' + standardMobile,
+            '+91' + standardMobile
+        ];
+
+        // 1. Search for existing user with this mobile number or mobile email
+        let user = await User.findOne({
+            $or: [
+                { mobile: { $in: mobileQueries } },
+                { email: `mobile_${standardMobile}@ily-mart.com` }
+            ]
+        }).select('+password');
+
+        if (user) {
+            const roles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
+            const isStaff = roles.some(r => ['admin', 'store_admin', 'service_admin', 'delivery_boy'].includes(r));
+
+            // If staff/admin account and password exists, require valid password
+            if (isStaff && user.password) {
+                if (!password) {
+                    return res.status(401).json({ success: false, message: 'Staff credentials required: please enter password' });
+                }
+                const isMatch = await user.matchPassword(password);
+                if (!isMatch) {
+                    return res.status(401).json({ success: false, message: 'Invalid password' });
+                }
+            } else if (password && user.password) {
+                // If customer provided password, verify if it was set
+                const isMatch = await user.matchPassword(password);
+                if (!isMatch) {
+                    return res.status(401).json({ success: false, message: 'Invalid password' });
+                }
+            }
+
+            // Normalize mobile to standard 10-digit
+            if (user.mobile !== standardMobile) {
+                user.mobile = standardMobile;
+                await user.save();
+            }
+
+            // Log Login
+            await LoginLog.create({
+                user: user._id,
+                ipAddress: req.ip || '',
+                device: req.headers ? req.headers['user-agent'] : ''
+            });
+
+            return sendTokenResponse(user, 200, res);
+        }
+
+        // 2. New customer registration with permanent unique MongoDB ID
+        const randomPassword = crypto.randomBytes(16).toString('hex');
+
+        // Check for signup bonus
+        let initialCoins = 0;
+        const bonusConfig = await Settings.findOne({ key: 'signup_bonus' });
+        if (bonusConfig && bonusConfig.value?.isEnabled && bonusConfig.value?.remainingLimit > 0) {
+            initialCoins = 1;
+            bonusConfig.value.remainingLimit -= 1;
+            if (bonusConfig.value.remainingLimit <= 0) {
+                bonusConfig.value.isEnabled = false;
+            }
+            bonusConfig.markModified('value');
+            await bonusConfig.save();
+        }
+
+        user = await User.create({
+            name: `User_${standardMobile.slice(-4)}`,
+            email: `mobile_${standardMobile}@ily-mart.com`,
+            mobile: standardMobile,
+            password: password && password.length >= 6 ? password : randomPassword,
+            role: ['customer'],
+            coins: initialCoins,
+            hasReceivedSignupBonus: initialCoins > 0
+        });
+
+        if (user) {
+            await LoginLog.create({
+                user: user._id,
+                ipAddress: req.ip || '',
+                device: req.headers ? req.headers['user-agent'] : ''
+            });
+
+            return sendTokenResponse(user, 201, res);
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Login user (email or mobile)
 // @route   POST /api/users/login
 // @access  Public
 export const loginUser = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, mobile, mobileNumber } = req.body;
+        const identifier = (email || mobile || mobileNumber || '').toString().trim();
 
-        // Check for user
-        const user = await User.findOne({ email }).select('+password');
+        if (!identifier) {
+            return res.status(400).json({ success: false, message: 'Please provide email or mobile number' });
+        }
+
+        const isEmail = identifier.includes('@');
+
+        if (!isEmail) {
+            req.body.mobile = identifier;
+            return mobileLogin(req, res, next);
+        }
+
+        // Check for user by email
+        const user = await User.findOne({ email: identifier.toLowerCase() }).select('+password');
 
         if (user && (await user.matchPassword(password))) {
             // Log Login
             await LoginLog.create({
                 user: user._id,
-                ipAddress: req.ip,
-                device: req.headers['user-agent']
+                ipAddress: req.ip || '',
+                device: req.headers ? req.headers['user-agent'] : ''
             });
             sendTokenResponse(user, 200, res);
         } else {
@@ -216,7 +337,7 @@ export const loginUser = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-};;
+};
 
 // @desc    Logout user / clear cookie
 // @route   POST /api/users/logout
@@ -860,8 +981,8 @@ export const verifyOTP = async (req, res, next) => {
             // Existing user - Log Login
             await LoginLog.create({
                 user: user._id,
-                ipAddress: req.ip,
-                device: req.headers['user-agent']
+                ipAddress: req.ip || '',
+                device: req.headers ? req.headers['user-agent'] : ''
             });
             sendTokenResponse(user, 200, res);
         } else {
@@ -911,8 +1032,8 @@ export const verifyOTP = async (req, res, next) => {
                 // Log Login
                 await LoginLog.create({
                     user: user._id,
-                    ipAddress: req.ip,
-                    device: req.headers['user-agent']
+                    ipAddress: req.ip || '',
+                    device: req.headers ? req.headers['user-agent'] : ''
                 });
                 sendTokenResponse(user, 201, res);
             }
@@ -971,6 +1092,15 @@ export const updateGuest = async (req, res, next) => {
         });
 
         if (existingUser) {
+            // Reassign any orders placed during this guest session to the permanent account
+            if (req.user?._id && req.user._id.toString() !== existingUser._id.toString()) {
+                try {
+                    const Order = (await import('../models/Order.js')).default;
+                    await Order.updateMany({ user: req.user._id }, { $set: { user: existingUser._id } });
+                } catch (orderErr) {
+                    console.warn('Non-fatal: could not reassign guest orders:', orderErr.message);
+                }
+            }
             // Mobile is already registered! Log in as that existing user
             return sendTokenResponse(existingUser, 200, res);
         }
@@ -981,9 +1111,10 @@ export const updateGuest = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
+        const standardMobile = rawMobile.slice(-10);
         user.name = name;
-        user.mobile = rawMobile;
-        user.email = `mobile_${rawMobile}@ily-mart.com`;
+        user.mobile = standardMobile;
+        user.email = `mobile_${standardMobile}@ily-mart.com`;
         await user.save();
 
         // Award signup bonus if eligible (first time setting mobile)

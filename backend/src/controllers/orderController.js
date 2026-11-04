@@ -374,13 +374,24 @@ export const updateOrderStatus = async (req, res, next) => {
             throw new Error('Order not found');
         }
 
-        // Security Guard: Customers can only cancel if status is 'Processing'
+        // Security Guard: Customers can only cancel if status is 'Processing' and order belongs to them
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
         const isCustomer = roles.includes('customer') || roles.length === 0;
+        const isStaff = roles.some(r => ['admin', 'store_admin', 'delivery_boy'].includes(r));
         
-        if (isCustomer && !roles.includes('admin') && !roles.includes('store_admin') && !roles.includes('delivery_boy') && req.body.status === 'Cancelled' && order.status !== 'Processing') {
-            res.status(403);
-            throw new Error(`Order cannot be cancelled once it is ${order.status}`);
+        if (isCustomer && !isStaff) {
+            if (!order.user || order.user.toString() !== req.user._id.toString()) {
+                res.status(403);
+                throw new Error('Not authorized to modify this order');
+            }
+            if (req.body.status !== 'Cancelled') {
+                res.status(403);
+                throw new Error('Customers can only cancel orders');
+            }
+            if (order.status !== 'Processing') {
+                res.status(403);
+                throw new Error(`Order cannot be cancelled once it is ${order.status}`);
+            }
         }
 
         // Check if we are cancelling the order
@@ -501,14 +512,21 @@ export const deleteOrder = async (req, res, next) => {
             throw new Error('Order not found');
         }
 
-        // Security Guard: Customers can only delete Cancelled or Failed orders
+        // Security Guard: Customers can only delete their own Cancelled or Failed orders
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
         const isCustomer = roles.includes('customer') || roles.length === 0;
+        const isStaff = roles.some(r => ['admin', 'store_admin'].includes(r));
         const restrictedStatuses = ['Processing', 'Out for Delivery', 'Delivered'];
         
-        if (isCustomer && !roles.includes('admin') && !roles.includes('store_admin') && restrictedStatuses.includes(order.status)) {
-            res.status(403);
-            throw new Error(`Active or completed orders cannot be deleted. Current status: ${order.status}`);
+        if (isCustomer && !isStaff) {
+            if (!order.user || order.user.toString() !== req.user._id.toString()) {
+                res.status(403);
+                throw new Error('Not authorized to delete this order');
+            }
+            if (restrictedStatuses.includes(order.status)) {
+                res.status(403);
+                throw new Error(`Active or completed orders cannot be deleted. Current status: ${order.status}`);
+            }
         }
 
         await order.deleteOne();

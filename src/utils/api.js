@@ -82,7 +82,7 @@ api.interceptors.response.use(
         });
 
         // Global 401 (Unauthorized) Handler
-        const skipUnauthorizedUrls = ['/register-guest', '/login', '/register', '/verify-otp', '/send-otp', '/google'];
+        const skipUnauthorizedUrls = ['/register-guest', '/login', '/mobile-login', '/register', '/verify-otp', '/send-otp', '/google'];
         const requestUrl = config.url || '';
         const isAuthEndpoint = skipUnauthorizedUrls.some(u => requestUrl.includes(u));
         if (error.response?.status === 401 && !isAuthEndpoint) {
@@ -140,18 +140,22 @@ export const apiService = {
     createStore: (data) => api.post('/stores', data),
     updateStore: (id, data) => api.put(`/stores/${id}`, data),
     deleteStore: (id) => api.delete(`/stores/${id}`),
+    updateStoresOrder: (orderedIds) => api.put('/stores/reorder', { orderedIds }),
 
     // News
     getNews: () => deduplicatedGet('/news'),
+    getNewsItem: (id) => deduplicatedGet(`/news/${id}`),
     createNews: (data) => api.post('/news', data),
     updateNews: (id, data) => api.put(`/news/${id}`, data),
     deleteNews: (id) => api.delete(`/news/${id}`),
 
     // Ads
     getAds: () => deduplicatedGet('/ads'),
+    getAd: (id) => deduplicatedGet(`/ads/${id}`),
     createAd: (data) => api.post('/ads', data),
     updateAd: (id, data) => api.put(`/ads/${id}`, data),
     deleteAd: (id) => api.delete(`/ads/${id}`),
+    updateAdsOrder: (orderedIds) => api.put('/ads/reorder', { orderedIds }),
 
     // Categories
     categories: {
@@ -160,26 +164,64 @@ export const apiService = {
         create: (data) => api.post('/categories', data),
         update: (id, data) => api.put(`/categories/${id}`, data),
         delete: (id) => api.delete(`/categories/${id}`),
+        sort: (orderedIds) => api.put('/categories/reorder', { orderedIds }),
         updateOrder: (orderedIds) => api.put('/categories/reorder', { orderedIds })
     },
+    createCategory: (data) => api.post('/categories', data),
+    updateCategory: (id, data) => api.put(`/categories/${id}`, data),
+    deleteCategory: (id) => api.delete(`/categories/${id}`),
 
     // Services
     services: {
         getAll: () => deduplicatedGet('/services'),
         getById: (id) => deduplicatedGet(`/services/${id}`),
+        getOne: (id) => deduplicatedGet(`/services/${id}`),
         create: (data) => api.post('/services', data),
         update: (id, data) => api.put(`/services/${id}`, data),
         delete: (id) => api.delete(`/services/${id}`),
+        sort: (orderedIds) => api.put('/services/reorder', { orderedIds }),
         updateOrder: (orderedIds) => api.put('/services/reorder', { orderedIds })
+    },
+    serviceItems: {
+        getAll: (serviceId, params = {}) => deduplicatedGet(`/services/${serviceId}/items`, { params }),
+        create: (serviceId, data) => api.post(`/services/${serviceId}/items`, data),
+        update: (itemId, data) => api.put(`/services/items/${itemId}`, data),
+        delete: (itemId) => api.delete(`/services/items/${itemId}`),
+        sort: (serviceId, orderedIds) => api.put(`/services/${serviceId}/items/reorder`, { orderedIds }),
+    },
+    serviceRequests: {
+        create: (data) => api.post('/service-requests', data),
+        getAll: () => deduplicatedGet('/service-requests'),
+        updateStatus: (id, status) => api.put(`/service-requests/${id}`, { status }),
+        delete: (id) => api.delete(`/service-requests/${id}`)
     },
 
     // Orders
     getOrders: () => api.get('/orders'),
     getOrder: (id) => api.get(`/orders/${id}`),
     createOrder: (data) => api.post('/orders', data),
-    updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),
+    updateOrderStatus: (id, status, deliveredBy) => api.put(`/orders/${id}`, { status, deliveredBy }),
+    deleteOrder: (id) => api.delete(`/orders/${id}`),
 
-    // Users
+    // Users & Auth
+    register: (data) => api.post('/users/register', data),
+    googleAuth: (data) => api.post('/users/google', data),
+    login: (data) => api.post('/users/login', data),
+    mobileLogin: (data) => api.post('/users/mobile-login', data),
+    sendOtp: (data) => api.post('/users/send-otp', data),
+    verifyOtp: (data) => api.post('/users/verify-otp', data),
+    registerGuest: () => api.post('/users/register-guest'),
+    updateGuest: (data) => api.post('/users/update-guest', data),
+    logout: () => api.post('/users/logout'),
+    forgotPassword: (email) => api.post('/users/forgotpassword', { email }),
+    resetPassword: (token, password) => api.put(`/users/resetpassword/${token}`, { password }),
+    getProfile: () => api.get('/users/profile'),
+    updateProfile: (data, config = {}) => api.put('/users/profile', data, config),
+    getSavedProducts: () => api.get('/users/profile/saved-products'),
+    toggleSavedProduct: (productId) => api.post('/users/profile/saved-products', { productId }),
+    requestDeleteAccount: (data) => api.post('/users/delete-request', data),
+
+    // User Management (Admin)
     getAllUsers: () => deduplicatedGet('/users'),
     getUser: (id) => deduplicatedGet(`/users/${id}`),
     updateUser: (id, data) => api.put(`/users/${id}`, data),

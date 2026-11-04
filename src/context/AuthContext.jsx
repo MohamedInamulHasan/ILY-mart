@@ -166,6 +166,29 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const mobileLogin = async (mobile, password = '') => {
+        try {
+            setError(null);
+            const data = await apiService.mobileLogin({ mobile, password });
+
+            setUser(data.data);
+            localStorage.setItem('userInfo', JSON.stringify(data.data));
+            if (data.token) {
+                localStorage.setItem('authToken', data.token); // Store token for Hybrid Auth
+            }
+            // Dispatch custom event to notify cart and data contexts of user change
+            window.dispatchEvent(new Event('userChanged'));
+            return true;
+        } catch (err) {
+            setError(
+                err.response && err.response.data.message
+                    ? err.response.data.message
+                    : err.message
+            );
+            return false;
+        }
+    };
+
     const register = async (name, email, password, mobile = '') => {
         try {
             setError(null);
@@ -258,8 +281,11 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.removeItem('userInfo');
         localStorage.removeItem('authToken'); // Cleanup legacy
+        localStorage.removeItem('active_delivery_order_id');
+        localStorage.removeItem('active_delivery_stay');
+        localStorage.removeItem('orders');
         setUser(null);
-        // Dispatch custom event to notify cart of user change
+        // Dispatch custom event to notify cart and data contexts of user reset
         window.dispatchEvent(new Event('userChanged'));
         // Redirect to home page after logout (which will trigger silent guest auto-registration)
         window.location.href = '/';
@@ -307,7 +333,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, setUser: updateUserState, login, register, sendOtp, verifyOtp, googleLogin, logout, loading, error, refreshUser, updateGuest }}>
+        <AuthContext.Provider value={{ user, setUser: updateUserState, login, mobileLogin, register, sendOtp, verifyOtp, googleLogin, logout, loading, error, refreshUser, updateGuest }}>
             {children}
         </AuthContext.Provider>
     );

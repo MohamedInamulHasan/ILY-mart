@@ -87,3 +87,4 @@ export const getHeroImageUrl = (url, width = 1080) => {
         crop: 'limit'
     });
 };
+

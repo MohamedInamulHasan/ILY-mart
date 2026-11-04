@@ -10,12 +10,47 @@ import { Capacitor } from '@capacitor/core';
 const VERCEL_REDIRECT_URI = 'https://homly-app.vercel.app/login';
 
 const Login = () => {
-    const { googleLogin, error, user } = useContext(AuthContext);
+    const { googleLogin, mobileLogin, error, user } = useContext(AuthContext);
     const { t } = useLanguage();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loginError, setLoginError] = useState(null);
     const [debugLogs, setDebugLogs] = useState([]);
+
+    // Mobile login state (No OTP)
+    const [loginMethod, setLoginMethod] = useState('mobile'); // 'mobile' | 'google'
+    const [mobileNumber, setMobileNumber] = useState('');
+    const [password, setPassword] = useState('');
+    const [loggingIn, setLoggingIn] = useState(false);
+
+    const handleMobilePasswordLogin = async (e) => {
+        e.preventDefault();
+        const clean = (mobileNumber || '').toString().replace(/\D/g, '');
+        if (clean.length < 10) {
+            setLoginError(t('Please enter a valid 10-digit mobile number'));
+            return;
+        }
+        setLoginError(null);
+        setLoggingIn(true);
+        try {
+            const success = await mobileLogin(clean, password);
+            if (success) {
+                const savedRedirect = sessionStorage.getItem('redirectAfterLogin');
+                if (savedRedirect) {
+                    sessionStorage.removeItem('redirectAfterLogin');
+                    navigate(savedRedirect);
+                } else {
+                    navigate('/');
+                }
+            } else {
+                setLoginError(error || t('Login failed. Please check your credentials.'));
+            }
+        } catch (err) {
+            setLoginError(err.message || t('Login failed. Please try again.'));
+        } finally {
+            setLoggingIn(false);
+        }
+    };
 
     // Load initial debug logs
     useEffect(() => {
@@ -222,23 +257,23 @@ const Login = () => {
                         Welcome Back
                     </h2>
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-                        {loginMethod === 'google' ? t('Sign in to access your account using Google') : t('Sign in to access your account using Mobile OTP')}
+                        {loginMethod === 'google' ? t('Sign in to access your account using Google') : t('Sign in to access your account using Mobile Number')}
                     </p>
                 </div>
 
                 {/* Tab Switcher */}
                 <div className="flex border-b border-gray-100 dark:border-gray-750 mb-6">
                     <button
+                        onClick={() => { setLoginMethod('mobile'); setLoginError(null); }}
+                        className={`flex-1 pb-3 text-sm font-bold border-b-2 transition-all ${loginMethod === 'mobile' ? 'border-[#2E5A2E] text-gray-900 dark:text-white' : 'border-transparent text-gray-400'}`}
+                    >
+                        {t('Mobile Login')}
+                    </button>
+                    <button
                         onClick={() => { setLoginMethod('google'); setLoginError(null); }}
                         className={`flex-1 pb-3 text-sm font-bold border-b-2 transition-all ${loginMethod === 'google' ? 'border-[#2E5A2E] text-gray-900 dark:text-white' : 'border-transparent text-gray-400'}`}
                     >
                         {t('Google Sign-In')}
-                    </button>
-                    <button
-                        onClick={() => { setLoginMethod('mobile'); setLoginError(null); }}
-                        className={`flex-1 pb-3 text-sm font-bold border-b-2 transition-all ${loginMethod === 'mobile' ? 'border-[#2E5A2E] text-gray-900 dark:text-white' : 'border-transparent text-gray-400'}`}
-                    >
-                        {t('Mobile OTP Login')}
                     </button>
                 </div>
 
@@ -292,11 +327,11 @@ const Login = () => {
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1 text-center">
-                                    {t('Password')}
+                                    {t('Password (Optional)')}
                                 </label>
                                 <input
                                     type="password"
-                                    placeholder="••••••"
+                                    placeholder={t('Optional for customers')}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full px-4 py-3 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all text-sm text-center font-medium"
