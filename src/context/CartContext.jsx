@@ -415,7 +415,7 @@ export const CartProvider = ({ children }) => {
                                 </button>
                                 <button
                                     onClick={confirmAddToCart}
-                                    className="flex-1 py-2.5 bg-[#00B329] hover:bg-[#009e24] text-white font-black rounded-xl text-xs sm:text-[13px] active:scale-95 transition-transform shadow-md"
+                                    className="flex-1 py-2.5 bg-[#00B329] hover:bg-[#009e24] text-white font-black rounded-xl text-xs sm:text-[13px] active:scale-95 transition-transform"
                                 >
                                     {language === 'ta' ? 'ஆமாம்' : 'Yes'}
                                 </button>

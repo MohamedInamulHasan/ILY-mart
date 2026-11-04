@@ -22,6 +22,13 @@ const Home = () => {
     const { cartItems, deliveryCharge } = useCart();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [, startTransition] = useTransition();
+
+    const handleSelectCategory = useCallback((catName) => {
+        startTransition(() => {
+            setSelectedCategory(catName);
+        });
+    }, []);
     const { globalSortOrder, setGlobalSortOrder, setIsFooterHidden } = useData();
     const navigate = useNavigate();
     const { t } = useLanguage();
@@ -66,24 +73,11 @@ const Home = () => {
         return list.filter(s => s.isActive !== false);
     }, [rawStores]);
 
-    // Filter categories — show categories immediately once rawCategories appears
+    // Categories appear stably without jumping or delayed 'correcting'
     const featuredCategories = useMemo(() => {
         const raw = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
-        const allProducts = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
-
-        if (raw.length === 0) return [];
-        if (allProducts.length === 0) {
-            return raw.filter(cat => !cat.isHidden);
-        }
-
-        const productCategories = new Set(allProducts.map(p => p.category?.toLowerCase()));
-        const filtered = raw.filter(cat => {
-            if (cat.isHidden) return false;
-            return productCategories.has(cat.name?.toLowerCase());
-        });
-
-        return filtered.length > 0 ? filtered : raw.filter(cat => !cat.isHidden);
-    }, [rawCategories, rawProducts]);
+        return raw.filter(cat => !cat.isHidden);
+    }, [rawCategories]);
 
 
     // Grouping Logic (show all available products - timed-out ones show overlay, manually disabled are hidden)
@@ -374,7 +368,7 @@ const Home = () => {
                     categories={featuredCategories} 
                     isLoading={loadingCategories} 
                     selectedCategory={selectedCategory}
-                    onSelectCategory={setSelectedCategory}
+                    onSelectCategory={handleSelectCategory}
                 />
 
                 {/* Store Sections Loading Skeleton */}

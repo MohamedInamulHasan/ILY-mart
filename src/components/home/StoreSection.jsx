@@ -185,4 +185,4 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
     );
 };
 
-export default StoreSection;
+export default React.memo(StoreSection);

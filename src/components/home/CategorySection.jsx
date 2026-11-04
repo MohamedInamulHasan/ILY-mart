@@ -59,22 +59,22 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                     onClick={() => onSelectCategory('All')}
                     className={`${isExpanded ? 'w-full' : 'min-w-[76px] sm:min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer`}
                 >
-                    <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-[1.5px] ${selectedCategory === 'All' ? 'border-[#2E5A2E] dark:border-[#2E5A2E] bg-[#CBF9B2] dark:bg-[#CBF9B2]' : 'border-transparent bg-[#E8EAEF] dark:bg-gray-800'}`}>
+                    <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm ${selectedCategory === 'All' ? 'bg-[#00B329] dark:bg-[#00B329]' : 'bg-[#E8EAEF] dark:bg-gray-800'}`}>
                         {allCategoryImage ? (
                             <img
                                 src={allCategoryImage}
                                 alt="All Categories"
-                                className={`w-full h-full object-cover rounded-full transition-transform ${selectedCategory === 'All' ? 'scale-90' : ''}`}
+                                className={`w-full h-full object-cover rounded-full transition-transform `}
                             />
                         ) : (
                             <img
                                 src="https://cdn-icons-png.flaticon.com/512/2311/2311524.png"
                                 alt="All Categories"
-                                className={`w-full h-full object-cover rounded-full transition-transform p-3 ${selectedCategory === 'All' ? 'scale-90' : ''}`}
+                                className={`w-full h-full object-cover rounded-full transition-transform p-3 `}
                             />
                         )}
                     </div>
-                    <span className={`text-[11px] md:text-xs lg:text-sm font-bold transition-colors truncate ${selectedCategory === 'All' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-400'}`}>
+                    <span className={`text-[11px] md:text-xs lg:text-sm font-bold transition-colors truncate ${selectedCategory === 'All' ? 'text-[#00B329] dark:text-[#00B329]' : 'text-gray-400'}`}>
                         {allCategoryName || t('All')}
                     </span>
                 </div>
@@ -87,16 +87,16 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             onClick={() => onSelectCategory(category.name)}
                             className={`${isExpanded ? 'w-full' : 'min-w-[76px] sm:min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer`}
                         >
-                            <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-[1.5px] ${isSelected ? 'border-[#2E5A2E] dark:border-[#2E5A2E] bg-[#CBF9B2] dark:bg-[#CBF9B2]' : 'border-transparent bg-[#E8EAEF] dark:bg-gray-800'}`}>
+                            <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm ${isSelected ? 'bg-[#00B329] dark:bg-[#00B329]' : 'bg-[#E8EAEF] dark:bg-gray-800'}`}>
                                 <img
                                     src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                     alt={category.name}
-                                    className={`w-full h-full object-cover rounded-full transition-transform ${isSelected ? 'scale-90' : ''}`}
+                                    className={`w-full h-full object-cover rounded-full transition-transform `}
                                     loading="lazy"
                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                 />
                             </div>
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[78px] sm:max-w-[86px] md:max-w-[105px] transition-colors ${isSelected ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[78px] sm:max-w-[86px] md:max-w-[105px] transition-colors ${isSelected ? 'text-[#00B329] dark:text-[#00B329]' : 'text-gray-600 dark:text-gray-400'}`}>
                                 {(() => {
                                     const fullTitle = t(category.name);
                                     let mainPart = fullTitle;
@@ -162,4 +162,4 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
     );
 };
 
-export default CategorySection;
+export default React.memo(CategorySection);
