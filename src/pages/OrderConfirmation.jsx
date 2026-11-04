@@ -357,21 +357,35 @@ const OrderConfirmation = () => {
                                 {formData.address}{formData.city ? `, ${formData.city}` : ''}
                             </p>
 
-                            {/* 4. Pin / View on Map */}
+                            {/* 4. Pin / View on Map - Shining Card with Map SVG */}
                             {formData.location && (
-                                <div className="pt-1">
+                                <div className="pt-2">
                                     <button
                                         type="button"
                                         onClick={() => openExternalLink(formData.location)}
-                                        className="inline-flex items-center gap-1.5 text-[#2E5A2E] dark:text-[#CBF9B2] text-[11px] font-bold bg-green-50 dark:bg-[#CBF9B2]/10 px-3 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-[#CBF9B2]/20 transition-all border border-[#2E5A2E]/10 dark:border-[#CBF9B2]/20"
+                                        className="relative overflow-hidden inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#2E5A2E] hover:bg-[#234623] text-white text-[12px] font-bold active:scale-95 transition-transform shadow-sm select-none border border-[#234623]"
                                     >
-                                        <MapPin size={13} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                                        <span>{t('View on Map')}</span>
+                                        <motion.div
+                                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
+                                            animate={{ x: ['-100%', '150%'] }}
+                                            transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                                        />
+                                        <svg 
+                                            viewBox="0 0 24 24" 
+                                            width="16" 
+                                            height="16" 
+                                            fill="currentColor" 
+                                            className="relative z-10 text-white shrink-0"
+                                        >
+                                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                        </svg>
+                                        <span className="relative z-10 font-bold">{t('View on Map')}</span>
                                     </button>
                                 </div>
                             )}
                         </div>
 
+                        {/* 5. Scheduled Delivery Time (Time logo removed, straight line aligned) */}
                         {(() => {
                             const rawTime = formData.deliveryTime;
                             if (!rawTime) return null;
@@ -383,17 +397,10 @@ const OrderConfirmation = () => {
 
                             return (
                                 <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700/60">
-                                    <div className="flex items-center gap-3 text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                        <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center">
-                                            <Clock size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('Scheduled Delivery')}</p>
-                                            <p className="font-medium text-gray-900 dark:text-white">
-                                                {formattedRange}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">{t('Scheduled Delivery')}</p>
+                                    <p className="font-bold text-gray-900 dark:text-white text-[15px] mt-0.5">
+                                        {formattedRange}
+                                    </p>
                                 </div>
                             );
                         })()}
@@ -447,14 +454,15 @@ const OrderConfirmation = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#2E5A2E]/20 dark:bg-black/60 backdrop-blur-md"
+                        transition={{ duration: 0.16, ease: 'easeOut' }}
+                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/75 transform-gpu"
                     >
                         <motion.div
-                            initial={{ scale: 0.4, opacity: 0, y: 30 }}
+                            initial={{ scale: 0.88, opacity: 0, y: 12 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.7, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 450, damping: 22 }}
-                            className="bg-white dark:bg-gray-800 rounded-3xl sm:rounded-[2rem] shadow-2xl max-w-sm w-full p-6 sm:p-7 relative overflow-hidden"
+                            exit={{ scale: 0.88, opacity: 0, y: 12 }}
+                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                            className="bg-white dark:bg-gray-800 rounded-3xl sm:rounded-[2rem] shadow-2xl max-w-sm w-full p-6 sm:p-7 relative overflow-hidden transform-gpu will-change-transform"
                         >
                             <div className="text-center">
                                 <div className="relative w-32 h-32 sm:w-36 sm:h-36 mx-auto mb-3 flex items-center justify-center">

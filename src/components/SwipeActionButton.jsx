@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronsRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronRight, Check } from 'lucide-react';
 
 /**
  * SwipeActionButton - A robust, mobile-optimized swipe-to-action button
  * supporting yellow (processing), blue (out for delivery), green (delivered), and red (cancel) variants.
+ * Requires swiping fully to the right track end. As it reaches the end / upon release,
+ * the round arrow changes into a round tick mark before moving to the next action/step.
  */
 const SwipeActionButton = ({
     onSuccess,
@@ -14,7 +16,7 @@ const SwipeActionButton = ({
     heightClass = 'h-[60px] sm:h-[64px]',
     knobSizeClass = 'w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]',
     textSizeClass = 'text-base sm:text-lg',
-    iconSize = 24,
+    iconSize = 22,
     variant = 'green', // 'yellow' | 'amber' | 'blue' | 'sky' | 'green' | 'red'
     autoReset = false,
     className = ''
@@ -24,6 +26,8 @@ const SwipeActionButton = ({
     const [maxDrag, setMaxDrag] = useState(200);
     const [isDragging, setIsDragging] = useState(false);
     const [isCompleted, setIsCompleted] = useState(false);
+    const [isNearEnd, setIsNearEnd] = useState(false);
+    const [isSuccessState, setIsSuccessState] = useState(false);
 
     // Color definitions based on variant
     const getColors = () => {
@@ -132,25 +136,49 @@ const SwipeActionButton = ({
         setIsDragging(true);
     };
 
+    const handleDrag = (e, info) => {
+        const traveled = info.offset.x;
+        // When dragged near the end (past 80% or within 28px of maxDrag), transform arrow to tick
+        if (traveled >= maxDrag * 0.8 || traveled >= maxDrag - 28) {
+            setIsNearEnd(true);
+        } else {
+            setIsNearEnd(false);
+        }
+    };
+
     const handleDragEnd = (e, info) => {
         setIsDragging(false);
         const traveled = info.offset.x;
 
-        // Trigger success if swiped past 45% of available track length
-        if (traveled >= maxDrag * 0.45 && maxDrag > 30) {
+        // User must swipe FULLY to the end (at least 82% of track or within 24px of maxDrag)
+        const isFullySwiped = (traveled >= maxDrag * 0.82 || traveled >= maxDrag - 24) && maxDrag > 30;
+
+        if (isFullySwiped) {
             setIsCompleted(true);
-            if (onSuccess) {
-                onSuccess();
-            }
-            if (autoReset) {
-                setTimeout(() => {
-                    setIsCompleted(false);
-                }, 500);
-            }
+            setIsSuccessState(true);
+            setIsNearEnd(true);
+
+            // Give a crisp, satisfying pause with the round tick icon before moving to next
+            setTimeout(() => {
+                if (onSuccess) {
+                    onSuccess();
+                }
+                if (autoReset) {
+                    setTimeout(() => {
+                        setIsCompleted(false);
+                        setIsSuccessState(false);
+                        setIsNearEnd(false);
+                    }, 400);
+                }
+            }, 260);
         } else {
             setIsCompleted(false);
+            setIsSuccessState(false);
+            setIsNearEnd(false);
         }
     };
+
+    const showTickIcon = isCompleted || isSuccessState || isNearEnd;
 
     return (
         <div
@@ -167,43 +195,55 @@ const SwipeActionButton = ({
                 />
             )}
 
-            {/* Draggable Porter White Round Knob with idle nudge/shake like in Porter Partner */}
+            {/* Draggable Clean Round Knob - completely still & stable, no irregular nudging */}
             <motion.div
                 ref={knobRef}
-                drag={!isLoading && !isCompleted ? 'x' : false}
+                drag={!isLoading && !isCompleted && !isSuccessState ? 'x' : false}
                 dragDirectionLock
                 dragConstraints={{ left: 0, right: maxDrag }}
                 dragElastic={0}
                 dragMomentum={false}
-                dragSnapToOrigin={!isCompleted}
+                dragSnapToOrigin={!isCompleted && !isSuccessState}
                 onDragStart={handleDragStart}
+                onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
-                animate={
-                    isLoading || isCompleted
-                        ? { x: maxDrag }
-                        : isDragging || isEnableDisable
-                        ? { x: 0 }
-                        : {
-                            x: [0, 9, -2, 7, 0, 0, 0, 0]
-                        }
-                }
-                transition={
-                    isLoading || isCompleted
-                        ? { type: 'spring', damping: 25, stiffness: 200 }
-                        : isDragging || isEnableDisable
-                        ? undefined
-                        : {
-                            repeat: Infinity,
-                            repeatDelay: 1.8,
-                            duration: 1.1,
-                            ease: 'easeInOut'
-                        }
-                }
-                className={`${knobSizeClass} rounded-full ${colors.knobBg || "bg-white"} ${colors.knob} flex items-center justify-center shrink-0 z-20 cursor-grab active:cursor-grabbing select-none shadow-md`}
+                animate={{
+                    x: (isLoading || isCompleted || isSuccessState) ? maxDrag : 0
+                }}
+                transition={{
+                    type: 'spring',
+                    damping: 26,
+                    stiffness: 260
+                }}
+                className={`${knobSizeClass} aspect-square rounded-full ${colors.knobBg || "bg-white"} ${colors.knob} flex items-center justify-center shrink-0 z-20 cursor-grab active:cursor-grabbing select-none shadow-md transform-gpu`}
                 style={{ touchAction: 'none' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <ChevronsRight size={iconSize} className={`stroke-[3.5] ${colors.knob}`} />
+                <AnimatePresence mode="wait" initial={false}>
+                    {showTickIcon ? (
+                        <motion.div
+                            key="tick"
+                            initial={{ scale: 0.4, opacity: 0, rotate: -25 }}
+                            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                            exit={{ scale: 0.4, opacity: 0 }}
+                            transition={{ duration: 0.15, ease: 'easeOut' }}
+                            className="flex items-center justify-center w-full h-full"
+                        >
+                            <Check size={iconSize} className={`stroke-[3.8] ${colors.knob}`} />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="arrow"
+                            initial={{ scale: 0.7, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.5, opacity: 0 }}
+                            transition={{ duration: 0.15, ease: 'easeOut' }}
+                            className="flex items-center justify-center w-full h-full"
+                        >
+                            <ChevronRight size={iconSize} className={`stroke-[3.8] ${colors.knob}`} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.div>
 
             {/* Centered Track Label - Exactly in the center of button for all */}

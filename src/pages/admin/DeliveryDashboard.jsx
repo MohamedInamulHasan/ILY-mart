@@ -754,10 +754,15 @@ const DeliveryDashboard = () => {
                                     searchQuery={searchQuery}
                                     paddingBottomClass="pb-12"
                                     onSelectOrder={(order) => {
-                                        const oId = order._id || order.id;
-                                        localStorage.setItem('active_delivery_order_id', oId);
-                                        localStorage.setItem('active_delivery_stay', 'true');
-                                        navigate(`/admin/delivery-order/${oId}`);
+                                        const isPending = order.status === 'Processing' || order.status === 'Pending' || order.status === 'Order Placed';
+                                        if (isPending) {
+                                            setSelectedOrderForAccept(order);
+                                        } else {
+                                            const oId = order._id || order.id;
+                                            localStorage.setItem('active_delivery_order_id', oId);
+                                            localStorage.setItem('active_delivery_stay', 'true');
+                                            navigate(`/admin/delivery-order/${oId}`);
+                                        }
                                     }}
                                 />
                             )}
@@ -794,10 +799,15 @@ const DeliveryDashboard = () => {
                 orders={orders}
                 onSelectOrder={(order) => {
                     setShowOrdersFeed(false);
-                    const oId = order._id || order.id;
-                    localStorage.setItem('active_delivery_order_id', oId);
-                    localStorage.setItem('active_delivery_stay', 'true');
-                    navigate(`/admin/delivery-order/${oId}`);
+                    const isPending = order.status === 'Processing' || order.status === 'Pending' || order.status === 'Order Placed';
+                    if (isPending) {
+                        setSelectedOrderForAccept(order);
+                    } else {
+                        const oId = order._id || order.id;
+                        localStorage.setItem('active_delivery_order_id', oId);
+                        localStorage.setItem('active_delivery_stay', 'true');
+                        navigate(`/admin/delivery-order/${oId}`);
+                    }
                 }}
             />
 

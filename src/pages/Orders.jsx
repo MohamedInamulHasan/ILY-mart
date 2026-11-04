@@ -60,18 +60,18 @@ const Orders = () => {
         switch (status) {
             case 'Delivered':
             case 'Completed':
-                return 'bg-emerald-100 dark:bg-emerald-950/60 text-[#2E5A2E] dark:text-[#CBF9B2]';
+                return 'bg-emerald-600/80 text-white';
             case 'Shipped':
             case 'Out for Delivery':
             case 'Accepted':
-                return 'bg-sky-100 dark:bg-sky-950/60 text-[#0284c7] dark:text-[#38bdf8]';
+                return 'bg-sky-600/80 text-white';
             case 'Processing':
             case 'Pending':
-                return 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300';
+                return 'bg-amber-500/80 text-white';
             case 'Cancelled':
-                return 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300';
+                return 'bg-rose-600/80 text-white';
             default:
-                return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
+                return 'bg-gray-600/80 text-white';
         }
     };
 
@@ -79,16 +79,16 @@ const Orders = () => {
         switch (status) {
             case 'Delivered':
             case 'Completed':
-                return <CheckCircle size={14} className="mr-1 stroke-[2.5]" />;
+                return <CheckCircle size={13} className="mr-1 stroke-[2.5] text-white" />;
             case 'Shipped':
             case 'Out for Delivery':
             case 'Accepted':
-                return <Truck size={14} className="mr-1 stroke-[2.5]" />;
+                return <Truck size={13} className="mr-1 stroke-[2.5] text-white" />;
             case 'Processing':
             case 'Pending':
-                return <Clock size={14} className="mr-1 stroke-[2.5]" />;
+                return <Clock size={13} className="mr-1 stroke-[2.5] text-white" />;
             case 'Cancelled':
-                return <RotateCcw size={14} className="mr-1 stroke-[2.5]" />;
+                return <RotateCcw size={13} className="mr-1 stroke-[2.5] text-white" />;
             default:
                 return null;
         }
@@ -254,9 +254,9 @@ const Orders = () => {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 flex-shrink-0">
-                                                <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] md:text-xs font-bold border-0 shadow-none select-none ${getStatusColor(order.status)}`}>
+                                                <div className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] md:text-xs font-bold text-white shadow-xs select-none ${getStatusColor(order.status)}`}>
                                                     {getStatusIcon(order.status)}
-                                                    <span className="font-bold">{getStatusText(order.status)}</span>
+                                                    <span className="font-bold text-white">{getStatusText(order.status)}</span>
                                                 </div>
                                                 {!['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) && (
                                                     <button

@@ -381,14 +381,15 @@ const IncomingOrderModal = ({
                         </div>
                     </div>
 
-                    {/* Bottom: Swipe to VIEW ORDER with 8s countdown and SKIP button below like Porter app */}
+                    {/* Bottom: Swipe to ACCEPT with SKIP button below */}
                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                         <SwipeActionButton
                             variant="yellow"
-                            label={t('VIEW ORDER')}
+                            label={language === 'ta' ? 'ஏற்றுக்கொள்' : t('ACCEPT')}
                             autoReset={true}
-                            heightClass="h-[52px]"
-                            knobSizeClass="w-[40px] h-[40px]"
+                            heightClass="h-[56px]"
+                            knobSizeClass="w-[44px] h-[44px]"
+                            iconSize={22}
                             onSuccess={() => {
                                 stopIncomingOrderAlertSound();
                                 setViewMode('accept');

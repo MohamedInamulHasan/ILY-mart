@@ -343,15 +343,15 @@ export const CartProvider = ({ children }) => {
 
                 return (
                     <div 
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-end overflow-hidden pb-0 px-4 animate-in fade-in duration-300 pointer-events-auto"
+                        className="fixed inset-0 bg-black/70 z-[9999] flex flex-col items-center justify-end overflow-hidden pb-0 px-4 animate-in fade-in duration-150 pointer-events-auto transform-gpu"
                         onClick={(e) => { if (e.target === e.currentTarget) cancelAddToCart(); }}
                     >
                         {/* Speech Bubble Above Character - wider length and clean styling */}
                         <motion.div 
-                            initial={{ scale: 0, opacity: 0, y: 30 }}
+                            initial={{ scale: 0.92, opacity: 0, y: 14 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
-                            transition={{ delay: 0.32, type: 'spring', damping: 20, stiffness: 280 }}
-                            className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 p-4 sm:p-5 max-w-[340px] sm:max-w-[380px] w-full mb-3 z-10"
+                            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                            className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 p-4 sm:p-5 max-w-[340px] sm:max-w-[380px] w-full mb-3 z-10 transform-gpu will-change-transform"
                         >
                             {/* Speech Bubble Arrow Tail pointing down towards character's head */}
                             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[9px] border-t-white dark:border-t-gray-900 filter drop-shadow-[0_2px_1px_rgba(0,0,0,0.08)]"></div>
@@ -424,9 +424,9 @@ export const CartProvider = ({ children }) => {
 
                         {/* Delivery Character — Swipes up first from bottom */}
                         <motion.div 
-                            initial={{ y: '100%', opacity: 0 }}
+                            initial={{ y: '60%', opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
-                            transition={{ type: 'spring', damping: 24, stiffness: 240 }}
+                            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                             className="h-[46vh] sm:h-[50vh] flex justify-center items-end select-none pointer-events-none z-0 -mt-2"
                         >
                             <img 
