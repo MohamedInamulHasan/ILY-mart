@@ -377,7 +377,7 @@ const OrderDetails = () => {
                                                     {renderBilingualTitle(t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title, language, {
                                                         hideTag: true,
                                                         mainClassName: 'text-sm font-medium text-gray-900 dark:text-white leading-snug',
-                                                        subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
+                                                        subClassName: 'text-[13px] sm:text-sm text-gray-500 dark:text-gray-400 font-medium leading-tight mt-0.5'
                                                     })}
                                                 </h4>
 

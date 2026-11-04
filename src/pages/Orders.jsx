@@ -299,7 +299,7 @@ const Orders = () => {
                                                     {renderBilingualTitle(t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title, language, {
                                                         hideTag: true,
                                                         mainClassName: 'text-[13px] font-medium leading-tight text-gray-900 dark:text-white',
-                                                        subClassName: 'text-[11px] text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
+                                                        subClassName: 'text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight mt-0.5'
                                                     })}
                                                 </p>
                                                         {(item.storeId || item.storeName) && (

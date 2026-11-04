@@ -266,7 +266,9 @@ const ProductDetails = () => {
                     {/* Header: Title & Unit */}
                     <div className="mb-2 min-w-0">
                         <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white leading-tight" title={product.title}>
-                            {renderBilingualTitle(t(product, 'title') || product.title, language)}
+                            {renderBilingualTitle(t(product, 'title') || product.title, language, {
+                                subClassName: 'text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium leading-normal mt-0.5'
+                            })}
                         </h1>
                         {product.unit && (
                             <p className="text-sm text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mt-1">

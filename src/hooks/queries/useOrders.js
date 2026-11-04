@@ -11,8 +11,16 @@ export const orderKeys = {
 
 export const useOrders = (params = {}) => {
     const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('authToken');
-    const storedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('userInfo') || '{}') : {};
-    const userPhone = storedUser?.mobile || storedUser?.phone || '';
+    let userPhone = '';
+    if (typeof window !== 'undefined') {
+        try {
+            const raw = localStorage.getItem('userInfo');
+            if (raw && raw !== 'undefined' && raw !== 'null') {
+                const u = JSON.parse(raw);
+                userPhone = u?.mobile || u?.phone || '';
+            }
+        } catch (_) {}
+    }
 
     return useQuery({
         // Include userPhone in key so changing phone number isolates order cache instantly
