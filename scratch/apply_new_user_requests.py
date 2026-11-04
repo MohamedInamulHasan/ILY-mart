@@ -132,3 +132,4 @@ else:
 with open('src/pages/Profile.jsx', 'w', encoding='utf-8') as f:
     f.write(profile_code)
 print('[DONE] All updates written!')
+

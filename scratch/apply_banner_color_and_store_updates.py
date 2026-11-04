@@ -241,3 +241,4 @@ chk = chk.replace("focus:ring-2 focus:ring-gray-200", "focus:ring-0 focus:border
 with open('src/pages/Checkout.jsx', 'w', encoding='utf-8') as f:
     f.write(chk)
 print("Updated EditAddress.jsx and Checkout.jsx: replaced focus:ring-gray-200 with clean focus:ring-0!")
+
