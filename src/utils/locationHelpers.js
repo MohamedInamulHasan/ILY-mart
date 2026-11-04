@@ -246,12 +246,12 @@ export const getCurrentLocation = async () => {
                 }
             }
 
-            // 2. High Accuracy Hardware GPS Lock
+            // 2. High Accuracy Hardware GPS Lock with resilient fallbacks
             try {
                 console.log('📍 Native: Requesting high-accuracy GPS position...');
                 const position = await Geolocation.getCurrentPosition({
                     enableHighAccuracy: true,
-                    timeout: 15000,
+                    timeout: 12000,
                     maximumAge: 10000
                 });
 
@@ -270,6 +270,23 @@ export const getCurrentLocation = async () => {
                     }
                 } catch (lkErr) {
                     console.warn('Last known position not available:', lkErr);
+                }
+
+                // If high accuracy timed out and no last known, try standard (fused/network) location
+                try {
+                    console.log('📍 Native: Attempting standard resolution position...');
+                    const fallbackPos = await Geolocation.getCurrentPosition({
+                        enableHighAccuracy: false,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    });
+                    if (fallbackPos && fallbackPos.coords) {
+                        const { latitude, longitude } = fallbackPos.coords;
+                        console.log('✅ Native: Standard GPS acquired:', latitude, longitude);
+                        return await buildResult(latitude, longitude, { isFallback: true });
+                    }
+                } catch (fallbackErr) {
+                    console.warn('Native standard resolution fallback also failed:', fallbackErr);
                 }
 
                 throw highAccuracyError;
