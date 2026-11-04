@@ -49,18 +49,35 @@ const Profile = () => {
 
     const { data: userProfile } = useUserProfile();
     
-    // Robust resolution of user from userProfile (React Query) and authUser (AuthContext)
+        // Robust resolution of user: seamlessly prioritizes latest local address updates
     const user = useMemo(() => {
-        if (userProfile && (userProfile.role || userProfile._id)) return userProfile;
-        if (userProfile?.data && (userProfile.data.role || userProfile.data._id)) return userProfile.data;
-        if (authUser && (authUser.role || authUser._id)) return authUser;
-        if (authUser?.data && (authUser.data.role || authUser.data._id)) return authUser.data;
+        let cached = null;
         try {
-            const cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
-            if (cached && (cached.role || cached._id)) return cached;
-            if (cached?.data && (cached.data.role || cached.data._id)) return cached.data;
+            cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            if (cached?.data) cached = cached.data;
         } catch {}
-        return userProfile || authUser || {};
+
+        const profileObj = userProfile?.data || userProfile || {};
+        const authObj = authUser?.data || authUser || {};
+        const cachedObj = cached || {};
+
+        const street = cachedObj.address?.street || authObj.address?.street || profileObj.address?.street || '';
+        const city = cachedObj.address?.city || authObj.address?.city || profileObj.address?.city || '';
+        const zip = cachedObj.address?.zip || authObj.address?.zip || profileObj.address?.zip || '';
+
+        return {
+            ...profileObj,
+            ...authObj,
+            ...cachedObj,
+            address: {
+                ...(profileObj.address || {}),
+                ...(authObj.address || {}),
+                ...(cachedObj.address || {}),
+                street,
+                city,
+                zip
+            }
+        };
     }, [userProfile, authUser]);
 
     const navigate = useNavigate();

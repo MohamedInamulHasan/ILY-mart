@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
@@ -10,6 +11,7 @@ import { getCurrentLocation } from '../utils/locationHelpers';
 
 const EditAddress = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { user, setUser, updateGuest } = useAuth();
     const { t, language } = useLanguage();
     const { updateProfile } = useData();
@@ -197,45 +199,56 @@ const EditAddress = () => {
         setFieldErrors({});
         setIsSaving(true);
 
-        try {
-            // Link guest profile or switch to existing profile using phone number
-            const freshUser = await updateGuest(formData.fullName, formData.mobile);
-            const activeUser = freshUser || user;
+        // 1. Instant optimistic local update (0ms delay)
+        const updatedAddress = {
+            street: formData.street,
+            city: formData.city,
+            zip: formData.zip || '630702',
+            state: '',
+            country: 'India'
+        };
 
-            // Retrieve the updated JWT token from localStorage after account switch/link
-            const token = localStorage.getItem('authToken');
-            const config = token ? {
-                headers: {
-                    Authorization: `Bearer ${token}`
+        const optimisticUser = {
+            ...(user || {}),
+            name: formData.fullName,
+            fullName: formData.fullName,
+            mobile: formData.mobile,
+            phone: formData.mobile,
+            address: updatedAddress,
+            location: formData.location || ''
+        };
+
+        setUser(optimisticUser);
+        localStorage.setItem('userInfo', JSON.stringify(optimisticUser));
+        queryClient.setQueryData(['users', 'profile'], { success: true, data: optimisticUser });
+        queryClient.invalidateQueries({ queryKey: ['users', 'profile'] });
+        navigate('/profile');
+
+        // 2. Background server synchronization
+        (async () => {
+            try {
+                const freshUser = await updateGuest(formData.fullName, formData.mobile);
+                const token = localStorage.getItem('authToken');
+                const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+                const profileData = {
+                    name: formData.fullName,
+                    mobile: formData.mobile,
+                    address: updatedAddress,
+                    location: formData.location
+                };
+                const result = await updateProfile(profileData, config);
+                if (result) {
+                    const finalUser = { ...optimisticUser, ...(result?.data || result) };
+                    setUser(finalUser);
+                    localStorage.setItem('userInfo', JSON.stringify(finalUser));
+                    queryClient.setQueryData(['users', 'profile'], { success: true, data: finalUser });
                 }
-            } : {};
-
-            const profileData = {
-                name: formData.fullName,
-                mobile: formData.mobile,
-                address: {
-                    street: formData.street,
-                    city: formData.city,
-                    zip: formData.zip,
-                    country: 'India'
-                },
-                location: formData.location
-            };
-
-            const result = await updateProfile(profileData, config);
-            if (result) {
-                // Update local auth state with returned data
-                setUser(result);
-                localStorage.setItem('userInfo', JSON.stringify(result));
-                navigate('/profile');
+            } catch (err) {
+                console.warn('Background address sync warning:', err);
+            } finally {
+                setIsSaving(false);
             }
-        } catch (err) {
-            console.error('Update Profile Error:', err);
-            const errMsg = err.response?.data?.message || err.message || t('Failed to update address');
-            setMessage({ type: 'error', text: errMsg });
-        } finally {
-            setIsSaving(false);
-        }
+        })();
     };
 
     return (

@@ -229,14 +229,39 @@ export const getOrders = async (req, res, next) => {
     try {
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
         const isAdmin = roles.includes('admin');
+        const isMyOrders = req.query.myOrders === 'true';
         let query = {};
 
-        // STRICT RBAC: Filter orders based on user role
-        if (isAdmin) {
-            // Global Admin: Sees all orders
+        // Helper for personal customer order queries (by user ID or matching phone number)
+        const getPersonalOrderQuery = () => {
+            const userPhone = (req.user?.mobile || req.user?.phone || '').toString().trim();
+            const phoneConditions = userPhone ? [
+                { 'shippingAddress.phone': userPhone },
+                { 'shippingAddress.mobile': userPhone }
+            ] : [];
+
+            if (req.user?._id) {
+                return {
+                    $or: [
+                        { user: req.user._id },
+                        ...phoneConditions
+                    ]
+                };
+            } else if (phoneConditions.length > 0) {
+                return { $or: phoneConditions };
+            }
+            return { user: req.user?._id };
+        };
+
+        // STRICT RBAC: Filter orders based on user role and context
+        if (isMyOrders) {
+            // Customer "My Orders" tab: ALWAYS returns only personal orders, even for admins/delivery boys
+            query = getPersonalOrderQuery();
+        } else if (isAdmin) {
+            // Global Admin Dashboard: Sees all orders
             query = {};
         } else if (roles.includes('delivery_boy')) {
-            // Delivery boys need full access to manage pickups, deliveries, and fulfillment history
+            // Delivery boy panel: Sees all orders for delivery dispatch
             query = {};
         } else if (roles.includes('store_admin') && req.user?.storeId) {
             // Store Admin: Sees orders with their products OR their own purchases
@@ -247,12 +272,12 @@ export const getOrders = async (req, res, next) => {
                 ]
             };
         } else {
-            // Customers / Service Admins: ONLY see their own orders
-            if (!req.user?._id) {
+            // Standard Customers / Service Admins: ONLY see their own personal orders
+            if (!req.user?._id && !req.user?.mobile) {
                 res.status(401);
                 throw new Error('User not authenticated');
             }
-            query = { user: req.user._id };
+            query = getPersonalOrderQuery();
         }
 
         const orders = await Order.find(query)

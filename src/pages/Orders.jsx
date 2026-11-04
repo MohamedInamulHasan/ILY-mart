@@ -15,7 +15,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 const Orders = () => {
     const navigate = useNavigate();
-    const { data: orders = [], isLoading: loadingOrders } = useOrders();
+    const { data: orders = [], isLoading: loadingOrders } = useOrders({ myOrders: true });
     const { cartCount } = useCart();
     const { data: stores = [] } = useStores();
     const { mutate: deleteOrder } = useDeleteOrder();

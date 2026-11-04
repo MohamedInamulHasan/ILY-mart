@@ -8,12 +8,12 @@ export const orderKeys = {
     detail: (id) => [...orderKeys.details(), id]
 };
 
-export const useOrders = () => {
+export const useOrders = (params = {}) => {
     const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('authToken');
     return useQuery({
-        queryKey: orderKeys.lists(),
+        queryKey: orderKeys.list(params),
         queryFn: async () => {
-            const response = await apiService.getOrders();
+            const response = await apiService.getOrders(params);
             return response?.data || response || [];
         },
         enabled: hasToken,

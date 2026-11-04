@@ -197,7 +197,12 @@ export const apiService = {
     },
 
     // Orders
-    getOrders: () => api.get('/orders'),
+    getOrders: (params = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params && params.myOrders) queryParams.append('myOrders', 'true');
+        const qs = queryParams.toString();
+        return api.get(`/orders${qs ? `?${qs}` : ''}`);
+    },
     getOrder: (id) => api.get(`/orders/${id}`),
     createOrder: (data) => api.post('/orders', data),
     updateOrderStatus: (id, status, deliveredBy) => api.put(`/orders/${id}`, { status, deliveredBy }),
