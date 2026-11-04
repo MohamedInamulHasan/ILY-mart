@@ -360,7 +360,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                     <ShoppingCart size={16} className="text-gray-400" />
                                 </div>
                             ) : cartQuantity > 0 ? (
-                                <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-2xl shadow-sm">
+                                <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-lg shadow-sm">
                                     <button 
                                         onClick={handleDecrement}
                                         className="w-8 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"

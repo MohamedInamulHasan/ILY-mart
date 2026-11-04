@@ -158,7 +158,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                         {showCartControls && !product.isGroup && (
                             quantity > 0 ? (
                                 <div 
-                                    className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-2xl shadow-sm"
+                                    className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-lg shadow-sm"
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
