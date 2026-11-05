@@ -14,6 +14,7 @@ const EditAddress = () => {
     const { user, setUser } = useAuth();
     const { t, language } = useLanguage();
     const [showLocationError, setShowLocationError] = useState(false);
+    const [gpsError, setGpsError] = useState(null); // { code, text } for error modal
     const locationRef = useRef(null);
     const fullNameRef = useRef(null);
     const mobileRef = useRef(null);
@@ -116,6 +117,7 @@ const EditAddress = () => {
         if (isDetecting) return;
 
         setIsDetecting(true);
+        setGpsError(null);
         setMessage({ type: '', text: '' });
         console.log('📍 EditAddress: Starting location detection...');
 
@@ -124,16 +126,19 @@ const EditAddress = () => {
             console.log('📍 EditAddress: Detection result:', result);
 
             if (result.success) {
+                // Always autofill city — default to Ilayangudi if geocoder returns empty
                 const resolvedStreet = result.addressDetails?.street || '';
-                const resolvedCity = result.addressDetails?.city || 'Ilayangudi';
+                const resolvedCity = (result.addressDetails?.city || '').trim() || 'Ilayangudi';
                 const resolvedZip = result.addressDetails?.zip || '630702';
 
                 setFormData(prev => {
                     const next = { ...prev, location: result.mapsLink };
+                    // Always set city — default to Ilayangudi
+                    next.city = resolvedCity;
+                    // Fill address/street if geocoder returned one
                     if (resolvedStreet) next.street = resolvedStreet;
-                    if (resolvedCity) next.city = resolvedCity;
                     if (resolvedZip) next.zip = resolvedZip;
-                    // Strict sanity check: Street can NEVER equal city
+                    // Street must never equal city
                     if (next.street && next.city && next.street.trim().toLowerCase() === next.city.trim().toLowerCase()) {
                         next.street = '';
                     }
@@ -142,18 +147,18 @@ const EditAddress = () => {
                 setFieldErrors(prev => ({
                     ...prev,
                     location: false,
-                    ...(resolvedStreet ? { street: false } : {}),
-                    ...(resolvedCity ? { city: false } : {})
+                    city: false,
+                    ...(resolvedStreet ? { street: false } : {})
                 }));
                 setShowLocationError(false);
-                setMessage({ type: '', text: '' });
+                setGpsError(null);
             } else {
                 console.error('📍 EditAddress: Detection failed:', result.message);
-                setMessage({ type: 'error', text: t(result.message) });
+                setGpsError({ code: result.code || 'ERROR', text: result.message });
             }
         } catch (err) {
             console.error('📍 EditAddress: Fatal detection error:', err);
-            setMessage({ type: 'error', text: t('Unable to get location') });
+            setGpsError({ code: 'ERROR', text: 'Unable to detect GPS location. Please enter your address manually.' });
         } finally {
             setIsDetecting(false);
         }
@@ -509,7 +514,83 @@ const EditAddress = () => {
                 </form>
             </div>
 
-            {/* Security Password Modal for 9500171980 */}
+            {/* GPS Error Modal */}
+            <AnimatePresence>
+                {gpsError && (
+                    <div className="fixed inset-0 z-[99998] flex items-end sm:items-center justify-center p-4 pb-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/50"
+                            onClick={() => setGpsError(null)}
+                        />
+                        <motion.div
+                            initial={{ y: 60, opacity: 0, scale: 0.95 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            exit={{ y: 60, opacity: 0, scale: 0.95 }}
+                            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                            className="relative bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 p-6 text-center z-10"
+                        >
+                            {/* Icon */}
+                            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+                                {gpsError.code === 'PERMISSION_DENIED'
+                                    ? <MapPin size={30} className="text-red-500" />
+                                    : gpsError.code === 'TIMEOUT'
+                                    ? <Navigation size={30} className="text-red-500" />
+                                    : <AlertCircle size={30} className="text-red-500" />
+                                }
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1.5">
+                                {gpsError.code === 'PERMISSION_DENIED'
+                                    ? (language === 'ta' ? 'இட அனுமதி மறுக்கப்பட்டது' : 'Location Permission Denied')
+                                    : gpsError.code === 'TIMEOUT'
+                                    ? (language === 'ta' ? 'GPS சமிக்ஞை நேரம் முடிந்தது' : 'GPS Signal Timed Out')
+                                    : (language === 'ta' ? 'இட பிழை' : 'Location Error')
+                                }
+                            </h3>
+
+                            {/* Message */}
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">
+                                {gpsError.code === 'TIMEOUT'
+                                    ? (language === 'ta'
+                                        ? 'திறந்த வெளியில் நின்று மீண்டும் முயற்சிக்கவும், அல்லது கைமுறையாக முகவரியை உள்ளிடவும்.'
+                                        : 'Move to open sky & try again, or type your address manually.')
+                                    : gpsError.code === 'PERMISSION_DENIED'
+                                    ? (language === 'ta'
+                                        ? 'அமைப்புகளில் இட அணுகலை அனுமதிக்கவும் அல்லது கைமுறையாக முகவரியை உள்ளிடவும்.'
+                                        : 'Allow location access in Settings or type your address manually.')
+                                    : (language === 'ta'
+                                        ? 'GPS கண்டறிய இயலவில்லை. கைமுறையாக முகவரியை உள்ளிடவும்.'
+                                        : 'GPS could not be detected. Please enter your address manually.')
+                                }
+                            </p>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setGpsError(null)}
+                                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-sm active:scale-95 transition-transform"
+                                >
+                                    {language === 'ta' ? 'சரி' : 'OK'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setGpsError(null); handleDetectLocation(); }}
+                                    className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm active:scale-95 transition-transform"
+                                >
+                                    {language === 'ta' ? 'மீண்டும் முயற்சி' : 'Try Again'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+                        {/* Security Password Modal for 9500171980 */}
             <AnimatePresence>
                 {showSecurityModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">

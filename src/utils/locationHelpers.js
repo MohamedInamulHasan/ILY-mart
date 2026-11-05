@@ -334,7 +334,7 @@ export const getCurrentLocation = async () => {
             userMessage = 'GPS position unavailable. Please ensure device location / GPS is turned ON.';
             code = 'POSITION_UNAVAILABLE';
         } else if (error.code === 3 || error.message?.includes('timeout') || error.message?.includes('TIMEOUT')) {
-            userMessage = 'GPS signal request timed out. Please try again or type your address manually.';
+            userMessage = 'GPS signal timed out. Move to open sky & try again, or type your address manually.';
             code = 'TIMEOUT';
         }
 
