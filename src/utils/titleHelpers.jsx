@@ -15,9 +15,12 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     const {
         mainClassName = '',
         subClassName = 'opacity-80 text-xs font-normal',
-        tagClassName = 'font-bold text-red-500 dark:text-red-400 ml-1 inline-block',
+        tagClassName,
         hideTag = false
     } = options;
+
+    const default3DTagClass = 'inline-flex items-center justify-center text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center';
+    const resolvedTagClass = tagClassName || default3DTagClass;
 
     // Extract tag if present, e.g. [1], [2], [1/2]
     const tagMatch = fullTitle.match(/\[([^\]]+)\]/);
@@ -31,9 +34,9 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     if (bracketIndex === -1) {
         // Single language title
         return (
-            <span className={`inline-flex items-baseline gap-0.5 ${mainClassName}`}>
+            <span className={`inline-flex items-center gap-1 ${mainClassName}`}>
                 <span>{cleanTitle}</span>
-                {(!hideTag && tagContent) && <span className={tagClassName}>[{tagContent}]</span>}
+                {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
         );
     }
@@ -74,9 +77,9 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
     return (
         <span className="inline-flex flex-col max-w-full">
-            <span className={`truncate ${mainClassName}`}>
-                {mainText}
-                {(!hideTag && tagContent) && <span className={tagClassName}>[{tagContent}]</span>}
+            <span className={`inline-flex items-center gap-1 max-w-full ${mainClassName}`}>
+                <span className="truncate">{mainText}</span>
+                {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
             {subText && (
                 <span className={`truncate ${subClassName}`}>

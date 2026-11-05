@@ -103,7 +103,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     {mainPart}
                                 </span>
                                 {bracketPart && (
-                                    <span className={`text-[9.5px] md:text-[10.5px] leading-tight w-full line-clamp-1 block text-center mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-normal'}`} title={bracketPart}>
+                                    <span className={`text-[9.5px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-normal'}`} title={bracketPart}>
                                         {bracketPart}
                                     </span>
                                 )}
@@ -124,7 +124,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                 <img
                                     src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                     alt={category.name}
-                                    className="w-full h-full object-contain rounded-2xl transition-transform" style={{ mixBlendMode: "multiply" }}
+                                    className="w-full h-full object-contain rounded-2xl transition-transform"
                                     loading="lazy" decoding="async"
                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                 />
@@ -177,7 +177,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                             </span>
                                             {bracketPart && (
                                                 <span 
-                                                    className={`text-[9.5px] md:text-[10.5px] leading-tight w-full line-clamp-1 block text-center mt-0.5 ${isSelected ? 'font-semibold' : 'font-normal'}`}
+                                                    className={`text-[9.5px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center mt-0.5 ${isSelected ? 'font-semibold' : 'font-normal'}`}
                                                     title={bracketPart}
                                                 >
                                                     {bracketPart}
