@@ -98,12 +98,12 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             }
                         }
                         return (
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${selectedCategory === 'All' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
-                                <span className={`text-[11px] md:text-xs leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-bold' : 'font-semibold'}`} title={mainPart}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${selectedCategory === 'All' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                <span className={`text-[11px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-bold' : 'font-medium'}`} title={mainPart}>
                                     {mainPart}
                                 </span>
                                 {bracketPart && (
-                                    <span className={`text-[9.5px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center opacity-75 mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-medium'}`} title={bracketPart}>
+                                    <span className={`text-[9.5px] md:text-[10.5px] leading-tight w-full line-clamp-1 block text-center mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-normal'}`} title={bracketPart}>
                                         {bracketPart}
                                     </span>
                                 )}
@@ -124,12 +124,12 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                 <img
                                     src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                     alt={category.name}
-                                    className="w-full h-full object-contain rounded-2xl transition-transform"
+                                    className="w-full h-full object-contain rounded-2xl transition-transform" style={{ mixBlendMode: "multiply" }}
                                     loading="lazy" decoding="async"
                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                 />
                             </div>
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${isSelected ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
                                 {(() => {
                                     const fullTitle = t(category.name);
                                     let mainPart = fullTitle;
@@ -170,14 +170,14 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     return (
                                         <>
                                             <span 
-                                                className={`text-[11px] md:text-xs leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center ${isSelected ? 'font-bold' : 'font-semibold'}`}
+                                                className={`text-[11px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${isSelected ? 'font-bold' : 'font-medium'}`}
                                                 title={mainPart}
                                             >
                                                 {mainPart}
                                             </span>
                                             {bracketPart && (
                                                 <span 
-                                                    className={`text-[9.5px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center opacity-75 mt-0.5 ${isSelected ? 'font-semibold' : 'font-medium'}`}
+                                                    className={`text-[9.5px] md:text-[10.5px] leading-tight w-full line-clamp-1 block text-center mt-0.5 ${isSelected ? 'font-semibold' : 'font-normal'}`}
                                                     title={bracketPart}
                                                 >
                                                     {bracketPart}
