@@ -95,12 +95,12 @@ export const uploadImage = async (req, res) => {
         });
 
         // Fast streaming upload
-        const result = await streamUploadToCloudinary(req.file.buffer, {
-            folder: 'homly_products',
-            resource_type: 'image',
-            quality: 'auto',
-            fetch_format: 'auto'
-        });
+        // For PNG files: preserve format & alpha channel (no white background from fetch_format: 'auto')
+        const isPng = req.file.mimetype === 'image/png' || (req.file.originalname || '').toLowerCase().endsWith('.png');
+        const uploadOptions = isPng
+            ? { folder: 'homly_products', resource_type: 'image', format: 'png' }
+            : { folder: 'homly_products', resource_type: 'image', quality: 'auto', fetch_format: 'auto' };
+        const result = await streamUploadToCloudinary(req.file.buffer, uploadOptions);
 
         console.log('✅ Image uploaded successfully to Cloudinary:', result.secure_url);
 
