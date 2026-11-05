@@ -24,7 +24,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                     {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                         <div key={i} className="flex flex-col items-center gap-2 min-w-[72px] md:min-w-[88px]">
                             {/* Circle shape placeholder with Blinkit shimmer */}
-                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full blinkit-shimmer shadow-sm border-2 border-gray-100 dark:border-gray-700/50"></div>
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl blinkit-shimmer"></div>
                             {/* Text label placeholder with Blinkit shimmer */}
                             <div className="h-3 w-12 rounded-full blinkit-shimmer"></div>
                         </div>
@@ -52,26 +52,26 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
 
             <div className={isExpanded
                 ? "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-x-2 gap-y-6 px-4 py-2"
-                : "flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1.5 px-4"
+                : "flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1.5 px-4 scroll-smooth"
             }>
 
                 {/* All Categories Option — styled like other category items */}
                 <div
                     onClick={() => onSelectCategory('All')}
-                    className={`${isExpanded ? 'w-full' : 'min-w-[76px] sm:min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer`}
+                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[70px] sm:min-w-[80px] md:min-w-[92px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'opacity-100 scale-105' : 'opacity-50 hover:opacity-85'}`}
                 >
-                    <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm ${selectedCategory === 'All' ? 'bg-[#2E5A2E] dark:bg-[#2E5A2E]' : 'bg-[#E8EAEF] dark:bg-gray-800'}`}>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square flex items-center justify-center bg-transparent transition-transform group-hover:scale-105">
                         {allCategoryImage ? (
                             <img
                                 src={allCategoryImage}
                                 alt="All Categories"
-                                className={`w-full h-full object-cover rounded-full transition-transform `}
+                                className="w-full h-full object-contain transition-transform"
                             />
                         ) : (
                             <img
                                 src="https://cdn-icons-png.flaticon.com/512/2311/2311524.png"
                                 alt="All Categories"
-                                className={`w-full h-full object-cover rounded-full transition-transform p-3 `}
+                                className="w-full h-full object-contain transition-transform p-1.5"
                             />
                         )}
                     </div>
@@ -118,13 +118,13 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                         <div
                             key={category._id || category.id}
                             onClick={() => onSelectCategory(category.name)}
-                            className={`${isExpanded ? 'w-full' : 'min-w-[76px] sm:min-w-[84px] md:min-w-[100px] lg:min-w-[120px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer`}
+                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[70px] sm:min-w-[80px] md:min-w-[92px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'opacity-100 scale-105' : 'opacity-50 hover:opacity-85'}`}
                         >
-                            <div className={`w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm ${isSelected ? 'bg-[#2E5A2E] dark:bg-[#2E5A2E]' : 'bg-[#E8EAEF] dark:bg-gray-800'}`}>
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square flex items-center justify-center bg-transparent transition-transform group-hover:scale-105">
                                 <img
                                     src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                     alt={category.name}
-                                    className={`w-full h-full object-cover rounded-full transition-transform `}
+                                    className="w-full h-full object-contain transition-transform"
                                     loading="lazy" decoding="async"
                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                 />

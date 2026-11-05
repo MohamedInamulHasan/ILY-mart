@@ -88,7 +88,7 @@ const Categories = () => {
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-2 gap-y-6">
                             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                                 <div key={i} className="flex flex-col items-center gap-2">
-                                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
+                                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
                                     <div className="h-3 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
                                 </div>
                             ))}
@@ -101,11 +101,11 @@ const Categories = () => {
                                     to={`/category/${category.name}`}
                                     className="flex flex-col items-center gap-2 group"
                                 >
-                                    <div className="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-sm border-2 bg-[#E8EAEF] dark:bg-gray-800 border-transparent">
+                                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square flex items-center justify-center bg-transparent transition-transform group-hover:scale-105">
                                         <img
                                             src={category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}
                                             alt={category.name}
-                                            className="w-full h-full object-cover rounded-full"
+                                            className="w-full h-full object-contain transition-transform"
                                             loading="lazy"
                                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                         />

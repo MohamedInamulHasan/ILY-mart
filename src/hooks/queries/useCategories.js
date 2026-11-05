@@ -6,7 +6,7 @@ export const categoryKeys = {
     lists: () => [...categoryKeys.all, 'list'],
 };
 
-const CAT_CACHE_KEY = 'homly_cached_categories_v1';
+const CAT_CACHE_KEY = 'homly_cached_categories_v3';
 const getCachedCategories = () => {
     try {
         const raw = localStorage.getItem(CAT_CACHE_KEY);
@@ -36,8 +36,8 @@ export const useCategories = () => {
         },
         initialData: getCachedCategories,
         initialDataUpdatedAt: () => 0,
-        staleTime: 60 * 1000,
-        refetchInterval: 60000,
+        staleTime: 0,
+        refetchInterval: 30000,
     });
 };
 

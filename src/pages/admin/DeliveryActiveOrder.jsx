@@ -198,6 +198,23 @@ const DeliveryActiveOrder = () => {
         return t('Ilayangudi Store');
     };
 
+    const getItemStoreLocation = (item) => {
+        if (item.storeLocation) return item.storeLocation;
+        const sid = String(item.storeId?._id || item.storeId || item.store?._id || item.store?.id || '');
+        const sName = (item.storeName || item.storeId?.name || '').trim().toLowerCase();
+        const found = stores.find(s => 
+            (sid && String(s._id || s.id) === sid) ||
+            (sName && s.name && s.name.trim().toLowerCase() === sName)
+        );
+        if (found?.location) return found.location;
+        if (item.storeId?.location) return item.storeId.location;
+        const name = found?.name || item.storeName || item.storeId?.name;
+        if (name) {
+            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ', Ilayangudi')}`;
+        }
+        return null;
+    };
+
     // When Leave button is clicked: set stay to false and go to delivery dashboard
     const handleLeave = () => {
         localStorage.setItem('active_delivery_stay', 'false');
@@ -595,11 +612,25 @@ const DeliveryActiveOrder = () => {
                                             subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
                                         })}
                                     </div>
-                                    {(item.storeId || item.storeName) && (
-                                        <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                            {getItemStoreName(item)}
-                                        </p>
-                                    )}
+                                    {(item.storeId || item.storeName) && (() => {
+                                        const sName = getItemStoreName(item);
+                                        const sLoc = getItemStoreLocation(item);
+                                        return (
+                                            <div className="mt-0.5">
+                                                <a
+                                                    href={sLoc || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sName + ', Ilayangudi')}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline active:scale-95 transition-all truncate max-w-full group"
+                                                    title={t('Open Store Location in Google Maps')}
+                                                >
+                                                    <MapPin size={11} className="shrink-0 text-red-500 group-hover:scale-110 transition-transform" />
+                                                    <span className="truncate">{sName}</span>
+                                                </a>
+                                            </div>
+                                        );
+                                    })()}
                                     <div className="flex items-center justify-between mt-1">
                                         <div>
                                             <p className="text-[15px] font-bold text-gray-900 dark:text-white leading-none">

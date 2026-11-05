@@ -126,9 +126,9 @@ const EditAddress = () => {
             console.log('📍 EditAddress: Detection result:', result);
 
             if (result.success) {
-                // Always autofill city — default to Ilayangudi if geocoder returns empty
+                // Always hardcode city to Ilayangudi (this is the only delivery city)
                 const resolvedStreet = result.addressDetails?.street || '';
-                const resolvedCity = (result.addressDetails?.city || '').trim() || 'Ilayangudi';
+                const resolvedCity = 'Ilayangudi';
                 const resolvedZip = result.addressDetails?.zip || '630702';
 
                 setFormData(prev => {
