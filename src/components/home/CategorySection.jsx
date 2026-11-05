@@ -69,7 +69,14 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                 onError={(e) => { e.target.style.opacity = '0'; }}
                             />
                         ) : (
-                            <div className="w-full h-full rounded-2xl blinkit-shimmer" />
+                            <div className="w-full h-full rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="4" y="4" width="13" height="13" rx="3" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
+                                    <rect x="23" y="4" width="13" height="13" rx="3" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
+                                    <rect x="4" y="23" width="13" height="13" rx="3" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
+                                    <rect x="23" y="23" width="13" height="13" rx="3" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
+                                </svg>
+                            </div>
                         )}
                     </div>
                     {(() => {

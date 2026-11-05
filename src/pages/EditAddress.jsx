@@ -88,7 +88,8 @@ const EditAddress = () => {
             const userDisplayName = user.fullName || user.name || '';
             const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
             let loadedStreet = user.address?.street || '';
-            let loadedCity = user.address?.city || '';
+            let loadedCity = user.address?.city || 'Ilayangudi';
+            if (loadedCity.toLowerCase() !== 'ilayangudi') { loadedCity = 'Ilayangudi'; }
             // If street was erroneously saved identical to city (e.g. Chennai / Chennai), clear it
             if (loadedStreet && loadedCity && loadedStreet.trim().toLowerCase() === loadedCity.trim().toLowerCase()) {
                 loadedStreet = '';

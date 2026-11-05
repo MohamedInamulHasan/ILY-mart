@@ -181,7 +181,7 @@ const Services = () => {
                                     {viewMode === 'details' && activeService ? activeService.name : t('Premium Services')}
                                 </h1>
                                 <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5 truncate">
-                                    {viewMode === 'details' && activeService ? activeService.category : t('Professional help at your doorstep')}
+                                    {viewMode === 'details' && activeService ? (activeService.address || t('Available Locally')) : t('Professional help at your doorstep')}
                                 </p>
                             </div>
 
@@ -280,7 +280,7 @@ const Services = () => {
                                                             })()}
                                                         </div>
                                                         <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-                                                            {service.category || t('Service')}
+                                                            {service.address || t('Service')}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -305,10 +305,7 @@ const Services = () => {
                                         {/* Full Card Shimmer Image Background */}
                                         <div className="absolute inset-0 blinkit-shimmer" />
 
-                                        {/* Category Tag Overlay (Top Left) */}
-                                        <div className="absolute top-3 left-3 z-10">
-                                            <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
-                                        </div>
+                                        
 
                                         {/* Content Section - White Banner at Bottom */}
                                         <div className="absolute bottom-0 left-0 right-0 py-2 px-3.5 z-10 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
@@ -394,12 +391,7 @@ const Services = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Category Tag Overlay (Top Left) */}
-                                            <div className="absolute top-3 left-3 z-20">
-                                                <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[9.5px] font-bold rounded-full uppercase tracking-[0.15em] shadow-lg">
-                                                    {service.category || t('Service')}
-                                                </span>
-                                            </div>
+                                            
 
                                             {isClosed && (
                                                 <div className="absolute inset-0 z-30 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">

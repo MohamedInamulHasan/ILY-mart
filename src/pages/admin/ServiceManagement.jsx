@@ -243,10 +243,6 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                                 alt={service.name} 
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             />
-                                            <div className="absolute top-3 left-3 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-full border border-white/30 shadow-lg">
-                                                <span className="text-[10px] font-bold text-white uppercase tracking-[0.15em]">{service.category}</span>
-                                            </div>
-
                                             {/* Status Badge */}
                                             <div className="absolute top-3 right-3 z-10">
                                                 <div className={`backdrop-blur-md px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 ${service.isManuallyClosed
@@ -324,23 +320,16 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} key="form" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm max-w-4xl mx-auto">
                         <form onSubmit={handleServiceSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
+                                <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Service Name')}</label>
                                     <input 
                                         type="text" value={serviceForm.name} onChange={e => setServiceForm(p => ({...p, name: e.target.value}))}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all"
-                                        placeholder={t('e.g., Electrician Services, AC Repair')}
+                                        placeholder={t('e.g., Ramzan Bike Service, Electrician Services')}
                                         required
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Category')}</label>
-                                    <input 
-                                        type="text" value={serviceForm.category} onChange={e => setServiceForm(p => ({...p, category: e.target.value}))}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all"
-                                        placeholder={t('e.g., Home Care, Maintenance')} required
-                                    />
-                                </div>
+                                
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Description')}</label>
                                     <textarea 

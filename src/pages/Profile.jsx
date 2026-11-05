@@ -2,7 +2,7 @@ import { useState, useContext, useEffect, useMemo } from 'react';
 import { 
     User, Package, Settings, ChevronRight, LogOut, 
     Shield, Wrench, Store, ArrowLeft, MoreHorizontal, 
-    MapPin, Lock, HelpCircle, Pencil, Languages, Heart,
+    MapPin, Lock, HelpCircle, Pencil, Languages, Heart, Bookmark,
     ChevronDown, ShoppingCart, Newspaper, Coins,
     Truck, CheckCircle2, XCircle, Clock, Camera, Plus, Gamepad2, Trash2
 } from 'lucide-react';
@@ -295,7 +295,7 @@ const Profile = () => {
                           <MenuLink to="/edit-address" icon={<MapPin size={17} strokeWidth={2} />} title={t('My Address')} />
                           <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
 
-                          <MenuLink to="/saved-products" icon={<Heart size={17} strokeWidth={2} />} title={t('Saved Products')} />
+                          <MenuLink to="/saved-products" icon={<Bookmark size={17} strokeWidth={2} />} title={t('Saved Products')} />
                           <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
 
                           <MenuLink to="/services" icon={<Wrench size={17} strokeWidth={2} />} title={t('Services')} />

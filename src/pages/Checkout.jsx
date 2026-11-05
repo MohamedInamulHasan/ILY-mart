@@ -516,7 +516,7 @@ const Checkout = () => {
                                                     
                                                     if (result && result.success) {
                                                         const resolvedStreet = result.addressDetails?.street || '';
-                                                        const resolvedCity = result.addressDetails?.city || 'Ilayangudi';
+                                                        const resolvedCity = 'Ilayangudi';
                                                         const resolvedZip = result.addressDetails?.zip || '630702';
 
                                                         setFormData(prev => {

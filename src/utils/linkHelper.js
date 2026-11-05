@@ -20,6 +20,19 @@ export const openExternalLink = async (url) => {
         }
     }
     
+        // If short maps link, unshorten to direct coordinates so it never times out
+    if (finalUrl.includes('goo.gl') || finalUrl.includes('maps.app')) {
+        try {
+            const res = await fetch(`https://homly-backend-aash.onrender.com/api/stores/resolve-map-link?url=${encodeURIComponent(finalUrl)}`);
+            const data = await res.json();
+            if (data?.resolvedUrl && !data.resolvedUrl.includes('maps.app.goo.gl') && !data.resolvedUrl.includes('goo.gl')) {
+                finalUrl = data.resolvedUrl;
+            }
+        } catch (e) {
+            console.warn('Could not unshorten map link:', e);
+        }
+    }
+
     try {
         // Native Capacitor (Android & iOS): Browser.open reliably launches system Chrome Custom Tabs
         // which automatically forwards maps.app.goo.gl / google maps links into the native Google Maps app!

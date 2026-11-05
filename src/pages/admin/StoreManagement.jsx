@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../../utils/api';
+import { openExternalLink } from '../../utils/linkHelper';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isStoreOpen, formatTime12h, isProductScheduled } from '../../utils/storeHelpers';
@@ -756,6 +757,44 @@ const StoreManagement = () => {
                                         }}
                                         className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none text-sm"
                                         placeholder="Paste coordinates (e.g. 9.6282, 78.6271) or Google Maps link"
+                                        onPaste={async (e) => {
+                                            const pasted = e.clipboardData.getData('text') || '';
+                                            if (pasted.includes('maps.app.goo.gl') || pasted.includes('goo.gl')) {
+                                                e.preventDefault();
+                                                setStoreForm(prev => ({ ...prev, location: 'Resolving link...' }));
+                                                try {
+                                                    const controller = new AbortController();
+                                                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                                                    const res = await fetch(`${API_BASE_URL}/stores/resolve-map-link?url=${encodeURIComponent(pasted.trim())}`, { signal: controller.signal });
+                                                    clearTimeout(timeoutId);
+                                                    const data = await res.json();
+                                                    if (data?.resolvedUrl && !data.resolvedUrl.includes('goo.gl')) {
+                                                        setStoreForm(prev => ({ ...prev, location: data.resolvedUrl }));
+                                                    } else {
+                                                        setStoreForm(prev => ({ ...prev, location: '' }));
+                                                        alert('Could not resolve this link. Please use Detect button or paste coordinates (e.g. 9.6282, 78.6271)');
+                                                    }
+                                                } catch (err) {
+                                                    setStoreForm(prev => ({ ...prev, location: '' }));
+                                                    alert('Could not resolve this link. Please use Detect button or paste coordinates (e.g. 9.6282, 78.6271)');
+                                                }
+                                            }
+                                        }}
+                                        onBlur={async (e) => {
+                                            const val = e.target.value.trim();
+                                            if (val.includes('maps.app.goo.gl') || val.includes('goo.gl')) {
+                                                try {
+                                                    const controller = new AbortController();
+                                                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                                                    const res = await fetch(`${API_BASE_URL}/stores/resolve-map-link?url=${encodeURIComponent(val)}`, { signal: controller.signal });
+                                                    clearTimeout(timeoutId);
+                                                    const data = await res.json();
+                                                    if (data?.resolvedUrl && !data.resolvedUrl.includes('goo.gl')) {
+                                                        setStoreForm(prev => ({ ...prev, location: data.resolvedUrl }));
+                                                    }
+                                                } catch (err) {}
+                                            }
+                                        }}
                                     />
                                     <button
                                         type="button"
@@ -781,14 +820,13 @@ const StoreManagement = () => {
                                         <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                                             ✓ Location attached
                                         </p>
-                                        <a
-                                            href={storeForm.location}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-[#2E5A2E] dark:text-[#CBF9B2] font-bold hover:underline"
+                                        <button
+                                            type="button"
+                                            onClick={() => openExternalLink(storeForm.location)}
+                                            className="text-xs text-[#2E5A2E] dark:text-[#CBF9B2] font-bold hover:underline cursor-pointer"
                                         >
                                             Test Link ↗
-                                        </a>
+                                        </button>
                                         {storeForm.location.includes('maps.app.goo.gl') && (
                                             <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
                                                 (Tip: maps.app.goo.gl is blocked by Indian ISPs. We recommend clicking Detect or pasting coordinates)

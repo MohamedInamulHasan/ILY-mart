@@ -223,7 +223,7 @@ export const CartProvider = ({ children }) => {
             );
 
             if (!currentUniqueStores.has(newStoreId) && currentUniqueStores.size > 0) {
-                const nextCharge = 20 + currentUniqueStores.size * 5;
+                const nextCharge = 20 + currentUniqueStores.size * 10;
 
                 // Get names of existing stores in the cart
                 const currentStoreIds = Array.from(currentUniqueStores);
@@ -337,8 +337,8 @@ export const CartProvider = ({ children }) => {
                     cartItems.map(item => (item.storeId?._id || item.storeId || '').toString()).filter(Boolean)
                 );
                 const isMultiStore = currentUniqueStores.size > 1;
-                const currentCharge = 20 + (currentUniqueStores.size - 1) * 5;
-                const newCharge = nextStoreCharge || (currentCharge + 5);
+                const currentCharge = 20 + (currentUniqueStores.size - 1) * 10;
+                const newCharge = nextStoreCharge || (currentCharge + 10);
                 const extraCharge = newCharge - currentCharge > 0 ? (newCharge - currentCharge) : 10;
 
                 return (

@@ -104,31 +104,51 @@ export const reverseGeocode = async (latitude, longitude) => {
                 const zip = (addr.postcode || '').trim();
                 const country = (addr.country || 'India').trim();
 
-                // Build clean street representation
-                let street = [houseNumber, rawRoad].filter(Boolean).join(' ').trim();
-                if (!street && area) {
-                    street = area;
-                } else if (street && area && !street.toLowerCase().includes(area.toLowerCase())) {
-                    street = `${street}, ${area}`;
+                // Build clean near address representation
+                const landmark = (addr.amenity || addr.shop || addr.building || addr.office || addr.leisure || addr.tourism || '').trim();
+                let streetParts = [];
+                if (houseNumber) streetParts.push(houseNumber);
+                if (landmark) streetParts.push(landmark);
+                if (rawRoad) streetParts.push(rawRoad);
+                if (area && !streetParts.some(p => p.toLowerCase().includes(area.toLowerCase()))) {
+                    streetParts.push(area);
                 }
+
+                let street = streetParts.filter(Boolean).join(', ').trim();
+
+                // If still empty or just a road, check if display_name has a nearby location/area
+                if ((!street || street.length < 3) && data.display_name) {
+                    const displayParts = data.display_name.split(',').map(s => s.trim()).filter(Boolean);
+                    const filteredParts = displayParts.filter(p => {
+                        const low = p.toLowerCase();
+                        return !low.includes('ilayangudi') && !low.includes('sivagangai') && !low.includes('tamil nadu') && !low.includes('india') && !/^\d{5,6}$/.test(p);
+                    });
+                    if (filteredParts.length > 0) {
+                        street = filteredParts.slice(0, 2).join(', ');
+                    }
+                }
+
+                const resolvedCity = 'Ilayangudi';
+                const resolvedDistrict = 'Sivagangai';
+                const resolvedZip = zip || '630702';
 
                 const fullAddress = formatAddress([
                     street,
-                    city,
-                    district && district.toLowerCase() !== city.toLowerCase() ? district : '',
-                    state,
-                    zip,
+                    resolvedCity,
+                    resolvedDistrict,
+                    state || 'Tamil Nadu',
+                    resolvedZip,
                     country
                 ]);
 
                 return {
-                    street: street || '', // Empty if unavailable, customer can type manually
+                    street: street || '', // Detected near address
                     houseNumber: houseNumber || '',
-                    area: area || '',
-                    city: city || '',
-                    district: district || '',
-                    state: state || '',
-                    zip: zip || '',
+                    area: area || landmark || '',
+                    city: resolvedCity,
+                    district: resolvedDistrict,
+                    state: state || 'Tamil Nadu',
+                    zip: resolvedZip,
                     country: country || 'India',
                     fullAddress: fullAddress || data.display_name,
                     isStreetAvailable: Boolean(street)
@@ -167,7 +187,7 @@ export const reverseGeocode = async (latitude, longitude) => {
                 street: street || '',
                 houseNumber: '',
                 area: adminArea || '',
-                city: city || '',
+                city: 'Ilayangudi',
                 district: district || '',
                 state: state || '',
                 zip: zip || '',
@@ -185,7 +205,7 @@ export const reverseGeocode = async (latitude, longitude) => {
         street: '',
         houseNumber: '',
         area: '',
-        city: '',
+        city: 'Ilayangudi',
         district: '',
         state: '',
         zip: '',
