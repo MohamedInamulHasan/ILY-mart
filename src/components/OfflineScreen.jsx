@@ -1,82 +1,107 @@
 import React from 'react';
-import { WifiOff, Signal, AlertCircle } from 'lucide-react';
+import { WifiOff } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const OfflineScreen = () => {
     return (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-            {/* Dark Blurred Backdrop */}
-            <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-md animate-fade-in" />
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 select-none transform-gpu overflow-hidden">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/75 transition-opacity" />
 
-            {/* Premium Connectivity Dialog */}
-            <div className="relative bg-white dark:bg-gray-900 w-full max-w-sm rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] border border-white/10 dark:border-gray-800 p-10 transform animate-bounce-in text-center overflow-hidden">
-                
-                {/* Visual Accent */}
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
-                
-                {/* Icon Section */}
-                <div className="relative mb-10">
-                    <div className="w-28 h-28 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto ring-12 ring-red-50/50 dark:ring-red-900/10">
-                        <WifiOff className="text-red-500 dark:text-red-400 animate-pulse" size={56} />
-                    </div>
-                    <div className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 p-2.5 rounded-full shadow-md border border-red-100 dark:border-gray-700">
-                        <AlertCircle className="text-red-500" size={24} />
-                    </div>
+            {/* Card — same style as MaintenanceScreen */}
+            <motion.div
+                initial={{ scale: 0.88, opacity: 0, y: 12 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.88, opacity: 0, y: 12 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="bg-white dark:bg-gray-800 rounded-3xl sm:rounded-[2rem] shadow-2xl max-w-sm w-full p-6 sm:p-7 relative overflow-hidden text-center transform-gpu will-change-transform border border-gray-100 dark:border-gray-700 z-10"
+            >
+                {/* Flower Badge — same as Maintenance but in Red */}
+                <div className="relative w-32 h-32 sm:w-36 sm:h-36 mx-auto mb-3 flex items-center justify-center">
+                    {/* Rotating star burst (Red) */}
+                    <motion.div
+                        initial={{ rotate: -40, scale: 0.2, opacity: 0 }}
+                        animate={{ rotate: 30, scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                        className="absolute inset-0 pointer-events-none flex items-center justify-center"
+                    >
+                        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                            <motion.div
+                                key={angle}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: [0, 1.25, 1], opacity: [0, 1, 0.95] }}
+                                transition={{ duration: 0.5, delay: 0.1 + i * 0.02, ease: 'easeOut' }}
+                                style={{
+                                    transform: `rotate(${angle}deg) translateY(-76px)`,
+                                    transformOrigin: 'center center'
+                                }}
+                                className="absolute"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#EF4444">
+                                    <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
+                                </svg>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+
+                    {/* Expanding soft ring in Red */}
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0.8 }}
+                        animate={{ scale: 1.45, opacity: 0 }}
+                        transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
+                        className="absolute w-32 h-32 sm:w-36 sm:h-36 rounded-full border-2 border-red-500/40 pointer-events-none"
+                    />
+
+                    {/* Scalloped Flower Badge (Red) */}
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: [0, 1.15, 1] }}
+                        transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1], delay: 0.05 }}
+                        className="w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center relative z-10"
+                    >
+                        <svg
+                            viewBox="16 16 68 68"
+                            className="w-full h-full"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            {/* Scalloped Flower Base in Red */}
+                            <path
+                                d="M 79.70 42.04 A 11.5 11.5 0 0 1 79.70 57.96 A 11.5 11.5 0 0 1 71.74 71.74 A 11.5 11.5 0 0 1 57.96 79.70 A 11.5 11.5 0 0 1 42.04 79.70 A 11.5 11.5 0 0 1 28.26 71.74 A 11.5 11.5 0 0 1 20.30 57.96 A 11.5 11.5 0 0 1 20.30 42.04 A 11.5 11.5 0 0 1 28.26 28.26 A 11.5 11.5 0 0 1 42.04 20.30 A 11.5 11.5 0 0 1 57.96 20.30 A 11.5 11.5 0 0 1 71.74 28.26 A 11.5 11.5 0 0 1 79.70 42.04 Z"
+                                fill="#EF4444"
+                            />
+                            {/* WifiOff icon inside flower */}
+                            <foreignObject x="26" y="26" width="48" height="48">
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <motion.div
+                                        initial={{ scale: 0, rotate: -20 }}
+                                        animate={{ scale: 1, rotate: 0 }}
+                                        transition={{ duration: 0.4, delay: 0.22, type: 'spring' }}
+                                    >
+                                        <WifiOff size={30} className="text-white stroke-[2.8]" />
+                                    </motion.div>
+                                </div>
+                            </foreignObject>
+                        </svg>
+                    </motion.div>
                 </div>
 
-                {/* Content */}
-                <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-4 tracking-tight">
+                {/* Title & Subtitle */}
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1.5">
                     Lost Connection
-                </h1>
-
-                <p className="text-gray-600 dark:text-gray-400 mb-10 leading-relaxed font-medium">
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 font-medium leading-relaxed max-w-[280px] mx-auto">
                     Oops! Your internet seems to have taken a break. Please check your network settings.
                 </p>
 
-                {/* Connection Status Indicator */}
-                <div className="flex flex-col items-center gap-4">
-                    <div className="flex items-end gap-1.5 h-8">
-                        <div className="w-2 h-3 bg-gray-200 dark:bg-gray-800 rounded-full animate-bar-1" />
-                        <div className="w-2 h-5 bg-gray-200 dark:bg-gray-800 rounded-full animate-bar-2" />
-                        <div className="w-2 h-7 bg-gray-200 dark:bg-gray-800 rounded-full animate-bar-3" />
-                        <div className="w-2 h-10 bg-gray-200 dark:bg-gray-800 rounded-full animate-bar-4" />
-                    </div>
-                    
-                    <div className="flex items-center gap-2 px-6 py-2.5 bg-red-50 dark:bg-red-900/20 rounded-full border border-red-100 dark:border-red-900/30">
-                        <div className="flex gap-1.5">
-                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
-                        </div>
-                        <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-[0.3em]">
-                            Waiting for Signal
-                        </p>
-                    </div>
+                {/* Status pill — same layout as Maintenance */}
+                <div className="bg-red-50 dark:bg-red-950/40 rounded-2xl p-3 border border-red-200/60 dark:border-red-800/40 flex items-center justify-center gap-2">
+                    <span className="flex h-2 w-2 rounded-full bg-red-500 animate-ping shrink-0" />
+                    <span className="text-xs font-bold text-red-700 dark:text-red-300 uppercase tracking-wider">
+                        Automatically Reconnecting
+                    </span>
                 </div>
-
-                <p className="mt-12 text-[10px] text-gray-400 dark:text-gray-600 font-bold uppercase tracking-widest">
-                    Automatically Reconnecting
-                </p>
-            </div>
-
-            <style jsx>{`
-                @keyframes fade-in {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes bounce-in {
-                    0% { opacity: 0; transform: scale(0.3) translateY(100px); }
-                    70% { transform: scale(1.05) translateY(-10px); }
-                    100% { opacity: 1; transform: scale(1) translateY(0); }
-                }
-                @keyframes bar-glow {
-                    0%, 100% { background-color: #E5E7EB; transform: scaleY(1); }
-                    50% { background-color: #EF4444; transform: scaleY(1.2); }
-                }
-                .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
-                .animate-bounce-in { animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-                .animate-bar-1 { animation: bar-glow 1.5s infinite ease-in-out; }
-                .animate-bar-2 { animation: bar-glow 1.5s infinite ease-in-out 0.2s; }
-                .animate-bar-3 { animation: bar-glow 1.5s infinite ease-in-out 0.4s; }
-                .animate-bar-4 { animation: bar-glow 1.5s infinite ease-in-out 0.6s; }
-            `}</style>
+            </motion.div>
         </div>
     );
 };
