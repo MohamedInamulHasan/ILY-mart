@@ -139,11 +139,11 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
                 </div>
                 {section.id !== 'free_delivery' && (
                     isOpen ? (
-                        <Link to={navigateTo} className="text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-70 transition-all underline decoration-[1.5px] underline-offset-[4px] shrink-0">
+                        <Link to={navigateTo} className="text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-70 transition-all shrink-0">
                             {t('See All')}
                         </Link>
                     ) : (
-                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-650 cursor-not-allowed select-none underline decoration-[1.5px] underline-offset-[4px] shrink-0">
+                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-650 cursor-not-allowed select-none shrink-0">
                             {t('See All')}
                         </span>
                     )

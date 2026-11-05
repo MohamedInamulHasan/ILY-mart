@@ -232,13 +232,13 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                 <div
                                     className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full transition-colors border border-gray-200 dark:border-gray-600"
                                 >
-                                    <ShoppingCart size={16} className="text-gray-400" />
+                                    <Plus size={18} strokeWidth={2.5} className="text-gray-400" />
                                 </div>
                             ) : (
                                 <div
                                     className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors cursor-pointer bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 active:scale-90`}
                                 >
-                                    <ShoppingCart size={16} />
+                                    <Plus size={18} strokeWidth={2.5} />
                                 </div>
                             )}
                         </div>
@@ -359,7 +359,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                         <div className="flex items-center" onClick={(e) => e.preventDefault()}>
                             {!isStoreOpenCheck ? (
                                 <div className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600">
-                                    <ShoppingCart size={16} className="text-gray-400" />
+                                    <Plus size={18} strokeWidth={2.5} className="text-gray-400" />
                                 </div>
                             ) : cartQuantity > 0 ? (
                                 <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-lg shadow-sm">
@@ -382,7 +382,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                     onClick={handleFastPurchaseClick}
                                     className="w-10 h-10 flex items-center justify-center rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 active:scale-95 transition-transform"
                                 >
-                                    <ShoppingCart size={16} />
+                                    <Plus size={18} strokeWidth={2.5} />
                                 </button>
                             )}
                         </div>

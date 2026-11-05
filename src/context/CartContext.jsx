@@ -379,13 +379,13 @@ export const CartProvider = ({ children }) => {
                                         <>
                                             நீங்கள் ஏற்கனவே <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> ல் products add பண்ணிருக்கீங்க. Current delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>. இப்போ <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> ல் இருந்து products add பண்ண, delivery charge (<span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{extraCharge} extra</span>) ஆகும், So Delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span>.
                                             <br />
-                                            <span className="font-extrabold not-italic text-gray-900 dark:text-white mt-1 inline-block text-[14px]">Add பண்ணலாமா?</span>
+                                            <span className="mt-1 inline-block">Add பண்ணலாமா?</span>
                                         </>
                                     ) : (
                                         <>
                                             Neenga already <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> la products add pannirukeenga. Current delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>. Ippo <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> la irundhu products add panna, delivery charge (<span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{extraCharge} extra</span>) aagum, So Delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span>.
                                             <br />
-                                            <span className="font-extrabold not-italic text-gray-900 dark:text-white mt-1 inline-block text-[14px]">Add pannava?</span>
+                                            <span className="mt-1 inline-block">Add pannava?</span>
                                         </>
                                     )
                                 ) : (
@@ -393,13 +393,13 @@ export const CartProvider = ({ children }) => {
                                         <>
                                             நீங்கள் ஏற்கனவே <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> ல் products add பண்ணிருக்கீங்க. Current delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>. <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> ல் இருந்து add பண்ண <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{extraCharge} extra</span> charge ஆகும், So Delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span>.
                                             <br />
-                                            <span className="font-extrabold not-italic text-gray-900 dark:text-white mt-1 inline-block text-[14px]">Add பண்ணலாமா?</span>
+                                            <span className="mt-1 inline-block">Add பண்ணலாமா?</span>
                                         </>
                                     ) : (
                                         <>
                                             Neenga already <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> la products add pannirukeenga. Current delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>. <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> la irundhu add panna <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{extraCharge} extra</span> charge aagum, So Delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span>.
                                             <br />
-                                            <span className="font-extrabold not-italic text-gray-900 dark:text-white mt-1 inline-block text-[14px]">Add pannava?</span>
+                                            <span className="mt-1 inline-block">Add pannava?</span>
                                         </>
                                     )
                                 )}
@@ -409,13 +409,13 @@ export const CartProvider = ({ children }) => {
                             <div className="flex gap-2.5">
                                 <button
                                     onClick={cancelAddToCart}
-                                    className="flex-1 py-2.5 bg-black hover:bg-gray-900 text-white font-bold rounded-xl text-xs sm:text-[13px] active:scale-95 transition-transform"
+                                    className="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 font-bold rounded-xl text-xs sm:text-[13px] active:scale-95 transition-all shadow-sm"
                                 >
                                     {language === 'ta' ? 'இல்லை' : 'No'}
                                 </button>
                                 <button
                                     onClick={confirmAddToCart}
-                                    className="flex-1 py-2.5 bg-[#00B329] hover:bg-[#009e24] text-white font-black rounded-xl text-xs sm:text-[13px] active:scale-95 transition-transform"
+                                    className="flex-1 py-2.5 bg-black hover:bg-gray-900 text-white font-bold rounded-xl text-xs sm:text-[13px] active:scale-95 transition-transform shadow-sm"
                                 >
                                     {language === 'ta' ? 'ஆமாம்' : 'Yes'}
                                 </button>

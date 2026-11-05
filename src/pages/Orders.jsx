@@ -236,7 +236,7 @@ const Orders = () => {
                                             ))}
                                         </div>
 
-                                        {/* Bottom Footer: Total Amount + Details underline */}
+                                        {/* Bottom Footer: Total Amount + Details */}
                                         <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
                                             <div className="space-y-1.5">
                                                 <div className="h-2.5 w-16 rounded-full blinkit-shimmer" />
@@ -335,7 +335,7 @@ const Orders = () => {
                                                 <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-none mb-1">{t('Total Amount')}</p>
                                                 <p className="font-bold text-[15px] sm:text-[16px] text-gray-900 dark:text-white leading-tight">₹{order.total.toFixed(0)}</p>
                                             </div>
-                                            <div className="text-[#2E5A2E] dark:text-[#CBF9B2] text-xs font-semibold underline decoration-[#2E5A2E] dark:decoration-[#CBF9B2] decoration-[1.5px] underline-offset-2 hover:opacity-80 transition-opacity">
+                                            <div className="text-[#2E5A2E] dark:text-[#CBF9B2] text-xs font-semibold hover:opacity-80 transition-opacity">
                                                 {t('Details')}
                                             </div>
                                         </div>

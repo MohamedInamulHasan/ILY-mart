@@ -25,7 +25,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed bottom-0 left-0 right-0 z-[1000] bg-white dark:bg-gray-900 rounded-t-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.15)] overflow-hidden max-w-md mx-auto"
+                        className="fixed bottom-0 left-0 right-0 z-[1000] bg-white dark:bg-gray-900 rounded-t-3xl shadow-[0_-20px_50px_rgba(0,0,0,0.15)] overflow-hidden max-w-md mx-auto"
                     >
                         {/* Header */}
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between border-b border-gray-50 dark:border-gray-800">
@@ -53,13 +53,13 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
                             <div className="flex flex-col gap-2 w-full">
                                 <button
                                     onClick={onConfirm}
-                                    className="w-full py-3 bg-black text-white rounded-xl font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all"
+                                    className="w-full py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all"
                                 >
                                     {t('Yes, Logout')}
                                 </button>
                                 <button
                                     onClick={onClose}
-                                    className="w-full py-3 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 rounded-xl font-bold text-base border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                                    className="w-full py-3 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 rounded-full font-bold text-base border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                                 >
                                     {t('Cancel')}
                                 </button>

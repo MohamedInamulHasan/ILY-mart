@@ -208,7 +208,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                     }`}
                                     disabled={!isAvailable || !isOpen || !isScheduled}
                                 >
-                                    <ShoppingCart size={15} />
+                                    <Plus size={18} strokeWidth={2.5} />
                                 </button>
                             )
                         )}

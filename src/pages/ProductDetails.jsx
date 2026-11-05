@@ -261,7 +261,7 @@ const ProductDetails = () => {
                 </div>
 
                 {/* Content Section (Pull-up on mobile, Right on desktop) */}
-                <div className="flex-1 bg-white dark:bg-[#1a1f26] rounded-t-2xl lg:rounded-none -mt-12 lg:mt-0 relative z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none px-8 pt-10 pb-8 lg:p-12 lg:flex lg:flex-col lg:justify-center border-t border-transparent dark:border-white/5">
+                <div className="flex-1 bg-white dark:bg-[#1a1f26] rounded-t-3xl lg:rounded-none -mt-12 lg:mt-0 relative z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none px-8 pt-10 pb-8 lg:p-12 lg:flex lg:flex-col lg:justify-center border-t border-transparent dark:border-white/5">
                     <div className="max-w-2xl mx-auto w-full">
                     {/* Header: Title & Unit */}
                     <div className="mb-2 min-w-0">
@@ -364,7 +364,7 @@ const ProductDetails = () => {
                     {/* Action Button */}
                     <div className="w-full flex justify-center mt-4 mb-8">
                         {!isCurrentlyAvailable ? (
-                            <div className="w-full py-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-800 text-center">
+                            <div className="w-full py-4 bg-red-50 dark:bg-red-900/10 rounded-full border border-red-100 dark:border-red-800 text-center">
                                 <p className="text-red-600 dark:text-red-400 font-bold">
                                      {!isStoreCurrentlyOpen ? t('Store Closed') : t('Currently Unavailable')}
                                 </p>
@@ -372,7 +372,7 @@ const ProductDetails = () => {
                         ) : (
                             <button
                                 onClick={handleCheckout}
-                                className="w-full bg-black text-white py-3.5 rounded-xl font-normal text-[15px] active:scale-[0.98] transition-transform flex items-center justify-center"
+                                className="w-full bg-black text-white py-4 rounded-full font-normal text-[15px] active:scale-[0.98] transition-transform flex items-center justify-center"
                             >
                                 <span>{t('Add product')}</span>
                             </button>
