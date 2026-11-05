@@ -25,161 +25,11 @@ import { formatOrderBannerTime, formatOrderDateTime } from '../../utils/dateUtil
 import { CartoonCoin } from '../../components/CartoonCoin';
 import SwipeActionButton from '../../components/SwipeActionButton';
 import DeliveryStatusPopup from '../../components/DeliveryStatusPopup';
+import { useDriverLocation, optimizeDeliveryRoute } from '../../utils/deliveryRouteHelper';
+import DeliveryRouteTimeline from '../../components/DeliveryRouteTimeline';
 import { playSuccessSound } from '../../utils/soundHelper';
 import { isNativeAndroid, setOverlayHasAcceptedOrder, hideFloatingOverlay } from '../../utils/floatingOverlay';
 
-
-// Haversine distance in km between two [lat,lon] points
-function haversineKm(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// Parse lat/lon from a Google Maps URL like https://www.google.com/maps?q=lat,lon
-function parseLatLon(url) {
-    if (!url) return null;
-    // Handle ?q=lat,lon
-    const qMatch = url.match(/[?&]q=([-\d.]+),([-\d.]+)/);
-    if (qMatch) return { lat: parseFloat(qMatch[1]), lon: parseFloat(qMatch[2]) };
-    // Handle @lat,lon
-    const atMatch = url.match(/@([-\d.]+),([-\d.]+)/);
-    if (atMatch) return { lat: parseFloat(atMatch[1]), lon: parseFloat(atMatch[2]) };
-    return null;
-}
-
-
-// Porter-style route map showing store → customer delivery route
-const RouteMap = ({ order, stores, t }) => {
-    // Build unique store list from order items
-    const orderItems = order?.items || [];
-    const storeMap = {};
-    orderItems.forEach(item => {
-        const sid = item.storeId?._id || item.storeId || 'unknown';
-        if (!storeMap[sid]) {
-            const storeObj = stores.find(s => (s._id || s.id) === sid || String(s._id) === String(sid));
-            storeMap[sid] = {
-                id: sid,
-                name: item.storeName || storeObj?.name || 'Store',
-                location: storeObj?.location || null,
-                storeObj
-            };
-        }
-    });
-    const uniqueStores = Object.values(storeMap);
-
-    // Customer location
-    const customerLocation = order?.shippingAddress?.location || null;
-    const customerCoords = parseLatLon(customerLocation);
-
-    if (uniqueStores.length === 0) return null;
-
-    return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-            <div className="flex items-center gap-2 mb-3">
-                <div className="p-1.5 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" className="text-[#2E5A2E] dark:text-[#CBF9B2]">
-                        <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round"/>
-                    </svg>
-                </div>
-                <h3 className="font-bold text-gray-900 dark:text-white text-sm">Delivery Route</h3>
-            </div>
-
-            <div className="relative pl-4">
-                {uniqueStores.map((store, idx) => {
-                    const storeCoords = parseLatLon(store.location);
-                    const dist = (storeCoords && customerCoords)
-                        ? haversineKm(storeCoords.lat, storeCoords.lon, customerCoords.lat, customerCoords.lon)
-                        : null;
-
-                    return (
-                        <div key={store.id} className="relative">
-                            {/* Connecting grey line from previous */}
-                            {idx > 0 && (
-                                <div className="absolute left-[-4px] -top-4 w-[2px] h-5 bg-gray-200 dark:bg-gray-600" />
-                            )}
-
-                            {/* Store row */}
-                            <div className="flex items-center gap-2.5 mb-1">
-                                {/* Red dot */}
-                                <div className="relative flex-shrink-0">
-                                    <div className="w-[10px] h-[10px] rounded-full bg-red-500 border-2 border-white dark:border-gray-800 shadow-sm absolute left-[-20px] top-1/2 -translate-y-1/2" />
-                                </div>
-
-                                {/* Store name + distance */}
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <span className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 truncate">{store.name}</span>
-                                    {dist !== null && (
-                                        <span className="text-[11px] text-gray-400 dark:text-gray-500 font-medium shrink-0">
-                                            {dist < 1 ? `${(dist*1000).toFixed(0)} m` : `${dist.toFixed(1)} km`}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Open in Maps */}
-                                {store.location && (
-                                    <a
-                                        href={store.location}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="shrink-0 p-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-500 active:scale-90 transition-transform"
-                                    >
-                                        <MapPin size={13} />
-                                    </a>
-                                )}
-                            </div>
-
-                            {/* Grey line going down to next stop */}
-                            <div className="ml-[-4px] flex">
-                                <div className="w-[2px] h-6 bg-gray-200 dark:bg-gray-600 mx-auto" style={{marginLeft: '-20px', marginRight: 'auto'}} />
-                            </div>
-                        </div>
-                    );
-                })}
-
-                {/* Last grey line before customer */}
-                <div className="absolute" style={{left: '-4px', bottom: 24, height: 0}} />
-
-                {/* Customer / Drop location */}
-                <div className="flex items-center gap-2.5">
-                    <div className="relative flex-shrink-0">
-                        <div className="w-[12px] h-[12px] rounded-full bg-green-500 border-2 border-white dark:border-gray-800 shadow-sm absolute left-[-21px] top-1/2 -translate-y-1/2" />
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 truncate">
-                            {order?.shippingAddress?.name || t('Customer')}
-                        </span>
-                        {/* Total distance from first store to customer */}
-                        {(() => {
-                            const firstStoreCoords = parseLatLon(uniqueStores[0]?.location);
-                            if (firstStoreCoords && customerCoords) {
-                                const d = haversineKm(firstStoreCoords.lat, firstStoreCoords.lon, customerCoords.lat, customerCoords.lon);
-                                return (
-                                    <span className="text-[11px] text-green-600 dark:text-green-400 font-bold shrink-0">
-                                        {d < 1 ? `${(d*1000).toFixed(0)} m` : `${d.toFixed(1)} km`}
-                                    </span>
-                                );
-                            }
-                            return null;
-                        })()}
-                    </div>
-                    {customerLocation && (
-                        <a
-                            href={customerLocation.startsWith('http') ? customerLocation : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customerLocation)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 p-1.5 rounded-lg bg-green-50 dark:bg-green-950/40 text-green-600 active:scale-90 transition-transform"
-                        >
-                            <MapPin size={13} />
-                        </a>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const DeliveryActiveOrder = () => {
     const { id: paramId } = useParams();
@@ -187,6 +37,7 @@ const DeliveryActiveOrder = () => {
     const location = useLocation();
     const { t, language } = useLanguage();
     const { user } = useAuth();
+    const { driverCoords, isDetecting: isDetectingGps, refreshLocation } = useDriverLocation();
 
     const { data: orders = [], isLoading: ordersLoading } = useOrders();
     const { data: stores = [] } = useStores();
@@ -303,6 +154,25 @@ const DeliveryActiveOrder = () => {
     }, [order?.deliverySlot, order?.scheduledDelivery]);
 
     const items = order?.items || [];
+
+    // Calculate shortest path route from Driver -> Stores -> Customer
+    const optimizedRoute = useMemo(() => {
+        return optimizeDeliveryRoute(driverCoords, order, stores);
+    }, [driverCoords, order, stores]);
+
+    // Sort items according to optimal store sequence
+    const sortedItems = useMemo(() => {
+        if (!optimizedRoute?.sortedStores?.length) return items;
+        const storeOrderMap = new Map();
+        optimizedRoute.sortedStores.forEach((s, idx) => storeOrderMap.set(String(s.id), idx));
+        return [...items].sort((a, b) => {
+            const sidA = String(a.storeId?._id || a.storeId || '');
+            const sidB = String(b.storeId?._id || b.storeId || '');
+            const orderA = storeOrderMap.has(sidA) ? storeOrderMap.get(sidA) : 999;
+            const orderB = storeOrderMap.has(sidB) ? storeOrderMap.get(sidB) : 999;
+            return orderA - orderB;
+        });
+    }, [items, optimizedRoute?.sortedStores]);
     const subtotal = items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
     const deliveryCharge = Number(order?.deliveryCharge ?? 30);
     const totalAmount = order?.totalAmount ?? (subtotal + (deliveryCharge > 0 ? deliveryCharge : 0));
@@ -707,7 +577,7 @@ const DeliveryActiveOrder = () => {
                         </span>
                     </div>
                     <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                        {items.map((item, index) => (
+                        {sortedItems.map((item, index) => (
                             <div key={index} className="p-3 sm:p-3.5 flex gap-3 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-3">
                                 <div className="w-14 h-14 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden flex-shrink-0 relative">
                                     <img
@@ -791,7 +661,38 @@ const DeliveryActiveOrder = () => {
                 </div>
 
                 {/* Porter-style Delivery Route Map */}
-                <RouteMap order={order} stores={stores} t={t} />
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-[#2E5A2E]/10 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
+                                <Navigation size={16} />
+                            </div>
+                            <h3 className="font-bold text-gray-900 dark:text-white text-sm">
+                                {t('Delivery Route')} {optimizedRoute?.hasMultipleStores ? `(${optimizedRoute.sortedStores.length} Stores)` : ''}
+                            </h3>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={refreshLocation}
+                            className="text-[11px] font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:underline flex items-center gap-1 active:scale-95"
+                        >
+                            {isDetectingGps ? (
+                                <span className="animate-pulse">{t('Updating GPS...')}</span>
+                            ) : (
+                                <span>{t('Refresh GPS')}</span>
+                            )}
+                        </button>
+                    </div>
+
+                    <DeliveryRouteTimeline
+                        order={order}
+                        stores={stores}
+                        driverCoords={driverCoords}
+                        compact={false}
+                        showMapButtons={true}
+                        t={t}
+                    />
+                </div>
 
             </main>
 
