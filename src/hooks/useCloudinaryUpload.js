@@ -18,7 +18,7 @@ const useCloudinaryUpload = () => {
     const [error, setError] = useState(null);
     const lastFileRef = useRef(null);
 
-    const performUploadWithRetry = async (compressedFile, maxRetries = 2) => {
+    const performUploadWithRetry = async (compressedFile, maxRetries = 2, queryString = '') => {
         let attempt = 0;
         let lastErr = null;
 
@@ -34,7 +34,7 @@ const useCloudinaryUpload = () => {
                 formData.append('image', compressedFile);
 
                 // Dedicated 90-second timeout for upload, progress tracking
-                const response = await api.post('/upload/image', formData, {
+                const response = await api.post(`/upload/image${queryString}`, formData, {
                     headers: {
                         'Content-Type': undefined
                     },
@@ -66,10 +66,12 @@ const useCloudinaryUpload = () => {
         throw lastErr || new Error('Upload failed after multiple attempts');
     };
 
-    const uploadImage = useCallback(async (file) => {
+    const uploadImage = useCallback(async (file, options = {}) => {
         if (!file) {
             throw new Error('Please select an image file to upload.');
         }
+
+        const { isCategory = false } = options;
 
         lastFileRef.current = file;
         setUploading(true);
@@ -86,7 +88,9 @@ const useCloudinaryUpload = () => {
             setProgress(10); // Compression stage
 
             // 2. Pre-upload client compression (converts 10MB photo to ~300KB)
-            const compressed = await compressImage(file, {
+            //    Skip compression for category PNG files to preserve transparency
+            const isCategoryPng = isCategory && (file.type === 'image/png' || /\.png$/i.test(file.name));
+            const compressed = isCategoryPng ? file : await compressImage(file, {
                 maxWidth: 1600,
                 maxHeight: 1600,
                 quality: 0.82
@@ -95,7 +99,8 @@ const useCloudinaryUpload = () => {
             setProgress(25); // Compression complete, beginning network upload
 
             // 3. Upload with automatic retry
-            const url = await performUploadWithRetry(compressed, 2);
+            // Pass ?category=1 so backend preserves PNG transparency for category images
+            const url = await performUploadWithRetry(compressed, 2, isCategory ? '?category=1' : '');
 
             setUploading(false);
             setProgress(100);

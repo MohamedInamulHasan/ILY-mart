@@ -95,9 +95,11 @@ export const uploadImage = async (req, res) => {
         });
 
         // Fast streaming upload
-        // For PNG files: preserve format & alpha channel (no white background from fetch_format: 'auto')
+        // For category PNG uploads: preserve transparency (no fetch_format auto which causes white bg)
+        const isCategoryUpload = req.query.category === '1';
         const isPng = req.file.mimetype === 'image/png' || (req.file.originalname || '').toLowerCase().endsWith('.png');
-        const uploadOptions = isPng
+        const preservePng = isCategoryUpload && isPng;
+        const uploadOptions = preservePng
             ? { folder: 'homly_products', resource_type: 'image', format: 'png' }
             : { folder: 'homly_products', resource_type: 'image', quality: 'auto', fetch_format: 'auto' };
         const result = await streamUploadToCloudinary(req.file.buffer, uploadOptions);

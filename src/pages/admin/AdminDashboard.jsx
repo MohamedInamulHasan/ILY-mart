@@ -2111,7 +2111,7 @@ const CategoryManagement = () => {
         const file = e.target.files[0];
         if (!file) return;
         try {
-            const url = await uploadImage(file);
+            const url = await uploadImage(file, { isCategory: true });
             await updateAllCategoryImage(url);
             setEditingAllImage(false);
         } catch (err) {
@@ -2150,7 +2150,7 @@ const CategoryManagement = () => {
         const file = e.target.files[0];
         if (file) {
             try {
-                const imageUrl = await uploadImage(file);
+                const imageUrl = await uploadImage(file, { isCategory: true });
                 setFormData(prev => ({ ...prev, image: imageUrl }));
             } catch (error) {
                 console.error('Error uploading category image:', error);
@@ -2383,7 +2383,7 @@ const CategoryManagement = () => {
                                                                     const file = e.target.files[0];
                                                                     if (!file) return;
                                                                     try {
-                                                                        const url = await uploadImage(file);
+                                                                        const url = await uploadImage(file, { isCategory: true });
                                                                         await updateCategory({ id: category._id || category.id, data: { ...category, image: url } });
                                                                     } catch {
                                                                         alert(t('Failed to upload image'));
