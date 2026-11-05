@@ -216,7 +216,7 @@ const DeliveryActiveOrder = () => {
             targetUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${sName}, Ilayangudi`)}`;
         } else if (rawLoc.startsWith('http://') || rawLoc.startsWith('https://')) {
             targetUrl = rawLoc;
-        } else if (/^[-0-9.]+,s*[-0-9.]+$/.test(rawLoc)) {
+        } else if (/^[-0-9.]+,\s*[-0-9.]+$/.test(rawLoc)) {
             targetUrl = `https://www.google.com/maps?q=${rawLoc.replace(/\s+/g, '')}`;
         } else if (rawLoc.includes('goo.gl') || rawLoc.includes('maps.app') || rawLoc.includes('google.com')) {
             targetUrl = `https://${rawLoc.replace(/^https?:\/\//, '')}`;

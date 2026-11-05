@@ -48,6 +48,12 @@ export const compressImage = async (file, options = {}) => {
         return file;
     }
 
+    // Skip compression entirely for PNG files to preserve transparency (alpha channel)
+    const isPngFile = file.type === 'image/png' || /\.png$/i.test(file.name);
+    if (isPngFile) {
+        return file;
+    }
+
     return new Promise((resolve) => {
         const img = new Image();
         const reader = new FileReader();
