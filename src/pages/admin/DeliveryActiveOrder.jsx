@@ -203,10 +203,16 @@ const DeliveryActiveOrder = () => {
         const sName = getItemStoreName(item);
         const sid = String(item.storeId?._id || item.storeId || item.store?._id || item.store?.id || '');
         const cleanItemName = (item.storeName || item.storeId?.name || '').trim().toLowerCase();
-        const found = stores.find(s => 
-            (sid && String(s._id || s.id) === sid) ||
-            (cleanItemName && s.name && s.name.trim().toLowerCase() === cleanItemName)
-        );
+        const found = stores.find(s => {
+            const sIdStr = String(s._id || s.id || '');
+            if (sid && sIdStr === sid) return true;
+            const storeName = (s.name || '').trim().toLowerCase();
+            if (cleanItemName && storeName) {
+                if (storeName === cleanItemName) return true;
+                if (storeName.includes(cleanItemName) || cleanItemName.includes(storeName)) return true;
+            }
+            return false;
+        });
 
         let rawLoc = item.storeLocation || found?.location || item.storeId?.location || '';
         rawLoc = String(rawLoc || '').trim();

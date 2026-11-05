@@ -69,7 +69,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             />
                         ) : (
                             <img
-                                src="https://cdn-icons-png.flaticon.com/512/2311/2311524.png"
+                                src="https://cdn-icons-png.flaticon.com/512/3014/3014470.png"
                                 alt="All Categories"
                                 className="w-full h-full object-contain transition-transform p-1.5"
                             />
@@ -126,7 +126,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     alt={category.name}
                                     className="w-full h-full object-contain rounded-2xl transition-transform"
                                     loading="lazy" decoding="async"
-                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
+                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/3014/3014470.png'; }}
                                 />
                             </div>
                             <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
