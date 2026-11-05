@@ -195,7 +195,7 @@ const ProductDetails = () => {
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 flex flex-col lg:py-12 lg:px-8">
             
             {/* Desktop Layout Container Wrapper */}
-            <div className="flex flex-col lg:flex-row lg:max-w-[1200px] lg:mx-auto lg:bg-white lg:dark:bg-gray-800 lg:rounded-[3rem] lg:shadow-sm lg:overflow-hidden flex-1 lg:flex-initial w-full">
+            <div className="flex flex-col lg:flex-row lg:max-w-[1200px] lg:mx-auto lg:bg-white lg:dark:bg-gray-800 lg:rounded-2xl lg:shadow-sm lg:overflow-hidden flex-1 lg:flex-initial w-full">
             
                 {/* Image Section (Top on mobile, Left on desktop) */}
                 <div className="relative w-full lg:w-1/2 aspect-square md:aspect-[16/8] lg:aspect-auto lg:min-h-[600px] bg-[#E8EAEF] lg:bg-gray-50/50 dark:bg-gray-900 lg:dark:bg-gray-900/50 flex items-center justify-center p-0 lg:p-12 overflow-hidden border-r-0 lg:border-r border-gray-100 dark:border-gray-700/50">
@@ -261,13 +261,14 @@ const ProductDetails = () => {
                 </div>
 
                 {/* Content Section (Pull-up on mobile, Right on desktop) */}
-                <div className="flex-1 bg-white dark:bg-[#1a1f26] rounded-t-[2.5rem] lg:rounded-none -mt-12 lg:mt-0 relative z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none px-8 pt-10 pb-8 lg:p-12 lg:flex lg:flex-col lg:justify-center border-t border-transparent dark:border-white/5">
+                <div className="flex-1 bg-white dark:bg-[#1a1f26] rounded-t-2xl lg:rounded-none -mt-12 lg:mt-0 relative z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none px-8 pt-10 pb-8 lg:p-12 lg:flex lg:flex-col lg:justify-center border-t border-transparent dark:border-white/5">
                     <div className="max-w-2xl mx-auto w-full">
                     {/* Header: Title & Unit */}
                     <div className="mb-2 min-w-0">
                         <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white leading-tight" title={product.title}>
                             {renderBilingualTitle(t(product, 'title') || product.title, language, {
-                                subClassName: 'text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium leading-normal mt-0.5'
+                                subClassName: 'text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium leading-normal mt-0.5',
+                                tagClassName: 'inline-flex items-center justify-center text-xs sm:text-sm font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2.5px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center'
                             })}
                         </h1>
                         {product.unit && (
@@ -288,7 +289,7 @@ const ProductDetails = () => {
                         </div>
                         
                         {/* New Minimalist Quantity Selector */}
-                        <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-1 rounded-2xl">
+                        <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-1 rounded-xl">
                             <button
                                 onClick={() => updateQuantity(productId, Math.max(0, quantity - 1))}
                                 className="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
@@ -326,7 +327,7 @@ const ProductDetails = () => {
 
                         {/* Parsed Tags Section - Table Format */}
                         {descTags.length > 0 && (
-                            <div className="mt-6 border border-black/10 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="mt-6 border border-black/10 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
                                 <table className="w-full text-left border-collapse">
                                     <tbody>
                                         {descTags.map((tag, index) => {
@@ -363,7 +364,7 @@ const ProductDetails = () => {
                     {/* Action Button */}
                     <div className="w-full flex justify-center mt-4 mb-8">
                         {!isCurrentlyAvailable ? (
-                            <div className="w-full py-4 bg-red-50 dark:bg-red-900/10 rounded-full border border-red-100 dark:border-red-800 text-center">
+                            <div className="w-full py-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-800 text-center">
                                 <p className="text-red-600 dark:text-red-400 font-bold">
                                      {!isStoreCurrentlyOpen ? t('Store Closed') : t('Currently Unavailable')}
                                 </p>
@@ -371,7 +372,7 @@ const ProductDetails = () => {
                         ) : (
                             <button
                                 onClick={handleCheckout}
-                                className="w-full bg-black text-white py-4 rounded-full font-normal text-[15px] active:scale-[0.98] transition-transform flex items-center justify-center"
+                                className="w-full bg-black text-white py-3.5 rounded-xl font-normal text-[15px] active:scale-[0.98] transition-transform flex items-center justify-center"
                             >
                                 <span>{t('Add product')}</span>
                             </button>

@@ -702,39 +702,7 @@ const DeliveryActiveOrder = () => {
                     </div>
                 </div>
 
-                {/* Porter-style Delivery Route Map */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-[#2E5A2E]/10 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                <Navigation size={16} />
-                            </div>
-                            <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-                                {t('Delivery Route')} {optimizedRoute?.hasMultipleStores ? `(${optimizedRoute.sortedStores.length} Stores)` : ''}
-                            </h3>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={refreshLocation}
-                            className="text-[11px] font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:underline flex items-center gap-1 active:scale-95"
-                        >
-                            {isDetectingGps ? (
-                                <span className="animate-pulse">{t('Updating GPS...')}</span>
-                            ) : (
-                                <span>{t('Refresh GPS')}</span>
-                            )}
-                        </button>
-                    </div>
-
-                    <DeliveryRouteTimeline
-                        order={order}
-                        stores={stores}
-                        driverCoords={driverCoords}
-                        compact={false}
-                        showMapButtons={true}
-                        t={t}
-                    />
-                </div>
+                
 
             </main>
 

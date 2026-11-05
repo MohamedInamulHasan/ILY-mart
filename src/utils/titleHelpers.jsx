@@ -19,7 +19,7 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
         hideTag = false
     } = options;
 
-    const default3DTagClass = 'inline-flex items-center justify-center text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center';
+    const default3DTagClass = 'inline-flex items-center justify-center text-[10.5px] sm:text-[11.5px] font-black px-1.5 py-0.5 rounded-md bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center';
     const resolvedTagClass = tagClassName || default3DTagClass;
 
     // Extract tag if present, e.g. [1], [2], [1/2]
