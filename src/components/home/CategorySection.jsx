@@ -24,7 +24,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                     {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                         <div key={i} className="flex flex-col items-center gap-2 min-w-[72px] md:min-w-[88px]">
                             {/* Circle shape placeholder with Blinkit shimmer */}
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl blinkit-shimmer"></div>
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl blinkit-shimmer"></div>
                             {/* Text label placeholder with Blinkit shimmer */}
                             <div className="h-3 w-12 rounded-full blinkit-shimmer"></div>
                         </div>
@@ -58,14 +58,14 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                 {/* All Categories Option — styled like other category items */}
                 <div
                     onClick={() => onSelectCategory('All')}
-                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[70px] sm:min-w-[80px] md:min-w-[92px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'opacity-100 scale-105' : 'opacity-50 hover:opacity-85'}`}
+                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[84px] sm:min-w-[96px] md:min-w-[110px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'scale-105 filter brightness-125 contrast-105' : 'scale-100 opacity-100 hover:scale-105'}`}
                 >
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square flex items-center justify-center bg-transparent transition-transform group-hover:scale-105">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform">
                         {allCategoryImage ? (
                             <img
                                 src={allCategoryImage}
                                 alt="All Categories"
-                                className="w-full h-full object-contain transition-transform"
+                                className="w-full h-full object-contain rounded-2xl transition-transform"
                             />
                         ) : (
                             <img
@@ -98,7 +98,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             }
                         }
                         return (
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[78px] sm:max-w-[86px] md:max-w-[105px] transition-colors ${selectedCategory === 'All' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${selectedCategory === 'All' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
                                 <span className={`text-[11px] md:text-xs leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-bold' : 'font-semibold'}`} title={mainPart}>
                                     {mainPart}
                                 </span>
@@ -118,18 +118,18 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                         <div
                             key={category._id || category.id}
                             onClick={() => onSelectCategory(category.name)}
-                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[70px] sm:min-w-[80px] md:min-w-[92px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'opacity-100 scale-105' : 'opacity-50 hover:opacity-85'}`}
+                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[84px] sm:min-w-[96px] md:min-w-[110px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'scale-105 filter brightness-125 contrast-105' : 'scale-100 opacity-100 hover:scale-105'}`}
                         >
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square flex items-center justify-center bg-transparent transition-transform group-hover:scale-105">
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform">
                                 <img
                                     src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                     alt={category.name}
-                                    className="w-full h-full object-contain transition-transform"
+                                    className="w-full h-full object-contain rounded-2xl transition-transform"
                                     loading="lazy" decoding="async"
                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                 />
                             </div>
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[78px] sm:max-w-[86px] md:max-w-[105px] transition-colors ${isSelected ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${isSelected ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-600 dark:text-gray-400'}`}>
                                 {(() => {
                                     const fullTitle = t(category.name);
                                     let mainPart = fullTitle;

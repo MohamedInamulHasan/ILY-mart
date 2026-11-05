@@ -28,6 +28,7 @@ import DeliveryStatusPopup from '../../components/DeliveryStatusPopup';
 import { useDriverLocation, optimizeDeliveryRoute } from '../../utils/deliveryRouteHelper';
 import DeliveryRouteTimeline from '../../components/DeliveryRouteTimeline';
 import { playSuccessSound } from '../../utils/soundHelper';
+import { openExternalLink } from '../../utils/linkHelper';
 import { isNativeAndroid, setOverlayHasAcceptedOrder, hideFloatingOverlay } from '../../utils/floatingOverlay';
 
 
@@ -198,21 +199,32 @@ const DeliveryActiveOrder = () => {
         return t('Ilayangudi Store');
     };
 
-    const getItemStoreLocation = (item) => {
-        if (item.storeLocation) return item.storeLocation;
+        const handleOpenStoreLocation = (item) => {
+        const sName = getItemStoreName(item);
         const sid = String(item.storeId?._id || item.storeId || item.store?._id || item.store?.id || '');
-        const sName = (item.storeName || item.storeId?.name || '').trim().toLowerCase();
+        const cleanItemName = (item.storeName || item.storeId?.name || '').trim().toLowerCase();
         const found = stores.find(s => 
             (sid && String(s._id || s.id) === sid) ||
-            (sName && s.name && s.name.trim().toLowerCase() === sName)
+            (cleanItemName && s.name && s.name.trim().toLowerCase() === cleanItemName)
         );
-        if (found?.location) return found.location;
-        if (item.storeId?.location) return item.storeId.location;
-        const name = found?.name || item.storeName || item.storeId?.name;
-        if (name) {
-            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ', Ilayangudi')}`;
+
+        let rawLoc = item.storeLocation || found?.location || item.storeId?.location || '';
+        rawLoc = String(rawLoc || '').trim();
+
+        let targetUrl = '';
+        if (!rawLoc) {
+            targetUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${sName}, Ilayangudi`)}`;
+        } else if (rawLoc.startsWith('http://') || rawLoc.startsWith('https://')) {
+            targetUrl = rawLoc;
+        } else if (/^[-0-9.]+,s*[-0-9.]+$/.test(rawLoc)) {
+            targetUrl = `https://www.google.com/maps?q=${rawLoc.replace(/\s+/g, '')}`;
+        } else if (rawLoc.includes('goo.gl') || rawLoc.includes('maps.app') || rawLoc.includes('google.com')) {
+            targetUrl = `https://${rawLoc.replace(/^https?:\/\//, '')}`;
+        } else {
+            targetUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${rawLoc}, Ilayangudi`)}`;
         }
-        return null;
+
+        openExternalLink(targetUrl);
     };
 
     // When Leave button is clicked: set stay to false and go to delivery dashboard
@@ -612,25 +624,18 @@ const DeliveryActiveOrder = () => {
                                             subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
                                         })}
                                     </div>
-                                    {(item.storeId || item.storeName) && (() => {
-                                        const sName = getItemStoreName(item);
-                                        const sLoc = getItemStoreLocation(item);
-                                        return (
-                                            <div className="mt-0.5">
-                                                <a
-                                                    href={sLoc || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sName + ', Ilayangudi')}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline active:scale-95 transition-all truncate max-w-full group"
-                                                    title={t('Open Store Location in Google Maps')}
-                                                >
-                                                    <MapPin size={11} className="shrink-0 text-red-500 group-hover:scale-110 transition-transform" />
-                                                    <span className="truncate">{sName}</span>
-                                                </a>
-                                            </div>
-                                        );
-                                    })()}
+                                    {(item.storeId || item.storeName) && (
+                                        <p
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleOpenStoreLocation(item);
+                                            }}
+                                            className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5 cursor-pointer hover:underline hover:text-gray-700 dark:hover:text-gray-300 active:opacity-70 transition-colors"
+                                            title={t('Click to open store location in Google Maps')}
+                                        >
+                                            {getItemStoreName(item)}
+                                        </p>
+                                    )}
                                     <div className="flex items-center justify-between mt-1">
                                         <div>
                                             <p className="text-[15px] font-bold text-gray-900 dark:text-white leading-none">

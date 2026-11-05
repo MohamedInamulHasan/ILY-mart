@@ -101,11 +101,11 @@ const Categories = () => {
                                     to={`/category/${category.name}`}
                                     className="flex flex-col items-center gap-2 group"
                                 >
-                                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square flex items-center justify-center bg-transparent transition-transform group-hover:scale-105">
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform group-hover:scale-105">
                                         <img
                                             src={category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}
                                             alt={category.name}
-                                            className="w-full h-full object-contain transition-transform"
+                                            className="w-full h-full object-contain rounded-2xl transition-transform"
                                             loading="lazy"
                                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/2311/2311524.png'; }}
                                         />

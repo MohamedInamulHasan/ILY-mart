@@ -70,36 +70,44 @@ export const compressImage = async (file, options = {}) => {
                     }
                 }
 
+                const isPng = file.type === 'image/png' || /\.png$/i.test(file.name);
+                const isWebp = file.type === 'image/webp' || /\.webp$/i.test(file.name);
+                const preserveAlpha = isPng || isWebp;
+
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
 
-                const ctx = canvas.getContext('2d', { alpha: false });
-                // Fill with white background in case of transparent PNG converted to JPEG
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, width, height);
+                const ctx = canvas.getContext('2d', { alpha: preserveAlpha });
+                
+                // Only fill white background for JPEG files that have no alpha channel
+                if (!preserveAlpha) {
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, width, height);
+                }
                 ctx.drawImage(img, 0, 0, width, height);
+
+                const outputMime = isPng ? 'image/png' : (isWebp ? 'image/webp' : 'image/jpeg');
+                const outputExt = isPng ? '.png' : (isWebp ? '.webp' : '.jpg');
 
                 // Try converting to blob
                 canvas.toBlob(
                     (blob) => {
                         if (!blob) {
-                            // Fallback to original file if toBlob fails
                             return resolve(file);
                         }
 
-                        // Create clean File object with original name and .jpg extension
-                        const cleanName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                        const cleanName = file.name.replace(/\.[^/.]+$/, "") + outputExt;
                         const compressedFile = new File([blob], cleanName, {
-                            type: 'image/jpeg',
+                            type: outputMime,
                             lastModified: Date.now()
                         });
 
-                        console.log(`🖼️ Image compressed: ${(file.size / 1024).toFixed(0)}KB ➔ ${(compressedFile.size / 1024).toFixed(0)}KB (${width}x${height})`);
+                        console.log(`🖼️ Image compressed (${outputMime}): ${(file.size / 1024).toFixed(0)}KB ➔ ${(compressedFile.size / 1024).toFixed(0)}KB (${width}x${height})`);
                         resolve(compressedFile);
                     },
-                    'image/jpeg',
-                    quality
+                    outputMime,
+                    isPng ? undefined : quality
                 );
             };
 
