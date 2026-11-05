@@ -108,6 +108,7 @@ export const getStore = async (req, res, next) => {
 // @access  Private/Admin
 export const createStore = async (req, res, next) => {
     try {
+        if (req.body && req.body.location) { req.body.location = await autoNormalizeStoreLocation(req.body.location); }
         const store = await Store.create(req.body);
 
         invalidateStoreCache();
@@ -127,6 +128,7 @@ export const updateStore = async (req, res, next) => {
     try {
         // Prevent overwriting existing image with empty string
         const updateData = { ...req.body };
+        if (updateData.location) { updateData.location = await autoNormalizeStoreLocation(updateData.location); }
         if (!updateData.image) {
             delete updateData.image;
         }
@@ -267,5 +269,66 @@ export const getStoreImage = async (req, res, next) => {
         }
     } catch (error) {
         next(error);
+    }
+};
+
+// Helper to auto-normalize short or redirecting map links
+async function autoNormalizeStoreLocation(location) {
+    if (!location || typeof location !== 'string') return location;
+    const trimmed = location.trim();
+    if (!trimmed.includes('goo.gl') && !trimmed.includes('maps.app')) {
+        const directMatch = trimmed.match(/^([-]?\d+\.\d+)[\s,+]+\s*([-]?\d+\.\d+)$/);
+        if (directMatch) return `https://www.google.com/maps?q=${directMatch[1]},${directMatch[2]}`;
+        return trimmed;
+    }
+    try {
+        const target = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+        const resp = await fetch(target, {
+            redirect: 'follow',
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+        });
+        const finalUrl = resp.url || target;
+        const decoded = decodeURIComponent(decodeURIComponent(finalUrl));
+        const coordMatch = decoded.match(/([-]?\d+\.\d+)[\s,+]+\s*([-]?\d+\.\d+)/);
+        if (coordMatch) {
+            return `https://www.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}`;
+        }
+        return finalUrl;
+    } catch (e) {
+        console.warn('Auto normalize location error:', e.message);
+        try {
+            const uResp = await fetch('https://unshorten.me/json/' + encodeURIComponent(trimmed));
+            const uData = await uResp.json();
+            if (uData && uData.resolved_url) {
+                const uDecoded = decodeURIComponent(decodeURIComponent(uData.resolved_url));
+                const m = uDecoded.match(/([-]?\d+\.\d+)[\s,+]+\s*([-]?\d+\.\d+)/);
+                if (m) return `https://www.google.com/maps?q=${m[1]},${m[2]}`;
+                return uData.resolved_url;
+            }
+        } catch (uErr) {}
+    }
+    return trimmed;
+}
+
+// @desc    Resolve short map links (e.g. maps.app.goo.gl) to direct coordinates URL
+// @route   GET /api/stores/resolve-map-link
+// @access  Public
+export const resolveMapLink = async (req, res, next) => {
+    try {
+        const { url } = req.query;
+        if (!url) {
+            return res.status(400).json({ success: false, message: 'URL is required' });
+        }
+        const resolved = await autoNormalizeStoreLocation(url);
+        const m = resolved.match(/([-]?\d+\.\d+)[\s,+]+\s*([-]?\d+\.\d+)/);
+        res.json({
+            success: true,
+            originalUrl: url,
+            resolvedUrl: resolved,
+            coords: m ? { lat: m[1], lng: m[2] } : null
+        });
+    } catch (error) {
+        console.error('Error resolving map link:', error.message);
+        res.status(500).json({ success: false, message: error.message });
     }
 };

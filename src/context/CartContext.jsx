@@ -339,7 +339,7 @@ export const CartProvider = ({ children }) => {
                 const isMultiStore = currentUniqueStores.size > 1;
                 const currentCharge = 20 + (currentUniqueStores.size - 1) * 5;
                 const newCharge = nextStoreCharge || (currentCharge + 5);
-                const extraCharge = newCharge - currentCharge > 0 ? (newCharge - currentCharge) : 5;
+                const extraCharge = newCharge - currentCharge > 0 ? (newCharge - currentCharge) : 10;
 
                 return (
                     <div 

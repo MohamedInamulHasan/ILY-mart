@@ -203,13 +203,13 @@ const ProductDetails = () => {
                     <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-30">
                         <button
                             onClick={() => navigate(-1)}
-                            className="w-12 h-12 flex items-center justify-center bg-white/90 dark:bg-white/80 rounded-full shadow-sm text-gray-900 dark:text-gray-900 transition-transform active:scale-90"
+                            className="w-10 h-10 flex items-center justify-center text-gray-900 dark:text-gray-900 transition-transform active:scale-90"
                         >
                             <ArrowLeft size={24} />
                         </button>
                         <button
                             onClick={handleToggleSave}
-                            className="w-12 h-12 flex items-center justify-center bg-white/90 dark:bg-white/80 rounded-full shadow-sm text-gray-900 dark:text-gray-900 transition-transform active:scale-90"
+                            className="w-10 h-10 flex items-center justify-center text-gray-900 dark:text-gray-900 transition-transform active:scale-90"
                         >
                             <Bookmark size={24} className={isSaved ? "fill-[#FF5C5C] text-[#FF5C5C]" : "text-gray-400"} />
                         </button>

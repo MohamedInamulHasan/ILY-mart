@@ -744,9 +744,18 @@ const StoreManagement = () => {
                                     <input
                                         type="text"
                                         value={storeForm.location || ''}
-                                        onChange={(e) => setStoreForm({ ...storeForm, location: e.target.value })}
+                                        onChange={(e) => {
+                                            let val = e.target.value;
+                                            const trimmed = val.trim();
+                                            // Auto-convert coordinates like "9.628212, 78.627137"
+                                            const coordMatch = trimmed.match(/^([-]?\d+\.\d+)[\s,+]+\s*([-]?\d+\.\d+)$/);
+                                            if (coordMatch) {
+                                                val = `https://www.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}`;
+                                            }
+                                            setStoreForm({ ...storeForm, location: val });
+                                        }}
                                         className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none text-sm"
-                                        placeholder="Paste Google Maps link or detect below"
+                                        placeholder="Paste coordinates (e.g. 9.6282, 78.6271) or Google Maps link"
                                     />
                                     <button
                                         type="button"
@@ -758,7 +767,7 @@ const StoreManagement = () => {
                                                 const { latitude, longitude } = pos.coords;
                                                 setStoreForm(prev => ({ ...prev, location: `https://www.google.com/maps?q=${latitude},${longitude}` }));
                                             } catch {
-                                                alert('Could not detect GPS. Please paste a Google Maps link manually.');
+                                                alert('Could not detect GPS. Please paste coordinates (e.g. 9.6282, 78.6271) manually.');
                                             }
                                         }}
                                         className="px-3 py-2 rounded-xl bg-[#2E5A2E] text-white text-xs font-bold flex items-center gap-1.5 shrink-0 hover:bg-[#1a3d1a] active:scale-95 transition-transform"
@@ -767,9 +776,28 @@ const StoreManagement = () => {
                                         Detect
                                     </button>
                                 </div>
-                                {storeForm.location && (
-                                    <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                                        ✓ Location attached
+                                {storeForm.location ? (
+                                    <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
+                                        <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                            ✓ Location attached
+                                        </p>
+                                        <a
+                                            href={storeForm.location}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-[#2E5A2E] dark:text-[#CBF9B2] font-bold hover:underline"
+                                        >
+                                            Test Link ↗
+                                        </a>
+                                        {storeForm.location.includes('maps.app.goo.gl') && (
+                                            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                                                (Tip: maps.app.goo.gl is blocked by Indian ISPs. We recommend clicking Detect or pasting coordinates)
+                                            </span>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                                        Tip: You can paste coordinates directly (e.g. 9.628212, 78.627137) or click Detect.
                                     </p>
                                 )}
                             </div>

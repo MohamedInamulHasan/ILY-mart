@@ -161,7 +161,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                 e.stopPropagation();
                                 toggleSaveProduct(product);
                             }}
-                            className={`absolute top-2 right-2 z-[30] p-1.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-sm transition-all active:scale-90 ${savedProducts?.some(p => (p._id || p.id || p) === productId) ? 'text-[#FF5C5C]' : 'text-gray-400'}`}
+                            className={`absolute top-2 right-2 z-[30] p-1.5 transition-all active:scale-90 ${savedProducts?.some(p => (p._id || p.id || p) === productId) ? 'text-[#FF5C5C]' : 'text-gray-400'}`}
                         >
                             <Bookmark 
                                 size={14} 
@@ -288,7 +288,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                             e.stopPropagation();
                             toggleSaveProduct(product);
                         }}
-                        className={`absolute top-2 right-2 z-[30] p-1.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-sm transition-all active:scale-90 ${savedProducts?.some(p => (p._id || p.id || p) === productId) ? 'text-[#FF5C5C]' : 'text-gray-400'}`}
+                        className={`absolute top-2 right-2 z-[30] p-1.5 transition-all active:scale-90 ${savedProducts?.some(p => (p._id || p.id || p) === productId) ? 'text-[#FF5C5C]' : 'text-gray-400'}`}
                     >
                         <Bookmark 
                             size={14} 

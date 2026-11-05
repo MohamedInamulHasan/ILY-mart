@@ -7,6 +7,7 @@ import {
     deleteStore,
     verifyStorePassword,
     getStoreImage,
+    resolveMapLink,
     updateStoresOrder
 } from '../controllers/storeController.js';
 
@@ -26,6 +27,7 @@ router.route('/:id')
     .delete(deleteStore);
 
 router.post('/:id/verify-password', protect, adminOnly, verifyStorePassword);
+router.get('/resolve-map-link', resolveMapLink);
 router.get('/:id/image', getStoreImage);
 
 export default router;

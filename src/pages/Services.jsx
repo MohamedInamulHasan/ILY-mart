@@ -185,19 +185,7 @@ const Services = () => {
                                 </p>
                             </div>
 
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                                <button 
-                                    onClick={() => navigate('/cart')}
-                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
-                                >
-                                    <ShoppingCart size={22} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
-                                    {cartCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
-                                            {cartCount}
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>

@@ -293,7 +293,7 @@ export const calculateDeliveryCharge = (items) => {
 
         const storeCount = uniqueStoreIds.size;
         if (storeCount <= 1) return 20;
-        return 20 + (storeCount - 1) * 5;
+        return 20 + (storeCount - 1) * 10;
     } catch (err) {
         console.warn('calculateDeliveryCharge fallback error:', err);
         return 20;
