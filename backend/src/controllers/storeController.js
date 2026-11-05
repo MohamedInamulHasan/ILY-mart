@@ -44,10 +44,8 @@ export const getStores = async (req, res, next) => {
             count: processedStores.length,
             data: processedStores
         };
-        if (!search) {
-            storeCache = payload;
-            storeCacheTimestamp = Date.now();
-        }
+        storeCache = payload;
+        storeCacheTimestamp = Date.now();
         res.status(200).json(payload);
     } catch (error) {
         next(error);
