@@ -148,7 +148,8 @@ const StoreManagement = () => {
                 openingTime: myStore.openingTime || '09:00',
                 closingTime: myStore.closingTime || '21:00',
                 mobile: myStore.mobile || '',
-                category: validCategories
+                category: validCategories,
+                location: myStore.location || ''
             });
         }
     }, [isStoreAdmin, myStore, stores, editingStore, categories]);
@@ -169,7 +170,8 @@ const StoreManagement = () => {
         closingTime: '21:00',
         mobile: '',
         timingType: 'daily',
-        category: []
+        category: [],
+        location: ''
     });
     const [productForm, setProductForm] = useState({
         title: '',
@@ -242,7 +244,8 @@ const StoreManagement = () => {
             closingTime: store.closingTime || '21:00',
             mobile: store.mobile || '',
             timingType: store.timingType || 'daily',
-            category: validCategories
+            category: validCategories,
+            location: store.location || ''
         });
         setView('form');
     };
@@ -284,7 +287,8 @@ const StoreManagement = () => {
             timingType: storeForm.timingType,
 
             image: storeForm.image,
-            rating: storeForm.rating || 4.5
+            rating: storeForm.rating || 4.5,
+            location: storeForm.location || ''
         };
 
         try {
@@ -303,7 +307,7 @@ const StoreManagement = () => {
                 await addStore(storeData);
                 alert(t('Store added successfully!'));
             }
-            setStoreForm({ name: '', address: '', mobile: '', image: '', rating: 4.5, openingTime: '09:00', closingTime: '21:00', timingType: 'daily', category: [] });
+            setStoreForm({ name: '', address: '', mobile: '', image: '', rating: 4.5, openingTime: '09:00', closingTime: '21:00', timingType: 'daily', category: [], location: '' });
             setEditingStore(null);
             setView('list');
         } catch (error) {
@@ -520,7 +524,7 @@ const StoreManagement = () => {
                         <button
                             onClick={() => {
                                 setEditingStore(null);
-                                setStoreForm({ name: '', address: '', image: '', rating: 4.5, openingTime: '09:00', closingTime: '21:00', mobile: '', category: [] });
+                                setStoreForm({ name: '', address: '', image: '', rating: 4.5, openingTime: '09:00', closingTime: '21:00', mobile: '', category: [], location: '' });
                                 setView('form');
                             }}
                             className="flex items-center gap-2 px-4 py-2 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors font-bold shadow-sm"
@@ -730,6 +734,44 @@ const StoreManagement = () => {
                                     placeholder="e.g., 123 Main St"
                                     required
                                 />
+                            </div>
+
+                            <div className="col-span-full">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Store GPS Location <span className="text-xs text-gray-400 font-normal ml-1">(optional — helps delivery route)</span>
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={storeForm.location || ''}
+                                        onChange={(e) => setStoreForm({ ...storeForm, location: e.target.value })}
+                                        className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none text-sm"
+                                        placeholder="Paste Google Maps link or detect below"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            try {
+                                                const pos = await new Promise((res, rej) =>
+                                                    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 12000 })
+                                                );
+                                                const { latitude, longitude } = pos.coords;
+                                                setStoreForm(prev => ({ ...prev, location: `https://www.google.com/maps?q=${latitude},${longitude}` }));
+                                            } catch {
+                                                alert('Could not detect GPS. Please paste a Google Maps link manually.');
+                                            }
+                                        }}
+                                        className="px-3 py-2 rounded-xl bg-[#2E5A2E] text-white text-xs font-bold flex items-center gap-1.5 shrink-0 hover:bg-[#1a3d1a] active:scale-95 transition-transform"
+                                    >
+                                        <MapPin size={15} />
+                                        Detect
+                                    </button>
+                                </div>
+                                {storeForm.location && (
+                                    <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                                        ✓ Location attached
+                                    </p>
+                                )}
                             </div>
 
                             <div className="col-span-full bg-gray-50 dark:bg-gray-750 p-4 rounded-2xl border border-gray-200/80 dark:border-gray-700">

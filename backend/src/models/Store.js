@@ -61,6 +61,10 @@ const storeSchema = new mongoose.Schema({
     order: {
         type: Number,
         default: 0
+    },
+    location: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

@@ -28,6 +28,159 @@ import DeliveryStatusPopup from '../../components/DeliveryStatusPopup';
 import { playSuccessSound } from '../../utils/soundHelper';
 import { isNativeAndroid, setOverlayHasAcceptedOrder, hideFloatingOverlay } from '../../utils/floatingOverlay';
 
+
+// Haversine distance in km between two [lat,lon] points
+function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Parse lat/lon from a Google Maps URL like https://www.google.com/maps?q=lat,lon
+function parseLatLon(url) {
+    if (!url) return null;
+    // Handle ?q=lat,lon
+    const qMatch = url.match(/[?&]q=([-\d.]+),([-\d.]+)/);
+    if (qMatch) return { lat: parseFloat(qMatch[1]), lon: parseFloat(qMatch[2]) };
+    // Handle @lat,lon
+    const atMatch = url.match(/@([-\d.]+),([-\d.]+)/);
+    if (atMatch) return { lat: parseFloat(atMatch[1]), lon: parseFloat(atMatch[2]) };
+    return null;
+}
+
+
+// Porter-style route map showing store → customer delivery route
+const RouteMap = ({ order, stores, t }) => {
+    // Build unique store list from order items
+    const orderItems = order?.items || [];
+    const storeMap = {};
+    orderItems.forEach(item => {
+        const sid = item.storeId?._id || item.storeId || 'unknown';
+        if (!storeMap[sid]) {
+            const storeObj = stores.find(s => (s._id || s.id) === sid || String(s._id) === String(sid));
+            storeMap[sid] = {
+                id: sid,
+                name: item.storeName || storeObj?.name || 'Store',
+                location: storeObj?.location || null,
+                storeObj
+            };
+        }
+    });
+    const uniqueStores = Object.values(storeMap);
+
+    // Customer location
+    const customerLocation = order?.shippingAddress?.location || null;
+    const customerCoords = parseLatLon(customerLocation);
+
+    if (uniqueStores.length === 0) return null;
+
+    return (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+            <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" className="text-[#2E5A2E] dark:text-[#CBF9B2]">
+                        <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round"/>
+                    </svg>
+                </div>
+                <h3 className="font-bold text-gray-900 dark:text-white text-sm">Delivery Route</h3>
+            </div>
+
+            <div className="relative pl-4">
+                {uniqueStores.map((store, idx) => {
+                    const storeCoords = parseLatLon(store.location);
+                    const dist = (storeCoords && customerCoords)
+                        ? haversineKm(storeCoords.lat, storeCoords.lon, customerCoords.lat, customerCoords.lon)
+                        : null;
+
+                    return (
+                        <div key={store.id} className="relative">
+                            {/* Connecting grey line from previous */}
+                            {idx > 0 && (
+                                <div className="absolute left-[-4px] -top-4 w-[2px] h-5 bg-gray-200 dark:bg-gray-600" />
+                            )}
+
+                            {/* Store row */}
+                            <div className="flex items-center gap-2.5 mb-1">
+                                {/* Red dot */}
+                                <div className="relative flex-shrink-0">
+                                    <div className="w-[10px] h-[10px] rounded-full bg-red-500 border-2 border-white dark:border-gray-800 shadow-sm absolute left-[-20px] top-1/2 -translate-y-1/2" />
+                                </div>
+
+                                {/* Store name + distance */}
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <span className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 truncate">{store.name}</span>
+                                    {dist !== null && (
+                                        <span className="text-[11px] text-gray-400 dark:text-gray-500 font-medium shrink-0">
+                                            {dist < 1 ? `${(dist*1000).toFixed(0)} m` : `${dist.toFixed(1)} km`}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Open in Maps */}
+                                {store.location && (
+                                    <a
+                                        href={store.location}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="shrink-0 p-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-500 active:scale-90 transition-transform"
+                                    >
+                                        <MapPin size={13} />
+                                    </a>
+                                )}
+                            </div>
+
+                            {/* Grey line going down to next stop */}
+                            <div className="ml-[-4px] flex">
+                                <div className="w-[2px] h-6 bg-gray-200 dark:bg-gray-600 mx-auto" style={{marginLeft: '-20px', marginRight: 'auto'}} />
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {/* Last grey line before customer */}
+                <div className="absolute" style={{left: '-4px', bottom: 24, height: 0}} />
+
+                {/* Customer / Drop location */}
+                <div className="flex items-center gap-2.5">
+                    <div className="relative flex-shrink-0">
+                        <div className="w-[12px] h-[12px] rounded-full bg-green-500 border-2 border-white dark:border-gray-800 shadow-sm absolute left-[-21px] top-1/2 -translate-y-1/2" />
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 truncate">
+                            {order?.shippingAddress?.name || t('Customer')}
+                        </span>
+                        {/* Total distance from first store to customer */}
+                        {(() => {
+                            const firstStoreCoords = parseLatLon(uniqueStores[0]?.location);
+                            if (firstStoreCoords && customerCoords) {
+                                const d = haversineKm(firstStoreCoords.lat, firstStoreCoords.lon, customerCoords.lat, customerCoords.lon);
+                                return (
+                                    <span className="text-[11px] text-green-600 dark:text-green-400 font-bold shrink-0">
+                                        {d < 1 ? `${(d*1000).toFixed(0)} m` : `${d.toFixed(1)} km`}
+                                    </span>
+                                );
+                            }
+                            return null;
+                        })()}
+                    </div>
+                    {customerLocation && (
+                        <a
+                            href={customerLocation.startsWith('http') ? customerLocation : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customerLocation)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 p-1.5 rounded-lg bg-green-50 dark:bg-green-950/40 text-green-600 active:scale-90 transition-transform"
+                        >
+                            <MapPin size={13} />
+                        </a>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const DeliveryActiveOrder = () => {
     const { id: paramId } = useParams();
     const navigate = useNavigate();
@@ -636,6 +789,10 @@ const DeliveryActiveOrder = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Porter-style Delivery Route Map */}
+                <RouteMap order={order} stores={stores} t={t} />
+
             </main>
 
             {/* Bottom Fixed Action Footer */}
