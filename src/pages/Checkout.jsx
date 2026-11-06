@@ -100,27 +100,27 @@ const Checkout = () => {
         try {
             const result = await getCurrentLocation();
             if (result && result.success) {
-                const resolvedStreet = result.addressDetails?.street || '';
-                const resolvedCity = 'Ilayangudi';
-                const resolvedZip = result.addressDetails?.zip || '630702';
-
-                setFormData(prev => {
-                    const next = { ...prev, location: result.mapsLink };
-                    if (resolvedStreet) next.address = resolvedStreet;
-                    if (resolvedCity) next.city = resolvedCity;
-                    if (resolvedZip) next.zip = resolvedZip;
-                    if (next.address && next.city && next.address.trim().toLowerCase() === next.city.trim().toLowerCase()) {
-                        next.address = '';
-                    }
-                    return next;
-                });
+                // Just access location, do not fill city or address
+                setFormData(prev => ({
+                    ...prev,
+                    location: result.mapsLink
+                }));
                 setFieldErrors(prev => ({
                     ...prev,
-                    location: false,
-                    ...(resolvedStreet ? { address: false } : {}),
-                    ...(resolvedCity ? { city: false } : {})
+                    location: false
                 }));
                 setGpsError(null);
+
+                // Add location to DB whenever fetching
+                try {
+                    await apiService.updateProfile({ location: result.mapsLink });
+                    if (user) {
+                        const updatedUser = { ...user, location: result.mapsLink };
+                        setUser(updatedUser);
+                    }
+                } catch (dbErr) {
+                    console.warn('Failed to save location to DB:', dbErr);
+                }
             } else {
                 setGpsError({ code: result?.code || 'ERROR', text: result?.message });
             }
@@ -559,32 +559,32 @@ const Checkout = () => {
                                             disabled={isLocationSearching}
                                             className={`w-full border rounded-xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] shadow-none ${
                                                 isLocationSearching
-                                                    ? 'bg-black/70 dark:bg-black/70 border border-black/30 text-white backdrop-blur-sm shadow-md'
+                                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
                                                     : formData.location
-                                                    ? 'bg-black dark:bg-black border-black text-white shadow-md'
+                                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
                                                     : showLocationError
                                                     ? 'border-amber-400 bg-amber-50/10'
                                                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                                             }`}
                                         >
-                                            {/* Icon Container: Round with low opacity white color */}
+                                            {/* Icon Container: Round with grey color */}
                                             <div className="relative flex-shrink-0 flex items-center justify-center w-11 h-11">
                                                 {isLocationSearching ? (
-                                                    /* Location Loading Animation */
+                                                    /* Location Loading Animation - Grey Theme */
                                                     <div className="relative flex items-center justify-center w-11 h-11">
                                                         <motion.span
-                                                            className="absolute rounded-full border border-red-500/50 bg-red-500/10 pointer-events-none"
+                                                            className="absolute rounded-full border border-red-500/40 bg-red-500/10 pointer-events-none"
                                                             initial={{ width: 14, height: 14, opacity: 0.9 }}
                                                             animate={{ width: 44, height: 44, opacity: 0 }}
                                                             transition={{ repeat: Infinity, duration: 1.4, ease: 'easeOut' }}
                                                         />
                                                         <motion.span
-                                                            className="absolute rounded-full border border-white/60 bg-white/10 pointer-events-none"
+                                                            className="absolute rounded-full border border-gray-400/40 bg-gray-400/10 dark:border-gray-500/40 dark:bg-gray-500/10 pointer-events-none"
                                                             initial={{ width: 14, height: 14, opacity: 0.8 }}
                                                             animate={{ width: 52, height: 52, opacity: 0 }}
                                                             transition={{ repeat: Infinity, duration: 1.4, delay: 0.45, ease: 'easeOut' }}
                                                         />
-                                                        <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+                                                        <div className="relative w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center shadow-xs">
                                                             <motion.div
                                                                 animate={{ y: [0, -4, 0] }}
                                                                 transition={{ repeat: Infinity, duration: 1, ease: 'easeInOut' }}
@@ -600,8 +600,8 @@ const Checkout = () => {
                                                         </div>
                                                     </div>
                                                 ) : formData.location ? (
-                                                    /* Location Attached: Round low-opacity white circle with red pin */
-                                                    <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner transition-transform duration-200">
+                                                    /* Location Attached: Round grey circle with red pin */
+                                                    <div className="relative w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center shadow-xs transition-transform duration-200">
                                                         <MapPin size={20} className="text-red-500 fill-red-500/20" strokeWidth={2.2} />
                                                     </div>
                                                 ) : (
@@ -615,8 +615,7 @@ const Checkout = () => {
                                             {/* Text */}
                                             <div className="flex-1 text-left min-w-0">
                                                 <p className={`text-[13px] font-bold truncate ${
-                                                    isLocationSearching || formData.location ? 'text-white' : 
-                                                    showLocationError ? 'text-amber-600 font-bold' : 'text-gray-800 dark:text-gray-200'
+                                                    showLocationError ? 'text-amber-600 font-bold' : 'text-gray-900 dark:text-white'
                                                 }`}>
                                                     {isLocationSearching 
                                                         ? t('Finding location...') 
@@ -624,9 +623,7 @@ const Checkout = () => {
                                                         ? (formData.address && formData.city ? t('GPS & Address Attached') : t('GPS Coordinates Attached'))
                                                         : t('Tap to attach GPS location')}
                                                 </p>
-                                                <p className={`text-[11px] truncate ${
-                                                    isLocationSearching || formData.location ? 'text-white/80' : 'text-gray-400'
-                                                }`}>
+                                                <p className="text-[11px] truncate text-gray-500 dark:text-gray-400">
                                                     {isLocationSearching 
                                                         ? t('Accessing GPS coordinates...') 
                                                         : formData.location 
@@ -636,9 +633,7 @@ const Checkout = () => {
                                             </div>
 
                                             {/* Arrow */}
-                                            <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
-                                                isLocationSearching || formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
-                                            }`} />
+                                            <ArrowLeft size={16} className="flex-shrink-0 rotate-180 transition-colors text-gray-400 dark:text-gray-500" />
                                         </button>
 
                                         {fieldErrors.location && (
@@ -647,17 +642,6 @@ const Checkout = () => {
                                                 <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
                                                 <span>{t('GPS Location is required')}</span>
                                             </div>
-                                        )}
-
-                                        {/* Remove link when attached */}
-                                        {formData.location && !isLocationSearching && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData(prev => ({ ...prev, location: '' }))}
-                                                className="mt-1.5 w-full text-center text-[11px] text-gray-400 hover:text-red-500 transition-colors py-1"
-                                            >
-                                                {t('Remove location')}
-                                            </button>
                                         )}
                                     </div>
 

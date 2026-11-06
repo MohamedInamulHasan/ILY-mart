@@ -88,8 +88,7 @@ const EditAddress = () => {
             const userDisplayName = user.fullName || user.name || '';
             const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
             let loadedStreet = user.address?.street || '';
-            let loadedCity = user.address?.city || 'Ilayangudi';
-            if (loadedCity.toLowerCase() !== 'ilayangudi') { loadedCity = 'Ilayangudi'; }
+            let loadedCity = user.address?.city || '';
             // If street was erroneously saved identical to city (e.g. Chennai / Chennai), clear it
             if (loadedStreet && loadedCity && loadedStreet.trim().toLowerCase() === loadedCity.trim().toLowerCase()) {
                 loadedStreet = '';
@@ -127,32 +126,29 @@ const EditAddress = () => {
             console.log('📍 EditAddress: Detection result:', result);
 
             if (result.success) {
-                // Always hardcode city to Ilayangudi (this is the only delivery city)
-                const resolvedStreet = result.addressDetails?.street || '';
-                const resolvedCity = 'Ilayangudi';
-                const resolvedZip = result.addressDetails?.zip || '630702';
-
-                setFormData(prev => {
-                    const next = { ...prev, location: result.mapsLink };
-                    // Always set city — default to Ilayangudi
-                    next.city = resolvedCity;
-                    // Fill address/street if geocoder returned one
-                    if (resolvedStreet) next.street = resolvedStreet;
-                    if (resolvedZip) next.zip = resolvedZip;
-                    // Street must never equal city
-                    if (next.street && next.city && next.street.trim().toLowerCase() === next.city.trim().toLowerCase()) {
-                        next.street = '';
-                    }
-                    return next;
-                });
+                // Just access location, do not fill city or street
+                setFormData(prev => ({
+                    ...prev,
+                    location: result.mapsLink
+                }));
                 setFieldErrors(prev => ({
                     ...prev,
-                    location: false,
-                    city: false,
-                    ...(resolvedStreet ? { street: false } : {})
+                    location: false
                 }));
                 setShowLocationError(false);
                 setGpsError(null);
+
+                // Add location to DB whenever fetching
+                try {
+                    await apiService.updateProfile({ location: result.mapsLink });
+                    if (user) {
+                        const updatedUser = { ...user, location: result.mapsLink };
+                        setUser(updatedUser);
+                    }
+                    console.log('📍 Location saved to DB immediately:', result.mapsLink);
+                } catch (dbErr) {
+                    console.warn('Could not save location to DB immediately:', dbErr);
+                }
             } else {
                 console.error('📍 EditAddress: Detection failed:', result.message);
                 setGpsError({ code: result.code || 'ERROR', text: result.message });
@@ -325,33 +321,33 @@ const EditAddress = () => {
                             onClick={handleDetectLocation}
                             disabled={isDetecting}
                             className={`w-full border rounded-xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] shadow-none ${isDetecting
-                                    ? 'bg-black/70 dark:bg-black/70 border border-black/30 text-white backdrop-blur-sm shadow-md'
+                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
                                     : formData.location
-                                        ? 'bg-black dark:bg-black border-black text-white shadow-md'
+                                        ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
                                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                                 }`}
                         >
-                            {/* Icon Container: Round with low opacity white color */}
+                            {/* Icon Container: Round with grey color */}
                             <div className="relative flex-shrink-0 flex items-center justify-center w-11 h-11">
                                 {isDetecting ? (
-                                    /* Location Loading Animation */
+                                    /* Location Loading Animation - Grey Theme */
                                     <div className="relative flex items-center justify-center w-11 h-11">
                                         {/* Expanding Radar / Sonar Rings */}
                                         <motion.span
-                                            className="absolute rounded-full border border-red-500/50 bg-red-500/10 pointer-events-none"
+                                            className="absolute rounded-full border border-red-500/40 bg-red-500/10 pointer-events-none"
                                             initial={{ width: 14, height: 14, opacity: 0.9 }}
                                             animate={{ width: 44, height: 44, opacity: 0 }}
                                             transition={{ repeat: Infinity, duration: 1.4, ease: 'easeOut' }}
                                         />
                                         <motion.span
-                                            className="absolute rounded-full border border-white/60 bg-white/10 pointer-events-none"
+                                            className="absolute rounded-full border border-gray-400/40 bg-gray-400/10 dark:border-gray-500/40 dark:bg-gray-500/10 pointer-events-none"
                                             initial={{ width: 14, height: 14, opacity: 0.8 }}
                                             animate={{ width: 52, height: 52, opacity: 0 }}
                                             transition={{ repeat: Infinity, duration: 1.4, delay: 0.45, ease: 'easeOut' }}
                                         />
 
-                                        {/* Round low-opacity white circle container */}
-                                        <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+                                        {/* Round grey circle container */}
+                                        <div className="relative w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center shadow-xs">
                                             {/* Bouncing red location pin */}
                                             <motion.div
                                                 animate={{ y: [0, -4, 0] }}
@@ -369,8 +365,8 @@ const EditAddress = () => {
                                         </div>
                                     </div>
                                 ) : formData.location ? (
-                                    /* Location Attached: Round low-opacity white circle with red pin */
-                                    <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner transition-transform duration-200">
+                                    /* Location Attached: Round grey circle with red pin */
+                                    <div className="relative w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center shadow-xs transition-transform duration-200">
                                         <MapPin size={20} className="text-red-500 fill-red-500/20" strokeWidth={2.2} />
                                     </div>
                                 ) : (
@@ -383,16 +379,14 @@ const EditAddress = () => {
 
                             {/* Text */}
                             <div className="flex-1 text-left min-w-0">
-                                <p className={`text-[13px] font-bold truncate ${isDetecting || formData.location ? 'text-white' : 'text-gray-800 dark:text-gray-200'
-                                    }`}>
+                                <p className="text-[13px] font-bold truncate text-gray-800 dark:text-gray-200">
                                     {isDetecting
                                         ? t('Finding location...')
                                         : formData.location
                                             ? (formData.street && formData.city ? t('GPS & Address Attached') : t('GPS Coordinates Attached'))
                                             : t('Tap to attach GPS location')}
                                 </p>
-                                <p className={`text-[11px] truncate ${isDetecting || formData.location ? 'text-white/80' : 'text-gray-400'
-                                    }`}>
+                                <p className="text-[11px] truncate text-gray-400">
                                     {isDetecting
                                         ? t('Accessing GPS coordinates...')
                                         : formData.location
@@ -402,20 +396,8 @@ const EditAddress = () => {
                             </div>
 
                             {/* Arrow */}
-                            <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${isDetecting || formData.location ? 'text-white/80' : 'text-gray-300 dark:text-gray-600'
-                                }`} />
+                            <ArrowLeft size={16} className="flex-shrink-0 rotate-180 transition-colors text-gray-400 dark:text-gray-500" />
                         </button>
-
-                        {/* Remove link when attached */}
-                        {formData.location && !isDetecting && (
-                            <button
-                                type="button"
-                                onClick={() => setFormData(prev => ({ ...prev, location: '' }))}
-                                className="mt-1.5 w-full text-center text-[11px] text-gray-400 hover:text-red-500 transition-colors py-1"
-                            >
-                                {t('Remove location')}
-                            </button>
-                        )}
                     </div>
 
                     {/* Form Fields - Big Checkout Style */}
