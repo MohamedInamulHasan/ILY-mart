@@ -380,20 +380,20 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Action Button */}
-                    <div className="w-full flex justify-center mt-3 mb-4">
+                    <div className="w-full flex justify-center mt-3 mb-10 pb-4">
                         {isPreview ? (
-                            <div className="w-full">
+                            <div className="w-[260px] sm:w-[280px]">
                                 <SwipeActionButton
                                     variant="green"
                                     label={t('SWIPE TO CALL')}
                                     loadingLabel={t('Calling...')}
                                     autoReset={true}
-                                    heightClass="h-[52px] sm:h-[54px]"
-                                    knobSizeClass="w-[42px] h-[42px] sm:w-[44px] sm:h-[44px]"
+                                    heightClass="h-[50px] sm:h-[52px]"
+                                    knobSizeClass="w-[40px] h-[40px] sm:w-[42px] sm:h-[42px]"
                                     textSizeClass="text-xs sm:text-sm font-black tracking-wider"
                                     iconSize={18}
                                     knobIcon={<Phone size={18} />}
-                                    className="shadow-none w-full"
+                                    className="shadow-none"
                                     onSuccess={handleCallStore}
                                 />
                             </div>
