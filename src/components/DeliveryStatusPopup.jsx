@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThumbsUp } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound } from '../utils/soundHelper';
 
 const DeliveryStatusPopup = ({
     isOpen,
@@ -15,11 +16,18 @@ const DeliveryStatusPopup = ({
 
     useEffect(() => {
         if (!isOpen) return;
+        if (type === 'accepted') {
+            playOrderAcceptedSound();
+        } else if (type === 'delivered') {
+            playOrderDeliveredSound();
+        } else if (type === 'cancelled') {
+            playOrderCancelledSound();
+        }
         const timer = setTimeout(() => {
             onComplete?.();
         }, duration);
         return () => clearTimeout(timer);
-    }, [isOpen, onComplete, duration]);
+    }, [isOpen, onComplete, duration, type]);
 
     if (!isOpen) return null;
 
