@@ -21,6 +21,9 @@ export const registerModalBackHandler = (fn) => {
     };
 };
 
+// Track navigation history manually so back always works in Capacitor WebView
+const navHistory = ['/'];
+
 /**
  * Custom hook to handle Android hardware/gesture back button navigation.
  * Prevents app from unexpectedly closing, navigates back through history,
@@ -33,6 +36,12 @@ export const useBackButton = () => {
 
     useEffect(() => {
         locationRef.current = location;
+        // Track every pathname change in our own stack
+        const path = location.pathname;
+        const last = navHistory[navHistory.length - 1];
+        if (path !== last) {
+            navHistory.push(path);
+        }
     }, [location]);
 
     useEffect(() => {
@@ -53,35 +62,35 @@ export const useBackButton = () => {
 
             const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
 
-            // 2. Order Confirmation: always navigate to Home
+            // 2. Order Confirmation: always go to Home (can't go back to checkout)
             if (currentPath === '/order-confirmation') {
+                navHistory.length = 1;
                 navigate('/', { replace: true });
                 return true;
             }
 
-            // 3. Orders list: navigate to Home
-            if (currentPath === '/orders') {
-                navigate('/', { replace: true });
+            // 3. Already at root — minimize the app
+            if (currentPath === '/' || currentPath === '/home' || currentPath === '/admin') {
+                return false;
+            }
+
+            // 4. Use our tracked history stack to go back
+            if (navHistory.length > 1) {
+                navHistory.pop(); // remove current
+                const previous = navHistory[navHistory.length - 1];
+                navigate(previous, { replace: true });
                 return true;
             }
 
-            // 4. In-app history back (ProductDetails, CategoryProducts, Shop, Cart, Profile, etc.)
-            // If the user navigated here from another page within the app, go back!
+            // 5. Use browser history index as fallback
             if (window.history.state && window.history.state.idx > 0) {
                 navigate(-1);
                 return true;
             }
 
-            // 5. Inner routes without prior history stack (e.g. direct link or fresh state)
-            // Fallback to Home rather than closing the app
-            if (currentPath !== '/' && currentPath !== '/home' && currentPath !== '/admin') {
-                navigate('/', { replace: true });
-                return true;
-            }
-
-            // 6. Already at root (Home / or Delivery Dashboard /admin):
-            // Return false so native Android can minimize to background without destroying process
-            return false;
+            // 6. Last resort: go Home rather than close the app
+            navigate('/', { replace: true });
+            return true;
         };
 
         // Expose to window so MainActivity.onBackPressed() evaluateJavascript can call it directly
