@@ -131,7 +131,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                     <div className="flex items-center justify-between w-full gap-1.5 mt-auto mb-0.5">
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center">
-                                <span className="inline-flex items-center justify-center px-2.5 py-1 sm:py-1.5 rounded-[4px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xs sm:text-sm shadow-[0_2.5px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
+                                <span className="inline-flex items-center justify-center px-1.5 py-1 sm:py-1.5 rounded-[4px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xs sm:text-sm shadow-[0_2.5px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
                                     {product.isGroup ? (
                                         Number(product.minPrice) === Number(product.maxPrice)
                                             ? `₹${Number(product.minPrice).toFixed(0)}`
@@ -168,11 +168,11 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                                 removeFromCart(productId);
                                             }
                                         }}
-                                        className="w-5 h-6 sm:w-6 sm:h-6 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
+                                        className="w-6 h-6 sm:w-6 sm:h-7 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
                                     >
                                         <Minus size={13} strokeWidth={2.5} />
                                     </button>
-                                    <span className="font-bold text-xs sm:text-[13px] min-w-[14px] text-center select-none text-gray-800 dark:text-gray-100">{quantity}</span>
+                                    <span className="font-bold text-[13px] min-w-[15px] text-center select-none text-gray-800 dark:text-gray-100">{quantity}</span>
                                     <button 
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -180,7 +180,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                             if (!user) { navigate('/login'); return; }
                                             updateQuantity(productId, quantity + 1);
                                         }}
-                                        className="w-5 h-6 sm:w-6 sm:h-6 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors"
+                                        className="w-6 h-6 sm:w-6 sm:h-7 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors"
                                     >
                                         <Plus size={13} strokeWidth={2.5} />
                                     </button>
@@ -193,7 +193,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                         if (!user) { navigate('/login'); return; }
                                         addToCart(product);
                                     }}
-                                    className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-[4px] flex items-center justify-center transition-all active:scale-95 select-none shrink-0 ${
+                                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-[4px] flex items-center justify-center transition-all active:scale-95 select-none shrink-0 ${
                                         (!isAvailable || !isOpen || !isScheduled)
                                             ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                                             : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 shadow-sm'
