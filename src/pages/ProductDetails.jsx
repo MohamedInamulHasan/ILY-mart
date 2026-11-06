@@ -30,6 +30,15 @@ const ProductDetails = () => {
     // Look up store name from stores context
     const store = product && stores?.find(s => (s._id || s.id) === product.storeId);
     const storeName = store?.name || 'Unknown Store';
+    const isPreview = isCategoryPreview(product?.category, categories) || product?.isPreview === true || product?.mode === 'preview';
+
+    const handleCallStore = () => {
+        const rawPhone = product?.phone || product?.contactPhone || store?.phone || store?.mobile || settings?.contactPhone || '919500171980';
+        const phone = String(rawPhone).replace(/\s+/g, '');
+        if (phone) {
+            window.location.href = `tel:${phone}`;
+        }
+    };
 
     // Updated effect to handle individual product fetching
     useEffect(() => {
@@ -88,6 +97,7 @@ const ProductDetails = () => {
     };
 
     const handleCheckout = () => {
+        if (isPreview) return;
         if (!user) {
             navigate('/login');
             return;
@@ -294,24 +304,26 @@ const ProductDetails = () => {
                             </div>
                         </div>
                         
-                        {/* Minimalist Quantity Selector */}
-                        <div className="flex items-center gap-1 bg-gray-100/90 dark:bg-gray-700/90 p-1 rounded-xl shadow-sm">
-                            <button
-                                onClick={() => updateQuantity(productId, Math.max(0, quantity - 1))}
-                                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
-                            >
-                                <Minus size={16} strokeWidth={2.5} />
-                            </button>
-                            <span className="w-7 text-center text-base font-bold text-gray-800 dark:text-gray-100">
-                                {quantity || 0}
-                            </span>
-                            <button
-                                onClick={handleAddToCart}
-                                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-opacity"
-                            >
-                                <Plus size={16} strokeWidth={2.5} />
-                            </button>
-                        </div>
+                        {/* Minimalist Quantity Selector - Hidden in preview mode */}
+                        {!isPreview && (
+                            <div className="flex items-center gap-1 bg-gray-100/90 dark:bg-gray-700/90 p-1 rounded-xl shadow-sm">
+                                <button
+                                    onClick={() => updateQuantity(productId, Math.max(0, quantity - 1))}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
+                                >
+                                    <Minus size={16} strokeWidth={2.5} />
+                                </button>
+                                <span className="w-7 text-center text-base font-bold text-gray-800 dark:text-gray-100">
+                                    {quantity || 0}
+                                </span>
+                                <button
+                                    onClick={handleAddToCart}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-opacity"
+                                >
+                                    <Plus size={16} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Description Section */}
@@ -369,7 +381,23 @@ const ProductDetails = () => {
 
                     {/* Action Button */}
                     <div className="w-full flex justify-center mt-3 mb-4">
-                        {!isCurrentlyAvailable ? (
+                        {isPreview ? (
+                            <div className="w-full">
+                                <SwipeActionButton
+                                    variant="green"
+                                    label={t('SWIPE TO CALL')}
+                                    loadingLabel={t('Calling...')}
+                                    autoReset={true}
+                                    heightClass="h-[52px] sm:h-[54px]"
+                                    knobSizeClass="w-[42px] h-[42px] sm:w-[44px] sm:h-[44px]"
+                                    textSizeClass="text-xs sm:text-sm font-black tracking-wider"
+                                    iconSize={18}
+                                    knobIcon={<Phone size={18} />}
+                                    className="shadow-none w-full"
+                                    onSuccess={handleCallStore}
+                                />
+                            </div>
+                        ) : !isCurrentlyAvailable ? (
                             <div className="w-full py-4 bg-red-50 dark:bg-red-900/10 rounded-full border border-red-100 dark:border-red-800 text-center">
                                 <p className="text-red-600 dark:text-red-400 font-bold">
                                      {!isStoreCurrentlyOpen ? t('Store Closed') : t('Currently Unavailable')}
