@@ -32,6 +32,15 @@ const categorySchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    isPreview: {
+        type: Boolean,
+        default: false
+    },
+    mode: {
+        type: String,
+        enum: ['normal', 'preview'],
+        default: 'normal'
+    },
     order: {
         type: Number,
         default: 0

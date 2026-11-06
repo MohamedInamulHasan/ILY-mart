@@ -70,7 +70,7 @@ export const getCategoryById = async (req, res, next) => {
 // @access  Private/Admin
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, name_ta, description, icon, image, subcategories } = req.body;
+        const { name, name_ta, description, icon, image, subcategories, isPreview, mode } = req.body;
 
         // Check if category already exists
         const categoryExists = await Category.findOne({ name });
@@ -86,7 +86,9 @@ export const createCategory = async (req, res, next) => {
             description,
             icon,
             image,
-            subcategories: subcategories || []
+            subcategories: subcategories || [],
+            isPreview: Boolean(isPreview === true || mode === 'preview'),
+            mode: mode || (isPreview ? 'preview' : 'normal')
         });
 
         invalidateCategoryCache();
@@ -118,6 +120,11 @@ export const updateCategory = async (req, res, next) => {
 
         // Strip immutable fields to prevent Mongoose errors
         const { _id, __v, createdAt, ...updateFields } = req.body;
+
+        if (updateFields.isPreview !== undefined) {
+            updateFields.isPreview = Boolean(updateFields.isPreview === true || updateFields.mode === 'preview');
+            updateFields.mode = updateFields.isPreview ? 'preview' : 'normal';
+        }
 
         invalidateCategoryCache();
         category = await Category.findByIdAndUpdate(

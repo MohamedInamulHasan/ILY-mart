@@ -2084,7 +2084,8 @@ const CategoryManagement = () => {
     const [formData, setFormData] = useState({
         name: '',
         image: '',
-        subcategories: [] // Array of subcategory names
+        subcategories: [], // Array of subcategory names
+        isPreview: false
     });
     const [newSubcategory, setNewSubcategory] = useState(''); // For adding new subcategories
 
@@ -2197,7 +2198,8 @@ const CategoryManagement = () => {
         setFormData({
             name: category.name,
             image: imageUrl,
-            subcategories: category.subcategories || []
+            subcategories: category.subcategories || [],
+            isPreview: Boolean(category.isPreview === true || category.mode === 'preview')
         });
         setView('form');
     };
@@ -2239,7 +2241,11 @@ const CategoryManagement = () => {
                 }
                 alert(t('Category updated successfully!'));
             } else if (editingCategory) {
-                const updateData = { ...formData };
+                const updateData = {
+                    ...formData,
+                    isPreview: Boolean(formData.isPreview),
+                    mode: formData.isPreview ? 'preview' : 'normal'
+                };
                 // Check if image is a backend proxy URL (hasn't been changed)
                 // If it contains API_BASE_URL or '/api/categories', don't send it
                 if (updateData.image && (updateData.image.includes(API_BASE_URL) || updateData.image.includes('/api/categories'))) {
@@ -2249,10 +2255,14 @@ const CategoryManagement = () => {
                 await updateCategory({ id: editingCategory._id || editingCategory.id, data: updateData });
                 alert(t('Category updated successfully!'));
             } else {
-                await addCategory(formData);
+                await addCategory({
+                    ...formData,
+                    isPreview: Boolean(formData.isPreview),
+                    mode: formData.isPreview ? 'preview' : 'normal'
+                });
                 alert(t('Category added successfully!'));
             }
-            setFormData({ name: '', image: '', subcategories: [] });
+            setFormData({ name: '', image: '', subcategories: [], isPreview: false });
             setNewSubcategory('');
             setEditingCategory(null);
             setView('list');
@@ -2273,7 +2283,7 @@ const CategoryManagement = () => {
                     onClick={() => {
                         if (view === 'list') {
                             setEditingCategory(null);
-                            setFormData({ name: '', image: '', subcategories: [] });
+                            setFormData({ name: '', image: '', subcategories: [], isPreview: false });
                             setNewSubcategory('');
                             setView('form');
                         } else {
@@ -2337,14 +2347,36 @@ const CategoryManagement = () => {
                                                 </div>
                                             </td>
                                             <td className="p-4 font-medium text-gray-900 dark:text-white">
-                                                <div className="max-w-[150px] flex items-center gap-2">
-                                                    <span className="truncate" title={allCategoryName || t('All')}>
-                                                        {allCategoryName || t('All')}
-                                                    </span>
-                                                    <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded font-bold shrink-0">
-                                                        ALL
-                                                    </span>
-                                                </div>
+                                                {(() => {
+                                                    const fullName = allCategoryName || t('All');
+                                                    const bracketIndex = fullName?.indexOf('(');
+
+                                                    if (bracketIndex !== -1) {
+                                                        const mainName = fullName.substring(0, bracketIndex).trim();
+                                                        const bracketText = fullName.substring(bracketIndex).trim();
+                                                        return (
+                                                            <div className="max-w-[150px]">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="truncate" title={mainName}>{mainName}</span>
+                                                                    <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                                                        ALL
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={bracketText}>{bracketText}</div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <div className="max-w-[150px]">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="truncate" title={fullName}>{fullName}</span>
+                                                                <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                                                    ALL
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex gap-2 items-center">
