@@ -243,7 +243,13 @@ const Checkout = () => {
 
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
-            setIsEditingAddress(true);
+            
+            // Only open address form if an address field is actually missing/invalid
+            const hasAddressError = errors.fullName || errors.mobile || errors.address || errors.city || errors.location;
+            if (hasAddressError) {
+                setIsEditingAddress(true);
+            }
+            
             setTimeout(() => {
                 if (errors.fullName) fullNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 else if (errors.address) addressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });

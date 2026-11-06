@@ -21,8 +21,6 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
     const productId = product._id || product.id;
     const [showQuantity, setShowQuantity] = useState(false);
 
-
-
     // Look up store name from stores context
     const storeIdStr = product.storeId?._id || product.storeId;
     const store = stores?.find(s => (s._id || s.id) === storeIdStr);
@@ -53,10 +51,8 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
         if (!isAvailable || !isStoreOpenCheck || !isScheduled) return;
 
         if (cartQuantity > 0) {
-            // If already in cart, show quantity controls
             setShowQuantity(true);
         } else {
-            // Add to cart with quantity 1
             addToCart({
                 id: productId,
                 title: product.title,
@@ -64,8 +60,8 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 image: product.image,
                 storeId: product.storeId,
                 quantity: 1,
-                unit: product.unit, // Pass unit immediately
-                isGold: product.isGold // Pass isGold status
+                unit: product.unit,
+                isGold: product.isGold
             });
             setShowQuantity(true);
         }
@@ -88,7 +84,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 image: product.image,
                 storeId: product.storeId,
                 quantity: 1,
-                unit: product.unit, // Pass unit immediately
+                unit: product.unit,
                 isGold: product.isGold
             });
         }
@@ -118,7 +114,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
         if (!isGroupProduct) return;
         const interval = setInterval(() => {
             setCurrentVariantIndex(prev => (prev + 1) % variants.length);
-        }, 3000); // Cycle every 3 seconds
+        }, 3000);
         return () => clearInterval(interval);
     }, [isGroupProduct, variants.length]);
 
@@ -129,19 +125,18 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
         return (
             <Link
                 to={(!product.anyStoreOpen || !isStoreOpenCheck) ? '#' : `/product-group/${encodeURIComponent(product.title)}?${isFastPurchase ? 'fast=true&' : ''}${product.storeId ? `storeId=${product.storeId._id || product.storeId}` : ''}`}
-                className={`rounded-2xl overflow-hidden transition-all duration-300 flex flex-col h-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${(product.anyStoreOpen && isStoreOpenCheck) ? 'hover:scale-[1.01]' : 'cursor-default'}`}
+                className={`rounded-xl overflow-hidden transition-all duration-300 flex flex-col h-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${(product.anyStoreOpen && isStoreOpenCheck) ? 'hover:scale-[1.01]' : 'cursor-default'}`}
                 onClick={(e) => {
                     if (!product.anyStoreOpen || !isStoreOpenCheck) {
                         e.preventDefault();
                     }
                 }}
             >
-            <div className={`relative pb-[100%] m-1 rounded-2xl overflow-hidden bg-[#F9FAFB] ${(!product.anyStoreOpen || !isStoreOpenCheck) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
-                    
+            <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!product.anyStoreOpen || !isStoreOpenCheck) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                     {/* Delivery Tag */}
                     <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-[25] pointer-events-none">
                         {product.isGold && (
-                            <span className="bg-[#16A34A] text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-br-lg shadow-sm">
+                            <span className="bg-[#16A34A] text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-br-md shadow-sm">
                                 {t('Free Delivery')}
                             </span>
                         )}
@@ -170,26 +165,23 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                             />
                         </button>
                     )}
-                    {/* Show Closed Overlay for Group ONLY if ALL stores are closed */}
                     {(!product.anyStoreOpen || !isStoreOpenCheck) && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                            <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg transform -rotate-12 border-2 border-white">
+                            <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-[4px] shadow-lg transform -rotate-12 border-2 border-white">
                                 {t('STORE CLOSED')}
                             </span>
                         </div>
                     )}
-
-
                 </div>
                 <div className="p-3 flex flex-col flex-1 border-t border-gray-100 dark:border-gray-700">
-                    <div className="w-full mb-1">
+                    <div className="w-full mb-1 min-h-[38px] sm:min-h-[40px] flex flex-col justify-start">
                         {renderBilingualTitle(t(product, 'title') || product.title || product.name, useLanguage().language, {
-                            mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-tight truncate w-full',
-                            subClassName: 'text-xs text-gray-500 dark:text-gray-400 font-medium truncate w-full opacity-80'
+                            mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full',
+                            subClassName: 'text-xs text-gray-600 dark:text-gray-300 font-medium truncate w-full pt-0.5 pb-0.5 leading-normal'
                         })}
                     </div>
-                        {/* Store Options - Centered */}
-                        <div className="flex items-center gap-1 mt-1 mb-1">
+                        {/* Store Options */}
+                        <div className="flex items-center gap-1 mt-1 mb-1.5">
                             <Store size={12} className={`text-gray-400 dark:text-gray-500 flex-shrink-0`} />
                             <p className={`text-xs text-gray-500 dark:text-gray-400 truncate`}>
                                 {product.variants?.length
@@ -198,17 +190,15 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                             </p>
                         </div>
 
-                    <div className="flex items-center justify-between mt-2 w-full pt-2 border-t border-gray-50 dark:border-gray-700/50">
-                        <span className={`text-base font-bold ${!product.anyStoreOpen ? 'text-gray-400' : 'text-[#2E5A2E] dark:text-[#CBF9B2]'}`}>
+                    <div className="flex items-center justify-between mt-auto w-full pt-1.5 border-t border-gray-50 dark:border-gray-700/50">
+                        <span className="inline-flex items-center justify-center px-2.5 py-1 sm:py-1.5 rounded-[4px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xs sm:text-sm shadow-[0_2.5px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
                             {(() => {
-                                // Robust Price Logic
                                 if (product.minPrice !== undefined && product.maxPrice !== undefined) {
                                     if (Number(product.minPrice) === Number(product.maxPrice)) {
                                         return `₹${Number(product.minPrice).toFixed(0)}`;
                                     }
                                     return `₹${Number(product.minPrice).toFixed(0)} - ₹${Number(product.maxPrice).toFixed(0)}`;
                                 }
-                                // Fallback: Check variants if available locally
                                 if (product.variants && product.variants.length > 0) {
                                     const prices = product.variants.map(v => v.price).filter(p => p !== undefined);
                                     if (prices.length > 0) {
@@ -220,25 +210,24 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                         return `₹${min.toFixed(0)}`;
                                     }
                                 }
-                                // Default Fallback
                                 return `₹${Number(product.price || 0).toFixed(0)}`;
                             })()}
                         </span>
 
-                    {/* Fake Add Button for Visual Consistency - Clickable as part of the Link */}
+                    {/* Fake Add Button */}
                     {isFastPurchase && (
                         <div className="">
                             {!product.anyStoreOpen ? (
                                 <div
-                                    className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full transition-colors border border-gray-200 dark:border-gray-600"
+                                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-[4px] border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600"
                                 >
-                                    <Plus size={18} strokeWidth={2.5} className="text-gray-400" />
+                                    <Plus size={15} strokeWidth={2.5} />
                                 </div>
                             ) : (
                                 <div
-                                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors cursor-pointer bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 active:scale-90`}
+                                    className="w-7 h-7 sm:w-7.5 sm:h-7.5 flex items-center justify-center rounded-[4px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all shadow-sm cursor-pointer"
                                 >
-                                    <Plus size={18} strokeWidth={2.5} />
+                                    <Plus size={15} strokeWidth={2.5} />
                                 </div>
                             )}
                         </div>
@@ -249,7 +238,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
         );
     }
 
-    const isAvailable = product.isAvailable !== false; // Default to true
+    const isAvailable = product.isAvailable !== false;
     const isScheduled = isProductScheduled(product);
     const timeLabel = !isScheduled ? getProductTimeLabel(product) : null;
 
@@ -263,13 +252,12 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 }
                 handleClick(e);
             }}
-            className={`rounded-2xl overflow-hidden transition-all duration-300 flex flex-col h-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${isStoreOpenCheck && isAvailable && isScheduled ? 'hover:scale-[1.01]' : 'cursor-default'
-                }`}
+            className={`rounded-xl overflow-hidden transition-all duration-300 flex flex-col h-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${isStoreOpenCheck && isAvailable && isScheduled ? 'hover:scale-[1.01]' : 'cursor-default'}`}
         >
-            <div className={`relative pb-[100%] m-1 rounded-2xl overflow-hidden bg-[#F9FAFB] ${(!isStoreOpenCheck || !isAvailable || !isScheduled) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+            <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!isStoreOpenCheck || !isAvailable || !isScheduled) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                     <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-[25] pointer-events-none">
                         {product.isGold && (
-                            <span className="bg-[#16A34A] text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-br-lg shadow-sm">
+                            <span className="bg-[#16A34A] text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-br-md shadow-sm">
                                 {t('Free Delivery')}
                             </span>
                         )}
@@ -297,48 +285,45 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                         />
                     </button>
                 )}
-                {/* Subtle gradient overlay for depth */}
                 {isStoreOpenCheck && isAvailable && (
                     <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 )}
                 {!isStoreOpenCheck && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg transform -rotate-12 border-2 border-white">
+                        <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-[4px] shadow-lg transform -rotate-12 border-2 border-white">
                             {t('STORE CLOSED')}
                         </span>
                     </div>
                 )}
                 {!isAvailable && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg transform -rotate-12 border-2 border-white">
+                        <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-[4px] shadow-lg transform -rotate-12 border-2 border-white">
                             {t('OUT OF STOCK')}
                         </span>
                     </div>
                 )}
                 {isAvailable && isStoreOpenCheck && !isScheduled && timeLabel && (
                     <div className="absolute top-0 left-0 w-full h-full z-20 flex flex-col items-center justify-center backdrop-blur-[1px] bg-black/10 gap-1">
-                        <div className="bg-black/70 shadow-lg rounded-xl px-3 py-2 flex flex-col items-center gap-0.5 mx-2">
+                        <div className="bg-black/70 shadow-lg rounded-[4px] px-3 py-1.5 flex flex-col items-center gap-0.5 mx-2">
                             <span className="text-[9px] font-bold uppercase tracking-wider text-gray-300">{t('Available')}</span>
                             <span className="text-[11px] font-bold text-white leading-none text-center block whitespace-nowrap">{timeLabel}</span>
                         </div>
                     </div>
                 )}
 
-
-                {/* Unit Tag */}
                 {product.unit && (
-                    <div className="absolute bottom-2 right-2 bg-[#2E5A2E] dark:bg-[#CBF9B2] px-2.5 py-1 rounded-full z-10 pointer-events-none border border-white/20">
-                        <span className="text-[11px] font-semibold text-white dark:text-gray-900 leading-none block">
+                    <div className="absolute bottom-2 right-2 bg-[#2E5A2E] dark:bg-[#CBF9B2] px-2 py-0.5 rounded-[4px] z-10 pointer-events-none border border-white/20">
+                        <span className="text-[10px] font-semibold text-white dark:text-gray-900 leading-none block">
                             {product.unit}
                         </span>
                     </div>
                 )}
             </div>
             <div className="p-3 flex flex-col flex-1">
-                <div className="w-full mb-1">
+                <div className="w-full mb-1 min-h-[38px] sm:min-h-[40px] flex flex-col justify-start">
                     {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, useLanguage().language, {
-                        mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-normal truncate w-full',
-                        subClassName: 'text-xs text-gray-500 dark:text-gray-400 font-medium truncate pb-0.5 w-full opacity-80'
+                        mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full',
+                        subClassName: 'text-xs text-gray-600 dark:text-gray-300 font-medium truncate w-full pt-0.5 pb-0.5 leading-normal'
                     })}
                 </div>
                     {product.storeId && (
@@ -350,39 +335,39 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                         </div>
                     )}
 
-                <div className="flex items-center justify-between mt-2 w-full pt-2">
-                    <span className={`text-base font-bold ${!isStoreOpenCheck || !isAvailable ? 'text-gray-400' : 'text-[#2E5A2E] dark:text-[#CBF9B2]'}`}>
+                <div className="flex items-center justify-between mt-auto w-full pt-1.5">
+                    <span className="inline-flex items-center justify-center px-2.5 py-1 sm:py-1.5 rounded-[4px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xs sm:text-sm shadow-[0_2.5px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
                         ₹{Number((product.price || 0) * (cartQuantity || 1)).toFixed(0)}
                     </span>
 
                     {isFastPurchase && isAvailable && (
                         <div className="flex items-center" onClick={(e) => e.preventDefault()}>
                             {!isStoreOpenCheck ? (
-                                <div className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600">
-                                    <Plus size={18} strokeWidth={2.5} className="text-gray-400" />
+                                <div className="w-7 h-7 sm:w-7.5 sm:h-7.5 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-[4px] border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600">
+                                    <Plus size={15} strokeWidth={2.5} />
                                 </div>
                             ) : cartQuantity > 0 ? (
-                                <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-lg shadow-sm">
+                                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-[4px] shadow-sm">
                                     <button 
                                         onClick={handleDecrement}
-                                        className="w-8 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
+                                        className="w-6 h-7 sm:w-7 sm:h-7 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
                                     >
-                                        <Minus size={16} />
+                                        <Minus size={13} strokeWidth={2.5} />
                                     </button>
-                                    <span className="font-bold text-sm min-w-[20px] text-center select-none text-[#2E5A2E] dark:text-[#CBF9B2]">{cartQuantity}</span>
+                                    <span className="font-bold text-sm sm:text-[14px] min-w-[16px] text-center select-none text-gray-800 dark:text-gray-100">{cartQuantity}</span>
                                     <button 
                                         onClick={handleIncrement}
-                                        className="w-8 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors"
+                                        className="w-6 h-7 sm:w-7 sm:h-7 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors"
                                     >
-                                        <Plus size={16} />
+                                        <Plus size={13} strokeWidth={2.5} />
                                     </button>
                                 </div>
                             ) : (
                                 <button
                                     onClick={handleFastPurchaseClick}
-                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 active:scale-95 transition-transform"
+                                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-[4px] bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 active:scale-95 transition-all shadow-sm"
                                 >
-                                    <Plus size={18} strokeWidth={2.5} />
+                                    <Plus size={15} strokeWidth={2.5} />
                                 </button>
                             )}
                         </div>

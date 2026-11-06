@@ -76,24 +76,42 @@ const NotificationOverlay = () => {
 
     // Listen for native intent/card clicks when app was closed/backgrounded
     useEffect(() => {
-        const handleNativeOpenOrder = async (e) => {
-            if (!isDeliveryBoy) return;
-            const orderId = e.detail?.id;
+        const openOrderById = async (orderId) => {
             if (!orderId) return;
             try {
-                const res = await apiService.getOrder(orderId);
-                if (res.success && res.data) {
+                let orderData = allOrders.find(o => (o._id || o.id) === orderId);
+                if (!orderData) {
+                    const res = await apiService.getOrder(orderId);
+                    if (res?.success && res?.data) {
+                        orderData = res.data;
+                    }
+                }
+                if (orderData) {
                     setStartWithAcceptView(true);
-                    setIncomingOrder(res.data);
+                    setIncomingOrder(orderData);
                 }
             } catch (err) {
                 console.warn('Failed to fetch order from native event:', err);
             }
         };
 
+        const handleNativeOpenOrder = (e) => {
+            const orderId = e.detail?.id || window.__pendingNativeOrderId;
+            if (orderId) {
+                openOrderById(orderId);
+            }
+        };
+
         window.addEventListener('native:open-order', handleNativeOpenOrder);
+
+        // Process immediately if native intent set pending order before React mounted
+        if (window.__pendingNativeOrderId) {
+            openOrderById(window.__pendingNativeOrderId);
+            window.__pendingNativeOrderId = null;
+        }
+
         return () => window.removeEventListener('native:open-order', handleNativeOpenOrder);
-    }, []);
+    }, [allOrders]);
 
     useEffect(() => {
         // Allows testing the Porter-style incoming order modal

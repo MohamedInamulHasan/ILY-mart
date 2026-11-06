@@ -35,15 +35,19 @@ p, span, a, label, button, input, textarea, select {
 /* Remove unwanted default browser outline boxes, tap highlights and focus rings */
 *, *::before, *::after {
     -webkit-tap-highlight-color: transparent !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
+    -webkit-focus-ring-color: transparent !important;
 }
 
-input, textarea, select, button {
+a, button, input, textarea, select {
     outline: none !important;
     outline-color: transparent !important;
     outline-style: none !important;
     outline-width: 0 !important;
     box-shadow: none;
     -webkit-tap-highlight-color: transparent !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
+    -webkit-touch-callout: none;
 }
 
 input:focus, input:focus-visible, input:active,
@@ -57,6 +61,7 @@ a:focus, a:focus-visible, a:active {
     outline-width: 0 !important;
     box-shadow: none !important;
     -webkit-tap-highlight-color: transparent !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
 }
 
 /* Hide native password reveal icon in Edge/IE */

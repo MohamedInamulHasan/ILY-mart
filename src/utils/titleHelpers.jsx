@@ -76,13 +76,13 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     }
 
     return (
-        <span className="inline-flex flex-col max-w-full">
-            <span className={`inline-flex items-center gap-1 max-w-full ${mainClassName}`}>
+        <span className="flex flex-col w-full max-w-full">
+            <span className={`inline-flex items-center gap-1 max-w-full leading-snug py-0.5 ${mainClassName}`}>
                 <span className="truncate">{mainText}</span>
                 {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
             {subText && (
-                <span className={`truncate ${subClassName}`}>
+                <span className={`truncate leading-normal pt-0.5 pb-1 ${subClassName}`}>
                     ({subText})
                 </span>
             )}

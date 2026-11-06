@@ -624,13 +624,14 @@ public class FloatingLogoService extends Service {
                 swipeKnob.setElevation(dp(4));
             }
 
-            // Chevrons icon "»" in knob
+            // Arrow icon in knob - perfectly centered right arrow
             TextView knobIcon = new TextView(this);
-            knobIcon.setText("»");
+            knobIcon.setText("➔");
             knobIcon.setTextColor(Color.parseColor("#D97706")); // Amber 600
-            knobIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+            knobIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
             knobIcon.setTypeface(Typeface.DEFAULT_BOLD);
             knobIcon.setGravity(Gravity.CENTER);
+            knobIcon.setIncludeFontPadding(false);
             FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.MATCH_PARENT
@@ -638,7 +639,17 @@ public class FloatingLogoService extends Service {
             swipeKnob.addView(knobIcon, iconParams);
             swipeTrack.addView(swipeKnob);
 
-            // Touch Listener for swiping knob left to right
+            // Attention-grabbing shake/nudge animation on the swipe knob
+            final android.animation.ObjectAnimator shakeAnim = android.animation.ObjectAnimator.ofFloat(
+                    swipeKnob, "translationX", 0f, dp(14), 0f, dp(8), 0f
+            );
+            shakeAnim.setDuration(1200);
+            shakeAnim.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+            shakeAnim.setRepeatMode(android.animation.ValueAnimator.RESTART);
+            shakeAnim.setStartDelay(400);
+            shakeAnim.start();
+
+            // Touch Listener for swiping knob left to right with tick animation
             final float[] startTouchX = {0};
             final float[] initialKnobX = {0};
             final boolean[] isCompleted = {false};
@@ -653,6 +664,9 @@ public class FloatingLogoService extends Service {
 
                     switch (event.getAction()) {
                         case MotionEvent.ACTION_DOWN:
+                            if (shakeAnim != null && shakeAnim.isRunning()) {
+                                shakeAnim.cancel();
+                            }
                             startTouchX[0] = event.getRawX();
                             initialKnobX[0] = swipeKnob.getTranslationX();
                             return true;
@@ -668,19 +682,43 @@ public class FloatingLogoService extends Service {
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
                             float finalX = swipeKnob.getTranslationX();
-                            if (finalX >= maxDrag * 0.6f) {
+                            if (finalX >= maxDrag * 0.55f) {
                                 isCompleted[0] = true;
-                                swipeKnob.animate().translationX(maxDrag).setDuration(120).start();
-                                if (orderCardTimer != null) {
-                                    orderCardTimer.cancel();
-                                    orderCardTimer = null;
+                                if (shakeAnim != null) {
+                                    shakeAnim.cancel();
                                 }
-                                stopAlertEffects();
-                                dismissPorterOrderCardInternal();
-                                openApp(orderId);
+                                // Change knob icon to green tick (✓) and track to green
+                                knobIcon.setText("✓");
+                                knobIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+                                knobIcon.setTextColor(Color.parseColor("#16A34A"));
+                                trackBg.setColor(Color.parseColor("#16A34A"));
+                                swipeLabel.setText("OPENING...");
+                                swipeLabel.setAlpha(1f);
+
+                                swipeKnob.animate().translationX(maxDrag).setDuration(120).withEndAction(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (orderCardTimer != null) {
+                                            orderCardTimer.cancel();
+                                            orderCardTimer = null;
+                                        }
+                                        stopAlertEffects();
+                                        // Brief 200ms delay to display tick confirmation before dismissing overlay
+                                        swipeKnob.postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                dismissPorterOrderCardInternal();
+                                                openApp(orderId);
+                                            }
+                                        }, 200);
+                                    }
+                                }).start();
                             } else {
                                 swipeKnob.animate().translationX(0).setDuration(200).start();
                                 swipeLabel.animate().alpha(1f).setDuration(200).start();
+                                if (shakeAnim != null) {
+                                    shakeAnim.start();
+                                }
                             }
                             return true;
                     }

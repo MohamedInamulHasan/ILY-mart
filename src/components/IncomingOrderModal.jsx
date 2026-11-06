@@ -399,20 +399,15 @@ const IncomingOrderModal = ({
                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                         <SwipeActionButton
                             variant="yellow"
-                            label={language === 'ta' ? 'ஏற்றுக்கொள்' : t('ACCEPT')}
+                            label={t('VIEW ORDER')}
                             autoReset={true}
-                            heightClass="h-[56px]"
-                            knobSizeClass="w-[44px] h-[44px]"
-                            iconSize={22}
+                            heightClass="h-[50px] sm:h-[52px]"
+                            knobSizeClass="w-[38px] h-[38px]"
+                            iconSize={18}
                             onSuccess={() => {
                                 stopIncomingOrderAlertSound();
-                                const oId = order._id || order.id;
-                                localStorage.setItem('active_delivery_order_id', oId);
-                                localStorage.setItem('active_delivery_stay', 'true');
-                                onClose?.();
-                                navigate(`/admin/delivery-order/${oId}`, {
-                                    state: { order, status: order.status }
-                                });
+                                setViewMode('details');
+                                onAcceptViewOpened?.();
                             }}
                         />
 

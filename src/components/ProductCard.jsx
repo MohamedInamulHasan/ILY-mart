@@ -36,8 +36,6 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
     const isScheduled = product.isGroup ? true : isProductScheduled(product);
     const timeLabel = !isScheduled ? getProductTimeLabel(product) : null;
 
-
-
     // Auto-cycling variants logic (for Group cards)
     const [currentVariantIndex, setCurrentVariantIndex] = useState(0);
     const variants = product.variants || [];
@@ -54,7 +52,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
     const featuredVariant = isGroup ? variants[currentVariantIndex] : product;
 
     return (
-        <div className={`relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-2xl overflow-hidden group transition-all duration-300`}>
+        <div className="relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden group transition-all duration-300">
             
             <Link 
                 to={(!isOpen || !isAvailable || !isScheduled) ? '#' : (product.isGroup ? `/product-group/${encodeURIComponent(product.title)}` : `/product/${productId}`)} 
@@ -68,22 +66,21 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                 {/* Status Overlays */}
                 {!isAvailable && (
                     <div className="absolute inset-0 z-20 bg-black/5 flex items-center justify-center backdrop-blur-[1px]">
-                        <span className="bg-red-600 text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg">
+                        <span className="bg-red-600 text-white px-3 py-1 rounded-[4px] text-[10px] font-bold uppercase tracking-widest shadow-lg">
                             {t('Out of Stock')}
                         </span>
                     </div>
                 )}
                 {!isOpen && isAvailable && (
                     <div className="absolute inset-0 z-20 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
-                        <span className="bg-gray-800 text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg">
+                        <span className="bg-gray-800 text-white px-3 py-1 rounded-[4px] text-[10px] font-bold uppercase tracking-widest shadow-lg">
                             {t('Closed')}
                         </span>
                     </div>
                 )}
 
-
-                {/* Image Container (Full Bleed) */}
-                <div className={`aspect-square bg-[#F9FAFB] m-1 rounded-xl overflow-hidden flex items-center justify-center relative ${!isOpen || !isAvailable ? 'opacity-60' : !isScheduled ? 'opacity-75' : ''}`}>
+                {/* Image Container */}
+                <div className={`aspect-square bg-[#F9FAFB] m-1 rounded-lg overflow-hidden flex items-center justify-center relative ${!isOpen || !isAvailable ? 'opacity-60' : !isScheduled ? 'opacity-75' : ''}`}>
                     {showHeart && (
                         <button
                             onClick={(e) => {
@@ -108,10 +105,10 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                         loading="lazy" decoding="async"
                         onError={(e) => { e.target.onerror = null; e.target.src = 'https://atlas-content-cdn.pixelbin.io/ast/feed_v2/static_assets/common/vegetable_placeholder.png'; }}
                     />
-                    {/* Available time overlay — inside image container so it centers on the image */}
+                    {/* Available time overlay */}
                     {isAvailable && isOpen && !isScheduled && timeLabel && (
                         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-[1px] bg-black/10 gap-1">
-                            <div className="bg-black/70 shadow-lg rounded-xl px-3 py-2 flex flex-col items-center gap-0.5 mx-2">
+                            <div className="bg-black/70 shadow-lg rounded-[4px] px-3 py-1.5 flex flex-col items-center gap-0.5 mx-2">
                                 <span className="text-[9px] font-bold uppercase tracking-wider text-gray-300">{t('Available')}</span>
                                 <span className="text-[11px] font-bold text-white leading-none text-center block whitespace-nowrap">{timeLabel}</span>
                             </div>
@@ -120,37 +117,32 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                 </div>
 
                 {/* Content Section */}
-                <div className="px-2.5 pb-3 pt-0.5 flex flex-col items-start flex-1 min-w-0 transition-opacity duration-300">
-                    <div className="flex-1 min-h-[34px] mb-0.5 w-full flex flex-col justify-center transition-opacity duration-300">
+                <div className="px-2.5 pb-2.5 pt-0.5 flex flex-col items-start flex-1 min-w-0 transition-opacity duration-300">
+                    <div className="flex-1 min-h-[38px] sm:min-h-[40px] mb-0.5 w-full flex flex-col justify-start transition-opacity duration-300">
                         {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, language, {
-                            mainClassName: 'text-[12px] sm:text-[13px] font-semibold text-gray-800 dark:text-white truncate w-full',
-                            subClassName: 'text-[10px] sm:text-[11px] font-semibold text-gray-800 dark:text-white truncate w-full opacity-80'
+                            mainClassName: 'text-[12px] sm:text-[13px] font-semibold text-gray-800 dark:text-white truncate w-full leading-snug',
+                            subClassName: 'text-[10px] sm:text-[11px] font-semibold text-gray-600 dark:text-gray-300 truncate w-full pt-0.5 pb-0.5 leading-normal'
                         })}
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 font-medium truncate mb-1.5 w-full">
                        {getStoreName(product.storeId, stores) || "ILY mart Direct"}
                     </p>
                     
-                    <div className="flex items-center justify-between mt-1 w-full">
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5">
-                                {product.isGroup ? (
-                                    <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-                                        {Number(product.minPrice) === Number(product.maxPrice)
+                    <div className="flex items-center justify-between w-full gap-1.5 mt-auto mb-0.5">
+                        <div className="flex flex-col min-w-0">
+                            <div className="flex items-center">
+                                <span className="inline-flex items-center justify-center px-2.5 py-1 sm:py-1.5 rounded-[4px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xs sm:text-sm shadow-[0_2.5px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
+                                    {product.isGroup ? (
+                                        Number(product.minPrice) === Number(product.maxPrice)
                                             ? `₹${Number(product.minPrice).toFixed(0)}`
                                             : `₹${Number(product.minPrice).toFixed(0)} - ₹${Number(product.maxPrice).toFixed(0)}`
-                                        }
-                                    </span>
-                                ) : (
-                                    <>
-                                        <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-                                            ₹{Number(product.price * (quantity || 1)).toFixed(0)}
-                                        </span>
-                                    </>
-                                )}
+                                    ) : (
+                                        `₹${Number(product.price * (quantity || 1)).toFixed(0)}`
+                                    )}
+                                </span>
                             </div>
                             {(product.isGroup || product.unit) && (
-                                <span className="text-[9px] sm:text-[10px] font-semibold text-gray-900 dark:text-white">
+                                <span className="text-[9px] sm:text-[10px] font-semibold text-gray-500 dark:text-gray-400 mt-1 block truncate">
                                     {product.isGroup ? `${product.variantExtraCount + 1} ${t('options')}` : product.unit}
                                 </span>
                             )}
@@ -159,7 +151,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                         {showCartControls && !product.isGroup && (
                             quantity > 0 ? (
                                 <div 
-                                    className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-0.5 rounded-lg shadow-sm"
+                                    className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 p-0.5 rounded-[4px] shadow-sm shrink-0"
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -176,11 +168,11 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                                 removeFromCart(productId);
                                             }
                                         }}
-                                        className="w-6 h-7 sm:w-7 sm:h-8 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
+                                        className="w-5 h-6 sm:w-6 sm:h-6 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
                                     >
-                                        <Minus size={14} />
+                                        <Minus size={13} strokeWidth={2.5} />
                                     </button>
-                                    <span className="font-bold text-xs sm:text-sm min-w-[16px] text-center select-none text-[#2E5A2E] dark:text-[#CBF9B2]">{quantity}</span>
+                                    <span className="font-bold text-xs sm:text-[13px] min-w-[14px] text-center select-none text-gray-800 dark:text-gray-100">{quantity}</span>
                                     <button 
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -188,9 +180,9 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                             if (!user) { navigate('/login'); return; }
                                             updateQuantity(productId, quantity + 1);
                                         }}
-                                        className="w-6 h-7 sm:w-7 sm:h-8 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors"
+                                        className="w-5 h-6 sm:w-6 sm:h-6 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors"
                                     >
-                                        <Plus size={14} />
+                                        <Plus size={13} strokeWidth={2.5} />
                                     </button>
                                 </div>
                             ) : (
@@ -201,14 +193,14 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                         if (!user) { navigate('/login'); return; }
                                         addToCart(product);
                                     }}
-                                     className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all active:scale-90 select-none ${
+                                    className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-[4px] flex items-center justify-center transition-all active:scale-95 select-none shrink-0 ${
                                         (!isAvailable || !isOpen || !isScheduled)
-                                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                            : 'bg-[#2E5A2E] dark:bg-[#CBF9B2] hover:opacity-90 text-white dark:text-gray-900'
+                                            ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                                            : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 shadow-sm'
                                     }`}
                                     disabled={!isAvailable || !isOpen || !isScheduled}
                                 >
-                                    <Plus size={18} strokeWidth={2.5} />
+                                    <Plus size={15} strokeWidth={2.5} />
                                 </button>
                             )
                         )}

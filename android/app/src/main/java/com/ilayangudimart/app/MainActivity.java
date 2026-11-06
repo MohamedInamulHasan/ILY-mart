@@ -93,16 +93,20 @@ public class MainActivity extends BridgeActivity {
         if (intent != null && intent.getBooleanExtra("open_incoming_order", false)) {
             String orderId = intent.getStringExtra("order_id");
             if (orderId != null && getBridge() != null && getBridge().getWebView() != null) {
+                String js = "(function() {" +
+                            "  var id = '" + orderId + "';" +
+                            "  window.__pendingNativeOrderId = id;" +
+                            "  window.dispatchEvent(new CustomEvent('native:open-order', { detail: { id: id } }));" +
+                            "})();";
                 getBridge().getWebView().postDelayed(() -> {
-                    try {
-                        getBridge().getWebView().evaluateJavascript(
-                            "window.dispatchEvent(new CustomEvent('native:open-order', { detail: { id: '" + orderId + "' } }));",
-                            null
-                        );
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }, 400);
+                    try { getBridge().getWebView().evaluateJavascript(js, null); } catch (Exception ignored) {}
+                }, 300);
+                getBridge().getWebView().postDelayed(() -> {
+                    try { getBridge().getWebView().evaluateJavascript(js, null); } catch (Exception ignored) {}
+                }, 800);
+                getBridge().getWebView().postDelayed(() -> {
+                    try { getBridge().getWebView().evaluateJavascript(js, null); } catch (Exception ignored) {}
+                }, 1600);
             }
         }
     }

@@ -261,59 +261,60 @@ const ProductDetails = () => {
                 </div>
 
                 {/* Content Section (Pull-up on mobile, Right on desktop) */}
-                <div className="flex-1 bg-white dark:bg-[#1a1f26] rounded-t-3xl lg:rounded-none -mt-12 lg:mt-0 relative z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none px-8 pt-10 pb-8 lg:p-12 lg:flex lg:flex-col lg:justify-center border-t border-transparent dark:border-white/5">
+                <div className="flex-1 bg-white dark:bg-[#1a1f26] rounded-t-3xl lg:rounded-none -mt-4 lg:mt-0 relative z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none px-5 pt-5 pb-5 lg:p-8 lg:flex lg:flex-col lg:justify-center border-t border-transparent dark:border-white/5">
                     <div className="max-w-2xl mx-auto w-full">
                     {/* Header: Title & Unit */}
-                    <div className="mb-2 min-w-0">
-                        <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white leading-tight" title={product.title}>
+                    <div className="mb-1 min-w-0">
+                        <h1 className="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white leading-normal" title={product.title}>
                             {renderBilingualTitle(t(product, 'title') || product.title, language, {
-                                subClassName: 'text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium leading-normal mt-0.5',
+                                mainClassName: 'leading-snug',
+                                subClassName: 'text-sm sm:text-base text-gray-600 dark:text-gray-300 font-medium leading-normal mt-0.5 pt-0.5 pb-1',
                                 tagClassName: 'inline-flex items-center justify-center text-xs sm:text-sm font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2.5px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center'
                             })}
                         </h1>
                         {product.unit && (
-                            <p className="text-sm text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mt-1">
+                            <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mt-0.5">
                                 {product.unit}
                             </p>
                         )}
                     </div>
 
                     {/* Price & Quantity Selector */}
-                    <div className="flex items-center justify-between mb-8 mt-6">
+                    <div className="flex items-center justify-between mb-4 mt-3">
                         <div className="flex flex-col">
                             <div className="flex items-center gap-3">
-                                <p className="text-4xl font-semibold text-[#2E5A2E] dark:text-[#CBF9B2]">
+                                <div className="inline-flex items-center justify-center px-3.5 py-1.5 sm:py-2 rounded-[6px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xl sm:text-2xl shadow-[0_3px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
                                     ₹{totalPrice}
-                                </p>
+                                </div>
                             </div>
                         </div>
                         
-                        {/* New Minimalist Quantity Selector */}
-                        <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-700/80 p-1 rounded-xl">
+                        {/* Minimalist Quantity Selector */}
+                        <div className="flex items-center gap-1 bg-gray-100/90 dark:bg-gray-700/90 p-1 rounded-xl shadow-sm">
                             <button
                                 onClick={() => updateQuantity(productId, Math.max(0, quantity - 1))}
-                                className="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
+                                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
                             >
-                                <Minus size={18} />
+                                <Minus size={16} strokeWidth={2.5} />
                             </button>
-                            <span className="w-8 text-center text-lg font-bold text-[#2E5A2E] dark:text-[#CBF9B2]">
+                            <span className="w-7 text-center text-base font-bold text-gray-800 dark:text-gray-100">
                                 {quantity || 0}
                             </span>
                             <button
                                 onClick={handleAddToCart}
-                                className="w-10 h-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors"
+                                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-opacity"
                             >
-                                <Plus size={18} />
+                                <Plus size={16} strokeWidth={2.5} />
                             </button>
                         </div>
                     </div>
 
                     {/* Description Section */}
-                    <div className="mb-8">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+                    <div className="mb-4">
+                        <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1.5">
                             {t('Description')}
                         </h2>
-                        <div className="text-gray-600 dark:text-gray-300 leading-relaxed text-base">
+                        <div className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base">
                             {displayDescription}
                             {shouldTruncate && (
                                 <button
@@ -327,7 +328,7 @@ const ProductDetails = () => {
 
                         {/* Parsed Tags Section - Table Format */}
                         {descTags.length > 0 && (
-                            <div className="mt-6 border border-black/10 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
+                            <div className="mt-3 border border-black/10 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
                                 <table className="w-full text-left border-collapse">
                                     <tbody>
                                         {descTags.map((tag, index) => {
@@ -338,10 +339,10 @@ const ProductDetails = () => {
                                                 const val = tag.substring(dashIdx + 1).trim();
                                                 return (
                                                     <tr key={index} className="border-b border-black/10 dark:border-gray-700 last:border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                                                        <td className="w-1/3 py-3 px-4 bg-gray-50/50 dark:bg-gray-900/30 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest border-r border-black/10 dark:border-gray-700">
+                                                        <td className="w-1/3 py-2 px-3 bg-gray-50/50 dark:bg-gray-900/30 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest border-r border-black/10 dark:border-gray-700">
                                                             {key}
                                                         </td>
-                                                        <td className="py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-200">
+                                                        <td className="py-2 px-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                                                             {val}
                                                         </td>
                                                     </tr>
@@ -349,7 +350,7 @@ const ProductDetails = () => {
                                             }
                                             return (
                                                 <tr key={index} className="border-b border-black/10 dark:border-gray-700 last:border-0">
-                                                    <td colSpan="2" className="py-3 px-4 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-50/20 dark:bg-gray-900/10">
+                                                    <td colSpan="2" className="py-2 px-3 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-50/20 dark:bg-gray-900/10">
                                                         {tag}
                                                     </td>
                                                 </tr>
@@ -362,7 +363,7 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Action Button */}
-                    <div className="w-full flex justify-center mt-4 mb-8">
+                    <div className="w-full flex justify-center mt-3 mb-4">
                         {!isCurrentlyAvailable ? (
                             <div className="w-full py-4 bg-red-50 dark:bg-red-900/10 rounded-full border border-red-100 dark:border-red-800 text-center">
                                 <p className="text-red-600 dark:text-red-400 font-bold">
