@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 
-const HomeIcon = ({ isActive, activeColor = 'white', size = 20 }) => (
+const HomeIcon = ({ isActive, activeColor = 'white', size = 23 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path 
             d="M3.5 10.5C3.5 10.5 3.5 10.5 3.5 10.5V17.5C3.5 19.1569 4.84315 20.5 6.5 20.5H17.5C19.1569 20.5 20.5 19.1569 20.5 17.5V10.5C20.5 10.5 20.5 10.5 20.5 10.5" 
@@ -29,7 +29,7 @@ const HomeIcon = ({ isActive, activeColor = 'white', size = 20 }) => (
     </svg>
 );
 
-const StoreIcon = ({ isActive, activeColor = 'white', size = 20 }) => (
+const StoreIcon = ({ isActive, activeColor = 'white', size = 23 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path 
             d="M4.5 8.5V16.5C4.5 18.7091 6.29086 20.5 8.5 20.5H15.5C17.7091 20.5 19.5 18.7091 19.5 16.5V8.5C19.5 7.39543 18.6046 6.5 17.5 6.5H6.5C5.39543 6.5 4.5 7.39543 4.5 8.5Z" 
@@ -51,7 +51,7 @@ const StoreIcon = ({ isActive, activeColor = 'white', size = 20 }) => (
     </svg>
 );
 
-const OrdersIcon = ({ isActive, activeColor = 'white', size = 20 }) => (
+const OrdersIcon = ({ isActive, activeColor = 'white', size = 23 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path 
             d="M5 5C5 3.89543 5.89543 3 7 3H17C18.1046 3 19 3.89543 19 5V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V5Z" 
@@ -79,7 +79,7 @@ const OrdersIcon = ({ isActive, activeColor = 'white', size = 20 }) => (
     </svg>
 );
 
-const ProfileIcon = ({ isActive, activeColor = 'white', size = 20 }) => (
+const ProfileIcon = ({ isActive, activeColor = 'white', size = 23 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle 
             cx="12" 
@@ -163,31 +163,32 @@ const MobileFooter = () => {
                                 WebkitUserSelect: 'none',
                                 WebkitTouchCallout: 'none'
                             }}
-                            className="relative flex flex-col items-center justify-center outline-none focus:outline-none ring-0 border-0 no-underline select-none min-w-[56px] sm:min-w-[62px] h-[52px] sm:h-[56px]"
+                            className="relative flex items-center justify-center outline-none focus:outline-none ring-0 border-0 no-underline select-none min-w-[56px] sm:min-w-[62px] h-[52px] sm:h-[56px]"
                         >
-                            {/* Icon Container with Round Background when Selected */}
-                            <div className="relative w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center">
-                                {active && (
+                            {active ? (
+                                <div className="relative w-12 h-12 sm:w-[52px] sm:h-[52px] flex items-center justify-center">
                                     <motion.div 
                                         layoutId="footerActiveBubble"
                                         className="absolute inset-0 rounded-full bg-black dark:bg-[#CBF9B2]"
                                         style={{ borderRadius: 9999 }}
                                         transition={{ type: "spring", stiffness: 450, damping: 35 }}
                                     />
-                                )}
-                                <div className={`relative z-10 flex items-center justify-center transition-colors duration-200 ${active ? 'text-white dark:text-gray-900' : 'text-black dark:text-white'}`}>
-                                    <item.icon isActive={active} activeColor={activeIconColor} size={active ? 26 : 20} />
+                                    <div className="relative z-10 flex items-center justify-center text-white dark:text-gray-900">
+                                        <item.icon isActive={true} activeColor={activeIconColor} size={28} />
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Label Text below Icon */}
-                            {!active && (
-                                <span 
-                                    className="text-[9px] sm:text-[9.5px] font-normal text-black dark:text-white tracking-tight leading-none mt-0.5 select-none whitespace-nowrap"
-                                    style={{ WebkitTapHighlightColor: 'transparent' }}
-                                >
-                                    {t(item.label)}
-                                </span>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center text-black dark:text-white select-none">
+                                    <div className="w-6 h-6 sm:w-6.5 sm:h-6.5 flex items-center justify-center">
+                                        <item.icon isActive={false} activeColor={activeIconColor} size={23} />
+                                    </div>
+                                    <span 
+                                        className="text-[9.5px] sm:text-[10px] font-normal tracking-tight leading-none mt-0.5 select-none whitespace-nowrap"
+                                        style={{ WebkitTapHighlightColor: 'transparent' }}
+                                    >
+                                        {t(item.label)}
+                                    </span>
+                                </div>
                             )}
                         </Link>
                     );
