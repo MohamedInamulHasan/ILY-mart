@@ -559,15 +559,15 @@ const Checkout = () => {
                                             disabled={isLocationSearching}
                                             className={`w-full border rounded-xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] shadow-none ${
                                                 isLocationSearching
-                                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
+                                                    ? 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
                                                     : formData.location
-                                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
+                                                    ? 'bg-black dark:bg-black border-black text-white shadow-md'
                                                     : showLocationError
                                                     ? 'border-amber-400 bg-amber-50/10'
                                                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                                             }`}
                                         >
-                                            {/* Icon Container: Round with grey color */}
+                                            {/* Icon Container */}
                                             <div className="relative flex-shrink-0 flex items-center justify-center w-11 h-11">
                                                 {isLocationSearching ? (
                                                     /* Location Loading Animation - Grey Theme */
@@ -584,7 +584,7 @@ const Checkout = () => {
                                                             animate={{ width: 52, height: 52, opacity: 0 }}
                                                             transition={{ repeat: Infinity, duration: 1.4, delay: 0.45, ease: 'easeOut' }}
                                                         />
-                                                        <div className="relative w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center shadow-xs">
+                                                        <div className="relative w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 border border-gray-400 dark:border-gray-500 flex items-center justify-center shadow-xs">
                                                             <motion.div
                                                                 animate={{ y: [0, -4, 0] }}
                                                                 transition={{ repeat: Infinity, duration: 1, ease: 'easeInOut' }}
@@ -600,12 +600,12 @@ const Checkout = () => {
                                                         </div>
                                                     </div>
                                                 ) : formData.location ? (
-                                                    /* Location Attached: Round grey circle with red pin */
-                                                    <div className="relative w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center shadow-xs transition-transform duration-200">
+                                                    /* Location Attached: Round low-opacity white circle with red pin */
+                                                    <div className="relative w-10 h-10 rounded-full bg-white/20 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner transition-transform duration-200">
                                                         <MapPin size={20} className="text-red-500 fill-red-500/20" strokeWidth={2.2} />
                                                     </div>
                                                 ) : (
-                                                    /* Idle Unattached */
+                                                    /* Idle Unattached: Normal white/light circle */
                                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${showLocationError ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
                                                         <MapPin size={20} className={showLocationError ? 'text-amber-600' : 'text-gray-400 dark:text-gray-500'} strokeWidth={2} />
                                                     </div>
@@ -615,7 +615,13 @@ const Checkout = () => {
                                             {/* Text */}
                                             <div className="flex-1 text-left min-w-0">
                                                 <p className={`text-[13px] font-bold truncate ${
-                                                    showLocationError ? 'text-amber-600 font-bold' : 'text-gray-900 dark:text-white'
+                                                    formData.location && !isLocationSearching
+                                                        ? 'text-white'
+                                                        : isLocationSearching
+                                                        ? 'text-gray-900 dark:text-white'
+                                                        : showLocationError
+                                                        ? 'text-amber-600 font-bold'
+                                                        : 'text-gray-800 dark:text-gray-200'
                                                 }`}>
                                                     {isLocationSearching 
                                                         ? t('Finding location...') 
@@ -623,7 +629,13 @@ const Checkout = () => {
                                                         ? (formData.address && formData.city ? t('GPS & Address Attached') : t('GPS Coordinates Attached'))
                                                         : t('Tap to attach GPS location')}
                                                 </p>
-                                                <p className="text-[11px] truncate text-gray-500 dark:text-gray-400">
+                                                <p className={`text-[11px] truncate ${
+                                                    formData.location && !isLocationSearching
+                                                        ? 'text-white/80'
+                                                        : isLocationSearching
+                                                        ? 'text-gray-600 dark:text-gray-300'
+                                                        : 'text-gray-400 dark:text-gray-500'
+                                                }`}>
                                                     {isLocationSearching 
                                                         ? t('Accessing GPS coordinates...') 
                                                         : formData.location 
@@ -633,7 +645,11 @@ const Checkout = () => {
                                             </div>
 
                                             {/* Arrow */}
-                                            <ArrowLeft size={16} className="flex-shrink-0 rotate-180 transition-colors text-gray-400 dark:text-gray-500" />
+                                            <ArrowLeft size={16} className={`flex-shrink-0 rotate-180 transition-colors ${
+                                                formData.location && !isLocationSearching
+                                                    ? 'text-white/80'
+                                                    : 'text-gray-400 dark:text-gray-500'
+                                            }`} />
                                         </button>
 
                                         {fieldErrors.location && (
