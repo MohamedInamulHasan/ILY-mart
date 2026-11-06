@@ -116,30 +116,9 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
             <div className="flex justify-between items-end mb-3.5 sm:mb-4 px-1">
                 <div className="flex flex-col min-w-0 flex-1 pr-3">
                     <div className="flex items-center gap-2">
-                        {section.id === 'free_delivery' ? (
-                            <div className="relative inline-block mb-1 pt-1">
-                                {/* Dialogue Speech Bubble Tag */}
-                                <div className="relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-[#16A34A] to-[#15803D] text-white shadow-md border border-white/20 select-none">
-                                    {/* Below hand symbol in front */}
-                                    <span className="text-xl sm:text-2xl leading-none animate-bounce" role="img" aria-label="hand pointing down">
-                                        👇
-                                    </span>
-                                    {/* Dialogue text in Oleo Script font */}
-                                    <span 
-                                        className="text-xl sm:text-2xl md:text-3xl font-bold tracking-wide leading-none pt-0.5"
-                                        style={{ fontFamily: "'Oleo Script', cursive" }}
-                                    >
-                                        {t('Free Delivery')}
-                                    </span>
-                                    {/* Dialogue triangle/tail pointing down towards cards */}
-                                    <div className="absolute -bottom-1.5 left-5 w-3.5 h-3.5 bg-[#15803D] rotate-45 rounded-[1px] shadow-xs pointer-events-none" />
-                                </div>
-                            </div>
-                        ) : (
-                            <h2 className="text-[16px] sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white leading-tight truncate w-full" title={t(section.name)}>
+                        <h2 className="text-[16px] sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white leading-tight truncate w-full" title={t(section.name)}>
                                 {t(section.name)}
                             </h2>
-                        )}
                     </div>
                     {section.address && (
                         <p className="text-[11px] text-gray-400 font-medium mt-1 truncate w-full">
@@ -152,8 +131,7 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
                         </p>
                     )}
                 </div>
-                {section.id !== 'free_delivery' && (
-                    isOpen ? (
+                {isOpen ? (
                         <Link to={navigateTo} className="text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-70 transition-all shrink-0">
                             {t('See All')}
                         </Link>
@@ -161,8 +139,7 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
                         <span className="text-xs font-semibold text-gray-400 dark:text-gray-650 cursor-not-allowed select-none shrink-0">
                             {t('See All')}
                         </span>
-                    )
-                )}
+                    )}
             </div>
 
             {singleStore ? (

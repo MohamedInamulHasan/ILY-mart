@@ -38,7 +38,6 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
         : isStoreOpen(storeToUse);
     const isAvailable = product.isGroup ? true : product.isAvailable !== false;
     const isScheduled = product.isGroup ? true : isProductScheduled(product);
-    const isFreeDelivery = product.deliveryCharge === 0 || product.isFreeDelivery === true || product.freeDelivery === true || featuredVariant?.deliveryCharge === 0 || featuredVariant?.isFreeDelivery === true || featuredVariant?.freeDelivery === true;
     const timeLabel = !isScheduled ? getProductTimeLabel(product) : null;
     const isPreview = isCategoryPreview(product.category, categories) || product?.isPreview === true || product?.mode === 'preview';
     const canClick = isPreview || (isOpen && isAvailable && isScheduled);
@@ -57,6 +56,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
     }, [isGroup, variants.length]);
 
     const featuredVariant = isGroup ? variants[currentVariantIndex] : product;
+    const isFreeDelivery = product.deliveryCharge === 0 || product.isFreeDelivery === true || product.freeDelivery === true || featuredVariant.deliveryCharge === 0 || featuredVariant.isFreeDelivery === true || featuredVariant.freeDelivery === true;
 
     return (
         <div className="relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden group transition-all duration-300">
@@ -88,6 +88,13 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
 
                 {/* Image Container */}
                 <div className={`aspect-square bg-[#F9FAFB] m-1 rounded-lg overflow-hidden flex items-center justify-center relative ${!isOpen || !isAvailable ? 'opacity-60' : !isScheduled ? 'opacity-75' : ''}`}>
+                    {/* Pink Free Delivery Tag across top of image */}
+                    {isFreeDelivery && (
+                        <div className="absolute top-0 left-0 right-0 z-[22] bg-pink-500 dark:bg-pink-600 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                            {t('Free Delivery')}
+                        </div>
+                    )}
+                    
                     {showHeart && (
                         <button
                             onClick={(e) => {
@@ -125,11 +132,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
 
                 {/* Content Section */}
                 <div className="px-2.5 pb-2.5 pt-0.5 flex flex-col items-start flex-1 min-w-0 transition-opacity duration-300">
-                    {isFreeDelivery && (
-                        <span className="text-[10.5px] sm:text-[11.5px] font-black uppercase tracking-wider text-[#16A34A] dark:text-[#22c55e] leading-none mb-1 select-none block">
-                            {t('Free Delivery')}
-                        </span>
-                    )}
+                    
                     <div className="flex-1 min-h-[38px] sm:min-h-[40px] mb-0.5 w-full flex flex-col justify-start transition-opacity duration-300">
                         {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, language, {
                             mainClassName: 'text-[12px] sm:text-[13px] font-semibold text-gray-800 dark:text-white truncate w-full leading-snug',

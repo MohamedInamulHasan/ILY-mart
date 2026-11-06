@@ -103,28 +103,13 @@ const Home = () => {
         }, {});
     }, [products]);
 
-    // Extract Free Products for special section
-    const freeProducts = useMemo(() => {
-        return products.filter(p => 
-            p.isGold === true && 
-            p.isAvailable !== false
-        );
-    }, [products]);
+    
 
     // Create sections list
     const displaySections = useMemo(() => {
         const sections = [];
 
-        // 0. Add Free Delivery section if products exist
-        if (freeProducts.length > 0) {
-            sections.push({
-                id: 'free_delivery',
-                name: 'Free Delivery',
-                slogan: 'Zero delivery charges on these selected items',
-                type: 'special',
-                data: {}
-            });
-        }
+        
 
         // 1. Add real stores
         stores.forEach(s => {
@@ -163,9 +148,6 @@ const Home = () => {
 
         // Sort by Type then Status
         return sections.sort((a, b) => {
-            // 1. Keep Free Delivery at the very top
-            if (a.id === 'free_delivery') return -1;
-            if (b.id === 'free_delivery') return 1;
 
             // 2. Prioritize Category Sections over Store Sections
             if (a.type === 'category' && b.type === 'store') return -1;
@@ -191,7 +173,7 @@ const Home = () => {
 
             return 0;
         });
-    }, [stores, groupedByStore, selectedCategory, freeProducts, featuredCategories]);
+    }, [stores, groupedByStore, selectedCategory, featuredCategories]);
 
     // Only show skeleton when there is NO data at all (not even cached)
     const hasAnyProducts = (Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || [])).length > 0;
@@ -426,7 +408,7 @@ const Home = () => {
                             <StoreSection 
                                 key={section.id} 
                                 section={section} 
-                                products={section.id === 'free_delivery' ? freeProducts : groupedByStore[section.id] || []}
+                                products={groupedByStore[section.id] || []}
                                 selectedCategory={selectedCategory}
                                 singleStore={displaySections.length === 1}
                             />

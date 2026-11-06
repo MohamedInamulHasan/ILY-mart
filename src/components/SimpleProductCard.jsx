@@ -124,6 +124,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
     }, [isGroupProduct, variants.length]);
 
     const featuredVariant = isGroupProduct ? variants[currentVariantIndex] : product;
+    const isFreeDelivery = product.deliveryCharge === 0 || product.isFreeDelivery === true || product.freeDelivery === true || featuredVariant.deliveryCharge === 0 || featuredVariant.isFreeDelivery === true || featuredVariant.freeDelivery === true;
 
     // Handle Grouped Products
     if (product.isGroup) {
@@ -138,6 +139,12 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 }}
             >
             <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!product.anyStoreOpen || !isStoreOpenCheck) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                    {/* Pink Free Delivery Tag across top of image */}
+                    {isFreeDelivery && (
+                        <div className="absolute top-0 left-0 right-0 z-[22] bg-pink-500 dark:bg-pink-600 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                            {t('Free Delivery')}
+                        </div>
+                    )}
                     {/* Delivery Tag */}
                     <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-[25] pointer-events-none">
                         {product.isGold && (
@@ -154,6 +161,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                         className={`absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 ${(isStoreOpenCheck && product.anyStoreOpen) ? 'hover:scale-105' : 'grayscale'}`}
                         onError={(e) => { e.target.src = 'https://via.placeholder.com/300x300?text=No+Image'; }}
                     />
+                    
                     {showSave && (
                         <button
                             onClick={(e) => {
@@ -260,6 +268,12 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             className={`rounded-xl overflow-hidden transition-all duration-300 flex flex-col h-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${isStoreOpenCheck && isAvailable && isScheduled ? 'hover:scale-[1.01]' : 'cursor-default'}`}
         >
             <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!isStoreOpenCheck || !isAvailable || !isScheduled) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                    {/* Pink Free Delivery Tag across top of image */}
+                    {isFreeDelivery && (
+                        <div className="absolute top-0 left-0 right-0 z-[22] bg-pink-500 dark:bg-pink-600 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                            {t('Free Delivery')}
+                        </div>
+                    )}
                     <div className="absolute top-0 left-0 flex flex-col items-start gap-0 z-[25] pointer-events-none">
                         {product.isGold && (
                             <span className="bg-[#16A34A] text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-br-md shadow-sm">
@@ -325,6 +339,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 )}
             </div>
             <div className="p-3 flex flex-col flex-1">
+                
                 <div className="w-full mb-1 min-h-[38px] sm:min-h-[40px] flex flex-col justify-start">
                     {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, useLanguage().language, {
                         mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full',

@@ -268,7 +268,7 @@ const ProductDetails = () => {
                         )}
 
                         {product.unit && (
-                            <div className="absolute bottom-4 right-4 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 shadow-sm border border-black/5 hidden lg:block">
+                            <div className="absolute bottom-4 right-4 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold text-gray-900 dark:text-white normal-case shadow-sm border border-black/5 hidden lg:block">
                                 {product.unit}
                             </div>
                         )}
@@ -288,7 +288,7 @@ const ProductDetails = () => {
                             })}
                         </h1>
                         {product.unit && (
-                            <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mt-0.5">
+                            <p className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium normal-case mt-0.5">
                                 {product.unit}
                             </p>
                         )}
