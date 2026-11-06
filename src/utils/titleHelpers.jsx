@@ -32,11 +32,62 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     const bracketIndex = cleanTitle.indexOf('(');
 
     if (bracketIndex === -1) {
-        // Single language title
+        // Check if there is an unbracketed bilingual separator or mixed English/Tamil
+        let part1 = cleanTitle;
+        let part2 = '';
+
+        const separatorMatch = cleanTitle.match(/\s+[-–—\/]\s+/);
+        if (separatorMatch) {
+            part1 = cleanTitle.substring(0, separatorMatch.index).trim();
+            part2 = cleanTitle.substring(separatorMatch.index + separatorMatch[0].length).trim();
+        } else {
+            // Check if there is an English portion and a Tamil portion without brackets, e.g. "kaadai kari காடை கறி"
+            const firstTamilMatch = cleanTitle.search(/[\u0B80-\u0BFF]/);
+            if (firstTamilMatch > 0) {
+                part1 = cleanTitle.substring(0, firstTamilMatch).trim();
+                part2 = cleanTitle.substring(firstTamilMatch).trim();
+            }
+        }
+
+        if (part2) {
+            const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
+            const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
+            let mainText = part1;
+            let subText = part2;
+            if (isPart1Tamil && !isPart2Tamil) {
+                if (language === 'ta') { mainText = part1; subText = part2; }
+                else { mainText = part2; subText = part1; }
+            } else if (isPart2Tamil && !isPart1Tamil) {
+                if (language === 'ta') { mainText = part2; subText = part1; }
+                else { mainText = part1; subText = part2; }
+            }
+
+            return (
+                <span className="flex flex-col w-full max-w-full">
+                    <span className={`inline-flex items-center gap-1 max-w-full leading-snug py-0.5 ${mainClassName}`}>
+                        <span className="truncate">{mainText}</span>
+                        {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
+                    </span>
+                    <span className={`truncate leading-normal pt-0.5 pb-1 ${subClassName}`}>
+                        ({subText})
+                    </span>
+                </span>
+            );
+        }
+
+        // Single language title with no brackets:
+        // Allow the product name to wrap into the second line (line-clamp-2 break-words) instead of single-line truncate
+        const multilineMainClass = mainClassName
+            .replace(/\btruncate\b/g, '')
+            .replace(/\bwhitespace-nowrap\b/g, '')
+            .trim();
+
         return (
-            <span className={`inline-flex items-center gap-1 ${mainClassName}`}>
-                <span>{cleanTitle}</span>
-                {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
+            <span className="flex flex-col w-full max-w-full">
+                <span className={`inline-flex items-start gap-1 max-w-full leading-snug py-0.5 ${multilineMainClass} line-clamp-2 break-words whitespace-normal`}>
+                    <span className="line-clamp-2 break-words whitespace-normal">{cleanTitle}</span>
+                    {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
+                </span>
             </span>
         );
     }

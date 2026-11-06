@@ -22,7 +22,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                 {/* Horizontal Category Items list - Blinkit shimmer */}
                 <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1.5 px-4">
                     {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                        <div key={i} className="flex flex-col items-center gap-2 min-w-[72px] md:min-w-[88px]">
+                        <div key={i} className="flex flex-col items-center gap-2 min-w-[82px] sm:min-w-[94px]">
                             {/* Circle shape placeholder with Blinkit shimmer */}
                             <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl blinkit-shimmer"></div>
                             {/* Text label placeholder with Blinkit shimmer */}
@@ -58,7 +58,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                 {/* All Categories Option — styled like other category items */}
                 <div
                     onClick={() => onSelectCategory('All')}
-                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[84px] sm:min-w-[96px] md:min-w-[110px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'scale-105 filter brightness-125 contrast-105' : 'scale-100 opacity-100 hover:scale-105'}`}
+                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'scale-105 opacity-100 filter brightness-110 contrast-105' : 'scale-95 opacity-55 hover:opacity-85'}`}
                 >
                     <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform">
                         {allCategoryImage ? (
@@ -102,12 +102,12 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             }
                         }
                         return (
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${selectedCategory === 'All' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-                                <span className={`text-[11px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-bold' : 'font-medium'}`} title={mainPart}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[86px] sm:max-w-[98px] md:max-w-[114px] transition-colors ${selectedCategory === 'All' ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                                <span className={`text-[11px] sm:text-[11.5px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-bold' : 'font-normal'}`} title={mainPart}>
                                     {mainPart}
                                 </span>
                                 {bracketPart && (
-                                    <span className={`text-[9.5px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-normal'}`} title={bracketPart}>
+                                    <span className={`text-[9.5px] sm:text-[10px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-normal'}`} title={bracketPart}>
                                         {bracketPart}
                                     </span>
                                 )}
@@ -122,7 +122,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                         <div
                             key={category._id || category.id}
                             onClick={() => onSelectCategory(category.name)}
-                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[84px] sm:min-w-[96px] md:min-w-[110px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'scale-105 filter brightness-125 contrast-105' : 'scale-100 opacity-100 hover:scale-105'}`}
+                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'scale-105 opacity-100 filter brightness-110 contrast-105' : 'scale-95 opacity-55 hover:opacity-85'}`}
                         >
                             <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform">
                                 <img
@@ -133,7 +133,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
                                 />
                             </div>
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[88px] sm:max-w-[100px] md:max-w-[116px] transition-colors ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[86px] sm:max-w-[98px] md:max-w-[114px] transition-colors ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
                                 {(() => {
                                     const fullTitle = t(category.name);
                                     let mainPart = fullTitle;
@@ -174,14 +174,14 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     return (
                                         <>
                                             <span 
-                                                className={`text-[11px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${isSelected ? 'font-bold' : 'font-medium'}`}
+                                                className={`text-[11px] sm:text-[11.5px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${isSelected ? 'font-bold' : 'font-normal'}`}
                                                 title={mainPart}
                                             >
                                                 {mainPart}
                                             </span>
                                             {bracketPart && (
                                                 <span 
-                                                    className={`text-[9.5px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center mt-0.5 ${isSelected ? 'font-semibold' : 'font-normal'}`}
+                                                    className={`text-[9.5px] sm:text-[10px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center mt-0.5 ${isSelected ? 'font-semibold' : 'font-normal'}`}
                                                     title={bracketPart}
                                                 >
                                                     {bracketPart}
