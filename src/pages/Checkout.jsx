@@ -76,6 +76,7 @@ const Checkout = () => {
     const [cachedLocation, setCachedLocation] = useState(null); 
     const [locationMessage, setLocationMessage] = useState({ show: false, type: '', text: '' });
     const [showLocationError, setShowLocationError] = useState(false);
+    const [gpsError, setGpsError] = useState(null);
     const locationRef = useRef(null);
     const fullNameRef = useRef(null);
     const addressRef = useRef(null);
@@ -91,6 +92,46 @@ const Checkout = () => {
     //     };
     //     preFetchLocation();
     // }, []);
+    
+    const handleDetectLocation = async () => {
+        setIsLocationSearching(true);
+        setShowLocationError(false);
+        setGpsError(null);
+        try {
+            const result = await getCurrentLocation();
+            if (result && result.success) {
+                const resolvedStreet = result.addressDetails?.street || '';
+                const resolvedCity = 'Ilayangudi';
+                const resolvedZip = result.addressDetails?.zip || '630702';
+
+                setFormData(prev => {
+                    const next = { ...prev, location: result.mapsLink };
+                    if (resolvedStreet) next.address = resolvedStreet;
+                    if (resolvedCity) next.city = resolvedCity;
+                    if (resolvedZip) next.zip = resolvedZip;
+                    if (next.address && next.city && next.address.trim().toLowerCase() === next.city.trim().toLowerCase()) {
+                        next.address = '';
+                    }
+                    return next;
+                });
+                setFieldErrors(prev => ({
+                    ...prev,
+                    location: false,
+                    ...(resolvedStreet ? { address: false } : {}),
+                    ...(resolvedCity ? { city: false } : {})
+                }));
+                setGpsError(null);
+            } else {
+                setGpsError({ code: result?.code || 'ERROR', text: result?.message });
+            }
+        } catch (locErr) {
+            console.error('Checkout location error:', locErr);
+            setGpsError({ code: 'ERROR', text: 'Unable to detect GPS location. Please enter your address manually.' });
+        } finally {
+            setIsLocationSearching(false);
+        }
+    };
+
     const [isEditingAddress, setIsEditingAddress] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const [permissionStatus, setPermissionStatus] = useState('prompt'); // granted, prompt, denied
@@ -514,43 +555,7 @@ const Checkout = () => {
 
                                         <button
                                             type="button"
-                                            onClick={async () => {
-                                                setIsLocationSearching(true);
-                                                setShowLocationError(false);
-                                                try {
-                                                    const result = await getCurrentLocation();
-                                                    
-                                                    if (result && result.success) {
-                                                        const resolvedStreet = result.addressDetails?.street || '';
-                                                        const resolvedCity = 'Ilayangudi';
-                                                        const resolvedZip = result.addressDetails?.zip || '630702';
-
-                                                        setFormData(prev => {
-                                                            const next = { ...prev, location: result.mapsLink };
-                                                            if (resolvedStreet) next.address = resolvedStreet;
-                                                            if (resolvedCity) next.city = resolvedCity;
-                                                            if (resolvedZip) next.zip = resolvedZip;
-                                                            if (next.address && next.city && next.address.trim().toLowerCase() === next.city.trim().toLowerCase()) {
-                                                                next.address = '';
-                                                            }
-                                                            return next;
-                                                        });
-                                                        setFieldErrors(prev => ({
-                                                            ...prev,
-                                                            location: false,
-                                                            ...(resolvedStreet ? { address: false } : {}),
-                                                            ...(resolvedCity ? { city: false } : {})
-                                                        }));
-                                                    } else {
-                                                        setLocationMessage({ show: true, type: 'error', text: t(result?.message || 'Unable to get location') });
-                                                    }
-                                                } catch (locErr) {
-                                                    console.error('Checkout location error:', locErr);
-                                                    setLocationMessage({ show: true, type: 'error', text: t('Unable to get location') });
-                                                } finally {
-                                                    setIsLocationSearching(false);
-                                                }
-                                            }}
+                                            onClick={handleDetectLocation}
                                             disabled={isLocationSearching}
                                             className={`w-full border rounded-xl px-4 py-3.5 flex items-center gap-3.5 transition-all duration-300 active:scale-[0.98] shadow-none ${
                                                 isLocationSearching
