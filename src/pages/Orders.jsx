@@ -15,6 +15,9 @@ import { API_BASE_URL } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const Orders = () => {
+    const isItemFree = (item) => Boolean(
+    item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
+);
     const navigate = useNavigate();
     const { user } = useAuth();
     const currentMobile = user?.mobile || user?.phone || '';
@@ -281,6 +284,11 @@ const Orders = () => {
                                             {order.items?.slice(0, 2).map((item, idx) => (
                                                 <div key={idx} className="py-2.5 flex items-center gap-3">
                                                     <div className="h-14 w-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
+                                                        {isItemFree(item) && (
+                                                            <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[6.5px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                                                                {t('Free Delivery')}
+                                                            </div>
+                                                        )}
                                                         <img
                                                             src={item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
                                                                 ? item.image

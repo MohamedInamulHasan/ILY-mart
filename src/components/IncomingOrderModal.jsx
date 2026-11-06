@@ -9,7 +9,7 @@ import { useUpdateOrderStatus } from '../hooks/queries/useOrders';
 import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getStoreName, formatDeliveryRangeFromDate } from '../utils/storeHelpers';
 import { API_BASE_URL } from '../utils/api';
-import { startIncomingOrderAlertSound, stopIncomingOrderAlertSound, playSuccessSound } from '../utils/soundHelper';
+import { startIncomingOrderAlertSound, stopIncomingOrderAlertSound, playSuccessSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound } from '../utils/soundHelper';
 import { CartoonCoin } from './CartoonCoin';
 import { formatOrderBannerTime } from '../utils/dateUtils';
 import SwipeActionButton from './SwipeActionButton';
@@ -185,7 +185,7 @@ const IncomingOrderModal = ({
                     status: 'Delivered',
                     deliveredBy: user?._id
                 });
-                playSuccessSound();
+                playOrderDeliveredSound();
                 setPopupState({
                     isOpen: true,
                     type: 'delivered',
@@ -199,7 +199,7 @@ const IncomingOrderModal = ({
                     status: 'Out for Delivery',
                     deliveredBy: user?._id
                 });
-                playSuccessSound();
+                playOrderAcceptedSound();
                 localStorage.setItem('active_delivery_order_id', id);
                 localStorage.setItem('active_delivery_stay', 'true');
                 setPopupState({

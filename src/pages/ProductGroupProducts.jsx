@@ -111,8 +111,8 @@ const ProductGroupProducts = () => {
         <PullToRefreshLayout>
             <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
 
-                {/* Premium Header — matches home/store page style */}
-                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-3 sm:mb-3.5">
+                {/* Premium Attached Header */}
+                <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                     {/* Decorative blur blob */}
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 rounded-full blur-3xl pointer-events-none" />
 
@@ -160,7 +160,7 @@ const ProductGroupProducts = () => {
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-3 sm:px-4 py-0">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-[84px] pb-6">
                     {isLoading ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4">
                             {[...Array(10)].map((_, i) => (

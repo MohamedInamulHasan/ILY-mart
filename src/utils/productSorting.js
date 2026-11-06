@@ -37,12 +37,6 @@ export const sortProductsByGoldAndOpen = (products, stores) => {
             return isOpenA ? -1 : 1; // Open comes first
         }
 
-        // 2. Secondary Sort: Gold Status
-        // Both are Open OR Both are Closed
-        if (a.isGold !== b.isGold) {
-            return a.isGold ? -1 : 1; // Gold comes first
-        }
-
-        return 0; // Maintain original order
+        return 0; // Maintain original/random order without forcing gold products first
     });
 };

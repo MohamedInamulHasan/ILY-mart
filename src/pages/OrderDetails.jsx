@@ -14,6 +14,9 @@ import CancelOrderModal from '../components/CancelOrderModal';
 import { openExternalLink } from '../utils/linkHelper';
 
 const OrderDetails = () => {
+    const isItemFree = (item) => Boolean(
+    item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
+);
     const { id } = useParams();
     const navigate = useNavigate();
     const { t, language } = useLanguage();
@@ -360,6 +363,11 @@ const OrderDetails = () => {
                         {order.items?.map((item, index) => (
                             <div key={index} className="p-3 sm:p-3.5 flex gap-3 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-3">
                                 <div className="w-14 h-14 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden flex-shrink-0 relative">
+                                        {isItemFree(item) && (
+                                            <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[6.5px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                                                {t('Free Delivery')}
+                                            </div>
+                                        )}
                                     <img
                                         src={item.image && (item.image.startsWith('http') || item.image.startsWith('data:'))
                                             ? item.image

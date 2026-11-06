@@ -93,14 +93,6 @@ const OfflineScreen = () => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 font-medium leading-relaxed max-w-[280px] mx-auto">
                     Oops! Your internet seems to have taken a break. Please check your network settings.
                 </p>
-
-                {/* Status pill — same layout as Maintenance */}
-                <div className="bg-red-50 dark:bg-red-950/40 rounded-2xl p-3 border border-red-200/60 dark:border-red-800/40 flex items-center justify-center gap-2">
-                    <span className="flex h-2 w-2 rounded-full bg-red-500 animate-ping shrink-0" />
-                    <span className="text-xs font-bold text-red-700 dark:text-red-300 uppercase tracking-wider">
-                        Automatically Reconnecting
-                    </span>
-                </div>
             </motion.div>
         </div>
     );

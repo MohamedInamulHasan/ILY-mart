@@ -124,7 +124,13 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
     }, [isGroupProduct, variants.length]);
 
     const featuredVariant = isGroupProduct ? variants[currentVariantIndex] : product;
-    const isFreeDelivery = product.deliveryCharge === 0 || product.isFreeDelivery === true || product.freeDelivery === true || featuredVariant.deliveryCharge === 0 || featuredVariant.isFreeDelivery === true || featuredVariant.freeDelivery === true;
+    const checkFree = (p) => Boolean(
+        p && (p.isGold === true || p.deliveryCharge === 0 || p.isFreeDelivery === true || p.freeDelivery === true)
+    );
+    const isFreeDelivery = checkFree(product) ||
+        checkFree(featuredVariant) ||
+        (Array.isArray(variants) && variants.some(checkFree)) ||
+        (Array.isArray(product.variants) && product.variants.some(checkFree));
 
     // Handle Grouped Products
     if (product.isGroup) {
@@ -141,7 +147,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!product.anyStoreOpen || !isStoreOpenCheck) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                     {/* Pink Free Delivery Tag across top of image */}
                     {isFreeDelivery && (
-                        <div className="absolute top-0 left-0 right-0 z-[22] bg-pink-500 dark:bg-pink-600 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
                             {t('Free Delivery')}
                         </div>
                     )}
@@ -270,7 +276,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!isStoreOpenCheck || !isAvailable || !isScheduled) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                     {/* Pink Free Delivery Tag across top of image */}
                     {isFreeDelivery && (
-                        <div className="absolute top-0 left-0 right-0 z-[22] bg-pink-500 dark:bg-pink-600 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
                             {t('Free Delivery')}
                         </div>
                     )}

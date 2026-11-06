@@ -86,7 +86,7 @@ export const groupProducts = (productList, stores = [], options = {}) => {
                 anyStoreOpen: anyStoreOpen,
                 minPrice: Math.min(...prices),
                 maxPrice: Math.max(...prices),
-                isGold: group.every(p => p.isGold),
+                isGold: group.some(p => p.isGold === true || p.deliveryCharge === 0 || p.isFreeDelivery === true || p.freeDelivery === true),
                 _id: `group-${displayProduct._id || displayProduct.id}`,
                 id: `group-${displayProduct._id || displayProduct.id}`,
                 storeId: forcedStoreId || displayProduct.storeId, // Preverve storeId from first product if no forced ID

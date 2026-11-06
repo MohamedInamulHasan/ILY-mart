@@ -56,7 +56,13 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
     }, [isGroup, variants.length]);
 
     const featuredVariant = isGroup ? variants[currentVariantIndex] : product;
-    const isFreeDelivery = product.deliveryCharge === 0 || product.isFreeDelivery === true || product.freeDelivery === true || featuredVariant.deliveryCharge === 0 || featuredVariant.isFreeDelivery === true || featuredVariant.freeDelivery === true;
+    const checkFree = (p) => Boolean(
+        p && (p.isGold === true || p.deliveryCharge === 0 || p.isFreeDelivery === true || p.freeDelivery === true)
+    );
+    const isFreeDelivery = checkFree(product) ||
+        checkFree(featuredVariant) ||
+        (Array.isArray(variants) && variants.some(checkFree)) ||
+        (Array.isArray(product.variants) && product.variants.some(checkFree));
 
     return (
         <div className="relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden group transition-all duration-300">
@@ -90,7 +96,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                 <div className={`aspect-square bg-[#F9FAFB] m-1 rounded-lg overflow-hidden flex items-center justify-center relative ${!isOpen || !isAvailable ? 'opacity-60' : !isScheduled ? 'opacity-75' : ''}`}>
                     {/* Pink Free Delivery Tag across top of image */}
                     {isFreeDelivery && (
-                        <div className="absolute top-0 left-0 right-0 z-[22] bg-pink-500 dark:bg-pink-600 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
                             {t('Free Delivery')}
                         </div>
                     )}

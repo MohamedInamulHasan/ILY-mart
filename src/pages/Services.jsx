@@ -162,7 +162,7 @@ const Services = () => {
         <PullToRefreshLayout>
             <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200">
                 {/* Premium Light Green Header Card / Dark Mode Adjusted */}
-                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-3.5 sm:mb-4">
+                <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                     
                     <div className="relative z-10">
@@ -190,10 +190,10 @@ const Services = () => {
                     </div>
                 </div>
 
-                <div className={`max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 ${viewMode === 'details' ? 'pb-36 sm:pb-32' : 'pb-20'}`}>
+                <div className={`max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-[84px] ${viewMode === 'details' ? 'pb-36 sm:pb-32' : 'pb-20'}`}>
 
                     {viewMode === 'list' && (
-                        <div className="mb-3.5 sm:mb-4 flex justify-center md:justify-start sticky top-2 z-30">
+                        <div className="mb-3.5 sm:mb-4 flex justify-center md:justify-start sticky top-[84px] z-30">
                             <div className="relative w-full max-w-lg group">
                                 <input
                                     type="text"

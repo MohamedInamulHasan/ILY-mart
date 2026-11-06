@@ -206,6 +206,11 @@ const ProductDetails = () => {
     const shouldTruncate = mainDesc.length > 150;
     const displayDescription = isDescriptionExpanded ? mainDesc : mainDesc.slice(0, 150) + (shouldTruncate ? '...' : '');
 
+    // Free delivery check
+    const isFreeDelivery = Boolean(
+        product && (product.isGold === true || product.deliveryCharge === 0 || product.isFreeDelivery === true || product.freeDelivery === true)
+    );
+
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 flex flex-col lg:py-12 lg:px-8">
             
@@ -295,7 +300,7 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Price & Quantity Selector */}
-                    <div className="flex items-center justify-between mb-4 mt-3">
+                    <div className="flex items-center justify-between mb-2 mt-3">
                         <div className="flex flex-col">
                             <div className="flex items-center gap-3">
                                 <div className="inline-flex items-center justify-center px-3.5 py-1.5 sm:py-2 rounded-[6px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xl sm:text-2xl shadow-[0_3px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
@@ -325,6 +330,15 @@ const ProductDetails = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Rectangular Free Delivery Tag below price */}
+                    {isFreeDelivery && (
+                        <div className="mb-3">
+                            <span className="inline-block bg-[#E11D48] dark:bg-[#BE123C] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-[4px] shadow-xs select-none">
+                                {t('Free Delivery')}
+                            </span>
+                        </div>
+                    )}
 
                     {/* Description Section */}
                     <div className="mb-4">

@@ -118,14 +118,6 @@ const MaintenanceScreen = ({ isPreview = false, onClose, previewMessage }) => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 font-medium leading-relaxed max-w-[280px] mx-auto">
                     {t('We are currently performing system maintenance. Please check back later!')}
                 </p>
-
-                {/* Live Maintenance Progress Indicator */}
-                <div className="bg-amber-50 dark:bg-amber-950/40 rounded-2xl p-3 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center gap-2">
-                    <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-ping shrink-0" />
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
-                        {t('System Maintenance in Progress')}
-                    </span>
-                </div>
             </motion.div>
         </div>
     );

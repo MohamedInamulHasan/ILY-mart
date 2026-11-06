@@ -20,9 +20,13 @@ const Cart = () => {
 
     const currentUser = userProfile?.data || user;
     const hasCoins = currentUser?.coins > 0;
-    const hasGoldProduct = cartItems.some(item => item.isGold);
+    const isItemFree = (item) => Boolean(
+        item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
+    );
+    const isOnlyFreeProducts = cartItems.length > 0 && cartItems.every(isItemFree);
+    const hasGoldProduct = isOnlyFreeProducts;
     const baseDeliveryCharge = calculateDeliveryCharge(cartItems);
-    const deliveryCharge = (hasCoins || hasGoldProduct) ? 0 : baseDeliveryCharge;
+    const deliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
     const finalTotal = cartTotal + deliveryCharge;
 
     const handleBackNav = () => {
@@ -109,6 +113,11 @@ const Cart = () => {
                         <div key={item.id} className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-3.5 flex gap-3.5 items-center relative shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
                              {/* Image block */}
                              <div className="w-[78px] h-[78px] sm:w-[82px] sm:h-[82px] rounded-xl overflow-hidden bg-[#F9FAFB] dark:bg-gray-800 flex-shrink-0 relative border border-gray-100/60 dark:border-gray-700/60">
+                                   {isItemFree(item) && (
+                                       <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                                           {t('Free Delivery')}
+                                       </div>
+                                   )}
                                   <img 
                                       src={item.image || `${API_BASE_URL}/products/${item.id}/image`} 
                                       alt={item.title}

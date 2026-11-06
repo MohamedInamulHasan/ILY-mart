@@ -252,7 +252,7 @@ export const CartProvider = ({ children }) => {
             storeId: product.storeId || null, // Just save the storeId string
             quantity: 1,
             unit: product.unit || product.size || '',
-            isGold: product.isGold || false,
+            isGold: Boolean(product.isGold || product.deliveryCharge === 0 || product.isFreeDelivery || product.freeDelivery),
             // Ad-related fields
             isFromAd: product.isFromAd || false,
             adTitle: product.adTitle || null,
@@ -311,9 +311,14 @@ export const CartProvider = ({ children }) => {
     const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
 
     const hasCoins = user?.coins > 0;
-    const hasGoldProduct = cartItems.some(item => item.isGold);
+    const isItemFree = (item) => Boolean(
+        item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
+    );
+    // Only make delivery free if ONLY free products are in the cart
+    const isOnlyFreeProducts = cartItems.length > 0 && cartItems.every(isItemFree);
+    const hasGoldProduct = isOnlyFreeProducts;
     const baseDeliveryCharge = calculateDeliveryCharge(cartItems);
-    const deliveryCharge = (hasCoins || hasGoldProduct) ? 0 : baseDeliveryCharge;
+    const deliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
 
     const value = {
         cartItems,

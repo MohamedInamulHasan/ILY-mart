@@ -356,9 +356,12 @@ const Checkout = () => {
                 // Step B: Calculate delivery & slot parameters
                 const currentUser = userProfile?.data || updatedUserData;
                 const hasCoins = currentUser?.coins > 0;
-                const hasGoldProduct = displayItems.some(item => item.isGold || (item.product && item.product.isGold)) || location.state?.hasGoldProduct;
+                const isItemFree = (item) => Boolean(
+                    item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
+                );
+                const isOnlyFreeProducts = displayItems.length > 0 && displayItems.every(isItemFree);
                 const baseDeliveryCharge = calculateDeliveryCharge(displayItems);
-                const finalDeliveryCharge = (hasCoins || hasGoldProduct) ? 0 : baseDeliveryCharge;
+                const finalDeliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
 
                 const isScheduledMode = settings?.deliveryTimingType !== 'instant';
                 const deliveryTimeParam = isScheduledMode && selectedTimeSlot 
@@ -424,9 +427,13 @@ const Checkout = () => {
     // Use userProfile for fresh coin data, fallback to user from auth
     const currentUser = userProfile?.data || user;
     const hasCoins = currentUser?.coins > 0;
-    const hasGoldProduct = displayItems.some(item => item.isGold || (item.product && item.product.isGold)) || location.state?.hasGoldProduct;
+    const isItemFree = (item) => Boolean(
+        item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
+    );
+    const isOnlyFreeProducts = displayItems.length > 0 && displayItems.every(isItemFree);
+    const hasGoldProduct = isOnlyFreeProducts;
     const baseDeliveryCharge = calculateDeliveryCharge(displayItems);
-    const deliveryCharge = (hasCoins || hasGoldProduct) ? 0 : baseDeliveryCharge;
+    const deliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
     const finalTotal = displayTotal + deliveryCharge;
 
     return (
@@ -810,6 +817,11 @@ const Checkout = () => {
                                     {displayItems.map((item, index) => (
                                         <div key={item.id || index} className="py-2.5 flex gap-3 first:pt-0">
                                             <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
+                                                {isItemFree(item) && (
+                                                    <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[6.5px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                                                        {t('Free Delivery')}
+                                                    </div>
+                                                )}
                                                 <img
                                                     src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
                                                     alt={item.adTitle || item.title || item.name}

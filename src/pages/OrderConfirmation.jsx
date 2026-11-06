@@ -9,12 +9,15 @@ import { API_BASE_URL } from '../utils/api';
 import { openExternalLink } from '../utils/linkHelper';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { playSuccessSound, unlockAudio } from '../utils/soundHelper';
+import { playSuccessSound, playOrderPlacedSound, unlockAudio } from '../utils/soundHelper';
 import { markOrderPlaced, registerModalBackHandler } from '../utils/useBackButton';
 import { CheckCircle, ArrowLeft, ShoppingCart, ClipboardList, ShoppingBag, MapPin, Store, ChevronLeft, MoreHorizontal, Package, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const OrderConfirmation = () => {
+    const isItemFree = (item) => Boolean(
+    item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
+);
     const location = useLocation();
     const navigate = useNavigate();
     const { clearCart, cartCount } = useCart();
@@ -133,7 +136,7 @@ const OrderConfirmation = () => {
         console.log('⏰ scheduledDeliveryTime in order:', newOrder.scheduledDeliveryTime);
 
         // INSTANT UPDATE: Immediately update UI, play sound, show success modal & clear cart
-        playSuccessSound();
+        playOrderPlacedSound();
         markOrderPlaced();
         setShowSuccessModal(true);
         if (!isDirectPurchase) {
@@ -284,6 +287,11 @@ const OrderConfirmation = () => {
                             {cartItems.map((item) => (
                                 <div key={item.id} className="py-2.5 flex gap-3 first:pt-0">
                                     <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
+                                        {isItemFree(item) && (
+                                            <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[6.5px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                                                {t('Free Delivery')}
+                                            </div>
+                                        )}
                                         <img
                                             src={item.image || ((item._id || item.id || item.product) ? `${API_BASE_URL}/products/${item._id || item.id || item.product}/image` : "https://via.placeholder.com/150?text=No+Image")}
                                             alt={item.adTitle || item.title}

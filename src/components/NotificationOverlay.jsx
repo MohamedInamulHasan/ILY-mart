@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useOrders } from '../hooks/queries/useOrders';
 import IncomingOrderModal from './IncomingOrderModal';
-import { playSuccessSound } from '../utils/soundHelper';
+import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound } from '../utils/soundHelper';
 import { triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
 import { apiService } from '../utils/api';
 import { registerModalBackHandler } from '../utils/useBackButton';
@@ -197,6 +197,18 @@ const NotificationOverlay = () => {
         const handleOrderUpdated = (order) => {
             // Only show notification to the user who owns the order
             if (user && order.user === user._id) {
+                // Play distinct sound based on order status
+                const st = String(order.status || '').toLowerCase();
+                if (st === 'out for delivery' || st === 'shipped' || st.includes('accept') || st.includes('processing') || st.includes('confirmed')) {
+                    playOrderAcceptedSound();
+                } else if (st.includes('deliver') || st.includes('completed')) {
+                    playOrderDeliveredSound();
+                } else if (st.includes('cancel')) {
+                    playOrderCancelledSound();
+                } else {
+                    playSuccessSound();
+                }
+
                 addNotification({
                     id: Date.now(),
                     type: 'order_status',
