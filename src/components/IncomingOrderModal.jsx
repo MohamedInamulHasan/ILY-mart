@@ -406,8 +406,8 @@ const IncomingOrderModal = ({
                             iconSize={18}
                             onSuccess={() => {
                                 stopIncomingOrderAlertSound();
-                                setViewMode('details');
-                                onAcceptViewOpened?.();
+                                onClose?.();
+                                navigate(`/admin/delivery-order/${order._id || order.id}`, { state: { order } });
                             }}
                         />
 

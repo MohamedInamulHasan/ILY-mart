@@ -79,6 +79,9 @@ const NotificationOverlay = () => {
         const openOrderById = async (orderId) => {
             if (!orderId) return;
             try {
+                // Navigate directly to the new DeliveryActiveOrder page
+                setIncomingOrder(null);
+                setStartWithAcceptView(false);
                 let orderData = allOrders.find(o => (o._id || o.id) === orderId);
                 if (!orderData) {
                     const res = await apiService.getOrder(orderId);
@@ -86,12 +89,12 @@ const NotificationOverlay = () => {
                         orderData = res.data;
                     }
                 }
-                if (orderData) {
-                    setStartWithAcceptView(true);
-                    setIncomingOrder(orderData);
-                }
+                navigate(`/admin/delivery-order/${orderId}`, { state: { order: orderData } });
             } catch (err) {
                 console.warn('Failed to fetch order from native event:', err);
+                setIncomingOrder(null);
+                setStartWithAcceptView(false);
+                navigate(`/admin/delivery-order/${orderId}`);
             }
         };
 

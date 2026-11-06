@@ -352,7 +352,7 @@ public class FloatingLogoService extends Service {
             // Card background: Rounded White Card with elevation
             GradientDrawable cardBg = new GradientDrawable();
             cardBg.setColor(Color.WHITE);
-            cardBg.setCornerRadius(dp(24));
+            cardBg.setCornerRadius(dp(14));
             cardBg.setStroke(dp(1), Color.parseColor("#E5E7EB"));
             cardLayout.setBackground(cardBg);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -367,7 +367,7 @@ public class FloatingLogoService extends Service {
 
             GradientDrawable headerBg = new GradientDrawable();
             headerBg.setColor(Color.WHITE);
-            float r = dp(24);
+            float r = dp(14);
             headerBg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
             headerLayout.setBackground(headerBg);
 
@@ -590,13 +590,51 @@ public class FloatingLogoService extends Service {
             swipeTrackParams.setMargins(0, dp(4), 0, 0);
             swipeTrack.setLayoutParams(swipeTrackParams);
 
-            GradientDrawable trackBg = new GradientDrawable();
+            final GradientDrawable trackBg = new GradientDrawable();
             trackBg.setColor(Color.parseColor("#F59E0B")); // Amber 500
             trackBg.setCornerRadius(dp(26));
             swipeTrack.setBackground(trackBg);
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                swipeTrack.setOutlineProvider(new ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, Outline outline) {
+                        outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), dp(26));
+                    }
+                });
+                swipeTrack.setClipToOutline(true);
+            }
+
+            // Continuous Sliding Light Sheen (Button shine effect)
+            final View sheenView = new View(this);
+            GradientDrawable sheenBg = new GradientDrawable(
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    new int[]{
+                            Color.TRANSPARENT,
+                            Color.argb(90, 255, 255, 255),
+                            Color.TRANSPARENT
+                    }
+            );
+            sheenView.setBackground(sheenBg);
+            FrameLayout.LayoutParams sheenParams = new FrameLayout.LayoutParams(
+                    dp(130),
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            swipeTrack.addView(sheenView, sheenParams);
+
+            final android.animation.ValueAnimator sheenAnim = android.animation.ValueAnimator.ofFloat(-dp(130), screenWidth);
+            sheenAnim.setDuration(1800);
+            sheenAnim.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+            sheenAnim.setRepeatMode(android.animation.ValueAnimator.RESTART);
+            sheenAnim.setInterpolator(new android.view.animation.LinearInterpolator());
+            sheenAnim.addUpdateListener(animation -> {
+                float val = (float) animation.getAnimatedValue();
+                sheenView.setTranslationX(val);
+            });
+            sheenAnim.start();
+
             // Centered Text Label: VIEW ORDER 8s
-            TextView swipeLabel = new TextView(this);
+            final TextView swipeLabel = new TextView(this);
             swipeLabel.setText("VIEW ORDER  8s");
             swipeLabel.setTextColor(Color.WHITE);
             swipeLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
@@ -608,8 +646,8 @@ public class FloatingLogoService extends Service {
             );
             swipeTrack.addView(swipeLabel, labelParams);
 
-            // White Circular Swipe Knob with orange chevrons (matching order list card)
-            FrameLayout swipeKnob = new FrameLayout(this);
+            // White Circular Swipe Knob
+            final FrameLayout swipeKnob = new FrameLayout(this);
             int knobSize = dp(42);
             FrameLayout.LayoutParams knobParams = new FrameLayout.LayoutParams(knobSize, knobSize);
             knobParams.gravity = Gravity.CENTER_VERTICAL | Gravity.START;
@@ -624,19 +662,13 @@ public class FloatingLogoService extends Service {
                 swipeKnob.setElevation(dp(4));
             }
 
-            // Arrow icon in knob - perfectly centered right arrow
-            TextView knobIcon = new TextView(this);
-            knobIcon.setText("➔");
-            knobIcon.setTextColor(Color.parseColor("#D97706")); // Amber 600
-            knobIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-            knobIcon.setTypeface(Typeface.DEFAULT_BOLD);
-            knobIcon.setGravity(Gravity.CENTER);
-            knobIcon.setIncludeFontPadding(false);
+            // Vector Chevron Arrow / Tick Icon inside Knob
+            final KnobIconView knobIconView = new KnobIconView(this);
             FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.MATCH_PARENT
             );
-            swipeKnob.addView(knobIcon, iconParams);
+            swipeKnob.addView(knobIconView, iconParams);
             swipeTrack.addView(swipeKnob);
 
             // Attention-grabbing shake/nudge animation on the swipe knob
@@ -649,10 +681,11 @@ public class FloatingLogoService extends Service {
             shakeAnim.setStartDelay(400);
             shakeAnim.start();
 
-            // Touch Listener for swiping knob left to right with tick animation
+            // Touch Listener for swiping knob with pop-up tick animation
             final float[] startTouchX = {0};
             final float[] initialKnobX = {0};
             final boolean[] isCompleted = {false};
+            final boolean[] isNearEnd = {false};
 
             View.OnTouchListener swipeListener = new View.OnTouchListener() {
                 @Override
@@ -677,44 +710,73 @@ public class FloatingLogoService extends Service {
                             swipeKnob.setTranslationX(newX);
                             float progress = newX / (float) maxDrag;
                             swipeLabel.setAlpha(Math.max(0.1f, 1f - progress * 1.3f));
+
+                            // Interactive tick transformation when nearing end
+                            if (progress >= 0.72f && !isNearEnd[0]) {
+                                isNearEnd[0] = true;
+                                knobIconView.setTick(true);
+                                knobIconView.setIconColor(Color.parseColor("#16A34A"));
+                                swipeKnob.animate().scaleX(1.1f).scaleY(1.1f).setDuration(120).start();
+                            } else if (progress < 0.72f && isNearEnd[0]) {
+                                isNearEnd[0] = false;
+                                knobIconView.setTick(false);
+                                knobIconView.setIconColor(Color.parseColor("#D97706"));
+                                swipeKnob.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start();
+                            }
                             return true;
 
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
                             float finalX = swipeKnob.getTranslationX();
-                            if (finalX >= maxDrag * 0.55f) {
+                            if (finalX >= maxDrag * 0.58f) {
                                 isCompleted[0] = true;
-                                if (shakeAnim != null) {
-                                    shakeAnim.cancel();
-                                }
-                                // Change knob icon to green tick (✓) and track to green
-                                knobIcon.setText("✓");
-                                knobIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
-                                knobIcon.setTextColor(Color.parseColor("#16A34A"));
+                                if (shakeAnim != null) shakeAnim.cancel();
+                                if (sheenAnim != null) sheenAnim.cancel();
+
+                                // Pop up round tick mark animation
+                                knobIconView.setTick(true);
+                                knobIconView.setIconColor(Color.parseColor("#16A34A"));
                                 trackBg.setColor(Color.parseColor("#16A34A"));
                                 swipeLabel.setText("OPENING...");
                                 swipeLabel.setAlpha(1f);
 
-                                swipeKnob.animate().translationX(maxDrag).setDuration(120).withEndAction(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (orderCardTimer != null) {
-                                            orderCardTimer.cancel();
-                                            orderCardTimer = null;
-                                        }
-                                        stopAlertEffects();
-                                        // Brief 200ms delay to display tick confirmation before dismissing overlay
-                                        swipeKnob.postDelayed(new Runnable() {
+                                swipeKnob.animate().translationX(maxDrag).setDuration(120).start();
+                                swipeKnob.setScaleX(0.7f);
+                                swipeKnob.setScaleY(0.7f);
+                                swipeKnob.animate()
+                                        .scaleX(1.15f)
+                                        .scaleY(1.15f)
+                                        .setDuration(160)
+                                        .withEndAction(new Runnable() {
                                             @Override
                                             public void run() {
-                                                dismissPorterOrderCardInternal();
-                                                openApp(orderId);
+                                                swipeKnob.animate()
+                                                        .scaleX(1.0f)
+                                                        .scaleY(1.0f)
+                                                        .setDuration(100)
+                                                        .start();
+
+                                                if (orderCardTimer != null) {
+                                                    orderCardTimer.cancel();
+                                                    orderCardTimer = null;
+                                                }
+                                                stopAlertEffects();
+
+                                                // Brief 200ms delay to display tick confirmation before dismissing overlay & opening app
+                                                swipeKnob.postDelayed(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        dismissPorterOrderCardInternal();
+                                                        openApp(orderId);
+                                                    }
+                                                }, 200);
                                             }
-                                        }, 200);
-                                    }
-                                }).start();
+                                        }).start();
                             } else {
-                                swipeKnob.animate().translationX(0).setDuration(200).start();
+                                isNearEnd[0] = false;
+                                knobIconView.setTick(false);
+                                knobIconView.setIconColor(Color.parseColor("#D97706"));
+                                swipeKnob.animate().translationX(0).scaleX(1.0f).scaleY(1.0f).setDuration(200).start();
                                 swipeLabel.animate().alpha(1f).setDuration(200).start();
                                 if (shakeAnim != null) {
                                     shakeAnim.start();
@@ -1164,4 +1226,56 @@ public class FloatingLogoService extends Service {
             pollingExecutor.shutdownNow();
         }
     }
+
+    public static class KnobIconView extends View {
+        private final android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Path path = new android.graphics.Path();
+        private boolean isTick = false;
+        private int iconColor = Color.parseColor("#D97706"); // Amber 600
+
+        public KnobIconView(Context context) {
+            super(context);
+            paint.setStyle(android.graphics.Paint.Style.STROKE);
+            paint.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+            paint.setStrokeJoin(android.graphics.Paint.Join.ROUND);
+        }
+
+        public void setTick(boolean tick) {
+            this.isTick = tick;
+            invalidate();
+        }
+
+        public void setIconColor(int color) {
+            this.iconColor = color;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(android.graphics.Canvas canvas) {
+            super.onDraw(canvas);
+            paint.setColor(iconColor);
+            float w = getWidth();
+            float h = getHeight();
+            float density = getResources().getDisplayMetrics().density;
+            paint.setStrokeWidth(3.4f * density);
+
+            path.reset();
+            if (isTick) {
+                // Smooth vector check / tick mark ✓
+                path.moveTo(w * 0.28f, h * 0.52f);
+                path.lineTo(w * 0.44f, h * 0.69f);
+                path.lineTo(w * 0.74f, h * 0.33f);
+            } else {
+                // Lucide-style ChevronRight > with round caps
+                float cx = w * 0.50f;
+                float cy = h * 0.50f;
+                float sz = 6.2f * density;
+                path.moveTo(cx - sz * 0.55f, cy - sz);
+                path.lineTo(cx + sz * 0.55f, cy);
+                path.lineTo(cx - sz * 0.55f, cy + sz);
+            }
+            canvas.drawPath(path, paint);
+        }
+    }
+
 }
