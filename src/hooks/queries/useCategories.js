@@ -46,8 +46,11 @@ export const useCreateCategory = () => {
 
     return useMutation({
         mutationFn: (newCategory) => apiService.categories.create(newCategory),
-        onSuccess: () => {
-            queryClient.invalidateQueries(categoryKeys.lists());
+        onSuccess: (res) => {
+            try {
+                localStorage.removeItem(CAT_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: categoryKeys.all });
         }
     });
 };
@@ -58,7 +61,10 @@ export const useDeleteCategory = () => {
     return useMutation({
         mutationFn: (id) => apiService.categories.delete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries(categoryKeys.lists());
+            try {
+                localStorage.removeItem(CAT_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: categoryKeys.all });
         }
     });
 };
@@ -68,8 +74,29 @@ export const useUpdateCategory = () => {
 
     return useMutation({
         mutationFn: ({ id, data }) => apiService.categories.update(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries(categoryKeys.lists());
+        onSuccess: (res, variables) => {
+            try {
+                const raw = localStorage.getItem(CAT_CACHE_KEY);
+                if (raw) {
+                    const list = JSON.parse(raw);
+                    if (Array.isArray(list)) {
+                        const targetId = variables.id;
+                        const updatedList = list.map(c => {
+                            if ((c._id || c.id) === targetId) {
+                                return {
+                                    ...c,
+                                    ...variables.data,
+                                    isPreview: Boolean(variables.data.isPreview === true || variables.data.mode === 'preview'),
+                                    mode: variables.data.mode || (variables.data.isPreview ? 'preview' : 'normal')
+                                };
+                            }
+                            return c;
+                        });
+                        localStorage.setItem(CAT_CACHE_KEY, JSON.stringify(updatedList));
+                    }
+                }
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: categoryKeys.all });
         }
     });
 };

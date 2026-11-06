@@ -10,11 +10,14 @@ import { renderBilingualTitle } from '../utils/titleHelpers';
 import { API_BASE_URL } from '../utils/api';
 import { isStoreOpen, isProductScheduled, getProductTimeLabel } from '../utils/storeHelpers';
 import { isCategoryPreview } from '../utils/categoryHelpers';
+import { useCategories } from '../hooks/queries/useCategories';
 import { useState, useEffect } from 'react';
 
 const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSave = false }) => {
     const { t } = useLanguage();
-    const { stores: contextStores, savedProducts, toggleSaveProduct, categories } = useData();
+    const { data: queryCategories = [] } = useCategories();
+    const { stores: contextStores, savedProducts, toggleSaveProduct, categories: contextCategories } = useData();
+    const categories = (queryCategories && queryCategories.length > 0) ? queryCategories : (contextCategories || []);
     const stores = propStores || contextStores;
     const { cartItems, addToCart, removeFromCart, updateQuantity } = useCart();
     const { user } = useAuth();
@@ -33,7 +36,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
 
     // Check if store is open
     const isStoreOpenCheck = store ? isStoreOpen(store) : true;
-    const isPreview = isCategoryPreview(product.category, categories);
+    const isPreview = isCategoryPreview(product.category, categories) || product?.isPreview === true || product?.mode === 'preview';
 
     const handleClick = (e) => {
         if (!isPreview && !isStoreOpenCheck) {

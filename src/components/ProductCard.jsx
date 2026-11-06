@@ -11,10 +11,13 @@ import { useData } from '../context/DataContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getThumbnailUrl } from '../utils/imageOptimizer';
 import { isCategoryPreview } from '../utils/categoryHelpers';
+import { useCategories } from '../hooks/queries/useCategories';
 
 const ProductCard = ({ product, showCartControls = true, showHeart = false, stores: propStores }) => {
     const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
-    const { stores: contextStores, savedProducts, toggleSaveProduct, categories } = useData();
+    const { data: queryCategories = [] } = useCategories();
+    const { stores: contextStores, savedProducts, toggleSaveProduct, categories: contextCategories } = useData();
+    const categories = (queryCategories && queryCategories.length > 0) ? queryCategories : (contextCategories || []);
     const { t, language } = useLanguage();
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -36,7 +39,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
     const isAvailable = product.isGroup ? true : product.isAvailable !== false;
     const isScheduled = product.isGroup ? true : isProductScheduled(product);
     const timeLabel = !isScheduled ? getProductTimeLabel(product) : null;
-    const isPreview = isCategoryPreview(product.category, categories);
+    const isPreview = isCategoryPreview(product.category, categories) || product?.isPreview === true || product?.mode === 'preview';
     const canClick = isPreview || (isOpen && isAvailable && isScheduled);
 
     // Auto-cycling variants logic (for Group cards)
