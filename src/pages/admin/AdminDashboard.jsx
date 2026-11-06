@@ -2309,14 +2309,16 @@ const CategoryManagement = () => {
                                         items={items.map(cat => cat._id || cat.id)}
                                         strategy={verticalListSortingStrategy}
                                     >
-                                        {/* Pinned "All" row - non-deletable */}
-                                        <tr className="bg-[#f0faf0] dark:bg-[#1a3d1a]/40 border-b border-gray-100 dark:border-gray-700">
-                                            <td className="p-4 text-gray-300 dark:text-gray-600">
-                                                <GripVertical size={20} />
+                                        {/* Pinned "All" row - styled identically to standard category rows */}
+                                        <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                                            <td className="p-4">
+                                                <div className="text-gray-300 dark:text-gray-600 flex items-center cursor-not-allowed">
+                                                    <GripVertical size={20} />
+                                                </div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="relative w-16 h-16 group/allimg">
-                                                    <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-[#2E5A2E]/30 dark:ring-[#CBF9B2]/30 bg-[#CBF9B2] dark:bg-[#2E5A2E] flex items-center justify-center">
+                                                    <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-gray-700 bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
                                                         {allCategoryImage ? (
                                                             <img src={allCategoryImage} alt="All" className="w-full h-full object-cover rounded-full" />
                                                         ) : (
@@ -2335,9 +2337,13 @@ const CategoryManagement = () => {
                                                 </div>
                                             </td>
                                             <td className="p-4 font-medium text-gray-900 dark:text-white">
-                                                <div className="flex items-center gap-2">
-                                                    {allCategoryName || t('All')}
-                                                    <span className="text-[10px] bg-[#2E5A2E] text-white px-2 py-0.5 rounded-full font-bold">SYSTEM</span>
+                                                <div className="max-w-[150px] flex items-center gap-2">
+                                                    <span className="truncate" title={allCategoryName || t('All')}>
+                                                        {allCategoryName || t('All')}
+                                                    </span>
+                                                    <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                                        ALL
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -2349,7 +2355,9 @@ const CategoryManagement = () => {
                                                     >
                                                         <Edit2 size={18} />
                                                     </button>
-                                                    <span className="text-xs text-gray-400 italic">{t('Cannot be deleted')}</span>
+                                                    <span className="p-2 text-gray-300 dark:text-gray-600 cursor-not-allowed" title={t('Cannot be deleted')}>
+                                                        <Trash2 size={18} />
+                                                    </span>
                                                 </div>
                                             </td>
                                         </tr>
@@ -2396,6 +2404,7 @@ const CategoryManagement = () => {
                                                 <td className="p-4 font-medium text-gray-900 dark:text-white">
                                                     {(() => {
                                                         const fullName = category.name;
+                                                        const isPreviewCat = Boolean(category.isPreview || category.mode === 'preview');
                                                         const bracketIndex = fullName?.indexOf('(');
 
                                                         if (bracketIndex !== -1) {
@@ -2403,14 +2412,28 @@ const CategoryManagement = () => {
                                                             const bracketText = fullName.substring(bracketIndex).trim();
                                                             return (
                                                                 <div className="max-w-[150px]">
-                                                                    <div className="truncate" title={mainName}>{mainName}</div>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="truncate" title={mainName}>{mainName}</span>
+                                                                        {isPreviewCat && (
+                                                                            <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                                                                Preview
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                     <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={bracketText}>{bracketText}</div>
                                                                 </div>
                                                             );
                                                         }
                                                         return (
-                                                            <div className="max-w-[150px] truncate" title={fullName}>
-                                                                {fullName}
+                                                            <div className="max-w-[150px]">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="truncate" title={fullName}>{fullName}</span>
+                                                                    {isPreviewCat && (
+                                                                        <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                                                            Preview
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         );
                                                     })()}
@@ -2450,7 +2473,28 @@ const CategoryManagement = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Category Name')}</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('Category Name')}</label>
+                                {!editingCategory?.isAll && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, isPreview: !prev.isPreview }))}
+                                        className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all flex items-center gap-1.5 border select-none ${
+                                            formData.isPreview
+                                                ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm'
+                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400'
+                                        }`}
+                                        title={t('Optional: When enabled, products in this category can only be previewed and called (no direct ordering)')}
+                                    >
+                                        <span>Preview</span>
+                                        {formData.isPreview ? (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                        ) : (
+                                            <span className="text-[10px] opacity-60">off</span>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
                             <input
                                 type="text"
                                 value={formData.name}
@@ -2459,6 +2503,11 @@ const CategoryManagement = () => {
                                 placeholder={t('e.g., Vegetables')}
                                 required
                             />
+                            {formData.isPreview && (
+                                <p className="text-[11px] text-[#2E5A2E] dark:text-[#CBF9B2] mt-1.5 font-medium">
+                                    * {t('Preview mode active: Products in this category cannot be ordered online. Cards hide quantity buttons, and product details will show a "Swipe to Call" button.')}
+                                </p>
+                            )}
                         </div>
 
                         {!editingCategory?.isAll && <div>

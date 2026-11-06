@@ -6,14 +6,16 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
-import { Plus, ArrowLeft, Minus, ShoppingCart, ChevronLeft, ChevronRight, Star, Share2, Bookmark, Store as StoreIcon } from 'lucide-react';
+import { Plus, ArrowLeft, Minus, ShoppingCart, ChevronLeft, ChevronRight, Star, Share2, Bookmark, Store as StoreIcon, Phone } from 'lucide-react';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
+import { isCategoryPreview } from '../utils/categoryHelpers';
+import SwipeActionButton from '../components/SwipeActionButton';
 
 const ProductDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart, cartItems, updateQuantity } = useCart();
-    const { products, stores, savedProducts, toggleSaveProduct } = useData();
+    const { products, stores, savedProducts, toggleSaveProduct, categories, settings } = useData();
     const { user } = useAuth();
     const { t, language } = useLanguage();
 

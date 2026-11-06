@@ -6,6 +6,37 @@ import { App as CapacitorApp } from '@capacitor/app';
 // Global stack for modal dismissal on Android hardware back button
 const modalBackStack = [];
 
+// Track navigation history manually so back always works in Capacitor WebView
+const navHistory = ['/'];
+
+const isOrderFlowRoute = (p) => {
+    if (!p) return false;
+    return p === '/order-confirmation' ||
+           p.startsWith('/checkout') ||
+           p === '/cart' ||
+           p.startsWith('/product/') ||
+           p.startsWith('/product-group/');
+};
+
+/**
+ * Call this when an order is submitted/confirmed so back navigation
+ * purges the cart, checkout, order-confirmation, and product details from history
+ * and routes directly to the Home page.
+ */
+export const markOrderPlaced = () => {
+    try {
+        sessionStorage.setItem('orderJustPlaced', 'true');
+    } catch (e) {}
+    for (let i = navHistory.length - 1; i >= 0; i--) {
+        if (isOrderFlowRoute(navHistory[i])) {
+            navHistory.splice(i, 1);
+        }
+    }
+    if (navHistory.length === 0) {
+        navHistory.push('/');
+    }
+};
+
 /**
  * Register a modal or popup to be closed when Android back button is clicked.
  * Returns an unregister function to be called on cleanup.
@@ -21,9 +52,6 @@ export const registerModalBackHandler = (fn) => {
     };
 };
 
-// Track navigation history manually so back always works in Capacitor WebView
-const navHistory = ['/'];
-
 /**
  * Custom hook to handle Android hardware/gesture back button navigation.
  * Prevents app from unexpectedly closing, navigates back through history,
@@ -36,8 +64,15 @@ export const useBackButton = () => {
 
     useEffect(() => {
         locationRef.current = location;
-        // Track every pathname change in our own stack
         const path = location.pathname;
+
+        // If user reaches home, reset orderJustPlaced flag so future shopping navigation is unaffected
+        if (path === '/' || path === '/home') {
+            try {
+                sessionStorage.removeItem('orderJustPlaced');
+            } catch (e) {}
+        }
+
         const last = navHistory[navHistory.length - 1];
         if (path !== last) {
             navHistory.push(path);
@@ -61,10 +96,17 @@ export const useBackButton = () => {
             }
 
             const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
+            const orderJustPlaced = (() => {
+                try {
+                    return sessionStorage.getItem('orderJustPlaced') === 'true';
+                } catch (e) {
+                    return false;
+                }
+            })();
 
-            // 2. Order Confirmation: always go to Home (can't go back to checkout)
-            if (currentPath === '/order-confirmation') {
-                navHistory.length = 1;
+            // 2. Order Confirmation: ALWAYS go directly to Home
+            if (currentPath === '/order-confirmation' || (orderJustPlaced && isOrderFlowRoute(currentPath))) {
+                markOrderPlaced();
                 navigate('/', { replace: true });
                 return true;
             }
@@ -74,16 +116,31 @@ export const useBackButton = () => {
                 return false;
             }
 
+            // If order was just placed, clean order flow routes out of navHistory
+            if (orderJustPlaced) {
+                for (let i = navHistory.length - 1; i >= 0; i--) {
+                    if (isOrderFlowRoute(navHistory[i])) {
+                        navHistory.splice(i, 1);
+                    }
+                }
+                if (navHistory.length === 0) {
+                    navHistory.push('/');
+                }
+            }
+
             // 4. Use our tracked history stack to go back
-            if (navHistory.length > 1) {
+            while (navHistory.length > 1) {
                 navHistory.pop(); // remove current
                 const previous = navHistory[navHistory.length - 1];
+                if (orderJustPlaced && isOrderFlowRoute(previous)) {
+                    continue;
+                }
                 navigate(previous, { replace: true });
                 return true;
             }
 
-            // 5. Use browser history index as fallback
-            if (window.history.state && window.history.state.idx > 0) {
+            // 5. Fallback: only use browser history if order was not just placed
+            if (!orderJustPlaced && window.history.state && window.history.state.idx > 0) {
                 navigate(-1);
                 return true;
             }

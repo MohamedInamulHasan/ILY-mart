@@ -9,11 +9,12 @@ import { useData } from '../context/DataContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
 import { API_BASE_URL } from '../utils/api';
 import { isStoreOpen, isProductScheduled, getProductTimeLabel } from '../utils/storeHelpers';
+import { isCategoryPreview } from '../utils/categoryHelpers';
 import { useState, useEffect } from 'react';
 
 const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSave = false }) => {
     const { t } = useLanguage();
-    const { stores: contextStores, savedProducts, toggleSaveProduct } = useData();
+    const { stores: contextStores, savedProducts, toggleSaveProduct, categories } = useData();
     const stores = propStores || contextStores;
     const { cartItems, addToCart, removeFromCart, updateQuantity } = useCart();
     const { user } = useAuth();
@@ -32,9 +33,10 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
 
     // Check if store is open
     const isStoreOpenCheck = store ? isStoreOpen(store) : true;
+    const isPreview = isCategoryPreview(product.category, categories);
 
     const handleClick = (e) => {
-        if (!isStoreOpenCheck) {
+        if (!isPreview && !isStoreOpenCheck) {
             e.preventDefault();
         }
     };
@@ -288,14 +290,14 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 {isStoreOpenCheck && isAvailable && (
                     <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 )}
-                {!isStoreOpenCheck && (
+                {!isPreview && !isStoreOpenCheck && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                         <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-[4px] shadow-lg transform -rotate-12 border-2 border-white">
                             {t('STORE CLOSED')}
                         </span>
                     </div>
                 )}
-                {!isAvailable && (
+                {!isPreview && !isAvailable && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                         <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-[4px] shadow-lg transform -rotate-12 border-2 border-white">
                             {t('OUT OF STOCK')}
@@ -337,10 +339,10 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
 
                 <div className="flex items-center justify-between mt-auto w-full pt-1.5">
                     <span className="inline-flex items-center justify-center px-2.5 py-1 sm:py-1.5 rounded-[4px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xs sm:text-sm shadow-[0_2.5px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
-                        ₹{Number((product.price || 0) * (cartQuantity || 1)).toFixed(0)}
+                        ₹{Number((product.price || 0) * (isPreview ? 1 : (cartQuantity || 1))).toFixed(0)}
                     </span>
 
-                    {isFastPurchase && isAvailable && (
+                    {isFastPurchase && isAvailable && !isPreview && (
                         <div className="flex items-center" onClick={(e) => e.preventDefault()}>
                             {!isStoreOpenCheck ? (
                                 <div className="w-7 h-7 sm:w-7.5 sm:h-7.5 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-[4px] border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600">

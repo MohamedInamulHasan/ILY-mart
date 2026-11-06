@@ -10,6 +10,7 @@ import { openExternalLink } from '../utils/linkHelper';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { playSuccessSound, unlockAudio } from '../utils/soundHelper';
+import { markOrderPlaced, registerModalBackHandler } from '../utils/useBackButton';
 import { CheckCircle, ArrowLeft, ShoppingCart, ClipboardList, ShoppingBag, MapPin, Store, ChevronLeft, MoreHorizontal, Package, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -133,6 +134,7 @@ const OrderConfirmation = () => {
 
         // INSTANT UPDATE: Immediately update UI, play sound, show success modal & clear cart
         playSuccessSound();
+        markOrderPlaced();
         setShowSuccessModal(true);
         if (!isDirectPurchase) {
             clearCart();
@@ -221,6 +223,7 @@ const OrderConfirmation = () => {
     };
 
     const handleCloseSuccess = () => {
+        markOrderPlaced();
         // Navigate to orders replacing confirmation in history so back doesn't return here
         navigate('/orders', { replace: true });
     };
@@ -228,18 +231,10 @@ const OrderConfirmation = () => {
     // Intercept back button when success modal is open to ensure back goes to Home
     useEffect(() => {
         if (!showSuccessModal) return;
-
-        const handlePopState = (e) => {
-            e.preventDefault();
+        return registerModalBackHandler(() => {
+            markOrderPlaced();
             navigate('/', { replace: true });
-        };
-
-        window.history.pushState({ modal: 'orderSuccess' }, '');
-        window.addEventListener('popstate', handlePopState);
-
-        return () => {
-            window.removeEventListener('popstate', handlePopState);
-        };
+        });
     }, [showSuccessModal, navigate]);
 
     return (

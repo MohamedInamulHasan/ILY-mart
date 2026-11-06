@@ -10,10 +10,11 @@ import { isStoreOpen, getStoreName, isProductScheduled, getProductTimeLabel } fr
 import { useData } from '../context/DataContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getThumbnailUrl } from '../utils/imageOptimizer';
+import { isCategoryPreview } from '../utils/categoryHelpers';
 
 const ProductCard = ({ product, showCartControls = true, showHeart = false, stores: propStores }) => {
     const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
-    const { stores: contextStores, savedProducts, toggleSaveProduct } = useData();
+    const { stores: contextStores, savedProducts, toggleSaveProduct, categories } = useData();
     const { t, language } = useLanguage();
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -35,6 +36,8 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
     const isAvailable = product.isGroup ? true : product.isAvailable !== false;
     const isScheduled = product.isGroup ? true : isProductScheduled(product);
     const timeLabel = !isScheduled ? getProductTimeLabel(product) : null;
+    const isPreview = isCategoryPreview(product.category, categories);
+    const canClick = isPreview || (isOpen && isAvailable && isScheduled);
 
     // Auto-cycling variants logic (for Group cards)
     const [currentVariantIndex, setCurrentVariantIndex] = useState(0);
@@ -55,23 +58,23 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
         <div className="relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden group transition-all duration-300">
             
             <Link 
-                to={(!isOpen || !isAvailable || !isScheduled) ? '#' : (product.isGroup ? `/product-group/${encodeURIComponent(product.title)}` : `/product/${productId}`)} 
-                className={`flex-1 ${(!isOpen || !isAvailable || !isScheduled) ? 'cursor-default' : ''}`}
+                to={!canClick ? '#' : (product.isGroup ? `/product-group/${encodeURIComponent(product.title)}` : `/product/${productId}`)} 
+                className={`flex-1 ${!canClick ? 'cursor-default' : ''}`}
                 onClick={(e) => {
-                    if (!isOpen || !isAvailable || !isScheduled) {
+                    if (!canClick) {
                         e.preventDefault();
                     }
                 }}
             >
                 {/* Status Overlays */}
-                {!isAvailable && (
+                {!isPreview && !isAvailable && (
                     <div className="absolute inset-0 z-20 bg-black/5 flex items-center justify-center backdrop-blur-[1px]">
                         <span className="bg-red-600 text-white px-3 py-1 rounded-[4px] text-[10px] font-bold uppercase tracking-widest shadow-lg">
                             {t('Out of Stock')}
                         </span>
                     </div>
                 )}
-                {!isOpen && isAvailable && (
+                {!isPreview && !isOpen && isAvailable && (
                     <div className="absolute inset-0 z-20 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
                         <span className="bg-gray-800 text-white px-3 py-1 rounded-[4px] text-[10px] font-bold uppercase tracking-widest shadow-lg">
                             {t('Closed')}
@@ -137,7 +140,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                             ? `₹${Number(product.minPrice).toFixed(0)}`
                                             : `₹${Number(product.minPrice).toFixed(0)} - ₹${Number(product.maxPrice).toFixed(0)}`
                                     ) : (
-                                        `₹${Number(product.price * (quantity || 1)).toFixed(0)}`
+                                        `₹${Number(product.price * (isPreview ? 1 : (quantity || 1))).toFixed(0)}`
                                     )}
                                 </span>
                             </div>
@@ -148,7 +151,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                             )}
                         </div>
 
-                        {showCartControls && !product.isGroup && (
+                        {showCartControls && !product.isGroup && !isPreview && (
                             quantity > 0 ? (
                                 <div 
                                     className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 p-0.5 rounded-[4px] shadow-sm shrink-0"
