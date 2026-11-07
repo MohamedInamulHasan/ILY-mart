@@ -367,7 +367,7 @@ const Shop = () => {
                                                         return bracketPart ? `${mainPart} ${bracketPart}` : mainPart;
                                                     })()}
                                                     {isActive && (
-                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                                     )}
                                                 </button>
                                             );
