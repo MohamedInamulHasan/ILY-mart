@@ -1,3 +1,4 @@
+import RichDescriptionEditor from '../../components/RichDescriptionEditor';
 import { CartoonCoin } from '../../components/CartoonCoin';
 import { getUserRoles } from '../../utils/userHelpers';
 import { useState, useEffect } from 'react';
@@ -1475,14 +1476,11 @@ const ProductManagement = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Description')}</label>
-                            <textarea
+                            <RichDescriptionEditor
                                 value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                rows="4"
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#7CA90E] outline-none"
+                                onChange={(val) => setFormData({ ...formData, description: val })}
                                 placeholder={t('Product description...')}
-                                required
-                            ></textarea>
+                            />
                         </div>
 
                         <div className="flex justify-end">

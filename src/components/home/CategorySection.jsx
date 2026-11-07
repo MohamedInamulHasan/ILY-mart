@@ -58,7 +58,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                 {/* All Categories Option — styled like other category items */}
                 <div
                     onClick={() => onSelectCategory('All')}
-                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'scale-105 opacity-100 filter brightness-110 contrast-105' : 'scale-95 opacity-55 hover:opacity-85'}`}
+                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'scale-105 sm:scale-110 opacity-100 filter contrast-105' : 'scale-90 opacity-100'}`}
                 >
                     <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform">
                         {allCategoryImage ? (
@@ -69,14 +69,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                 onError={(e) => { e.target.style.opacity = '0'; }}
                             />
                         ) : (
-                            <div className="w-full h-full rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect x="4" y="4" width="13" height="13" rx="3" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
-                                    <rect x="23" y="4" width="13" height="13" rx="3" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
-                                    <rect x="4" y="23" width="13" height="13" rx="3" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
-                                    <rect x="23" y="23" width="13" height="13" rx="3" fill="currentColor" className="text-gray-500 dark:text-gray-400" />
-                                </svg>
-                            </div>
+                            <div className="w-full h-full rounded-2xl blinkit-shimmer"></div>
                         )}
                     </div>
                     {(() => {
@@ -102,8 +95,8 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             }
                         }
                         return (
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[86px] sm:max-w-[98px] md:max-w-[114px] transition-colors ${selectedCategory === 'All' ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
-                                <span className={`text-[11px] sm:text-[11.5px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-bold' : 'font-normal'}`} title={mainPart}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[86px] sm:max-w-[98px] md:max-w-[114px] transition-colors ${selectedCategory === 'All' ? 'text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+                                <span className={`text-[11px] sm:text-[11.5px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-black text-[12px] sm:text-[12.5px] md:text-sm' : 'font-medium text-[10px] sm:text-[10.5px] md:text-[11px]'}`} title={mainPart}>
                                     {mainPart}
                                 </span>
                                 {bracketPart && (
@@ -122,7 +115,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                         <div
                             key={category._id || category.id}
                             onClick={() => onSelectCategory(category.name)}
-                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'scale-105 opacity-100 filter brightness-110 contrast-105' : 'scale-95 opacity-55 hover:opacity-85'}`}
+                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'scale-105 sm:scale-110 opacity-100 filter contrast-105' : 'scale-90 opacity-100'}`}
                         >
                             <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform">
                                 <img
@@ -133,7 +126,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
                                 />
                             </div>
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[86px] sm:max-w-[98px] md:max-w-[114px] transition-colors ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[86px] sm:max-w-[98px] md:max-w-[114px] transition-colors ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                                 {(() => {
                                     const fullTitle = t(category.name);
                                     let mainPart = fullTitle;
@@ -174,7 +167,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     return (
                                         <>
                                             <span 
-                                                className={`text-[11px] sm:text-[11.5px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${isSelected ? 'font-bold' : 'font-normal'}`}
+                                                className={`text-[11px] sm:text-[11.5px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${isSelected ? 'font-black text-[12px] sm:text-[12.5px] md:text-sm' : 'font-medium text-[10px] sm:text-[10.5px] md:text-[11px]'}`}
                                                 title={mainPart}
                                             >
                                                 {mainPart}
