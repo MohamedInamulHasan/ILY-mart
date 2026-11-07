@@ -312,13 +312,24 @@ export const loginUser = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please provide email or mobile number' });
         }
 
-        // Check for user by email or deliveryId
+        const cleanId = identifier.trim();
+        const escapedId = cleanId.replace(/[.*+?^${}()|[\]\\]/g, '\\$1');
+        const idRegex = new RegExp('^' + escapedId + '$', 'i');
+        const digitsOnly = cleanId.replace(/\D/g, '');
+        const phone10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : '';
+
+        const orConditions = [
+            { email: cleanId.toLowerCase() },
+            { deliveryId: idRegex },
+            { 'deliverySettings.deliveryId': idRegex }
+        ];
+        if (phone10) {
+            orConditions.push({ mobile: { $regex: phone10 + '$' } });
+        }
+
+        // Check for user by email, deliveryId, or mobile
         let user = await User.findOne({
-            $or: [
-                { email: identifier.toLowerCase() },
-                { deliveryId: identifier },
-                { 'deliverySettings.deliveryId': identifier }
-            ]
+            $or: orConditions
         }).select('+password');
 
         if (user && (await user.matchPassword(password))) {
@@ -551,14 +562,17 @@ export const updateUserByAdmin = async (req, res, next) => {
             user.deliveryId = req.body.deliveryId;
             if (!user.deliverySettings) user.deliverySettings = {};
             user.deliverySettings.deliveryId = req.body.deliveryId;
+            user.markModified('deliverySettings');
         }
         user.address = req.body.address || user.address;
 
         if (req.body.deliverySettings) {
             user.deliverySettings = {
                 ...(user.deliverySettings?.toObject() || {}),
-                ...req.body.deliverySettings
+                ...req.body.deliverySettings,
+                deliveryId: req.body.deliveryId !== undefined ? req.body.deliveryId : (req.body.deliverySettings.deliveryId || user.deliverySettings?.deliveryId || user.deliveryId || '')
             };
+            user.markModified('deliverySettings');
         }
 
         // Update location if provided
@@ -602,8 +616,11 @@ export const updateUserByAdmin = async (req, res, next) => {
             user.isFastMode = req.body.isFastMode;
         }
 
-        if (req.body.password) {
-            user.password = req.body.password;
+        if (req.body.password && typeof req.body.password === 'string' && req.body.password.trim().length >= 6) {
+            user.password = req.body.password.trim();
+            if (!user.deliverySettings) user.deliverySettings = {};
+            user.deliverySettings.displayPassword = req.body.password.trim();
+            user.markModified('deliverySettings');
         }
 
         await user.save();
@@ -624,6 +641,7 @@ export const updateUserByAdmin = async (req, res, next) => {
                 address: updatedUser.address,
                 location: updatedUser.location,
                 coins: updatedUser.coins || 0,
+                deliveryId: updatedUser.deliveryId || updatedUser.deliverySettings?.deliveryId || '',
                 deliverySettings: updatedUser.deliverySettings
             }
         });

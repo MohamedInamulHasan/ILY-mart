@@ -21,6 +21,7 @@ const NotificationOverlay = () => {
     const [notifications, setNotifications] = useState([]);
     const [incomingOrder, setIncomingOrder] = useState(null);
     const [startWithAcceptView, setStartWithAcceptView] = useState(false);
+    const [skippedOrderIds, setSkippedOrderIds] = useState(() => new Set());
     const navigate = useNavigate();
 
     const roles = Array.isArray(user?.role) ? user.role : [user?.role];
@@ -35,6 +36,15 @@ const NotificationOverlay = () => {
         return Array.isArray(rawOrders) ? rawOrders : (rawOrders?.data || []);
     }, [rawOrders]);
 
+    // Check if delivery boy has an active accepted order currently in progress
+    const hasActiveAcceptedOrder = useMemo(() => {
+        if (!isDeliveryBoy) return false;
+        return allOrders.some(o => {
+            const s = String(o.status || '').toLowerCase().trim();
+            return s === 'accepted' || s === 'out for delivery' || s === 'shipped';
+        });
+    }, [allOrders, isDeliveryBoy]);
+
     // Helper to check if order is processing
     const isProcessingStatus = (status) => {
         const s = String(status || '').toLowerCase().trim();
@@ -47,46 +57,50 @@ const NotificationOverlay = () => {
         return allOrders.filter(o => isProcessingStatus(o.status));
     }, [allOrders, isDeliveryBoy]);
 
-    // Keep delivery alert showing in mobile screen until there is NO processing card in the panel
+    // Show incoming order popup for unskipped processing orders when not handling an accepted order
     useEffect(() => {
         if (!isDeliveryBoy) return;
 
-        if (processingOrders.length === 0) {
+        // If currently handling an accepted order, do not show incoming popup
+        if (hasActiveAcceptedOrder) {
+            if (incomingOrder) setIncomingOrder(null);
+            return;
+        }
+
+        // Only show orders that have NOT been skipped by the user
+        const unhandledOrders = processingOrders.filter(o => {
+            const id = o._id || o.id;
+            return id && !skippedOrderIds.has(id);
+        });
+
+        if (unhandledOrders.length === 0) {
             if (incomingOrder) setIncomingOrder(null);
             return;
         }
 
         const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
-        const stillProcessing = currentId && processingOrders.some(o => (o._id || o.id) === currentId);
+        const stillCurrent = currentId && unhandledOrders.some(o => (o._id || o.id) === currentId);
 
-        if (!stillProcessing) {
-            setIncomingOrder(processingOrders[0]);
+        if (!stillCurrent) {
+            setIncomingOrder(unhandledOrders[0]);
             triggerIncomingOrderAlert();
         }
-    }, [isDeliveryBoy, processingOrders, incomingOrder]);
+    }, [isDeliveryBoy, hasActiveAcceptedOrder, processingOrders, incomingOrder, skippedOrderIds]);
 
     const handleOrderSkip = () => {
         const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
-        const remaining = processingOrders.filter(o => (o._id || o.id) !== currentId);
-        if (remaining.length > 0) {
-            setIncomingOrder(remaining[0]);
-        } else if (processingOrders.length > 0) {
-            setIncomingOrder(processingOrders[0]);
-        } else {
-            setIncomingOrder(null);
+        if (currentId) {
+            setSkippedOrderIds(prev => new Set([...prev, currentId]));
         }
+        setIncomingOrder(null);
     };
 
     const handleModalClose = () => {
         const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
-        const remaining = processingOrders.filter(o => (o._id || o.id) !== currentId);
-        if (remaining.length > 0) {
-            setIncomingOrder(remaining[0]);
-        } else if (processingOrders.length > 0) {
-            setIncomingOrder(processingOrders[0]);
-        } else {
-            setIncomingOrder(null);
+        if (currentId) {
+            setSkippedOrderIds(prev => new Set([...prev, currentId]));
         }
+        setIncomingOrder(null);
     };
 
     const handleAcceptViewOpened = () => {

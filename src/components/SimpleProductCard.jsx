@@ -147,7 +147,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!product.anyStoreOpen || !isStoreOpenCheck) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                     {/* Pink Free Delivery Tag across top of image */}
                     {isFreeDelivery && (
-                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[7px] sm:text-[8px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[7.5px] sm:text-[8px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                             {t('Free Delivery')}
                         </div>
                     )}
@@ -276,7 +276,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!isStoreOpenCheck || !isAvailable || !isScheduled) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                     {/* Pink Free Delivery Tag across top of image */}
                     {isFreeDelivery && (
-                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[7px] sm:text-[8px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[7.5px] sm:text-[8px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                             {t('Free Delivery')}
                         </div>
                     )}

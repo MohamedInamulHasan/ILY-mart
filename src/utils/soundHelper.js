@@ -10,8 +10,26 @@ const SFX = {
     order_cancelled: '/sounds/order_cancelled.mp3',
 };
 
+// ----- Sound Deduplication Guard: ensures sounds only play once per event -----
+const lastPlayedTimes = {};
+let lastAnySoundTime = 0;
+
+export const canPlaySound = (key = 'default', cooldownMs = 2500) => {
+    const now = Date.now();
+    if (lastPlayedTimes[key] && (now - lastPlayedTimes[key]) < cooldownMs) {
+        return false;
+    }
+    if ((now - lastAnySoundTime) < 700) {
+        return false;
+    }
+    lastPlayedTimes[key] = now;
+    lastAnySoundTime = now;
+    return true;
+};
+
 // Generic helper: play an MP3 from /public/sounds/, fallback to synth chime
 const playNotificationSFX = (key, fallbackFn) => {
+    if (!canPlaySound(key, 2500)) return;
     try {
         const src = SFX[key];
         if (!src) { fallbackFn && fallbackFn(); return; }
@@ -69,6 +87,7 @@ if (typeof window !== 'undefined') {
 }
 
 export const playSuccessSound = () => {
+    if (!canPlaySound('success', 1500)) return;
     try {
         const audio = cachedAudio || new Audio(getAudioSource());
         audio.volume = 1.0;

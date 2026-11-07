@@ -36,7 +36,16 @@ const userSchema = new mongoose.Schema({
             start: { type: String, default: '09:00' },
             end: { type: String, default: '21:00' }
         },
-        telegramChatId: String,
+        deliveryId: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    displayPassword: {
+        type: String,
+        default: ''
+    },
+    telegramChatId: String,
         isActive: { type: Boolean, default: true }
     },
     storeId: {

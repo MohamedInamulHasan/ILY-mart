@@ -4,7 +4,7 @@ import {
     Shield, Wrench, Store, ArrowLeft, MoreHorizontal, 
     MapPin, Lock, HelpCircle, Pencil, Languages, Heart, Bookmark,
     ChevronDown, ShoppingCart, Newspaper, Coins,
-    Truck, CheckCircle2, XCircle, Clock, Camera, Plus, Gamepad2, Trash2
+    Truck, CheckCircle2, XCircle, Clock, Camera, Plus, Gamepad2, Trash2, Eye, EyeOff
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -92,6 +92,7 @@ const Profile = () => {
     const [showDeliveryAuthModal, setShowDeliveryAuthModal] = useState(false);
     const [deliveryAuthId, setDeliveryAuthId] = useState('');
     const [deliveryAuthPassword, setDeliveryAuthPassword] = useState('');
+    const [showDeliveryPassword, setShowDeliveryPassword] = useState(false);
     const [deliveryAuthLoading, setDeliveryAuthLoading] = useState(false);
     const [deliveryAuthError, setDeliveryAuthError] = useState('');
 
@@ -105,6 +106,7 @@ const Profile = () => {
             nameClickCountRef.current = 0;
             setDeliveryAuthId('');
             setDeliveryAuthPassword('');
+            setShowDeliveryPassword(false);
             setDeliveryAuthError('');
             setShowDeliveryAuthModal(true);
         }
@@ -472,14 +474,24 @@ const Profile = () => {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Password</label>
-                                    <input
-                                        type="password"
-                                        value={deliveryAuthPassword}
-                                        onChange={(e) => setDeliveryAuthPassword(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
-                                        placeholder="Enter your password"
-                                        required
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showDeliveryPassword ? "text" : "password"}
+                                            value={deliveryAuthPassword}
+                                            onChange={(e) => setDeliveryAuthPassword(e.target.value)}
+                                            className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                            placeholder="Enter your password"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDeliveryPassword(!showDeliveryPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 transition-colors cursor-pointer"
+                                            title={showDeliveryPassword ? "Hide password" : "Show password"}
+                                        >
+                                            {showDeliveryPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {deliveryAuthError && (

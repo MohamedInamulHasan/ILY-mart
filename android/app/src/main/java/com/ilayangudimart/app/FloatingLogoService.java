@@ -864,7 +864,8 @@ public class FloatingLogoService extends Service {
         }
         stopAlertEffects();
         dismissPorterOrderCardInternal();
-        if (!isAppInForeground) {
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        if (!isAppInForeground && prefs.getBoolean("has_accepted_order", false)) {
             showCircleBubble();
         }
         // 5s gap before showing the next pending processing order
@@ -878,6 +879,8 @@ public class FloatingLogoService extends Service {
 
     public synchronized void showNextPendingOrderIfAny() {
         if (isAppInForeground || orderCardView != null || isGapWaiting) return;
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        if (prefs.getBoolean("has_accepted_order", false)) return;
         synchronized (pendingOrdersQueue) {
             if (pendingOrdersQueue.isEmpty()) return;
             int idx = currentPendingOrderIndex % pendingOrdersQueue.size();
@@ -1107,10 +1110,11 @@ public class FloatingLogoService extends Service {
                             }
                         }
                     }
-                    final boolean hasActiveOrders = foundAccepted || !pendingOrdersQueue.isEmpty();
-                    mainHandler.post(() -> updateAcceptedOrderState(hasActiveOrders));
+                    final boolean hasAccepted = foundAccepted;
+                    mainHandler.post(() -> updateAcceptedOrderState(hasAccepted));
 
-                    if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
+                    // Only alert pending/processing orders if delivery boy is NOT currently handling an accepted order
+                    if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty() && !foundAccepted) {
                         mainHandler.post(() -> showNextPendingOrderIfAny());
                     }
                 }
