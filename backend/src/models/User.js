@@ -45,6 +45,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    displayPassword: {
+        type: String,
+        default: ''
+    },
     telegramChatId: String,
         isActive: { type: Boolean, default: true }
     },

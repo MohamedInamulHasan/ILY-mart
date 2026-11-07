@@ -95,12 +95,12 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                             }
                         }
                         return (
-                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[86px] sm:max-w-[98px] md:max-w-[114px] transition-colors ${selectedCategory === 'All' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-800 dark:text-gray-200'}`}>
-                                <span className={`text-[11px] sm:text-[11.5px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${selectedCategory === 'All' ? 'font-black text-[12px] sm:text-[12.5px] md:text-sm' : 'font-medium text-[10px] sm:text-[10.5px] md:text-[11px]'}`} title={mainPart}>
+                            <div className={`flex flex-col items-center justify-center text-center w-full max-w-[86px] sm:max-w-[98px] md:max-w-[114px] transition-colors pb-1.5 ${selectedCategory === 'All' ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-800 dark:text-gray-200'}`}>
+                                <span className={`text-[11px] sm:text-[11.5px] md:text-xs leading-normal pb-0.5 w-full whitespace-nowrap block text-center ${selectedCategory === 'All' ? 'font-black text-[12px] sm:text-[12.5px] md:text-sm' : 'font-medium text-[10px] sm:text-[10.5px] md:text-[11px]'}`} title={mainPart}>
                                     {mainPart}
                                 </span>
                                 {bracketPart && (
-                                    <span className={`text-[9.5px] sm:text-[10px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-normal'}`} title={bracketPart}>
+                                    <span className={`text-[9.5px] sm:text-[10px] md:text-[10.5px] leading-normal pb-0.5 w-full truncate whitespace-nowrap block text-center mt-0.5 ${selectedCategory === 'All' ? 'font-semibold' : 'font-normal'}`} title={bracketPart}>
                                         {bracketPart}
                                     </span>
                                 )}
@@ -165,22 +165,22 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                                     }
 
                                     return (
-                                        <>
+                                        <div className="flex flex-col items-center justify-center text-center w-full pb-1">
                                             <span 
-                                                className={`text-[11px] sm:text-[11.5px] md:text-xs leading-tight w-full whitespace-nowrap overflow-hidden block text-center ${isSelected ? 'font-black text-[12px] sm:text-[12.5px] md:text-sm' : 'font-medium text-[10px] sm:text-[10.5px] md:text-[11px]'}`}
+                                                className={`text-[11px] sm:text-[11.5px] md:text-xs leading-normal pb-0.5 w-full whitespace-nowrap block text-center ${isSelected ? 'font-black text-[12px] sm:text-[12.5px] md:text-sm' : 'font-medium text-[10px] sm:text-[10.5px] md:text-[11px]'}`}
                                                 title={mainPart}
                                             >
                                                 {mainPart}
                                             </span>
                                             {bracketPart && (
                                                 <span 
-                                                    className={`text-[9.5px] sm:text-[10px] md:text-[10.5px] leading-tight w-full truncate whitespace-nowrap overflow-hidden block text-center mt-0.5 ${isSelected ? 'font-semibold' : 'font-normal'}`}
+                                                    className={`text-[9.5px] sm:text-[10px] md:text-[10.5px] leading-normal pb-1 w-full truncate whitespace-nowrap block text-center mt-0.5 ${isSelected ? 'font-semibold' : 'font-normal'}`}
                                                     title={bracketPart}
                                                 >
                                                     {bracketPart}
                                                 </span>
                                             )}
-                                        </>
+                                        </div>
                                     );
                                 })()}
                             </div>

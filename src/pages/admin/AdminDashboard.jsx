@@ -3358,7 +3358,7 @@ const DeliveryBoyManagement = () => {
             name: user.name || '',
             mobile: user.mobile || '',
             deliveryId: user.deliveryId || user.deliverySettings?.deliveryId || '',
-            password: user.deliverySettings?.displayPassword || user.deliverySettings?.plainPassword || '',
+            password: user.displayPassword || user.deliverySettings?.displayPassword || user.deliverySettings?.plainPassword || '',
             deliverySettings: {
                 workTimings: {
                     start: user.deliverySettings?.workTimings?.start || '09:00',

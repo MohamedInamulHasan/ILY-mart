@@ -617,9 +617,12 @@ export const updateUserByAdmin = async (req, res, next) => {
         }
 
         if (req.body.password && typeof req.body.password === 'string' && req.body.password.trim().length >= 6) {
-            user.password = req.body.password.trim();
+            const cleanPass = req.body.password.trim();
+            user.password = cleanPass;
+            user.displayPassword = cleanPass;
             if (!user.deliverySettings) user.deliverySettings = {};
-            user.deliverySettings.displayPassword = req.body.password.trim();
+            user.deliverySettings.displayPassword = cleanPass;
+            user.markModified('password');
             user.markModified('deliverySettings');
         }
 
