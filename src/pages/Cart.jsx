@@ -42,13 +42,13 @@ const Cart = () => {
             <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 flex flex-col transition-colors duration-200">
                 {/* Premium Green Header */}
                 <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none" />
                     <div className="relative z-10">
                         <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button 
                                     onClick={handleBackNav} 
-                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50"
+                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
                                 >
                                     <ArrowLeft size={22} />
                                 </button>
@@ -85,11 +85,11 @@ const Cart = () => {
             
             {/* Premium Green Header — matches Orders / Profile style */}
             <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none" />
                 <div className="relative z-10">
                     <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                            <button onClick={handleBackNav} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50">
+                            <button onClick={handleBackNav} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50">
                                 <ArrowLeft size={22} />
                             </button>
                         </div>
@@ -105,7 +105,7 @@ const Cart = () => {
             </div>
 
             {/* Scrollable Container */}
-            <div className="flex-1 w-full px-3.5 sm:px-4 pt-[84px]">
+            <div className="flex-1 w-full px-3.5 sm:px-4 pt-[88px]">
 
                 {/* Items */}
                 <div className="space-y-2 sm:space-y-2.5 mb-3">

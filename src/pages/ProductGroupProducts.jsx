@@ -114,7 +114,7 @@ const ProductGroupProducts = () => {
                 {/* Premium Attached Header */}
                 <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                     {/* Decorative blur blob */}
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none" />
 
                     <div className="relative z-10">
                         <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
@@ -160,7 +160,7 @@ const ProductGroupProducts = () => {
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-[84px] pb-6">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-[88px] pb-6">
                     {isLoading ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4">
                             {[...Array(10)].map((_, i) => (

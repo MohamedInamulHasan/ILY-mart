@@ -476,7 +476,7 @@ const Checkout = () => {
                 </div>
             </div>
 
-            <div className="pt-[86px] sm:pt-[88px] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="pt-[88px] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {/* Location Toast Message (errors only) */}
                 {locationMessage.show && locationMessage.type === 'error' && (

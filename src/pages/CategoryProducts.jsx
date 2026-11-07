@@ -166,9 +166,9 @@ const CategoryProducts = () => {
             <div className="flex-1 min-h-[calc(100vh-4rem)] bg-[#E8EAEF] dark:bg-gray-900 pb-20 transition-colors duration-200 w-full relative">
                 
                 {/* Header: Location & Cart (Exact same size, icons, and text as Home page) */}
-                <div className="w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm relative overflow-hidden mb-3.5">
+                <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
                     {/* Background Accents (Subtle light accents like Home page) */}
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#2E5A2E]/20 rounded-full blur-3xl pointer-events-none"></div>
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
 
                     <div className="relative z-10 flex items-center justify-between min-h-[42px]">
                         {/* Back Button + Location */}
@@ -178,7 +178,7 @@ const CategoryProducts = () => {
                                 className="w-[42px] h-[42px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0 cursor-pointer"
                                 aria-label="Go back"
                             >
-                                <ArrowLeft size={20} className="text-gray-900 dark:text-gray-900" />
+                                <ArrowLeft size={22} className="text-gray-900 dark:text-gray-900" />
                             </button>
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="w-[42px] h-[42px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0">
@@ -215,6 +215,7 @@ const CategoryProducts = () => {
                     </div>
                 </div>
 
+                <div className="pt-[88px]">
                 {/* Search Bar & Sort Dropdown (Exact same as Home page design and search logic) */}
                 <section className="px-4 relative z-50 mb-4 sm:mb-5">
                     <div className="flex items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto relative">
@@ -424,7 +425,7 @@ const CategoryProducts = () => {
                                     </div>
 
                                     {/* Text: BLACK, Truncated, with bottom padding for Tamil diacritics */}
-                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-[72px] sm:w-[78px] px-0.5 pb-0.5">
+                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-[72px] sm:w-[78px] max-w-[72px] sm:max-w-[78px] px-0.5 pb-0.5">
                                         <span 
                                             className={`leading-normal truncate block text-center w-full transition-colors text-[11px] sm:text-[11.5px] ${
                                                 isSelected 
@@ -562,6 +563,7 @@ const CategoryProducts = () => {
                             </div>
                         )
                     )}
+                </div>
                 </div>
 
             </div>

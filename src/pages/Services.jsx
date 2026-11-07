@@ -190,10 +190,10 @@ const Services = () => {
                     </div>
                 </div>
 
-                <div className={`max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-[84px] ${viewMode === 'details' ? 'pb-36 sm:pb-32' : 'pb-20'}`}>
+                <div className={`max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-[88px] ${viewMode === 'details' ? 'pb-36 sm:pb-32' : 'pb-20'}`}>
 
                     {viewMode === 'list' && (
-                        <div className="mb-3.5 sm:mb-4 flex justify-center md:justify-start sticky top-[84px] z-30">
+                        <div className="mb-3.5 sm:mb-4 flex justify-center md:justify-start sticky top-[88px] z-30">
                             <div className="relative w-full max-w-lg group">
                                 <input
                                     type="text"

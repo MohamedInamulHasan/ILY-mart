@@ -273,7 +273,7 @@ const OrderConfirmation = () => {
                 </div>
             </div>
 
-            <div className="pt-[86px] sm:pt-[88px] max-w-3xl mx-auto px-3.5 sm:px-5 lg:px-6 space-y-3 sm:space-y-3.5">
+            <div className="pt-[88px] max-w-3xl mx-auto px-3.5 sm:px-5 lg:px-6 space-y-3 sm:space-y-3.5">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-700/60 flex items-center gap-2.5">
                         <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">

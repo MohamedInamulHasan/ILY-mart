@@ -48,7 +48,7 @@ const SavedProducts = () => {
                 </div>
             </div>
 
-            <div className="pt-[86px] sm:pt-[88px] max-w-7xl mx-auto px-3 sm:px-4 md:px-6 pb-20">
+            <div className="pt-[88px] max-w-7xl mx-auto px-3 sm:px-4 md:px-6 pb-20">
 
                 {savedProducts.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center py-16 px-4 min-h-[50vh]">
