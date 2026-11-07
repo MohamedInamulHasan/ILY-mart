@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useMemo } from 'react';
+import { useState, useContext, useEffect, useMemo, useRef } from 'react';
 import { 
     User, Package, Settings, ChevronRight, LogOut, 
     Shield, Wrench, Store, ArrowLeft, MoreHorizontal, 
@@ -16,7 +16,7 @@ import { useData } from '../context/DataContext';
 import LogoutModal from '../components/LogoutModal';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
-import api from '../utils/api';
+import api, { apiService } from '../utils/api';
 import { getUserRoles } from '../utils/userHelpers';
 
 const MenuLink = ({ icon, title, to, onClick, isRed = false }) => {
@@ -85,6 +85,55 @@ const Profile = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const { mutate: updateProfile } = useUpdateProfile();
+
+    // 10-click delivery auth easter egg
+    const nameClickCountRef = useRef(0);
+    const nameClickTimerRef = useRef(null);
+    const [showDeliveryAuthModal, setShowDeliveryAuthModal] = useState(false);
+    const [deliveryAuthId, setDeliveryAuthId] = useState('');
+    const [deliveryAuthPassword, setDeliveryAuthPassword] = useState('');
+    const [deliveryAuthLoading, setDeliveryAuthLoading] = useState(false);
+    const [deliveryAuthError, setDeliveryAuthError] = useState('');
+
+    const handleNameCardClick = () => {
+        nameClickCountRef.current += 1;
+        if (nameClickTimerRef.current) clearTimeout(nameClickTimerRef.current);
+        nameClickTimerRef.current = setTimeout(() => {
+            nameClickCountRef.current = 0;
+        }, 3000);
+        if (nameClickCountRef.current >= 10) {
+            nameClickCountRef.current = 0;
+            setDeliveryAuthId('');
+            setDeliveryAuthPassword('');
+            setDeliveryAuthError('');
+            setShowDeliveryAuthModal(true);
+        }
+    };
+
+    const handleDeliveryLogin = async (e) => {
+        e.preventDefault();
+        setDeliveryAuthLoading(true);
+        setDeliveryAuthError('');
+        try {
+            const res = await apiService.login({ email: deliveryAuthId.trim(), password: deliveryAuthPassword });
+            const data = res?.data || res;
+            const userData = data?.data || data;
+            if (userData && (userData.token || userData.authToken)) {
+                const token = userData.token || userData.authToken;
+                localStorage.setItem('authToken', token);
+                localStorage.setItem('userInfo', JSON.stringify(userData));
+                setAuthUser(userData);
+                setShowDeliveryAuthModal(false);
+                navigate('/admin');
+            } else {
+                setDeliveryAuthError('Invalid credentials. Please check your Delivery ID and password.');
+            }
+        } catch (err) {
+            setDeliveryAuthError(err?.response?.data?.message || 'Invalid credentials. Please try again.');
+        } finally {
+            setDeliveryAuthLoading(false);
+        }
+    };
 
     const fruitAvatars = [
         { id: 'strawberry', url: '/avatars/strawberry.png', name: 'Strawberry' },
@@ -191,7 +240,8 @@ const Profile = () => {
                 </div>
             </div>
 
-            <div>`n                <div className="pt-[88px]">
+            <div>
+                <div className="pt-[88px]">
                 <div className="px-4 mt-0 max-w-3xl mx-auto space-y-3 pb-12 sm:pb-16 w-full">
                 {/* Profile Widget */}
                 <div className="bg-white dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between mb-3 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -216,7 +266,7 @@ const Profile = () => {
                                    <Camera size={12} />
                                </button>
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0" onClick={handleNameCardClick} style={{cursor:'default'}}>
                                 {/* Name + Coin inline */}
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     <h2 className="text-[15.5px] sm:text-[16.5px] font-bold text-gray-900 dark:text-white leading-tight tracking-tight truncate">
@@ -383,6 +433,84 @@ const Profile = () => {
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.985c-.002 5.45-4.437 9.884-9.887 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                 </svg>
             </button>
+
+            {/* Delivery Auth Modal - 10-click easter egg */}
+            {showDeliveryAuthModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+                    <div
+                        className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
+                        onClick={() => setShowDeliveryAuthModal(false)}
+                    />
+                    <div className="relative bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                        <div className="p-5 sm:p-6">
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-9 h-9 rounded-full bg-[#2E5A2E] flex items-center justify-center">
+                                        <Truck size={18} className="text-white" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delivery Login</h3>
+                                </div>
+                                <button
+                                    onClick={() => setShowDeliveryAuthModal(false)}
+                                    className="w-9 h-9 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <XCircle size={18} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleDeliveryLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Delivery ID</label>
+                                    <input
+                                        type="text"
+                                        value={deliveryAuthId}
+                                        onChange={(e) => setDeliveryAuthId(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                        placeholder="Enter your Delivery ID"
+                                        autoComplete="off"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Password</label>
+                                    <input
+                                        type="password"
+                                        value={deliveryAuthPassword}
+                                        onChange={(e) => setDeliveryAuthPassword(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                        placeholder="Enter your password"
+                                        required
+                                    />
+                                </div>
+
+                                {deliveryAuthError && (
+                                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                                        {deliveryAuthError}
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={deliveryAuthLoading}
+                                    className="w-full py-3 bg-[#2E5A2E] text-white font-semibold rounded-xl hover:bg-[#245024] active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                                >
+                                    {deliveryAuthLoading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                            Verifying...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Truck size={16} />
+                                            Login as Delivery Boy
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Avatar Selection Modal */}
             {showAvatarModal && (

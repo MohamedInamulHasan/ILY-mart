@@ -58,7 +58,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                 {/* All Categories Option — styled like other category items */}
                 <div
                     onClick={() => onSelectCategory('All')}
-                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'scale-105 sm:scale-110 opacity-100 filter contrast-105' : 'scale-90 opacity-100'}`}
+                    className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${selectedCategory === 'All' ? 'scale-105 sm:scale-110 opacity-100 filter contrast-105' : 'scale-[0.80] sm:scale-[0.82] opacity-90'}`}
                 >
                     <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform">
                         {allCategoryImage ? (
@@ -115,7 +115,7 @@ const CategorySection = ({ categories = [], isLoading = false, selectedCategory 
                         <div
                             key={category._id || category.id}
                             onClick={() => onSelectCategory(category.name)}
-                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'scale-105 sm:scale-110 opacity-100 filter contrast-105' : 'scale-90 opacity-100'}`}
+                            className={`${isExpanded ? 'w-full' : 'shrink-0 min-w-[82px] sm:min-w-[94px] md:min-w-[108px]'} flex flex-col items-center gap-1.5 md:gap-2 group cursor-pointer select-none transition-all duration-200 ${isSelected ? 'scale-105 sm:scale-110 opacity-100 filter contrast-105' : 'scale-[0.80] sm:scale-[0.82] opacity-90'}`}
                         >
                             <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 aspect-square rounded-2xl flex items-center justify-center bg-transparent transition-transform">
                                 <img

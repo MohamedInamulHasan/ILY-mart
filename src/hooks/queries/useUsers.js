@@ -37,7 +37,8 @@ export const useCreateUser = () => {
     return useMutation({
         mutationFn: (data) => apiService.createUser(data),
         onSuccess: () => {
-            queryClient.invalidateQueries(userKeys.lists());
+            queryClient.invalidateQueries({ queryKey: userKeys.all });
+            queryClient.invalidateQueries({ queryKey: userKeys.lists() });
         }
     });
 };
@@ -47,7 +48,8 @@ export const useUpdateUser = () => {
     return useMutation({
         mutationFn: ({ id, data }) => apiService.updateUser(id, data),
         onSuccess: () => {
-            queryClient.invalidateQueries(userKeys.lists());
+            queryClient.invalidateQueries({ queryKey: userKeys.all });
+            queryClient.invalidateQueries({ queryKey: userKeys.lists() });
         }
     });
 };

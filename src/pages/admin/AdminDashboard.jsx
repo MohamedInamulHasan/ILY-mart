@@ -845,6 +845,7 @@ const ProductManagement = () => {
         openingTime: '00:00',
         closingTime: '23:59'
     });
+    const [mentionInput, setMentionInput] = useState('');
 
     const { uploadImage, uploading } = useCloudinaryUpload();
 
@@ -1307,11 +1308,20 @@ const ProductManagement = () => {
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            const val = prompt(t('Enter mention (e.g. S, M, L, XL, 500g):'));
-                                            if (val && val.trim()) {
-                                                const current = formData.unit ? formData.unit.trim() : '';
-                                                const updated = current ? `${current}, ${val.trim()}` : val.trim();
-                                                setFormData({ ...formData, unit: updated });
+                                            if (mentionInput && mentionInput.trim()) {
+                                                const currentList = formData.unit ? formData.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                if (!currentList.includes(mentionInput.trim())) {
+                                                    const updated = [...currentList, mentionInput.trim()].join(', ');
+                                                    setFormData({ ...formData, unit: updated });
+                                                }
+                                                setMentionInput('');
+                                            } else {
+                                                const val = prompt(t('Enter mention (e.g. S, M, L, XL, 500g):'));
+                                                if (val && val.trim()) {
+                                                    const currentList = formData.unit ? formData.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                    const updated = [...currentList, val.trim()].join(', ');
+                                                    setFormData({ ...formData, unit: updated });
+                                                }
                                             }
                                         }}
                                         className="text-xs font-semibold text-[#2E5A2E] dark:text-[#7CA90E] hover:underline cursor-pointer"
@@ -1319,13 +1329,70 @@ const ProductManagement = () => {
                                         + {t('Add mention')}
                                     </button>
                                 </div>
-                                <input
-                                    type="text"
-                                    value={formData.unit}
-                                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#7CA90E] outline-none"
-                                    placeholder={t('e.g., 1 kg, 500g, S, M, L, XL')}
-                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={mentionInput}
+                                        onChange={(e) => setMentionInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                if (mentionInput.trim()) {
+                                                    const currentList = formData.unit ? formData.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                    if (!currentList.includes(mentionInput.trim())) {
+                                                        const updated = [...currentList, mentionInput.trim()].join(', ');
+                                                        setFormData({ ...formData, unit: updated });
+                                                    }
+                                                    setMentionInput('');
+                                                }
+                                            }
+                                        }}
+                                        className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#7CA90E] outline-none"
+                                        placeholder={t('e.g., S, M, L, XL, 1 kg...')}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (mentionInput.trim()) {
+                                                const currentList = formData.unit ? formData.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                if (!currentList.includes(mentionInput.trim())) {
+                                                    const updated = [...currentList, mentionInput.trim()].join(', ');
+                                                    setFormData({ ...formData, unit: updated });
+                                                }
+                                                setMentionInput('');
+                                            }
+                                        }}
+                                        className="px-3.5 py-2 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                                    >
+                                        {t('Add')}
+                                    </button>
+                                </div>
+
+                                {/* Mention Tag Pills arranged below the input with X icon */}
+                                {Boolean(formData.unit) && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                        {formData.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean).map((tag, idx) => (
+                                            <span
+                                                key={idx}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 shadow-xs"
+                                            >
+                                                {tag}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const currentList = formData.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean);
+                                                        const updated = currentList.filter((_, i) => i !== idx).join(', ');
+                                                        setFormData({ ...formData, unit: updated });
+                                                    }}
+                                                    className="text-gray-400 hover:text-red-500 cursor-pointer p-0.5 rounded transition-colors"
+                                                    title={t('Remove')}
+                                                >
+                                                    <X size={13} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Category')}</label>
@@ -1491,7 +1558,6 @@ const ProductManagement = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Description')}</label>
                             <RichDescriptionEditor
                                 value={formData.description}
                                 onChange={(val) => setFormData({ ...formData, description: val })}
@@ -3235,6 +3301,7 @@ const UserManagement = () => {
 };
 
 const DeliveryBoyManagement = () => {
+    const queryClient = useQueryClient();
     const { data: users = [], refetch: fetchUsers } = useUsers();
     const { mutateAsync: updateUser } = useUpdateUser();
     const { mutateAsync: createUser } = useCreateUser();
@@ -3256,7 +3323,13 @@ const DeliveryBoyManagement = () => {
         }
     });
 
-    const deliveryBoys = users.filter(u => Array.isArray(u.role) ? u.role.includes('delivery_boy') : u.role === 'delivery_boy');
+    const deliveryBoys = users.filter(u => {
+        if (!u) return false;
+        const r = u.role;
+        const isBoyRole = Array.isArray(r) ? r.includes('delivery_boy') : r === 'delivery_boy';
+        const hasBoyId = Boolean(u.deliveryId || u.deliverySettings?.deliveryId);
+        return isBoyRole || hasBoyId;
+    });
 
     const handleOpenAdd = () => {
         setEditingUser(null);
@@ -3308,17 +3381,19 @@ const DeliveryBoyManagement = () => {
 
         setIsSubmitting(true);
         try {
+            const cleanMobile = formData.mobile.trim();
+            const cleanDeliveryId = formData.deliveryId.trim() || cleanMobile;
             const payload = {
                 name: formData.name.trim(),
-                mobile: formData.mobile.trim(),
-                deliveryId: formData.deliveryId.trim() || formData.mobile.trim(),
+                mobile: cleanMobile,
+                deliveryId: cleanDeliveryId,
                 role: ['delivery_boy'],
                 deliverySettings: {
                     workTimings: {
                         start: formData.deliverySettings?.workTimings?.start || '09:00',
                         end: formData.deliverySettings?.workTimings?.end || '21:00'
                     },
-                    deliveryId: formData.deliveryId.trim() || formData.mobile.trim(),
+                    deliveryId: cleanDeliveryId,
                     isActive: true
                 }
             };
@@ -3327,17 +3402,41 @@ const DeliveryBoyManagement = () => {
                 payload.password = formData.password.trim();
             }
 
+            const existingUser = users.find(u => 
+                (u.mobile && cleanMobile && u.mobile.replace(/\D/g, '').slice(-10) === cleanMobile.replace(/\D/g, '').slice(-10)) ||
+                (cleanDeliveryId && (u.deliveryId === cleanDeliveryId || u.deliverySettings?.deliveryId === cleanDeliveryId))
+            );
+
             if (editingUser) {
                 await updateUser({ id: editingUser._id || editingUser.id, data: payload });
                 alert(t('Delivery boy updated successfully!'));
-            } else {
-                await createUser(payload);
+            } else if (existingUser) {
+                await updateUser({ id: existingUser._id || existingUser.id, data: payload });
                 alert(t('Delivery boy added successfully!'));
+            } else {
+                try {
+                    await createUser(payload);
+                    alert(t('Delivery boy added successfully!'));
+                } catch (createErr) {
+                    const regRes = await apiService.register({
+                        name: payload.name,
+                        mobile: payload.mobile,
+                        password: payload.password || '123456',
+                        email: `${cleanDeliveryId}@homly.delivery`
+                    });
+                    const newId = regRes?.data?._id || regRes?._id;
+                    if (newId) {
+                        await updateUser({ id: newId, data: payload });
+                    }
+                    alert(t('Delivery boy added successfully!'));
+                }
             }
 
             setIsFormOpen(false);
             setEditingUser(null);
-            fetchUsers();
+            queryClient.invalidateQueries({ queryKey: userKeys.all });
+            queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+            await fetchUsers();
         } catch (error) {
             console.error('Error saving delivery boy:', error);
             alert(error?.response?.data?.message || error?.message || t('Failed to save delivery boy'));

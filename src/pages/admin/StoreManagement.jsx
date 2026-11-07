@@ -132,6 +132,11 @@ const StoreManagement = () => {
     const [selectedStore, setSelectedStore] = useState(myStore);
     const [editingStore, setEditingStore] = useState(myStore);
 
+
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+
     // Initial load for Store Admin
     useEffect(() => {
         if (isStoreAdmin && myStore && !editingStore) {
@@ -160,10 +165,7 @@ const StoreManagement = () => {
     const handleBackToList = () => {
         if (isStoreAdmin) return; // Store admin doesn't go back to list
         setView('list');
-    };
-    const [editingProduct, setEditingProduct] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [storeForm, setStoreForm] = useState({
+    };    const [storeForm, setStoreForm] = useState({
         name: '',
         address: '',
         image: '',
@@ -189,6 +191,7 @@ const StoreManagement = () => {
         openingTime: '00:00',
         closingTime: '23:59'
     });
+    const [mentionInput, setMentionInput] = useState('');
 
     const handleStoreImageUpload = async (e) => {
         const file = e.target.files[0];
@@ -1320,11 +1323,20 @@ const StoreManagement = () => {
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            const val = prompt(t('Enter mention (e.g. S, M, L, XL, 500g):'));
-                                            if (val && val.trim()) {
-                                                const current = productForm.unit ? productForm.unit.trim() : '';
-                                                const updated = current ? `${current}, ${val.trim()}` : val.trim();
-                                                setProductForm({ ...productForm, unit: updated });
+                                            if (mentionInput && mentionInput.trim()) {
+                                                const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                if (!currentList.includes(mentionInput.trim())) {
+                                                    const updated = [...currentList, mentionInput.trim()].join(', ');
+                                                    setProductForm({ ...productForm, unit: updated });
+                                                }
+                                                setMentionInput('');
+                                            } else {
+                                                const val = prompt(t('Enter mention (e.g. S, M, L, XL, 500g):'));
+                                                if (val && val.trim()) {
+                                                    const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                    const updated = [...currentList, val.trim()].join(', ');
+                                                    setProductForm({ ...productForm, unit: updated });
+                                                }
                                             }
                                         }}
                                         className="text-xs font-semibold text-[#2E5A2E] dark:text-[#7CA90E] hover:underline cursor-pointer"
@@ -1332,13 +1344,70 @@ const StoreManagement = () => {
                                         + {t('Add mention')}
                                     </button>
                                 </div>
-                                <input
-                                    type="text"
-                                    value={productForm.unit}
-                                    onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
-                                    placeholder={t('e.g., 1 kg, 500g, S, M, L, XL')}
-                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={mentionInput}
+                                        onChange={(e) => setMentionInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                if (mentionInput.trim()) {
+                                                    const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                    if (!currentList.includes(mentionInput.trim())) {
+                                                        const updated = [...currentList, mentionInput.trim()].join(', ');
+                                                        setProductForm({ ...productForm, unit: updated });
+                                                    }
+                                                    setMentionInput('');
+                                                }
+                                            }
+                                        }}
+                                        className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                        placeholder={t('e.g., S, M, L, XL, 1 kg...')}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (mentionInput.trim()) {
+                                                const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                if (!currentList.includes(mentionInput.trim())) {
+                                                    const updated = [...currentList, mentionInput.trim()].join(', ');
+                                                    setProductForm({ ...productForm, unit: updated });
+                                                }
+                                                setMentionInput('');
+                                            }
+                                        }}
+                                        className="px-3.5 py-2 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                                    >
+                                        {t('Add')}
+                                    </button>
+                                </div>
+
+                                {/* Mention Tag Pills arranged below the input with X icon */}
+                                {Boolean(productForm.unit) && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                        {productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean).map((tag, idx) => (
+                                            <span
+                                                key={idx}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 shadow-xs"
+                                            >
+                                                {tag}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const currentList = productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean);
+                                                        const updated = currentList.filter((_, i) => i !== idx).join(', ');
+                                                        setProductForm({ ...productForm, unit: updated });
+                                                    }}
+                                                    className="text-gray-400 hover:text-red-500 cursor-pointer p-0.5 rounded transition-colors"
+                                                    title={t('Remove')}
+                                                >
+                                                    <X size={13} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Category')}</label>
@@ -1507,7 +1576,6 @@ const StoreManagement = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Description')}</label>
                             <RichDescriptionEditor
                                 value={productForm.description}
                                 onChange={(val) => setProductForm({ ...productForm, description: val })}
