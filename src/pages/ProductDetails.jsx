@@ -330,15 +330,10 @@ const ProductDetails = () => {
                                 tagClassName: 'inline-flex items-center justify-center text-xs sm:text-sm font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2.5px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center'
                             })}
                         </h1>
-                        {product.unit && (
-                            <p className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium normal-case mt-0.5">
-                                {product.unit}
-                            </p>
-                        )}
                     </div>
 
                     {/* Price & Quantity Selector */}
-                    <div className="flex items-center justify-between mb-2 mt-3">
+                    <div className="flex items-center justify-between mt-4 mb-5">
                         <div className="flex flex-col">
                             <div className="flex items-center gap-3">
                                 <div className="inline-flex items-center justify-center px-3.5 py-1.5 sm:py-2 rounded-[6px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xl sm:text-2xl shadow-[0_3px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
@@ -378,7 +373,7 @@ const ProductDetails = () => {
 
                     {/* Mentions (Sizes / Variants, e.g. S, M, L, XL - Uniform white cards, selected black with white text) */}
                     {productMentions && productMentions.length > 0 && (
-                        <div className="mb-4">
+                        <div className="mb-6">
                             <div className="flex flex-wrap gap-2">
                                 {productMentions.map((m, idx) => {
                                     const isSel = selectedMention === m;
@@ -402,7 +397,7 @@ const ProductDetails = () => {
                     )}
 
                     {/* Description Section */}
-                    <div className="mb-4">
+                    <div className="mt-2 mb-6">
                         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-2">
                             {t('Description')}
                         </h2>

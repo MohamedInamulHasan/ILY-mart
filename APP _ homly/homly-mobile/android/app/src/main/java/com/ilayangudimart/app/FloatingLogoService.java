@@ -1107,8 +1107,8 @@ public class FloatingLogoService extends Service {
                             }
                         }
                     }
-                    final boolean hasAccepted = foundAccepted;
-                    mainHandler.post(() -> updateAcceptedOrderState(hasAccepted));
+                    final boolean hasActiveOrders = foundAccepted || !pendingOrdersQueue.isEmpty();
+                    mainHandler.post(() -> updateAcceptedOrderState(hasActiveOrders));
 
                     if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
                         mainHandler.post(() -> showNextPendingOrderIfAny());

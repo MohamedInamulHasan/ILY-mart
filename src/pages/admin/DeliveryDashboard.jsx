@@ -142,8 +142,10 @@ const DeliveryDashboard = () => {
     };
 
     // Check if there is an accepted delivery card in the panel (Out for Delivery, Shipped, Accepted)
+    // Active delivery cards include Processing/Pending/Accepted/Out for Delivery
+    // Show alert on mobile screen when app is closed as long as any processing or delivery card is present
     const hasAcceptedCard = useMemo(() => {
-        return orders.some(o => ['Accepted', 'Out for Delivery', 'Shipped'].includes(o.status));
+        return orders.some(o => ['Processing', 'Pending', 'Order Placed', 'Accepted', 'Out for Delivery', 'Shipped'].includes(o.status));
     }, [orders]);
 
     // Keep native overlay accepted order state synced whenever orders change
