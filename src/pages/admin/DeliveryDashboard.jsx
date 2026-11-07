@@ -176,11 +176,9 @@ const DeliveryDashboard = () => {
                 setOverlayAuthToken(currentToken);
             }
 
-            // Only show floating overlay if enabled AND there is an accepted order
-            if (isFloatingEnabled && granted && hasAcceptedCard) {
+            // Keep background delivery service active to alert on incoming/processing orders
+            if (isFloatingEnabled && granted) {
                 showFloatingOverlay();
-            } else {
-                hideFloatingOverlay();
             }
 
             try {

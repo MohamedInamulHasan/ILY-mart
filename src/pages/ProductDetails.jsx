@@ -310,7 +310,7 @@ const ProductDetails = () => {
                             </div>
                         )}
 
-                        {product.unit && (
+                        {product.unit && !isPreview && (
                             <div className="absolute bottom-4 right-4 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold text-gray-900 dark:text-white normal-case shadow-sm border border-black/5 hidden lg:block">
                                 {product.unit}
                             </div>
