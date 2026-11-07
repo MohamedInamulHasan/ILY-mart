@@ -312,6 +312,24 @@ export const loginUser = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please provide email or mobile number' });
         }
 
+        // Check for user by email or deliveryId
+        let user = await User.findOne({
+            $or: [
+                { email: identifier.toLowerCase() },
+                { deliveryId: identifier },
+                { 'deliverySettings.deliveryId': identifier }
+            ]
+        }).select('+password');
+
+        if (user && (await user.matchPassword(password))) {
+            await LoginLog.create({
+                user: user._id,
+                ipAddress: req.ip || '',
+                device: req.headers ? req.headers['user-agent'] : ''
+            });
+            return sendTokenResponse(user, 200, res);
+        }
+
         const isEmail = identifier.includes('@');
 
         if (!isEmail) {
@@ -529,6 +547,11 @@ export const updateUserByAdmin = async (req, res, next) => {
         user.name = req.body.name || user.name;
         user.email = req.body.email || user.email;
         user.mobile = req.body.mobile || user.mobile;
+        if (req.body.deliveryId !== undefined) {
+            user.deliveryId = req.body.deliveryId;
+            if (!user.deliverySettings) user.deliverySettings = {};
+            user.deliverySettings.deliveryId = req.body.deliveryId;
+        }
         user.address = req.body.address || user.address;
 
         if (req.body.deliverySettings) {
@@ -607,6 +630,56 @@ export const updateUserByAdmin = async (req, res, next) => {
 
         // Real-time update to the specific user (role/coins changed by admin)
         getIO().to(`user:${updatedUser._id}`).emit('user:updated', updatedUser);
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+// @desc    Create new user (admin)
+// @route   POST /api/users
+// @access  Private/Admin
+export const createUserByAdmin = async (req, res, next) => {
+    try {
+        const { name, mobile, password, email, deliveryId, deliverySettings, role } = req.body;
+        const cleanMobile = mobile ? mobile.toString().trim() : '';
+        const userEmail = email ? email.toLowerCase().trim() : `${deliveryId ? deliveryId.toLowerCase().replace(/\s+/g, '') : (cleanMobile || Date.now())}@homly.delivery`;
+
+        const existingQuery = [
+            { email: userEmail }
+        ];
+        if (cleanMobile) existingQuery.push({ mobile: cleanMobile });
+        if (deliveryId) existingQuery.push({ deliveryId }, { 'deliverySettings.deliveryId': deliveryId });
+
+        const existing = await User.findOne({ $or: existingQuery });
+
+        if (existing) {
+            res.status(400);
+            throw new Error('A user with this mobile, email, or Delivery ID already exists');
+        }
+
+        const newUser = await User.create({
+            name,
+            mobile: cleanMobile,
+            email: userEmail,
+            password: password || '123456',
+            role: role || ['delivery_boy'],
+            deliveryId: deliveryId || '',
+            deliverySettings: {
+                workTimings: {
+                    start: deliverySettings?.workTimings?.start || '09:00',
+                    end: deliverySettings?.workTimings?.end || '21:00'
+                },
+                deliveryId: deliveryId || '',
+                telegramChatId: deliverySettings?.telegramChatId || '',
+                isActive: deliverySettings?.isActive !== undefined ? deliverySettings.isActive : true
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            data: newUser
+        });
     } catch (error) {
         next(error);
     }

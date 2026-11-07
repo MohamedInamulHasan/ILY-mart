@@ -63,7 +63,7 @@ import { renderBilingualTitle } from '../../utils/titleHelpers';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useUpdateProductOrder } from '../../hooks/queries/useProducts';
 import { useStores } from '../../hooks/queries/useStores';
 import { useNews, useCreateNews, useUpdateNews, useDeleteNews } from '../../hooks/queries/useNews';
-import { useUsers, useDeleteUser, useUpdateUser } from '../../hooks/queries/useUsers';
+import { useUsers, useDeleteUser, useUpdateUser, useCreateUser } from '../../hooks/queries/useUsers';
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory, useUpdateCategoryOrder } from '../../hooks/queries/useCategories';
 import { useAds, useCreateAd, useDeleteAd, useUpdateAd, useUpdateAdOrder } from '../../hooks/queries/useAds';
 import { useServices, useCreateService, useUpdateService } from '../../hooks/queries/useServices';
@@ -3004,7 +3004,6 @@ const UserManagement = () => {
                                                                     { id: 'customer', label: t('Customer'), icon: <CheckCircle size={16} /> },
                                                                     { id: 'store_admin', label: t('Store Admin'), icon: <Store size={16} /> },
                                                                     { id: 'service_admin', label: t('Service Admin'), icon: <Wrench size={16} /> },
-                                                                    { id: 'delivery_boy', label: t('Delivery Boy'), icon: <Truck size={16} /> },
                                                                     { id: 'admin', label: t('Global Admin'), icon: <Shield size={16} /> }
                                                                 ].map((role) => (
                                                                     <label key={role.id} className="flex items-center gap-3 p-2 hover:bg-white dark:hover:bg-gray-600 rounded-lg cursor-pointer transition-colors group">
@@ -3222,48 +3221,112 @@ const UserManagement = () => {
 const DeliveryBoyManagement = () => {
     const { data: users = [], refetch: fetchUsers } = useUsers();
     const { mutateAsync: updateUser } = useUpdateUser();
+    const { mutateAsync: createUser } = useCreateUser();
     const { mutateAsync: deleteUser } = useDeleteUser();
     const { t } = useLanguage();
     
     const [editingUser, setEditingUser] = useState(null);
+    const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
-        email: '',
         mobile: '',
-        address: '',
+        deliveryId: '',
+        password: '',
         deliverySettings: {
             workTimings: { start: '09:00', end: '21:00' },
-            telegramChatId: '',
             isActive: true
         }
     });
 
     const deliveryBoys = users.filter(u => Array.isArray(u.role) ? u.role.includes('delivery_boy') : u.role === 'delivery_boy');
 
-    const handleEdit = (user) => {
-        setEditingUser(user);
+    const handleOpenAdd = () => {
+        setEditingUser(null);
         setFormData({
-            name: user.name,
-            email: user.email,
-            mobile: user.mobile || '',
-            address: user.address || '',
-            deliverySettings: user.deliverySettings || {
+            name: '',
+            mobile: '',
+            deliveryId: '',
+            password: '',
+            deliverySettings: {
                 workTimings: { start: '09:00', end: '21:00' },
-                telegramChatId: '',
                 isActive: true
             }
         });
+        setIsFormOpen(true);
     };
 
-    const handleSave = async () => {
+    const handleEdit = (user) => {
+        setEditingUser(user);
+        setFormData({
+            name: user.name || '',
+            mobile: user.mobile || '',
+            deliveryId: user.deliveryId || user.deliverySettings?.deliveryId || '',
+            password: '',
+            deliverySettings: {
+                workTimings: {
+                    start: user.deliverySettings?.workTimings?.start || '09:00',
+                    end: user.deliverySettings?.workTimings?.end || '21:00'
+                },
+                isActive: user.deliverySettings?.isActive !== false
+            }
+        });
+        setIsFormOpen(true);
+    };
+
+    const handleSave = async (e) => {
+        if (e) e.preventDefault();
+        if (!formData.name.trim()) {
+            alert(t('Please enter name'));
+            return;
+        }
+        if (!formData.mobile.trim()) {
+            alert(t('Please enter mobile number'));
+            return;
+        }
+        if (!editingUser && !formData.password.trim()) {
+            alert(t('Please enter password'));
+            return;
+        }
+
+        setIsSubmitting(true);
         try {
-            await updateUser({ id: editingUser._id || editingUser.id, data: { ...formData, role: ['delivery_boy'] } });
-            alert(t('Delivery boy updated successfully!'));
+            const payload = {
+                name: formData.name.trim(),
+                mobile: formData.mobile.trim(),
+                deliveryId: formData.deliveryId.trim() || formData.mobile.trim(),
+                role: ['delivery_boy'],
+                deliverySettings: {
+                    workTimings: {
+                        start: formData.deliverySettings?.workTimings?.start || '09:00',
+                        end: formData.deliverySettings?.workTimings?.end || '21:00'
+                    },
+                    deliveryId: formData.deliveryId.trim() || formData.mobile.trim(),
+                    isActive: true
+                }
+            };
+
+            if (formData.password.trim()) {
+                payload.password = formData.password.trim();
+            }
+
+            if (editingUser) {
+                await updateUser({ id: editingUser._id || editingUser.id, data: payload });
+                alert(t('Delivery boy updated successfully!'));
+            } else {
+                await createUser(payload);
+                alert(t('Delivery boy added successfully!'));
+            }
+
+            setIsFormOpen(false);
             setEditingUser(null);
             fetchUsers();
         } catch (error) {
-            alert(t('Failed to update delivery boy'));
+            console.error('Error saving delivery boy:', error);
+            alert(error?.response?.data?.message || error?.message || t('Failed to save delivery boy'));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -3280,145 +3343,244 @@ const DeliveryBoyManagement = () => {
     };
 
     return (
-        <div className="max-w-6xl">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-normal text-gray-900 dark:text-white">{t('Delivery Boys')}</h2>
-                <div className="bg-[#E8F5E9] dark:bg-[#2E5A2E]/30 text-[#2E5A2E] px-4 py-2 rounded-xl flex items-center gap-2 font-normal">
-                    <Truck size={20} />
-                    {deliveryBoys.length} {t('Active Personnel')}
-                </div>
+        <div className="max-w-6xl space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('Delivery Boys')}</h2>
+                <button
+                    onClick={handleOpenAdd}
+                    className="bg-[#2E5A2E] hover:bg-[#234723] text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-medium shadow-sm transition-all active:scale-95 cursor-pointer"
+                >
+                    <Plus size={18} />
+                    {t('Add Delivery Boy')}
+                </button>
             </div>
+
+            {/* Form Modal / Panel */}
+            {isFormOpen && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm animate-fadeIn">
+                    <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100 dark:border-gray-700">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Truck className="text-[#2E5A2E] dark:text-[#7CA90E]" size={20} />
+                            {editingUser ? t('Edit Delivery Boy') : t('Add Delivery Boy')}
+                        </h3>
+                        <button
+                            onClick={() => { setIsFormOpen(false); setEditingUser(null); }}
+                            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleSave} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Name */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    {t('Name')} <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder={t('Enter full name')}
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                />
+                            </div>
+
+                            {/* Mobile */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    {t('Mobile')} <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="tel"
+                                    required
+                                    placeholder={t('Enter mobile number')}
+                                    value={formData.mobile}
+                                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                />
+                            </div>
+
+                            {/* Delivery ID */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    {t('Delivery ID')}
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder={t('e.g. DEL001 or custom ID')}
+                                    value={formData.deliveryId}
+                                    onChange={(e) => setFormData({ ...formData, deliveryId: e.target.value })}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none font-mono"
+                                />
+                            </div>
+
+                            {/* Password */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    {t('Password')} {!editingUser && <span className="text-rose-500">*</span>}
+                                </label>
+                                <input
+                                    type="text"
+                                    required={!editingUser}
+                                    placeholder={editingUser ? t('Leave blank to keep current password') : t('Enter password (min 6 chars)')}
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Time Selection */}
+                        <div className="bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                ⏱️ {t('Time Selection (Work Timings)')}
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <span className="block text-[11px] text-gray-500 mb-1">{t('Start Time')}</span>
+                                    <input
+                                        type="time"
+                                        value={formData.deliverySettings.workTimings.start}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            deliverySettings: {
+                                                ...formData.deliverySettings,
+                                                workTimings: { ...formData.deliverySettings.workTimings, start: e.target.value }
+                                            }
+                                        })}
+                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <span className="block text-[11px] text-gray-500 mb-1">{t('End Time')}</span>
+                                    <input
+                                        type="time"
+                                        value={formData.deliverySettings.workTimings.end}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            deliverySettings: {
+                                                ...formData.deliverySettings,
+                                                workTimings: { ...formData.deliverySettings.workTimings, end: e.target.value }
+                                            }
+                                        })}
+                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex justify-end items-center gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => { setIsFormOpen(false); setEditingUser(null); }}
+                                className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                {t('Cancel')}
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-[#2E5A2E] hover:bg-[#234723] text-white px-6 py-2 rounded-xl text-sm font-medium shadow-sm transition-all disabled:opacity-50"
+                            >
+                                {isSubmitting ? t('Saving...') : (editingUser ? t('Update Details') : t('Save'))}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {/* Search Bar */}
-            <div className="mb-6">
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder={t('Search delivery boys...')}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-600 focus:ring-2 focus:ring-[#2E5A2E] bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
-                    />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                </div>
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder={t('Search delivery boys...')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-[#2E5A2E] bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-all text-sm outline-none"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            {/* Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
-                                <th className="px-6 py-4 text-left text-xs font-normal text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Personnel')}</th>
-                                <th className="px-6 py-4 text-left text-xs font-normal text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Work Timing')}</th>
-                                <th className="px-6 py-4 text-left text-xs font-normal text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Status')}</th>
-                                <th className="px-6 py-4 text-right text-xs font-normal text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Actions')}</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Name & Mobile')}</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Time')}</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Delivery ID')}</th>
+                                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {deliveryBoys.filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase())).map((boy) => (
-                                <tr key={boy._id || boy.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center">
-                                            <div className="h-10 w-10 bg-[#E8F5E9] dark:bg-[#2E5A2E]/30 rounded-full flex items-center justify-center text-[#2E5A2E] font-bold">
-                                                {boy.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{boy.name}</div>
-                                                {boy.mobile && <div className="text-xs text-gray-500 dark:text-gray-400">{boy.mobile}</div>}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-normal text-gray-900 dark:text-white whitespace-nowrap">
-                                            ⏱️ {boy.deliverySettings?.workTimings?.start || '09:00'} - {boy.deliverySettings?.workTimings?.end || '21:00'}
-                                        </div>
-                                        <div className="text-[10px] text-gray-500 font-mono mt-1 w-full truncate max-w-[150px]" title={boy._id || boy.id}>
-                                            ID: {boy._id || boy.id}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-3 py-1 text-xs font-normal rounded-full ${boy.deliverySettings?.isActive ? 'bg-[#E8F5E9] text-[#2E5A2E]' : 'bg-gray-100 text-gray-500'}`}>
-                                            {boy.deliverySettings?.isActive ? t('Available') : t('Unavailable')}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        {(editingUser?._id || editingUser?.id) === (boy._id || boy.id) ? (
-                                            <div className="text-left bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs font-medium text-gray-500 mb-1">{t('Start Time')}</label>
-                                                        <input
-                                                            type="time"
-                                                            value={formData.deliverySettings.workTimings.start}
-                                                            onChange={(e) => setFormData({
-                                                                ...formData,
-                                                                deliverySettings: {
-                                                                    ...formData.deliverySettings,
-                                                                    workTimings: { ...formData.deliverySettings.workTimings, start: e.target.value }
-                                                                }
-                                                            })}
-                                                            className="w-full px-3 py-1.5 rounded-lg border dark:bg-gray-800 text-sm"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-medium text-gray-500 mb-1">{t('End Time')}</label>
-                                                        <input
-                                                            type="time"
-                                                            value={formData.deliverySettings.workTimings.end}
-                                                            onChange={(e) => setFormData({
-                                                                ...formData,
-                                                                deliverySettings: {
-                                                                    ...formData.deliverySettings,
-                                                                    workTimings: { ...formData.deliverySettings.workTimings, end: e.target.value }
-                                                                }
-                                                            })}
-                                                            className="w-full px-3 py-1.5 rounded-lg border dark:bg-gray-800 text-sm"
-                                                        />
-                                                    </div>
+                            {deliveryBoys
+                                .filter(u => 
+                                    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    (u.mobile && u.mobile.includes(searchQuery)) ||
+                                    (u.deliveryId && u.deliveryId.toLowerCase().includes(searchQuery.toLowerCase()))
+                                )
+                                .map((boy) => (
+                                    <tr key={boy._id || boy.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                        {/* Name & Mobile in one */}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center">
+                                                <div className="h-10 w-10 bg-[#E8F5E9] dark:bg-[#2E5A2E]/30 rounded-full flex items-center justify-center text-[#2E5A2E] font-bold flex-shrink-0">
+                                                    {boy.name?.charAt(0)?.toUpperCase() || 'D'}
                                                 </div>
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('Telegram Chat ID')}</label>
-                                                    <input
-                                                        type="text"
-                                                        value={formData.deliverySettings.telegramChatId}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            deliverySettings: { ...formData.deliverySettings, telegramChatId: e.target.value }
-                                                        })}
-                                                        className="w-full px-3 py-1.5 rounded-lg border dark:bg-gray-800 text-sm"
-                                                        placeholder="e.g., 123456789"
-                                                    />
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={formData.deliverySettings.isActive}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            deliverySettings: { ...formData.deliverySettings, isActive: e.target.checked }
-                                                        })}
-                                                        className="rounded text-[#2E5A2E]"
-                                                    />
-                                                    <span className="text-sm font-medium">{t('Active for Deliveries')}</span>
-                                                </div>
-                                                <div className="flex justify-end gap-2 pt-2">
-                                                    <button onClick={() => setEditingUser(null)} className="text-gray-500 hover:text-gray-700 text-sm font-medium">{t('Cancel')}</button>
-                                                    <button onClick={handleSave} className="bg-[#2E5A2E] text-white px-4 py-1.5 rounded-lg text-sm font-medium">{t('Save Changes')}</button>
+                                                <div className="ml-3">
+                                                    <div className="text-sm font-semibold text-gray-900 dark:text-white">{boy.name}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">{boy.mobile || t('No mobile')}</div>
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <div className="flex justify-end gap-2">
-                                                <button onClick={() => handleEdit(boy)} className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] rounded-lg">
+                                        </td>
+
+                                        {/* Time */}
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                                ⏱️ {boy.deliverySettings?.workTimings?.start || '09:00'} - {boy.deliverySettings?.workTimings?.end || '21:00'}
+                                            </div>
+                                        </td>
+
+                                        {/* Delivery ID */}
+                                        <td className="px-6 py-4">
+                                            <span className="font-mono text-xs font-semibold bg-gray-100 dark:bg-gray-700/60 text-gray-800 dark:text-gray-200 px-2.5 py-1 rounded-lg">
+                                                {boy.deliveryId || boy.deliverySettings?.deliveryId || boy._id || boy.id}
+                                            </span>
+                                        </td>
+
+                                        {/* Edit & Delete Actions */}
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end items-center gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(boy)}
+                                                    title={t('Edit')}
+                                                    className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] dark:hover:bg-[#2E5A2E]/20 rounded-lg transition-colors cursor-pointer"
+                                                >
                                                     <Edit2 size={18} />
                                                 </button>
-                                                <button onClick={() => handleDelete(boy._id || boy.id)} className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+                                                <button
+                                                    onClick={() => handleDelete(boy._id || boy.id)}
+                                                    title={t('Delete')}
+                                                    className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors cursor-pointer"
+                                                >
                                                     <Trash2 size={18} />
                                                 </button>
                                             </div>
-                                        )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            {deliveryBoys.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                                        {t('No delivery boys added yet. Click "+ Add Delivery Boy" above.')}
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>

@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema({
         enum: ['customer', 'admin', 'store_admin', 'service_admin', 'delivery_boy'],
         default: ['customer']
     },
+    deliveryId: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     deliverySettings: {
         workTimings: {
             start: { type: String, default: '09:00' },

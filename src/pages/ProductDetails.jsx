@@ -29,6 +29,10 @@ const ProductDetails = () => {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [selectedMention, setSelectedMention] = useState('');
 
+    const { blocks: descBlocks, mentions: productMentions } = useMemo(() => {
+        return parseProductDescription(product?.description);
+    }, [product?.description]);
+
     // Look up store name from stores context
     const store = product && stores?.find(s => (s._id || s.id) === product.storeId);
     const storeName = store?.name || 'Unknown Store';
@@ -210,10 +214,6 @@ const ProductDetails = () => {
 
     const isStoreCurrentlyOpen = store ? isStoreOpen(store) : true;
     const isCurrentlyAvailable = isManualAvailable && isScheduled && isStoreCurrentlyOpen;
-
-    const { blocks: descBlocks, mentions: productMentions } = useMemo(() => {
-        return parseProductDescription(product?.description);
-    }, [product?.description]);
 
     // Free delivery check
     const isFreeDelivery = Boolean(

@@ -226,6 +226,7 @@ export const apiService = {
     // User Management (Admin)
     getAllUsers: () => deduplicatedGet('/users'),
     getUser: (id) => deduplicatedGet(`/users/${id}`),
+    createUser: (data) => api.post('/users', data),
     updateUser: (id, data) => api.put(`/users/${id}`, data),
     deleteUser: (id) => api.delete(`/users/${id}`),
 

@@ -6,6 +6,7 @@ import {
     updateUserProfile,
     getAllUsers,
     updateUserByAdmin,
+    createUserByAdmin,
     deleteUser,
     getSavedProducts,
     toggleSavedProduct,
@@ -50,7 +51,8 @@ router.route('/profile/saved-products')
 
 // Admin routes
 router.route('/')
-    .get(protect, adminOnly, getAllUsers);
+    .get(protect, adminOnly, getAllUsers)
+    .post(protect, adminOnly, createUserByAdmin);
 
 router.route('/:id')
     .put(protect, adminOnly, updateUserByAdmin)

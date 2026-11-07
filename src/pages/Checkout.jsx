@@ -7,6 +7,8 @@ import { useData } from '../context/DataContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
 import { renderBilingualTitle } from '../utils/titleHelpers';
 import { getStoreName, calculateDeliveryCharge, formatDeliveryRange, getAvailableDeliverySlots } from '../utils/storeHelpers';
+import { isCategoryPreview } from '../utils/categoryHelpers';
+import { useCategories } from '../hooks/queries/useCategories';
 import { ArrowLeft, ShoppingCart, Banknote, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar, ChevronDown } from 'lucide-react';
 import { checkLocationPermission, requestLocationPermission, getCurrentLocation } from '../utils/locationHelpers';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -22,7 +24,22 @@ const Checkout = () => {
     const { user, setUser, loading: authLoading, updateGuest } = useAuth();
     const { data: userProfile } = useUserProfile(); // Fetch fresh user data with coins
     const { t, language } = useLanguage();
-    const { stores, updateUser, settings } = useData();
+    const { stores, updateUser, settings, categories: dataCategories } = useData();
+    const { data: queryCategories = [] } = useCategories();
+    const categories = (queryCategories && queryCategories.length > 0) ? queryCategories : (dataCategories || []);
+
+    const displayItems = directPurchase ? directPurchase.items : cartItems;
+    const displayTotal = directPurchase ? directPurchase.total : cartTotal;
+
+    const hasPreviewItems = Boolean(
+        displayItems && displayItems.length > 0 && displayItems.some(item => 
+            item.isPreview === true || 
+            item.product?.isPreview === true || 
+            item.mode === 'preview' || 
+            item.product?.mode === 'preview' || 
+            isCategoryPreview(item.category || item.product?.category, categories)
+        )
+    );
     const [deliveryTimingMode, setDeliveryTimingMode] = useState('instant'); // 'instant' | 'scheduled'
     const [selectedDatePeriod, setSelectedDatePeriod] = useState('today'); // 'today' | 'tomorrow'
     const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
@@ -278,7 +295,7 @@ const Checkout = () => {
             }
         }
         if (!formData.location) errors.location = true;
-        if (settings?.deliveryTimingType !== 'instant' && !selectedTimeSlot) {
+        if (settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && !selectedTimeSlot) {
             errors.deliveryTime = true;
         }
 
@@ -363,7 +380,7 @@ const Checkout = () => {
                 const baseDeliveryCharge = calculateDeliveryCharge(displayItems);
                 const finalDeliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
 
-                const isScheduledMode = settings?.deliveryTimingType !== 'instant';
+                const isScheduledMode = settings?.deliveryTimingType !== 'instant' && !hasPreviewItems;
                 const deliveryTimeParam = isScheduledMode && selectedTimeSlot 
                     ? `${selectedDatePeriod}|${selectedTimeSlot}` 
                     : '';
@@ -409,10 +426,6 @@ const Checkout = () => {
 
         performOrderCheckout();
     };
-
-    // Determine items to show (Direct Purchase or Cart)
-    const displayItems = directPurchase ? directPurchase.items : cartItems;
-    const displayTotal = directPurchase ? directPurchase.total : cartTotal;
 
     useEffect(() => {
         if (displayItems.length === 0) {
@@ -757,7 +770,7 @@ const Checkout = () => {
                         </div>
 
                         {/* Preferred Order Timing & Delivery Slot Selection - Dropdown */}
-                        {settings?.deliveryTimingType !== 'instant' && (
+                        {settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && (
                             <div ref={deliveryTimeRef} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3">
                                 <div className="flex items-center gap-2">
                                     <Clock size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />

@@ -32,6 +32,16 @@ export const useUserProfile = () => {
     });
 };
 
+export const useCreateUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data) => apiService.createUser(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries(userKeys.lists());
+        }
+    });
+};
+
 export const useUpdateUser = () => {
     const queryClient = useQueryClient();
     return useMutation({
