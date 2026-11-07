@@ -323,7 +323,7 @@ const Shop = () => {
                                                             inline: 'center'
                                                         });
                                                     }}
-                                                    className={`pb-1.5 text-sm font-medium transition-all relative whitespace-nowrap ${isActive
+                                                    className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${isActive
                                                         ? 'text-black dark:text-white'
                                                         : 'text-gray-400 hover:text-black dark:hover:text-white'
                                                         }`}

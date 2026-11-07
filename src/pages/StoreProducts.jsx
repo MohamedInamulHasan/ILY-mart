@@ -447,7 +447,7 @@ const StoreProducts = () => {
                     <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
                         <button
                             onClick={() => setSelectedSubcategory(null)}
-                            className={`pb-1.5 text-sm font-medium transition-all relative whitespace-nowrap ${
+                            className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${
                                 !selectedSubcategory 
                                 ? 'text-black dark:text-white' 
                                 : 'text-gray-400 hover:text-black dark:hover:text-white'
@@ -463,7 +463,7 @@ const StoreProducts = () => {
                             <button
                                 key={name}
                                 onClick={() => setSelectedSubcategory(name)}
-                                className={`pb-1.5 text-sm font-medium transition-all relative whitespace-nowrap ${
+                                className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${
                                     selectedSubcategory === name 
                                     ? 'text-black dark:text-white' 
                                     : 'text-gray-400 hover:text-black dark:hover:text-white'

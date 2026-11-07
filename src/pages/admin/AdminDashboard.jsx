@@ -2767,6 +2767,7 @@ const UserManagement = () => {
             serviceId: user.serviceId?._id || user.serviceId || '',
             coins: user.coins || 0,
             location: user.location || '',
+            deliveryId: user.deliveryId || user.deliverySettings?.deliveryId || '',
             deliverySettings: user.deliverySettings || {
                 workTimings: { start: '09:00', end: '21:00' },
                 telegramChatId: '',
@@ -3004,6 +3005,7 @@ const UserManagement = () => {
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700">
                                                                 {[
                                                                     { id: 'customer', label: t('Customer'), icon: <CheckCircle size={16} /> },
+                                                                    { id: 'delivery_boy', label: t('Delivery Boy'), icon: <Truck size={16} /> },
                                                                     { id: 'store_admin', label: t('Store Admin'), icon: <Store size={16} /> },
                                                                     { id: 'service_admin', label: t('Service Admin'), icon: <Wrench size={16} /> },
                                                                     { id: 'admin', label: t('Global Admin'), icon: <Shield size={16} /> }
@@ -3038,6 +3040,20 @@ const UserManagement = () => {
                                                                 <h4 className="font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center gap-2">
                                                                     <Truck size={16} /> {t('Delivery Settings')}
                                                                 </h4>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('Delivery ID')}</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="e.g. DEL001 or mobile number"
+                                                                        value={formData.deliveryId || formData.deliverySettings?.deliveryId || ''}
+                                                                        onChange={(e) => setFormData({
+                                                                            ...formData,
+                                                                            deliveryId: e.target.value,
+                                                                            deliverySettings: { ...formData.deliverySettings, deliveryId: e.target.value }
+                                                                        })}
+                                                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-mono"
+                                                                    />
+                                                                </div>
                                                                 <div className="grid grid-cols-2 gap-4">
                                                                     <div>
                                                                         <label className="block text-xs font-medium text-gray-500 mb-1">{t('Work Start')}</label>

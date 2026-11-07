@@ -25,11 +25,24 @@ const CategoryProducts = () => {
     const [activeCategory, setActiveCategory] = useState(decodeURIComponent(categoryName || ''));
     const [searchQuery, setSearchQuery] = useState('');
 
-    useEffect(() => {
+        useEffect(() => {
         if (categoryName) {
             setActiveCategory(decodeURIComponent(categoryName));
         }
     }, [categoryName]);
+
+    useEffect(() => {
+        if (activeCategory) {
+            const timer = setTimeout(() => {
+                document.getElementById("active-category-pill")?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center'
+                });
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [activeCategory]);
 
     // Fetch categories and products
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
@@ -37,14 +50,41 @@ const CategoryProducts = () => {
 
     const categories = useMemo(() => {
         const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
-        return list.filter(c => !c.isHidden);
-    }, [rawCategories]);
+        const allProds = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
+        
+        // Hide categories with isHidden: true
+        let filtered = list.filter(c => !c.isHidden);
+        
+        // Hide non-listed categories (categories without any available products)
+        if (allProds.length > 0) {
+            const productCategories = new Set(
+                allProds
+                    .filter(p => p.isAvailable !== false)
+                    .map(p => String(p.category || '').toLowerCase().trim())
+                    .filter(Boolean)
+            );
+            filtered = filtered.filter(cat => productCategories.has(String(cat.name || '').toLowerCase().trim()));
+        }
+        
+        return filtered;
+    }, [rawCategories, rawProducts]);
 
     const allProducts = useMemo(() => {
         return Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
     }, [rawProducts]);
 
     // Filter products by selected category
+        useEffect(() => {
+        if (categories.length > 0) {
+            const activeExists = categories.some(
+                c => String(c.name || '').toLowerCase().trim() === String(activeCategory || '').toLowerCase().trim()
+            );
+            if (!activeExists && categories[0]?.name) {
+                setActiveCategory(categories[0].name);
+            }
+        }
+    }, [categories, activeCategory]);
+
     const categoryProducts = useMemo(() => {
         const normalize = (str) => String(str || '').toLowerCase().replace(/\s+/g, ' ').trim();
         const activeNorm = normalize(activeCategory);
@@ -347,11 +387,102 @@ const CategoryProducts = () => {
                     </div>
                 </section>
 
+                {/* Categories Bar (Side-scrollable like Home page with line effect) */}
+                <div className="w-full px-4 mb-4 sm:mb-5">
+                    <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1">
+                        {categories.map((category) => {
+                            const isSelected = activeCategory && activeCategory.toLowerCase() === category.name.toLowerCase();
+                            const fullTitle = t(category.name);
+                            let mainPart = fullTitle;
+                            let bracketPart = null;
+
+                            const bracketIndex = fullTitle.indexOf('(');
+                            if (bracketIndex !== -1) {
+                                const part1 = fullTitle.substring(0, bracketIndex).trim();
+                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
+                                
+                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
+                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
+                                
+                                let tamStr = '';
+                                let engStr = '';
+                                
+                                if (isPart1Tamil && !isPart2Tamil) {
+                                    tamStr = part1;
+                                    engStr = part2;
+                                } else if (isPart2Tamil && !isPart1Tamil) {
+                                    tamStr = part2;
+                                    engStr = part1;
+                                } else {
+                                    engStr = part1;
+                                    tamStr = part2;
+                                }
+
+                                if (language === 'ta') {
+                                    mainPart = tamStr || engStr;
+                                    bracketPart = tamStr && engStr ? `(${engStr})` : null;
+                                } else {
+                                    mainPart = engStr || tamStr;
+                                    bracketPart = engStr && tamStr ? `(${tamStr})` : null;
+                                }
+                            }
+
+                            return (
+                                <div
+                                    key={category._id || category.id}
+                                    id={isSelected ? "active-category-pill" : undefined}
+                                    onClick={() => {
+                                        setActiveCategory(category.name);
+                                        navigate(`/category/${encodeURIComponent(category.name)}`, { replace: true });
+                                    }}
+                                    className="flex flex-col items-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-transform"
+                                >
+                                    {/* Uniform Category Image - NO white bg card, pure transparent icon */}
+                                    <div className="w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] aspect-square flex items-center justify-center bg-transparent">
+                                        <img
+                                            src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
+                                            alt={category.name}
+                                            className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)]"
+                                            onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
+                                        />
+                                    </div>
+
+                                    {/* Text: BLACK, Truncated, with bottom padding for Tamil diacritics */}
+                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-[72px] sm:w-[78px] max-w-[72px] sm:max-w-[78px] px-0.5 pb-0.5">
+                                        <span 
+                                            className={`leading-normal truncate block text-center w-full transition-colors text-[11px] sm:text-[11.5px] ${
+                                                isSelected 
+                                                    ? 'font-bold text-black dark:text-white' 
+                                                    : 'font-medium text-gray-700 dark:text-gray-300'
+                                            }`} 
+                                            title={mainPart}
+                                        >
+                                            {mainPart}
+                                        </span>
+                                        {bracketPart && (
+                                            <span 
+                                                className="text-[9px] sm:text-[9.5px] leading-normal font-normal text-gray-600 dark:text-gray-400 truncate block text-center w-full pb-0.5"
+                                                title={bracketPart}
+                                            >
+                                                {bracketPart}
+                                            </span>
+                                        )}
+                                        {/* Underline line effect only below selected category */}
+                                        {isSelected && (
+                                            <div className="h-[2px] w-8 sm:w-10 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full mx-auto mt-0.5 animate-in fade-in zoom-in-75 duration-200" />
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
                 {/* Related Products:
                     - If only ONE store in category: 2 cards per row with slightly bigger quantity controls!
                     - If multiple stores: Homepage side-scrollable store sections!
                 */}
-                <div className="px-3 sm:px-4 max-w-7xl mx-auto mt-2">
+                <div className="px-3 sm:px-4 max-w-7xl mx-auto mt-4 sm:mt-5 pt-1">
                     {isLoading ? (
                         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 px-1">
                             {[1, 2, 3, 4, 5, 6].map((i) => (

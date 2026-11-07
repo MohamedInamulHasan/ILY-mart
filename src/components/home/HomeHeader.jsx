@@ -40,16 +40,16 @@ const HomeHeader = () => {
     return (
         <header className="flex items-center justify-between px-0 py-0 bg-transparent transition-colors duration-200 min-h-[38px]">
             {/* Location Selector */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0 mr-2">
                 <div className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0">
                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2C8.13401 2 5 5.13401 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13401 15.866 2 12 2Z" fill="#EF4444" />
                         <circle cx="12" cy="9" r="2.6" fill="white" />
                     </svg>
                 </div>
-                <div className="flex flex-col min-w-0">
+                <div className="flex flex-col min-w-0 flex-1">
                     <span className="text-[9px] text-gray-700 dark:text-gray-700 font-semibold uppercase tracking-wider leading-tight">{t('Delivery to')}</span>
-                    <Link to="/edit-address" className="flex items-center gap-1 group cursor-pointer border-b border-dashed border-gray-400 dark:border-gray-600 max-w-[180px] sm:max-w-[250px] mt-0.5">
+                    <Link to="/edit-address" className="flex items-center gap-1 group cursor-pointer border-b border-dashed border-gray-400 dark:border-gray-600 max-w-[260px] xs:max-w-[300px] sm:max-w-[440px] mt-0.5 min-w-0">
                         <span className="text-[13px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-900 truncate leading-tight">{displayAddress}</span>
                         <ChevronDown size={14} className="text-gray-600 dark:text-gray-700 flex-shrink-0" />
                     </Link>
