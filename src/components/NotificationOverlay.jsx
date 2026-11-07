@@ -57,35 +57,12 @@ const NotificationOverlay = () => {
         return allOrders.filter(o => isProcessingStatus(o.status));
     }, [allOrders, isDeliveryBoy]);
 
-    // Show incoming order popup for unskipped processing orders when not handling an accepted order
+    // If delivery boy accepts an order, dismiss any incoming order popup so they are not interrupted
     useEffect(() => {
-        if (!isDeliveryBoy) return;
-
-        // If currently handling an accepted order, do not show incoming popup
-        if (hasActiveAcceptedOrder) {
-            if (incomingOrder) setIncomingOrder(null);
-            return;
+        if (hasActiveAcceptedOrder && incomingOrder) {
+            setIncomingOrder(null);
         }
-
-        // Only show orders that have NOT been skipped by the user
-        const unhandledOrders = processingOrders.filter(o => {
-            const id = o._id || o.id;
-            return id && !skippedOrderIds.has(id);
-        });
-
-        if (unhandledOrders.length === 0) {
-            if (incomingOrder) setIncomingOrder(null);
-            return;
-        }
-
-        const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
-        const stillCurrent = currentId && unhandledOrders.some(o => (o._id || o.id) === currentId);
-
-        if (!stillCurrent) {
-            setIncomingOrder(unhandledOrders[0]);
-            triggerIncomingOrderAlert();
-        }
-    }, [isDeliveryBoy, hasActiveAcceptedOrder, processingOrders, incomingOrder, skippedOrderIds]);
+    }, [hasActiveAcceptedOrder, incomingOrder]);
 
     const handleOrderSkip = () => {
         const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
