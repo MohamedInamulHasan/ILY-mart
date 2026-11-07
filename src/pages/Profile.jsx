@@ -119,9 +119,9 @@ const Profile = () => {
         try {
             const res = await apiService.login({ email: deliveryAuthId.trim(), password: deliveryAuthPassword });
             const data = res?.data || res;
-            const userData = data?.data || data;
-            if (userData && (userData.token || userData.authToken)) {
-                const token = userData.token || userData.authToken;
+            const token = data?.token || data?.authToken || res?.token;
+            const userData = data?.user || data?.data || data;
+            if (token) {
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('userInfo', JSON.stringify(userData));
                 setAuthUser(userData);

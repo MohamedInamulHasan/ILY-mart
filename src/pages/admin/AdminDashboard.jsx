@@ -3406,6 +3406,7 @@ const DeliveryBoyManagement = () => {
 
             if (formData.password.trim()) {
                 payload.password = formData.password.trim();
+                payload.displayPassword = formData.password.trim();
                 payload.deliverySettings.displayPassword = formData.password.trim();
             }
 

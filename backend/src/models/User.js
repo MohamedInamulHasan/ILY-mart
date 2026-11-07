@@ -31,25 +31,25 @@ const userSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    displayPassword: {
+        type: String,
+        default: ''
+    },
     deliverySettings: {
         workTimings: {
             start: { type: String, default: '09:00' },
             end: { type: String, default: '21:00' }
         },
         deliveryId: {
-        type: String,
-        trim: true,
-        default: ''
-    },
-    displayPassword: {
-        type: String,
-        default: ''
-    },
-    displayPassword: {
-        type: String,
-        default: ''
-    },
-    telegramChatId: String,
+            type: String,
+            trim: true,
+            default: ''
+        },
+        displayPassword: {
+            type: String,
+            default: ''
+        },
+        telegramChatId: String,
         isActive: { type: Boolean, default: true }
     },
     storeId: {

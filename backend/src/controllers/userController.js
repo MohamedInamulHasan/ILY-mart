@@ -313,22 +313,32 @@ export const loginUser = async (req, res, next) => {
         }
 
         const cleanId = identifier.trim();
-        const escapedId = cleanId.replace(/[.*+?^${}()|[\]\\]/g, '\\$1');
+        const escapedId = cleanId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const idRegex = new RegExp('^' + escapedId + '$', 'i');
         const digitsOnly = cleanId.replace(/\D/g, '');
         const phone10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : '';
 
+        // Generate interchangeable aliases for SHI / SHT delivery codes
+        const aliasRegexes = [idRegex];
+        if (/^SH[IT]@/i.test(cleanId)) {
+            const numPart = cleanId.slice(4);
+            const escNum = numPart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            aliasRegexes.push(new RegExp('^SH[IT]@' + escNum + '$', 'i'));
+        }
+
         const orConditions = [
-            { email: cleanId.toLowerCase() },
-            { deliveryId: idRegex },
-            { 'deliverySettings.deliveryId': idRegex }
+            { email: cleanId.toLowerCase() }
         ];
+        aliasRegexes.forEach(reg => {
+            orConditions.push({ deliveryId: reg });
+            orConditions.push({ 'deliverySettings.deliveryId': reg });
+        });
         if (phone10) {
             orConditions.push({ mobile: { $regex: phone10 + '$' } });
         }
 
         // Check for user by email, deliveryId, or mobile
-        let user = await User.findOne({
+        const user = await User.findOne({
             $or: orConditions
         }).select('+password');
 
@@ -341,33 +351,17 @@ export const loginUser = async (req, res, next) => {
             return sendTokenResponse(user, 200, res);
         }
 
-        const isEmail = identifier.includes('@');
-
-        if (!isEmail) {
+        if (!identifier.includes('@')) {
             req.body.mobile = identifier;
             return mobileLogin(req, res, next);
         }
 
-        // Check for user by email
-        const user = await User.findOne({ email: identifier.toLowerCase() }).select('+password');
-
-        if (user && (await user.matchPassword(password))) {
-            // Log Login
-            await LoginLog.create({
-                user: user._id,
-                ipAddress: req.ip || '',
-                device: req.headers ? req.headers['user-agent'] : ''
-            });
-            sendTokenResponse(user, 200, res);
-        } else {
-            res.status(401);
-            throw new Error('Invalid email or password');
-        }
+        res.status(401);
+        throw new Error('Invalid email or password');
     } catch (error) {
         next(error);
     }
 };
-
 // @desc    Logout user / clear cookie
 // @route   POST /api/users/logout
 // @access  Public
@@ -645,6 +639,7 @@ export const updateUserByAdmin = async (req, res, next) => {
                 location: updatedUser.location,
                 coins: updatedUser.coins || 0,
                 deliveryId: updatedUser.deliveryId || updatedUser.deliverySettings?.deliveryId || '',
+                displayPassword: updatedUser.displayPassword || updatedUser.deliverySettings?.displayPassword || '',
                 deliverySettings: updatedUser.deliverySettings
             }
         });
