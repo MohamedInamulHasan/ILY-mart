@@ -311,7 +311,7 @@ const ProductDetails = () => {
                         )}
 
                         {product.unit && !isPreview && (
-                            <div className="absolute bottom-4 right-4 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold text-gray-900 dark:text-white normal-case shadow-sm border border-black/5 hidden lg:block">
+                            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold text-gray-800 dark:text-gray-200 normal-case shadow-sm border border-black/5">
                                 {product.unit}
                             </div>
                         )}
@@ -330,6 +330,11 @@ const ProductDetails = () => {
                                 tagClassName: 'inline-flex items-center justify-center text-xs sm:text-sm font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2.5px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center'
                             })}
                         </h1>
+                        {product.unit && !isPreview && (
+                            <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mt-1">
+                                {product.unit}
+                            </p>
+                        )}
                     </div>
 
                     {/* Price & Quantity Selector */}

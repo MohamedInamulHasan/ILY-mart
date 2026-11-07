@@ -22,6 +22,7 @@ const NotificationOverlay = () => {
     const [incomingOrder, setIncomingOrder] = useState(null);
     const [startWithAcceptView, setStartWithAcceptView] = useState(false);
     const [skippedOrderIds, setSkippedOrderIds] = useState(() => new Set());
+    const shownOrderIdsRef = useRef(new Set());
     const navigate = useNavigate();
 
     const roles = Array.isArray(user?.role) ? user.role : [user?.role];
@@ -67,6 +68,7 @@ const NotificationOverlay = () => {
     const handleOrderSkip = () => {
         const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
         if (currentId) {
+            shownOrderIdsRef.current.add(currentId);
             setSkippedOrderIds(prev => new Set([...prev, currentId]));
         }
         setIncomingOrder(null);
@@ -75,6 +77,7 @@ const NotificationOverlay = () => {
     const handleModalClose = () => {
         const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
         if (currentId) {
+            shownOrderIdsRef.current.add(currentId);
             setSkippedOrderIds(prev => new Set([...prev, currentId]));
         }
         setIncomingOrder(null);
@@ -248,6 +251,9 @@ const NotificationOverlay = () => {
         const handleOrderCreated = (order) => {
             // Strictly only for Delivery Boys, NOT for customers or other roles
             if (!isDeliveryBoy) return;
+            const oId = order?._id || order?.id;
+            if (oId && (shownOrderIdsRef.current.has(oId) || skippedOrderIds.has(oId))) return;
+            if (oId) shownOrderIdsRef.current.add(oId);
 
             // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
             queryClient.invalidateQueries({ queryKey: ['orders'] });

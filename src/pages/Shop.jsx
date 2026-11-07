@@ -393,7 +393,7 @@ const Shop = () => {
                                         {[...Array(6)].map((_, i) => (
                                             <div
                                                 key={i}
-                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
+                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/10] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
                                             >
                                                 {/* Full Card Shimmer Image Background */}
                                                 <div className="absolute inset-0 blinkit-shimmer" />
@@ -460,7 +460,7 @@ const Shop = () => {
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
                                             <div
                                                 key={i}
-                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
+                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/10] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
                                             >
                                                 <div className="absolute inset-0 blinkit-shimmer" />
                                                 <div className="absolute top-3 left-3 z-10">

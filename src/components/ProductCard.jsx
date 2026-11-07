@@ -13,7 +13,7 @@ import { getThumbnailUrl } from '../utils/imageOptimizer';
 import { isCategoryPreview } from '../utils/categoryHelpers';
 import { useCategories } from '../hooks/queries/useCategories';
 
-const ProductCard = ({ product, showCartControls = true, showHeart = false, stores: propStores }) => {
+const ProductCard = ({ product, showCartControls = true, showHeart = false, stores: propStores, largeControls = false }) => {
     const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
     const { data: queryCategories = [] } = useCategories();
     const { stores: contextStores, savedProducts, toggleSaveProduct, categories: contextCategories } = useData();
@@ -172,7 +172,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                         {showCartControls && !product.isGroup && !isPreview && (
                             quantity > 0 ? (
                                 <div 
-                                    className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 p-0.5 rounded-[4px] shadow-sm shrink-0"
+                                    className={`flex items-center ${largeControls ? "gap-1 p-1 rounded-md" : "gap-0.5 p-0.5 rounded-[4px]"} bg-gray-100 dark:bg-gray-700 shadow-sm shrink-0`}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -189,7 +189,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                                 removeFromCart(productId);
                                             }
                                         }}
-                                        className="w-6 h-6 sm:w-6 sm:h-7 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
+                                        className={`${largeControls ? "w-7 h-7 sm:w-8 sm:h-8" : "w-6 h-6 sm:w-6 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors`}
                                     >
                                         <Minus size={13} strokeWidth={2.5} />
                                     </button>
@@ -201,7 +201,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                             if (!user) { navigate('/login'); return; }
                                             updateQuantity(productId, quantity + 1);
                                         }}
-                                        className="w-6 h-6 sm:w-6 sm:h-7 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors"
+                                        className={`${largeControls ? "w-7 h-7 sm:w-8 sm:h-8" : "w-6 h-6 sm:w-6 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors`}
                                     >
                                         <Plus size={13} strokeWidth={2.5} />
                                     </button>
@@ -214,14 +214,14 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                         if (!user) { navigate('/login'); return; }
                                         addToCart(product);
                                     }}
-                                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-[4px] flex items-center justify-center transition-all active:scale-95 select-none shrink-0 ${
+                                    className={`${largeControls ? "w-8 h-8 sm:w-9 sm:h-9 rounded-md" : "w-7 h-7 sm:w-8 sm:h-8 rounded-[4px]"} flex items-center justify-center transition-all active:scale-95 select-none shrink-0 ${
                                         (!isAvailable || !isOpen || !isScheduled)
                                             ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                                             : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 shadow-sm'
                                     }`}
                                     disabled={!isAvailable || !isOpen || !isScheduled}
                                 >
-                                    <Plus size={15} strokeWidth={2.5} />
+                                    <Plus size={largeControls ? 17 : 15} strokeWidth={2.5} />
                                 </button>
                             )
                         )}

@@ -162,8 +162,11 @@ const Layout = ({ children, onRefresh }) => {
     }
 
     // Footer Visibility: Only show on top-level navigation pages
-    const allowedFooterRoutes = ['/', '/store', '/orders', '/profile', '/categories'];
-    const showMobileFooter = allowedFooterRoutes.includes(location.pathname) && !isFooterHidden;
+    const isAllowedFooterRoute = (pathname) => {
+        const allowed = ['/', '/store', '/orders', '/profile', '/categories'];
+        return allowed.includes(pathname) || pathname.startsWith('/category/');
+    };
+    const showMobileFooter = isAllowedFooterRoute(location.pathname) && !isFooterHidden;
 
     const { cartItems, deliveryCharge } = useCart();
     const { t } = useLanguage();

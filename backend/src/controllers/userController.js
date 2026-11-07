@@ -48,7 +48,10 @@ const sendTokenResponse = (user, statusCode, res) => {
                 serviceId: user.serviceId,
                 coins: user.coins || 0,
                 avatar: user.avatar || '',
-                isFastMode: user.isFastMode || false
+                isFastMode: user.isFastMode || false,
+                deliveryId: user.deliveryId || user.deliverySettings?.deliveryId || '',
+                displayPassword: user.displayPassword || user.deliverySettings?.displayPassword || '',
+                deliverySettings: user.deliverySettings || {}
             }
         });
 };
@@ -397,6 +400,8 @@ export const getUserProfile = async (req, res, next) => {
                     serviceId: user.serviceId,
                     coins: user.coins || 0,
                     avatar: user.avatar || '',
+                    deliveryId: user.deliveryId || user.deliverySettings?.deliveryId || '',
+                    displayPassword: user.displayPassword || user.deliverySettings?.displayPassword || '',
                     deliverySettings: user.deliverySettings
                 }
             });
@@ -610,12 +615,15 @@ export const updateUserByAdmin = async (req, res, next) => {
             user.isFastMode = req.body.isFastMode;
         }
 
-        if (req.body.password && typeof req.body.password === 'string' && req.body.password.trim().length >= 6) {
-            const cleanPass = req.body.password.trim();
-            user.password = cleanPass;
-            user.displayPassword = cleanPass;
+        const passToSet = (req.body.password && typeof req.body.password === 'string' && req.body.password.trim().length >= 4)
+            ? req.body.password.trim()
+            : (req.body.displayPassword && typeof req.body.displayPassword === 'string' && req.body.displayPassword.trim().length >= 4 ? req.body.displayPassword.trim() : null);
+
+        if (passToSet) {
+            user.password = passToSet;
+            user.displayPassword = passToSet;
             if (!user.deliverySettings) user.deliverySettings = {};
-            user.deliverySettings.displayPassword = cleanPass;
+            user.deliverySettings.displayPassword = passToSet;
             user.markModified('password');
             user.markModified('deliverySettings');
         }
