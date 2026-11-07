@@ -439,7 +439,6 @@ const Profile = () => {
                 <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
                     <div
                         className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
-                        onClick={() => setShowDeliveryAuthModal(false)}
                     />
                     <div className="relative bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                         <div className="p-5 sm:p-6">

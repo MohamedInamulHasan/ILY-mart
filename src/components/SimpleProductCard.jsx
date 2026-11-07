@@ -336,7 +336,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                     </div>
                 )}
 
-                {product.unit && (
+                {product.unit && !isPreview && (
                     <div className="absolute bottom-2 right-2 bg-[#2E5A2E] dark:bg-[#CBF9B2] px-2 py-0.5 rounded-[4px] z-10 pointer-events-none border border-white/20">
                         <span className="text-[10px] font-semibold text-white dark:text-gray-900 leading-none block">
                             {product.unit}

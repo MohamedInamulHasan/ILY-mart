@@ -344,6 +344,11 @@ const ProductDetails = () => {
                                 <div className="inline-flex items-center justify-center px-3.5 py-1.5 sm:py-2 rounded-[6px] bg-gradient-to-b from-[#16A34A] to-[#0D7A31] text-white font-black text-xl sm:text-2xl shadow-[0_3px_0_#064e1d] border-t border-white/35 tracking-tight select-none leading-none">
                                     ₹{totalPrice}
                                 </div>
+                                {isFreeDelivery && (
+                                    <span className="inline-block bg-[#E11D48] dark:bg-[#BE123C] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-[4px] shadow-xs select-none">
+                                        {t('Free Delivery')}
+                                    </span>
+                                )}
                             </div>
                         </div>
                         
@@ -369,14 +374,7 @@ const ProductDetails = () => {
                         )}
                     </div>
 
-                    {/* Rectangular Free Delivery Tag below price */}
-                    {isFreeDelivery && (
-                        <div className="mb-3">
-                            <span className="inline-block bg-[#E11D48] dark:bg-[#BE123C] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-[4px] shadow-xs select-none">
-                                {t('Free Delivery')}
-                            </span>
-                        </div>
-                    )}
+
 
                     {/* Mentions (Sizes / Variants, e.g. S, M, L, XL - Uniform white cards, selected black with white text) */}
                     {productMentions && productMentions.length > 0 && (

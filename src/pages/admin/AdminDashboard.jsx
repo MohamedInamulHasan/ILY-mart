@@ -93,6 +93,13 @@ const AdminDashboard = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { t } = useLanguage();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [dismissedProcessingAlert, setDismissedProcessingAlert] = useState(false);
+    const { data: allOrders = [] } = useOrders();
+    const processingCount = allOrders.filter(o => o.status === 'Processing').length;
+    // Auto-show alert again when new processing orders arrive
+    useEffect(() => {
+        if (processingCount > 0) setDismissedProcessingAlert(false);
+    }, [processingCount]);
 
     // Tab Access Control for Multi-Role Support
     useEffect(() => {
@@ -391,6 +398,23 @@ const AdminDashboard = () => {
     // --- GLOBAL ADMIN VIEW ---
     return (
         <div className="h-screen bg-[#E8EAEF] dark:bg-gray-900 flex transition-colors duration-200 relative overflow-hidden">
+            {/* Processing Orders Alert Banner */}
+            {processingCount > 0 && !dismissedProcessingAlert && (
+                <div className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-between gap-2 bg-amber-500 text-white px-4 py-2.5 shadow-lg animate-in slide-in-from-top duration-300">
+                    <div className="flex items-center gap-2 font-bold text-sm">
+                        <span className="animate-pulse text-lg">🔔</span>
+                        {processingCount} Processing Order{processingCount > 1 ? 's' : ''} need{processingCount === 1 ? 's' : ''} attention!
+                    </div>
+                    <button
+                        onClick={() => setDismissedProcessingAlert(true)}
+                        className="ml-2 p-1 rounded-full hover:bg-amber-600 transition-colors flex-shrink-0"
+                        aria-label="Dismiss"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            )}
+
             {/* Mobile Menu Button */}
             <button
                 onClick={toggleMobileMenu}

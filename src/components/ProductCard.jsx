@@ -162,7 +162,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                     )}
                                 </span>
                             </div>
-                            {(product.isGroup || product.unit) && (
+                            {(product.isGroup || (product.unit && !isPreview)) && (
                                 <span className="text-[9px] sm:text-[10px] font-semibold text-gray-500 dark:text-gray-400 mt-1 block truncate">
                                     {product.isGroup ? `${product.variantExtraCount + 1} ${t('options')}` : product.unit}
                                 </span>
