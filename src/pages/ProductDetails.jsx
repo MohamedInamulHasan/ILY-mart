@@ -38,9 +38,10 @@ const ProductDetails = () => {
         if (descMentions && Array.isArray(descMentions)) {
             list.push(...descMentions);
         }
-        const rawUnit = product?.unit || product?.mention;
-        if (rawUnit && typeof rawUnit === 'string') {
-            const parts = rawUnit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean);
+        const rawMention = product?.mention;
+        if (rawMention && typeof rawMention === 'string' && rawMention !== product?.unit) {
+            // Split only on comma or pipe, NOT on slash (which can be fractions like 1/2 kg)
+            const parts = rawMention.split(/[,|]+/).map(s => s.trim()).filter(Boolean);
             if (parts.length > 1 || (parts.length === 1 && ['s', 'm', 'l', 'xl', 'xxl', '28', '30', '32', '34', '36', '38', '40', '42'].includes(parts[0].toLowerCase()))) {
                 for (const p of parts) {
                     if (!list.includes(p)) list.push(p);
@@ -48,7 +49,7 @@ const ProductDetails = () => {
             }
         }
         return list;
-    }, [descMentions, product?.unit, product?.mention]);
+    }, [descMentions, product?.mention, product?.unit]);
 
     // Look up store name from stores context
     const store = product && stores?.find(s => (s._id || s.id) === product.storeId);
@@ -267,9 +268,14 @@ const ProductDetails = () => {
                         </button>
                         <button
                             onClick={handleToggleSave}
-                            className="w-10 h-10 flex items-center justify-center text-gray-900 dark:text-gray-900 transition-transform active:scale-90"
+                            className="w-10 h-10 flex items-center justify-center transition-transform active:scale-90"
                         >
-                            <Bookmark size={24} className={isSaved ? "fill-[#FF5C5C] text-[#FF5C5C]" : "text-gray-400"} />
+                            <Bookmark 
+                                size={24} 
+                                strokeWidth={2.2}
+                                fill={isSaved ? "#FF5C5C" : "none"} 
+                                className={isSaved ? "text-[#FF5C5C]" : "text-black dark:text-white"} 
+                            />
                         </button>
                     </div>
 
@@ -310,11 +316,7 @@ const ProductDetails = () => {
                             </div>
                         )}
 
-                        {product.unit && !isPreview && (
-                            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold text-gray-800 dark:text-gray-200 normal-case shadow-sm border border-black/5">
-                                {product.unit}
-                            </div>
-                        )}
+                        
                     </div>
                 </div>
 
@@ -331,7 +333,7 @@ const ProductDetails = () => {
                             })}
                         </h1>
                         {product.unit && !isPreview && (
-                            <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mt-1">
+                            <p className="text-xs sm:text-sm text-black dark:text-white font-medium normal-case tracking-normal mt-1">
                                 {product.unit}
                             </p>
                         )}
@@ -493,7 +495,7 @@ const ProductDetails = () => {
                         ) : (
                             <button
                                 onClick={handleCheckout}
-                                className="w-[82%] sm:w-[70%] max-w-sm bg-black text-white py-2.5 sm:py-3 px-6 rounded-full font-bold text-sm sm:text-base active:scale-[0.98] transition-transform flex items-center justify-center shadow-md hover:bg-gray-900 cursor-pointer"
+                                className="w-[82%] sm:w-[70%] max-w-sm min-h-[46px] bg-black text-white py-3.5 sm:py-4 px-6 rounded-full font-bold text-sm sm:text-base active:scale-[0.98] transition-transform flex items-center justify-center shadow-md hover:bg-gray-900 cursor-pointer"
                             >
                                 <span>{t('Add product')}</span>
                             </button>

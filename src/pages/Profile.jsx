@@ -194,28 +194,28 @@ const Profile = () => {
             />
 
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
-            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
+            <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                 
                 <div className="relative z-10">
-                    <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
+                    <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                            <button onClick={() => navigate(-1)} className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50">
-                                <ArrowLeft size={22} />
+                            <button onClick={() => navigate(-1)} className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50">
+                                <ArrowLeft size={19} />
                             </button>
                         </div>
                         <div className="flex flex-col text-center">
-                            <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight">{t('Profile')}</h1>
-                            <p className="text-[11px] font-semibold text-gray-700 mt-0.5">{t('Manage account')}</p>
+                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{t('Profile')}</h1>
+                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Manage account')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
                             <button 
                                 onClick={() => navigate('/cart')}
-                                className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
+                                className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
                             >
-                                <ShoppingCart size={22} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
+                                <ShoppingCart size={19} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
                                 {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-[18px] w-[18px] rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
                                         {cartCount}
                                     </span>
                                 )}
@@ -291,17 +291,19 @@ const Profile = () => {
                             {isDeliveryBoy && !isAdmin && (
                                 <MenuLink 
                                     onClick={() => {
-                                        setCustomLoginMode(false);
+                                        setDeliveryAuthId(authUser?.deliveryId || user?.deliveryId || '');
+                                        setDeliveryAuthPassword('');
+                                        setDeliveryAuthError('');
                                         setShowDeliveryPassword(false);
                                         setShowDeliveryAuthModal(true);
                                     }}
                                     icon={<Truck size={17} strokeWidth={2} />} 
-                                    title={t('Delivery Partner')} 
+                                    title={t('Delivery Boy')} 
                                 />
                             )}
                             {isStoreAdmin && (
                                 <>
-                                    {isAdmin && <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5" />}
+                                    {(isAdmin || isDeliveryBoy) && <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5" />}
                                     <MenuLink 
                                         to="/my-store" 
                                         icon={<Store size={17} strokeWidth={2} />} 
@@ -311,7 +313,7 @@ const Profile = () => {
                             )}
                             {isServiceAdmin && (
                                 <>
-                                    {(isAdmin || isStoreAdmin) && <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5" />}
+                                    {(isAdmin || isDeliveryBoy || isStoreAdmin) && <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5" />}
                                     <MenuLink 
                                         to="/my-service" 
                                         icon={<Wrench size={17} strokeWidth={2} />} 
@@ -456,7 +458,7 @@ const Profile = () => {
                                         <Truck size={18} className="text-white" />
                                     </div>
                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                        {isDeliveryBoy && !customLoginMode ? t('Delivery Partner') : t('Delivery Login')}
+                                        {t('Delivery Login')}
                                     </h3>
                                 </div>
                                 <button
@@ -467,146 +469,65 @@ const Profile = () => {
                                 </button>
                             </div>
 
-                            {isDeliveryBoy && !customLoginMode ? (
-                                <div className="space-y-4">
-                                    <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 space-y-3">
-                                        <div>
-                                            <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
-                                                {t('Delivery ID')}
-                                            </span>
-                                            <div className="font-mono text-sm sm:text-base font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-900 px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                                                <span>{authUser?.deliveryId || authUser?.deliverySettings?.deliveryId || user?.deliveryId || 'SHI@001'}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const idToCopy = authUser?.deliveryId || authUser?.deliverySettings?.deliveryId || user?.deliveryId || 'SHI@001';
-                                                        navigator.clipboard?.writeText?.(idToCopy);
-                                                        alert(t('Delivery ID copied!'));
-                                                    }}
-                                                    className="text-xs text-[#2E5A2E] dark:text-[#7CA90E] font-sans font-semibold hover:underline cursor-pointer"
-                                                >
-                                                    {t('Copy')}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
-                                                {t('Password')}
-                                            </span>
-                                            <div className="font-mono text-sm sm:text-base font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-900 px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                                                <span>
-                                                    {showDeliveryPassword 
-                                                        ? (authUser?.displayPassword || authUser?.deliverySettings?.displayPassword || user?.displayPassword || 'Moh@2004')
-                                                        : '••••••••'}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowDeliveryPassword(!showDeliveryPassword)}
-                                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 cursor-pointer"
-                                                    title={showDeliveryPassword ? "Hide password" : "Show password"}
-                                                >
-                                                    {showDeliveryPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowDeliveryAuthModal(false);
-                                            navigate('/admin');
-                                        }}
-                                        className="w-full py-3.5 bg-[#2E5A2E] text-white font-bold rounded-xl hover:bg-[#245024] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                                    >
-                                        <Truck size={18} />
-                                        {t('Open Delivery Dashboard')}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setCustomLoginMode(true);
-                                            setDeliveryAuthId('');
-                                            setDeliveryAuthPassword('');
-                                            setDeliveryAuthError('');
-                                        }}
-                                        className="w-full py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium text-center cursor-pointer"
-                                    >
-                                        {t('Login with different Delivery ID')}
-                                    </button>
+                            <form onSubmit={handleDeliveryLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">{t('Delivery ID')}</label>
+                                    <input
+                                        type="text"
+                                        value={deliveryAuthId}
+                                        onChange={(e) => setDeliveryAuthId(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                        placeholder={t('Enter your Delivery ID')}
+                                        autoComplete="off"
+                                        required
+                                    />
                                 </div>
-                            ) : (
-                                <form onSubmit={handleDeliveryLogin} className="space-y-4">
-                                    {isDeliveryBoy && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setCustomLoginMode(false)}
-                                            className="text-xs text-[#2E5A2E] dark:text-[#7CA90E] hover:underline font-semibold flex items-center gap-1 cursor-pointer mb-2"
-                                        >
-                                            ← {t('Back to My Delivery Credentials')}
-                                        </button>
-                                    )}
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Delivery ID</label>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">{t('Password')}</label>
+                                    <div className="relative">
                                         <input
-                                            type="text"
-                                            value={deliveryAuthId}
-                                            onChange={(e) => setDeliveryAuthId(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
-                                            placeholder="Enter your Delivery ID"
-                                            autoComplete="off"
+                                            type={showDeliveryPassword ? "text" : "password"}
+                                            value={deliveryAuthPassword}
+                                            onChange={(e) => setDeliveryAuthPassword(e.target.value)}
+                                            className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                            placeholder={t('Enter your password')}
                                             required
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDeliveryPassword(!showDeliveryPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 transition-colors cursor-pointer"
+                                            title={showDeliveryPassword ? "Hide password" : "Show password"}
+                                        >
+                                            {showDeliveryPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Password</label>
-                                        <div className="relative">
-                                            <input
-                                                type={showDeliveryPassword ? "text" : "password"}
-                                                value={deliveryAuthPassword}
-                                                onChange={(e) => setDeliveryAuthPassword(e.target.value)}
-                                                className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
-                                                placeholder="Enter your password"
-                                                required
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowDeliveryPassword(!showDeliveryPassword)}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 transition-colors cursor-pointer"
-                                                title={showDeliveryPassword ? "Hide password" : "Show password"}
-                                            >
-                                                {showDeliveryPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                            </button>
-                                        </div>
-                                    </div>
+                                </div>
 
-                                    {deliveryAuthError && (
-                                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-600 dark:text-red-400">
-                                            {deliveryAuthError}
-                                        </div>
+                                {deliveryAuthError && (
+                                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                                        {deliveryAuthError}
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={deliveryAuthLoading}
+                                    className="w-full py-3 bg-[#2E5A2E] text-white font-semibold rounded-xl hover:bg-[#245024] active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                                >
+                                    {deliveryAuthLoading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>{t('Signing in...')}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Truck size={17} />
+                                            <span>{t('Login to Delivery Panel')}</span>
+                                        </>
                                     )}
-
-                                    <button
-                                        type="submit"
-                                        disabled={deliveryAuthLoading}
-                                        className="w-full py-3 bg-[#2E5A2E] text-white font-semibold rounded-xl hover:bg-[#245024] active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
-                                    >
-                                        {deliveryAuthLoading ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                                Verifying...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Truck size={16} />
-                                                Login as Delivery Boy
-                                            </>
-                                        )}
-                                    </button>
-                                </form>
-                            )}
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

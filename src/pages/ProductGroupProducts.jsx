@@ -112,30 +112,30 @@ const ProductGroupProducts = () => {
             <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
 
                 {/* Premium Attached Header */}
-                <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
+                <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
                     {/* Decorative blur blob */}
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none" />
 
                     <div className="relative z-10">
-                        <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
+                        <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
 
                             {/* Back button */}
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button
                                     onClick={() => navigate(-1)}
-                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50"
+                                    className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50"
                                 >
-                                    <ArrowLeft size={22} />
+                                    <ArrowLeft size={19} />
                                 </button>
                             </div>
 
                             {/* Centered title */}
                             <div className="flex flex-col items-center text-center px-14 min-w-0">
-                                <h1 className="text-gray-900 text-[16px] font-bold tracking-tight truncate w-full leading-tight">
+                                <h1 className="text-gray-900 text-[14.5px] font-bold tracking-tight truncate w-full leading-tight">
                                     {pageTitle}
                                 </h1>
                                 {groupProducts.length > 0 && (
-                                    <p className="text-gray-700 text-[11px] font-semibold mt-0.5">
+                                    <p className="text-gray-700 text-[10px] font-semibold mt-0.5">
                                         {groupProducts.length} {t('options')}
                                     </p>
                                 )}
@@ -145,11 +145,11 @@ const ProductGroupProducts = () => {
                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
                                 <Link
                                     to="/cart"
-                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 relative"
+                                    className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 relative"
                                 >
-                                    <ShoppingCart size={22} className="text-[#2E5A2E]" />
+                                    <ShoppingCart size={19} className="text-[#2E5A2E]" />
                                     {cartCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-[18px] w-[18px] rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
                                             {cartCount}
                                         </span>
                                     )}
@@ -185,6 +185,7 @@ const ProductGroupProducts = () => {
                                     product={product}
                                     showCartControls={true}
                                     stores={stores}
+                                    largeControls={true}
                                 />
                             ))}
                         </div>

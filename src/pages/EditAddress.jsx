@@ -280,21 +280,21 @@ const EditAddress = () => {
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 pb-24 transition-colors duration-200">
             {/* Premium Header */}
-            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
+            <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                 <div className="relative z-10">
-                    <div className="max-w-7xl mx-auto px-2 relative min-h-[42px]">
+                    <div className="max-w-7xl mx-auto px-2 relative min-h-[38px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
                             <button
                                 onClick={() => navigate(-1)}
-                                className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-900 dark:text-white transition-transform active:scale-95 border border-gray-100/50 dark:border-gray-700/50"
+                                className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-900 dark:text-white transition-transform active:scale-95 border border-gray-100/50 dark:border-gray-700/50"
                             >
-                                <ArrowLeft size={22} />
+                                <ArrowLeft size={19} />
                             </button>
                         </div>
                         <div className="flex flex-col items-center text-center pt-1">
-                            <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight truncate">{t('My Address')}</h1>
-                            <p className="text-[10px] sm:text-[11px] font-semibold text-gray-700 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{t('Manage delivery locations & ensures reachability')}</p>
+                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate">{t('My Address')}</h1>
+                            <p className="text-[10px] sm:text-[10px] font-semibold text-gray-700 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{t('Manage delivery locations & ensures reachability')}</p>
                         </div>
                     </div>
                 </div>

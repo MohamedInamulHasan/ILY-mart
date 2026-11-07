@@ -102,7 +102,7 @@ const RoleRedirectHandler = () => {
         
         console.log('RoleRedirectHandler: Checking role', { roles, pathname: location.pathname });
 
-        // Force delivery_boy to /admin or active delivery order
+        // Only route to active delivery order if user specifically has one locked
         if (isDeliveryBoy && !isAdmin) {
             const activeOrderId = localStorage.getItem('active_delivery_order_id');
             const activeStay = localStorage.getItem('active_delivery_stay');
@@ -110,11 +110,6 @@ const RoleRedirectHandler = () => {
                 console.log('RoleRedirectHandler: Staying on active delivery order', activeOrderId);
                 navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
                 return;
-            }
-            const isAllowedPath = location.pathname.startsWith('/admin') || location.pathname.startsWith('/orders');
-            if (!isAllowedPath) {
-                console.log('RoleRedirectHandler: Redirecting delivery_boy to /admin');
-                navigate('/admin', { replace: true });
             }
         }
         // No longer forcing admin to /admin automatically here, so they can "see all pages"

@@ -81,13 +81,15 @@ const OrderDetails = () => {
     if (!order && (loading.orders || loadingSingle)) {
         return (
             <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 mx-auto max-w-3xl w-full relative pb-12">
-                <div className="px-5 pt-4">
                     {/* Header Skeleton matching real header */}
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="w-[42px] h-[42px] rounded-full blinkit-shimmer shrink-0" />
-                        <div className="h-5 w-32 rounded-lg blinkit-shimmer" />
-                        <div className="w-[42px] h-[42px]" />
+                    <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
+                    <div className="w-full px-4 relative flex items-center justify-between min-h-[38px]">
+                        <div className="w-[38px] h-[38px] rounded-full bg-white/80" />
+                        <div className="h-5 w-28 rounded-lg bg-white/80" />
+                        <div className="w-[38px] h-[38px]" />
                     </div>
+                </div>
+                <div className="pt-[88px] max-w-3xl mx-auto px-4 sm:px-5">
 
                     <div className="space-y-3 sm:space-y-3.5">
                         {/* Status Card Skeleton: Top Banner + 3-Node Timeline */}
@@ -259,20 +261,34 @@ const OrderDetails = () => {
     const timelineSteps = getTimelineSteps(order.status);
 
     return (
-        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 mx-auto max-w-3xl w-full relative pb-12">
-            <div className="px-5 pt-4">
-                {/* Header matching Profile & Cart */}
-                <div className="flex items-center justify-between mb-4">
-                     <button 
-                         onClick={() => navigate(-1)}
-                         className="w-[42px] h-[42px] flex items-center justify-center text-gray-900 dark:text-white transition-transform active:scale-95"
-                     >
-                         <ArrowLeft size={22} />
-                     </button>
-                     <h1 className="text-[16px] font-bold text-gray-900 dark:text-white tracking-tight">{t('Order Details')}</h1>
-                     <div className="w-[42px] h-[42px]" /> {/* Spacer */}
+        <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-16">
+            {/* Premium Green Header matching OrderConfirmation */}
+            <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative z-10">
+                    <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                            <button 
+                                type="button"
+                                onClick={() => navigate(-1)} 
+                                className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50 cursor-pointer"
+                                aria-label="Go back"
+                            >
+                                <ArrowLeft size={19} />
+                            </button>
+                        </div>
+                        <div className="flex flex-col text-center">
+                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{t('Order Details')}</h1>
+                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{order ? `#${String(order._id || order.id).slice(-6).toUpperCase()}` : t('Order Summary')}</p>
+                        </div>
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <div className="w-[38px] h-[38px]" />
+                        </div>
+                    </div>
                 </div>
+            </div>
 
+            <div className="pt-[88px] max-w-3xl mx-auto px-4 sm:px-5">
                 <div className="space-y-3 sm:space-y-3.5">
 
                 {/* Status Card & Timeline */}

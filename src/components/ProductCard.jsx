@@ -96,7 +96,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                 <div className={`aspect-square bg-[#F9FAFB] m-1 rounded-lg overflow-hidden flex items-center justify-center relative ${!isOpen || !isAvailable ? 'opacity-60' : !isScheduled ? 'opacity-75' : ''}`}>
                     {/* Pink Free Delivery Tag across top of image */}
                     {isFreeDelivery && (
-                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[7.5px] sm:text-[8px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[9px] sm:text-[9.5px] font-extrabold uppercase tracking-tight py-1 text-center leading-tight shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                             {t('Free Delivery')}
                         </div>
                     )}
@@ -172,7 +172,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                         {showCartControls && !product.isGroup && !isPreview && (
                             quantity > 0 ? (
                                 <div 
-                                    className={`flex items-center ${largeControls ? "gap-1 p-1 rounded-md" : "gap-0.5 p-0.5 rounded-[4px]"} bg-gray-100 dark:bg-gray-700 shadow-sm shrink-0`}
+                                    className={`flex items-center ${largeControls ? "gap-1.5 p-1 rounded-lg" : "gap-0.5 p-0.5 rounded-[4px]"} bg-gray-100 dark:bg-gray-700 shadow-sm shrink-0`}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -189,11 +189,11 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                                 removeFromCart(productId);
                                             }
                                         }}
-                                        className={`${largeControls ? "w-7 h-7 sm:w-8 sm:h-8" : "w-6 h-6 sm:w-6 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors`}
+                                        className={`${largeControls ? "w-8 h-8 sm:w-9 sm:h-9" : "w-6 h-6 sm:w-6 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors cursor-pointer`}
                                     >
-                                        <Minus size={13} strokeWidth={2.5} />
+                                        <Minus size={largeControls ? 15 : 13} strokeWidth={2.8} />
                                     </button>
-                                    <span className="font-bold text-[13px] min-w-[15px] text-center select-none text-gray-800 dark:text-gray-100">{quantity}</span>
+                                    <span className={`font-bold ${largeControls ? "text-[14px] min-w-[18px]" : "text-[13px] min-w-[15px]"} text-center select-none text-gray-800 dark:text-gray-100`}>{quantity}</span>
                                     <button 
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -201,9 +201,9 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                             if (!user) { navigate('/login'); return; }
                                             updateQuantity(productId, quantity + 1);
                                         }}
-                                        className={`${largeControls ? "w-7 h-7 sm:w-8 sm:h-8" : "w-6 h-6 sm:w-6 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors`}
+                                        className={`${largeControls ? "w-8 h-8 sm:w-9 sm:h-9" : "w-6 h-6 sm:w-6 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors cursor-pointer`}
                                     >
-                                        <Plus size={13} strokeWidth={2.5} />
+                                        <Plus size={largeControls ? 15 : 13} strokeWidth={2.8} />
                                     </button>
                                 </div>
                             ) : (
@@ -214,14 +214,14 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                                         if (!user) { navigate('/login'); return; }
                                         addToCart(product);
                                     }}
-                                    className={`${largeControls ? "w-8 h-8 sm:w-9 sm:h-9 rounded-md" : "w-7 h-7 sm:w-8 sm:h-8 rounded-[4px]"} flex items-center justify-center transition-all active:scale-95 select-none shrink-0 ${
+                                    className={`${largeControls ? "w-9 h-9 sm:w-10 sm:h-10 rounded-lg" : "w-7 h-7 sm:w-8 sm:h-8 rounded-[4px]"} flex items-center justify-center transition-all active:scale-95 select-none shrink-0 cursor-pointer ${
                                         (!isAvailable || !isOpen || !isScheduled)
                                             ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                                             : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 shadow-sm'
                                     }`}
                                     disabled={!isAvailable || !isOpen || !isScheduled}
                                 >
-                                    <Plus size={largeControls ? 17 : 15} strokeWidth={2.5} />
+                                    <Plus size={largeControls ? 18 : 15} strokeWidth={2.8} />
                                 </button>
                             )
                         )}

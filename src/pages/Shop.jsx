@@ -92,7 +92,7 @@ const Shop = () => {
     return (
         <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full">
             {/* Premium Light Green Header Card / Dark Mode Adjusted */}
-            <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
+            <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                 <div className="relative z-10">
                     <HomeHeader />
@@ -323,7 +323,7 @@ const Shop = () => {
                                                             inline: 'center'
                                                         });
                                                     }}
-                                                    className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${isActive
+                                                    className={`pb-1.5 text-sm font-medium transition-all relative whitespace-nowrap ${isActive
                                                         ? 'text-black dark:text-white'
                                                         : 'text-gray-400 hover:text-black dark:hover:text-white'
                                                         }`}
@@ -367,7 +367,7 @@ const Shop = () => {
                                                         return bracketPart ? `${mainPart} ${bracketPart}` : mainPart;
                                                     })()}
                                                     {isActive && (
-                                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white rounded-full"></div>
+                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                                     )}
                                                 </button>
                                             );

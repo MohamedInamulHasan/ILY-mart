@@ -13,7 +13,7 @@ import { isCategoryPreview } from '../utils/categoryHelpers';
 import { useCategories } from '../hooks/queries/useCategories';
 import { useState, useEffect } from 'react';
 
-const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSave = false }) => {
+const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSave = false, largeControls = false }) => {
     const { t } = useLanguage();
     const { data: queryCategories = [] } = useCategories();
     const { stores: contextStores, savedProducts, toggleSaveProduct, categories: contextCategories } = useData();
@@ -147,7 +147,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!product.anyStoreOpen || !isStoreOpenCheck) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                     {/* Pink Free Delivery Tag across top of image */}
                     {isFreeDelivery && (
-                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[7.5px] sm:text-[8px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[9px] sm:text-[9.5px] font-extrabold uppercase tracking-tight py-1 text-center leading-tight shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                             {t('Free Delivery')}
                         </div>
                     )}
@@ -276,7 +276,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             <div className={`relative pb-[100%] m-1 rounded-lg overflow-hidden bg-[#F9FAFB] ${(!isStoreOpenCheck || !isAvailable || !isScheduled) ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                     {/* Pink Free Delivery Tag across top of image */}
                     {isFreeDelivery && (
-                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[7.5px] sm:text-[8px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 z-[30] bg-[#E11D48] dark:bg-[#BE123C] text-white text-[9px] sm:text-[9.5px] font-extrabold uppercase tracking-tight py-1 text-center leading-tight shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                             {t('Free Delivery')}
                         </div>
                     )}
@@ -373,27 +373,27 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                     <Plus size={15} strokeWidth={2.5} />
                                 </div>
                             ) : cartQuantity > 0 ? (
-                                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-[4px] shadow-sm">
+                                <div className={`flex items-center ${largeControls ? "gap-1.5 p-1 rounded-lg" : "gap-1 p-1 rounded-[4px]"} bg-gray-100 dark:bg-gray-700 shadow-sm`}>
                                     <button 
                                         onClick={handleDecrement}
-                                        className="w-6 h-7 sm:w-7 sm:h-7 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
+                                        className={`${largeControls ? "w-8 h-8 sm:w-9 sm:h-9" : "w-6 h-7 sm:w-7 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors cursor-pointer`}
                                     >
-                                        <Minus size={13} strokeWidth={2.5} />
+                                        <Minus size={largeControls ? 15 : 13} strokeWidth={2.8} />
                                     </button>
-                                    <span className="font-bold text-sm sm:text-[14px] min-w-[16px] text-center select-none text-gray-800 dark:text-gray-100">{cartQuantity}</span>
+                                    <span className={`font-bold ${largeControls ? "text-[14px] min-w-[18px]" : "text-sm sm:text-[14px] min-w-[16px]"} text-center select-none text-gray-800 dark:text-gray-100`}>{cartQuantity}</span>
                                     <button 
                                         onClick={handleIncrement}
-                                        className="w-6 h-7 sm:w-7 sm:h-7 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors"
+                                        className={`${largeControls ? "w-8 h-8 sm:w-9 sm:h-9" : "w-6 h-7 sm:w-7 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors cursor-pointer`}
                                     >
-                                        <Plus size={13} strokeWidth={2.5} />
+                                        <Plus size={largeControls ? 15 : 13} strokeWidth={2.8} />
                                     </button>
                                 </div>
                             ) : (
                                 <button
                                     onClick={handleFastPurchaseClick}
-                                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-[4px] bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 active:scale-95 transition-all shadow-sm"
+                                    className={`${largeControls ? "w-9 h-9 sm:w-10 sm:h-10 rounded-lg" : "w-8 h-8 sm:w-9 sm:h-9 rounded-[4px]"} flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 active:scale-95 transition-all shadow-sm cursor-pointer`}
                                 >
-                                    <Plus size={15} strokeWidth={2.5} />
+                                    <Plus size={largeControls ? 18 : 15} strokeWidth={2.8} />
                                 </button>
                             )}
                         </div>

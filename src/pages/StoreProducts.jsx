@@ -271,36 +271,36 @@ const StoreProducts = () => {
         <PullToRefreshLayout>
             <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
                 {/* Premium Light Green Header Card (Fixed Header) */}
-                <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
+                <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                     
                     <div className="relative z-10">
-                        <div className="w-full px-4 relative flex items-center justify-center min-h-[42px]">
+                        <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button 
                                     onClick={() => navigate(-1)} 
-                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
+                                    className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
                                 >
-                                    <ArrowLeft size={22} />
+                                    <ArrowLeft size={19} />
                                 </button>
                             </div>
                             <div className="flex flex-col items-center text-center px-12 min-w-0">
-                                <h1 className="text-[16px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[240px] sm:max-w-[340px]">{store?.name}</h1>
+                                <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[220px] sm:max-w-[320px]">{store?.name}</h1>
                                 {store?.address && (
                                     <div className="flex items-center justify-center gap-1 mt-0.5 max-w-[240px] sm:max-w-[340px] truncate">
-                                        <MapPin size={11} className="text-[#2E5A2E] flex-shrink-0" />
-                                        <p className="text-[11px] font-semibold text-gray-700 truncate">{store?.address}</p>
+                                        <MapPin size={10} className="text-[#2E5A2E] flex-shrink-0" />
+                                        <p className="text-[10px] font-semibold text-gray-700 truncate">{store?.address}</p>
                                     </div>
                                 )}
                             </div>
                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
                                 <button 
                                     onClick={() => navigate('/cart')}
-                                    className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
+                                    className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
                                 >
-                                    <ShoppingCart size={22} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
+                                    <ShoppingCart size={19} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
                                     {cartCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-[18px] w-[18px] rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
                                             {cartCount}
                                         </span>
                                     )}
@@ -447,7 +447,7 @@ const StoreProducts = () => {
                     <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
                         <button
                             onClick={() => setSelectedSubcategory(null)}
-                            className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${
+                            className={`pb-1.5 text-sm font-medium transition-all relative whitespace-nowrap ${
                                 !selectedSubcategory 
                                 ? 'text-black dark:text-white' 
                                 : 'text-gray-400 hover:text-black dark:hover:text-white'
@@ -455,7 +455,7 @@ const StoreProducts = () => {
                         >
                             {t('All')}
                             {!selectedSubcategory && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white rounded-full"></div>
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                             )}
                         </button>
                         
@@ -463,7 +463,7 @@ const StoreProducts = () => {
                             <button
                                 key={name}
                                 onClick={() => setSelectedSubcategory(name)}
-                                className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${
+                                className={`pb-1.5 text-sm font-medium transition-all relative whitespace-nowrap ${
                                     selectedSubcategory === name 
                                     ? 'text-black dark:text-white' 
                                     : 'text-gray-400 hover:text-black dark:hover:text-white'
@@ -487,7 +487,7 @@ const StoreProducts = () => {
                                     return fullTitle;
                                 })()}
                                 {selectedSubcategory === name && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white rounded-full"></div>
+                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                 )}
                             </button>
                         ))}

@@ -166,47 +166,33 @@ const CategoryProducts = () => {
             <div className="flex-1 min-h-[calc(100vh-4rem)] bg-[#E8EAEF] dark:bg-gray-900 pb-20 transition-colors duration-200 w-full relative">
                 
                 {/* Header: Location & Cart (Exact same size, icons, and text as Home page) */}
-                <div className="fixed top-0 left-0 right-0 z-50 w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-4 pb-4 shadow-sm overflow-hidden">
+                <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
                     {/* Background Accents (Subtle light accents like Home page) */}
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
 
-                    <div className="relative z-10 flex items-center justify-between min-h-[42px]">
-                        {/* Back Button + Location */}
-                        <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2">
                             <button
                                 onClick={() => navigate(-1)}
-                                className="w-[42px] h-[42px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0 cursor-pointer"
+                                className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0 cursor-pointer"
                                 aria-label="Go back"
                             >
-                                <ArrowLeft size={22} className="text-gray-900 dark:text-gray-900" />
+                                <ArrowLeft size={19} className="text-gray-900 dark:text-gray-900" />
                             </button>
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className="w-[42px] h-[42px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 2C8.13401 2 5 5.13401 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13401 15.866 2 12 2Z" fill="#EF4444" />
-                                        <circle cx="12" cy="9" r="2.8" fill="white" />
-                                    </svg>
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                    <span className="text-[10px] text-gray-700 dark:text-gray-700 font-semibold uppercase tracking-wider leading-tight">{t('Delivery to')}</span>
-                                    <Link to="/edit-address" className="flex items-center gap-1 group cursor-pointer border-b border-dashed border-gray-400 dark:border-gray-600 max-w-[190px] sm:max-w-[260px] mt-0.5">
-                                        <span className="text-[14px] sm:text-[15px] font-bold text-gray-900 dark:text-gray-900 truncate leading-tight">{displayAddress}</span>
-                                        <ChevronDown size={15} className="text-gray-600 dark:text-gray-700 flex-shrink-0" />
-                                    </Link>
-                                </div>
-                            </div>
                         </div>
-
-                        {/* Cart Button (Exact same size and style as Home page) */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col text-center">
+                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{t('Home')}</h1>
+                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
+                        </div>
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
                             <Link 
                                 to="/cart"
-                                className="w-[42px] h-[42px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 relative hover:bg-gray-50 dark:hover:bg-white/70 shadow-sm transition-all active:scale-95 flex-shrink-0"
+                                className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 relative hover:bg-gray-50 dark:hover:bg-white/70 shadow-sm transition-all active:scale-95 flex-shrink-0"
                                 aria-label="View cart"
                             >
-                                <ShoppingCart size={22} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
+                                <ShoppingCart size={19} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
                                 {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-[18px] w-[18px] rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
                                         {cartCount}
                                     </span>
                                 )}
@@ -217,7 +203,7 @@ const CategoryProducts = () => {
 
                 <div className="pt-[88px]">
                 {/* Search Bar & Sort Dropdown (Exact same as Home page design and search logic) */}
-                <section className="px-4 relative z-50 mb-4 sm:mb-5">
+                <section className="px-4 relative z-30 mb-4 sm:mb-5">
                     <div className="flex items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto relative">
                         <div className="relative group flex-1">
                             <form onSubmit={(e) => e.preventDefault()}>
@@ -361,105 +347,11 @@ const CategoryProducts = () => {
                     </div>
                 </section>
 
-                {/* Horizontally Scrollable Categories Bar */}
-                {/* Uniform size (big size removed), NO white card background, black text, line effect only, Tamil padded */}
-                <div className="w-full mb-3.5 border-b border-gray-200/60 dark:border-gray-800 pb-2">
-                    <div className="flex overflow-x-auto scrollbar-hide gap-3 sm:gap-4 px-3 sm:px-4 items-end">
-                        {categories.map((category) => {
-                            const isSelected = activeCategory.toLowerCase().trim() === category.name.toLowerCase().trim();
-
-                            const fullTitle = t(category.name);
-                            let mainPart = fullTitle;
-                            let bracketPart = null;
-
-                            const bracketIndex = fullTitle.indexOf('(');
-                            if (bracketIndex !== -1) {
-                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                const part2 = fullTitle.substring(bracketIndex).trim();
-                                const cleanPart2 = part2.replace(/^\(/, '').replace(/\)$/, '').trim();
-
-                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(cleanPart2);
-
-                                let tamStr = '';
-                                let engStr = '';
-
-                                if (isPart1Tamil && !isPart2Tamil) {
-                                    tamStr = part1;
-                                    engStr = cleanPart2;
-                                } else if (isPart2Tamil && !isPart1Tamil) {
-                                    tamStr = cleanPart2;
-                                    engStr = part1;
-                                } else {
-                                    engStr = part1;
-                                    tamStr = cleanPart2;
-                                }
-
-                                if (language === 'ta') {
-                                    mainPart = tamStr || engStr;
-                                    bracketPart = tamStr && engStr ? `(${engStr})` : null;
-                                } else {
-                                    mainPart = engStr || tamStr;
-                                    bracketPart = engStr && tamStr ? `(${tamStr})` : null;
-                                }
-                            }
-
-                            return (
-                                <div
-                                    key={category._id || category.id}
-                                    id={isSelected ? "active-category-pill" : undefined}
-                                    onClick={() => {
-                                        setActiveCategory(category.name);
-                                        navigate(`/category/${encodeURIComponent(category.name)}`, { replace: true });
-                                    }}
-                                    className="flex flex-col items-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-transform"
-                                >
-                                    {/* Uniform Category Image - NO white bg card, pure transparent icon */}
-                                    <div className="w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] aspect-square flex items-center justify-center bg-transparent">
-                                        <img
-                                            src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
-                                            alt={category.name}
-                                            className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)]"
-                                            onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
-                                        />
-                                    </div>
-
-                                    {/* Text: BLACK, Truncated, with bottom padding for Tamil diacritics */}
-                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-[72px] sm:w-[78px] max-w-[72px] sm:max-w-[78px] px-0.5 pb-0.5">
-                                        <span 
-                                            className={`leading-normal truncate block text-center w-full transition-colors text-[11px] sm:text-[11.5px] ${
-                                                isSelected 
-                                                    ? 'font-bold text-black dark:text-white' 
-                                                    : 'font-medium text-gray-700 dark:text-gray-300'
-                                            }`} 
-                                            title={mainPart}
-                                        >
-                                            {mainPart}
-                                        </span>
-                                        {bracketPart && (
-                                            <span 
-                                                className="text-[9px] sm:text-[9.5px] leading-normal font-normal text-gray-600 dark:text-gray-400 truncate block text-center w-full pb-0.5"
-                                                title={bracketPart}
-                                            >
-                                                {bracketPart}
-                                            </span>
-                                        )}
-                                        {/* Underline line effect only below selected category */}
-                                        {isSelected && (
-                                            <div className="h-[2px] w-8 sm:w-10 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full mx-auto mt-0.5 animate-in fade-in zoom-in-75 duration-200" />
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
                 {/* Related Products:
                     - If only ONE store in category: 2 cards per row with slightly bigger quantity controls!
                     - If multiple stores: Homepage side-scrollable store sections!
                 */}
-                <div className="px-3 sm:px-4 max-w-7xl mx-auto">
+                <div className="px-3 sm:px-4 max-w-7xl mx-auto mt-2">
                     {isLoading ? (
                         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 px-1">
                             {[1, 2, 3, 4, 5, 6].map((i) => (
