@@ -285,7 +285,7 @@ const Orders = () => {
                                                 <div key={idx} className="py-2.5 flex items-center gap-3">
                                                     <div className="h-14 w-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
                                                         {isItemFree(item) && (
-                                                            <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[6.5px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                                                            <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[5.5px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                                                                 {t('Free Delivery')}
                                                             </div>
                                                         )}

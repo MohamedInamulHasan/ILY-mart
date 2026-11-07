@@ -831,7 +831,7 @@ const Checkout = () => {
                                         <div key={item.id || index} className="py-2.5 flex gap-3 first:pt-0">
                                             <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
                                                 {isItemFree(item) && (
-                                                    <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[6.5px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                                                    <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[5.5px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                                                         {t('Free Delivery')}
                                                     </div>
                                                 )}
@@ -860,9 +860,9 @@ const Checkout = () => {
                                                 <div className="flex items-center justify-between mt-1">
                                                     <div>
                                                         <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
-                                                        {(item.unit || item.weight) && (
-                                                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                                                                {item.unit || item.weight}
+                                                        {(item.selectedMention || item.mention || item.unit || item.weight) && (
+                                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                                {item.selectedMention || item.mention || item.unit || item.weight}
                                                             </p>
                                                         )}
                                                     </div>

@@ -364,7 +364,7 @@ const OrderDetails = () => {
                             <div key={index} className="p-3 sm:p-3.5 flex gap-3 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-3">
                                 <div className="w-14 h-14 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden flex-shrink-0 relative">
                                         {isItemFree(item) && (
-                                            <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[6.5px] font-black uppercase tracking-wider py-0.5 text-center leading-tight shadow-xs select-none pointer-events-none">
+                                            <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[5.5px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                                                 {t('Free Delivery')}
                                             </div>
                                         )}

@@ -29,9 +29,26 @@ const ProductDetails = () => {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [selectedMention, setSelectedMention] = useState('');
 
-    const { blocks: descBlocks, mentions: productMentions } = useMemo(() => {
+    const { blocks: descBlocks, mentions: descMentions } = useMemo(() => {
         return parseProductDescription(product?.description);
     }, [product?.description]);
+
+    const productMentions = useMemo(() => {
+        const list = [];
+        if (descMentions && Array.isArray(descMentions)) {
+            list.push(...descMentions);
+        }
+        const rawUnit = product?.unit || product?.mention;
+        if (rawUnit && typeof rawUnit === 'string') {
+            const parts = rawUnit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean);
+            if (parts.length > 1 || (parts.length === 1 && ['s', 'm', 'l', 'xl', 'xxl', '28', '30', '32', '34', '36', '38', '40', '42'].includes(parts[0].toLowerCase()))) {
+                for (const p of parts) {
+                    if (!list.includes(p)) list.push(p);
+                }
+            }
+        }
+        return list;
+    }, [descMentions, product?.unit, product?.mention]);
 
     // Look up store name from stores context
     const store = product && stores?.find(s => (s._id || s.id) === product.storeId);
@@ -121,6 +138,18 @@ const ProductDetails = () => {
             return;
         }
         const itemToAdd = getProductWithMention();
+        if (isPreview) {
+            // Preview mode: ignore existing cart items and only order this item
+            navigate('/checkout', {
+                state: {
+                    directPurchase: {
+                        items: [{ ...itemToAdd, quantity: 1, isPreview: true }],
+                        total: Number(itemToAdd.price) || 0
+                    }
+                }
+            });
+            return;
+        }
         addToCart(itemToAdd, 1);
         navigate('/checkout');
     };
@@ -349,12 +378,9 @@ const ProductDetails = () => {
                         </div>
                     )}
 
-                    {/* Mentions (Sizes / Variants, e.g. S, M, L, XL) */}
+                    {/* Mentions (Sizes / Variants, e.g. S, M, L, XL - Uniform white cards, selected black with white text) */}
                     {productMentions && productMentions.length > 0 && (
                         <div className="mb-4">
-                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider block mb-2">
-                                {t('Select Size / Option')}
-                            </span>
                             <div className="flex flex-wrap gap-2">
                                 {productMentions.map((m, idx) => {
                                     const isSel = selectedMention === m;
@@ -363,10 +389,10 @@ const ProductDetails = () => {
                                             key={idx}
                                             type="button"
                                             onClick={() => setSelectedMention(isSel ? '' : m)}
-                                            className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm transition-all select-none cursor-pointer ${
+                                            className={`min-w-[48px] h-10 px-3.5 flex items-center justify-center rounded-xl text-sm font-semibold transition-all select-none cursor-pointer shadow-xs ${
                                                 isSel
-                                                    ? 'border-2 border-black dark:border-white font-bold text-black dark:text-white bg-black/5 dark:bg-white/10 shadow-xs'
-                                                    : 'border border-gray-300 dark:border-gray-600 font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:border-gray-400'
+                                                    ? 'bg-black text-white border-2 border-black dark:bg-white dark:text-black dark:border-white font-bold'
+                                                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 hover:border-gray-500'
                                             }`}
                                         >
                                             {m}
