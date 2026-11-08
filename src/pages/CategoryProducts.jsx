@@ -11,6 +11,7 @@ import ProductCard from '../components/ProductCard';
 import SortDropdown from '../components/SortDropdown';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
+import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { groupProducts } from '../utils/productGrouping';
 import { API_BASE_URL } from '../utils/api';
 
@@ -392,40 +393,7 @@ const CategoryProducts = () => {
                     <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1">
                         {categories.map((category) => {
                             const isSelected = activeCategory && activeCategory.toLowerCase() === category.name.toLowerCase();
-                            const fullTitle = t(category.name);
-                            let mainPart = fullTitle;
-                            let bracketPart = null;
-
-                            const bracketIndex = fullTitle.indexOf('(');
-                            if (bracketIndex !== -1) {
-                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                
-                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                
-                                let tamStr = '';
-                                let engStr = '';
-                                
-                                if (isPart1Tamil && !isPart2Tamil) {
-                                    tamStr = part1;
-                                    engStr = part2;
-                                } else if (isPart2Tamil && !isPart1Tamil) {
-                                    tamStr = part2;
-                                    engStr = part1;
-                                } else {
-                                    engStr = part1;
-                                    tamStr = part2;
-                                }
-
-                                if (language === 'ta') {
-                                    mainPart = tamStr || engStr;
-                                    bracketPart = tamStr && engStr ? `(${engStr})` : null;
-                                } else {
-                                    mainPart = engStr || tamStr;
-                                    bracketPart = engStr && tamStr ? `(${tamStr})` : null;
-                                }
-                            }
+                            const cleanTitle = getCleanCategoryName(category, language);
 
                             return (
                                 <div
@@ -447,26 +415,18 @@ const CategoryProducts = () => {
                                         />
                                     </div>
 
-                                    {/* Text: BLACK, Truncated, with bottom padding for Tamil diacritics */}
+                                    {/* Text: clean single-language, little thick, with bottom padding for Tamil diacritics */}
                                     <div className="flex flex-col items-center justify-center text-center mt-1 w-[72px] sm:w-[78px] max-w-[72px] sm:max-w-[78px] px-0.5 pb-0.5">
                                         <span 
                                             className={`leading-normal truncate block text-center w-full transition-colors text-[11px] sm:text-[11.5px] ${
                                                 isSelected 
                                                     ? 'font-bold text-black dark:text-white' 
-                                                    : 'font-medium text-gray-700 dark:text-gray-300'
+                                                    : 'font-semibold text-gray-700 dark:text-gray-300'
                                             }`} 
-                                            title={mainPart}
+                                            title={cleanTitle}
                                         >
-                                            {mainPart}
+                                            {cleanTitle}
                                         </span>
-                                        {bracketPart && (
-                                            <span 
-                                                className="text-[9px] sm:text-[9.5px] leading-normal font-normal text-gray-600 dark:text-gray-400 truncate block text-center w-full pb-0.5"
-                                                title={bracketPart}
-                                            >
-                                                {bracketPart}
-                                            </span>
-                                        )}
                                         {/* Underline line effect only below selected category */}
                                         {isSelected && (
                                             <div className="h-[2px] w-8 sm:w-10 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full mx-auto mt-0.5 animate-in fade-in zoom-in-75 duration-200" />

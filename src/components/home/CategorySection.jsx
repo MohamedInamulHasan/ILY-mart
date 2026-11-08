@@ -1,4 +1,5 @@
 import React from 'react';
+import { getCleanCategoryName } from '../../utils/categoryHelpers';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../utils/api';
 import { useLanguage } from '../../context/LanguageContext';
@@ -40,41 +41,7 @@ const CategorySection = ({ categories = [], isLoading = false }) => {
             {/* 4 per row grid - NO white bg card, BIG category images, thick text */}
             <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-2.5 sm:px-4 py-1">
                 {categories.map((category) => {
-                    const fullTitle = t(category.name);
-                    let mainPart = fullTitle;
-                    let bracketPart = null;
-
-                    const bracketIndex = fullTitle.indexOf('(');
-                    if (bracketIndex !== -1) {
-                        const part1 = fullTitle.substring(0, bracketIndex).trim();
-                        const part2 = fullTitle.substring(bracketIndex).trim();
-                        const cleanPart2 = part2.replace(/^\(/, '').replace(/\)$/, '').trim();
-
-                        const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                        const isPart2Tamil = /[\u0B80-\u0BFF]/.test(cleanPart2);
-
-                        let tamStr = '';
-                        let engStr = '';
-
-                        if (isPart1Tamil && !isPart2Tamil) {
-                            tamStr = part1;
-                            engStr = cleanPart2;
-                        } else if (isPart2Tamil && !isPart1Tamil) {
-                            tamStr = cleanPart2;
-                            engStr = part1;
-                        } else {
-                            engStr = part1;
-                            tamStr = cleanPart2;
-                        }
-
-                        if (language === 'ta') {
-                            mainPart = tamStr || engStr;
-                            bracketPart = tamStr && engStr ? `(${engStr})` : null;
-                        } else {
-                            mainPart = engStr || tamStr;
-                            bracketPart = engStr && tamStr ? `(${tamStr})` : null;
-                        }
-                    }
+                    const cleanTitle = getCleanCategoryName(category, language);
 
                     return (
                         <div
@@ -94,22 +61,14 @@ const CategorySection = ({ categories = [], isLoading = false }) => {
                                 />
                             </div>
 
-                            {/* Normal / medium text — bold removed, with bottom padding for Tamil diacritics */}
+                            {/* Clean, single-language title (little thick: font-semibold, no bracket text) */}
                             <div className="flex flex-col items-center justify-center text-center w-full px-0.5 pb-1">
                                 <span 
-                                    className="text-[11px] sm:text-[12px] font-medium text-gray-700 dark:text-gray-200 leading-normal truncate block text-center w-full"
-                                    title={mainPart}
+                                    className="text-[11px] sm:text-[12px] font-semibold text-gray-700 dark:text-gray-200 leading-normal truncate block text-center w-full"
+                                    title={cleanTitle}
                                 >
-                                    {mainPart}
+                                    {cleanTitle}
                                 </span>
-                                {bracketPart && (
-                                    <span 
-                                        className="text-[9.5px] sm:text-[10px] font-normal text-gray-500 dark:text-gray-400 leading-normal pb-0.5 truncate block text-center w-full mt-0.5"
-                                        title={bracketPart}
-                                    >
-                                        {bracketPart}
-                                    </span>
-                                )}
                             </div>
                         </div>
                     );

@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { MapPin, Search, Star, Clock, Phone, Store, Wrench, ArrowRight, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
+import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { isStoreOpen, formatTime12h } from '../utils/storeHelpers';
 import StoreCard from '../components/StoreCard';
 import { API_BASE_URL } from '../utils/api';
@@ -323,49 +324,12 @@ const Shop = () => {
                                                             inline: 'center'
                                                         });
                                                     }}
-                                                    className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${isActive
+                                                    className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${isActive
                                                         ? 'text-black dark:text-white'
                                                         : 'text-gray-400 hover:text-black dark:hover:text-white'
                                                         }`}
                                                 >
-                                                    {(() => {
-                                                        const fullTitle = t(category.name);
-                                                        let mainPart = fullTitle;
-                                                        let bracketPart = null;
-
-                                                        const bracketIndex = fullTitle.indexOf('(');
-                                                        if (bracketIndex !== -1) {
-                                                            const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                            const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                                            
-                                                            const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                            const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                                            
-                                                            let tamStr = '';
-                                                            let engStr = '';
-                                                            
-                                                            if (isPart1Tamil && !isPart2Tamil) {
-                                                                tamStr = part1;
-                                                                engStr = part2;
-                                                            } else if (isPart2Tamil && !isPart1Tamil) {
-                                                                tamStr = part2;
-                                                                engStr = part1;
-                                                            } else {
-                                                                engStr = part1;
-                                                                tamStr = part2;
-                                                            }
-
-                                                            if (language === 'ta') {
-                                                                mainPart = tamStr || engStr;
-                                                                bracketPart = tamStr && engStr ? `(${engStr})` : null;
-                                                            } else {
-                                                                mainPart = engStr || tamStr;
-                                                                bracketPart = engStr && tamStr ? `(${tamStr})` : null;
-                                                            }
-                                                        }
-
-                                                        return bracketPart ? `${mainPart} ${bracketPart}` : mainPart;
-                                                    })()}
+                                                    {getCleanCategoryName(category, language)}
                                                     {isActive && (
                                                         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                                     )}

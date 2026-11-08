@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Clock, Phone, ChevronRight, AlertCircle, Zap, Search
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { API_BASE_URL } from '../utils/api';
@@ -447,7 +448,7 @@ const StoreProducts = () => {
                     <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
                         <button
                             onClick={() => setSelectedSubcategory(null)}
-                            className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${
+                            className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${
                                 !selectedSubcategory 
                                 ? 'text-black dark:text-white' 
                                 : 'text-gray-400 hover:text-black dark:hover:text-white'
@@ -463,29 +464,13 @@ const StoreProducts = () => {
                             <button
                                 key={name}
                                 onClick={() => setSelectedSubcategory(name)}
-                                className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${
+                                className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${
                                     selectedSubcategory === name 
                                     ? 'text-black dark:text-white' 
                                     : 'text-gray-400 hover:text-black dark:hover:text-white'
                                 }`}
                             >
-                                {(() => {
-                                    const fullTitle = t(name);
-                                    if (language !== 'ta') return fullTitle;
-                                    
-                                    const bracketIndex = fullTitle.indexOf('(');
-                                    if (bracketIndex === -1) return fullTitle;
-
-                                    const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                    const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                    
-                                    const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                    const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                    
-                                    if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                    if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                    return fullTitle;
-                                })()}
+                                {getCleanCategoryName(name, language)}
                                 {selectedSubcategory === name && (
                                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                 )}

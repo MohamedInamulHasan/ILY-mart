@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
+import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Search } from 'lucide-react';
 import { API_BASE_URL } from '../utils/api';
@@ -111,51 +112,9 @@ const Categories = () => {
                                         />
                                     </div>
                                     <div className="flex flex-col items-center justify-center text-center w-full transition-colors text-gray-600 dark:text-gray-400">
-                                        {(() => {
-                                            const fullTitle = t(category.name);
-                                            let mainPart = fullTitle;
-                                            let bracketPart = null;
-
-                                            const bracketIndex = fullTitle.indexOf('(');
-                                            if (bracketIndex !== -1) {
-                                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                                
-                                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                                
-                                                let tamStr = '';
-                                                let engStr = '';
-                                                
-                                                if (isPart1Tamil && !isPart2Tamil) {
-                                                     tamStr = part1;
-                                                     engStr = part2;
-                                                } else if (isPart2Tamil && !isPart1Tamil) {
-                                                     tamStr = part2;
-                                                     engStr = part1;
-                                                } else {
-                                                     engStr = part1;
-                                                     tamStr = part2;
-                                                }
-
-                                                if (language === 'ta') {
-                                                     mainPart = tamStr || engStr;
-                                                     bracketPart = tamStr && engStr ? `(${engStr})` : null;
-                                                } else {
-                                                     mainPart = engStr || tamStr;
-                                                     bracketPart = engStr && tamStr ? `(${tamStr})` : null;
-                                                }
-                                            }
-
-                                            return (
-                                                <>
-                                                    <span className="text-xs md:text-sm font-semibold truncate w-full">{mainPart}</span>
-                                                    {bracketPart && (
-                                                        <span className="text-[10px] md:text-xs truncate w-full opacity-80 font-medium">{bracketPart}</span>
-                                                    )}
-                                                </>
-                                            );
-                                        })()}
+                                        <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 truncate w-full block">
+                                            {getCleanCategoryName(category, language)}
+                                        </span>
                                     </div>
                                 </Link>
                             ))}

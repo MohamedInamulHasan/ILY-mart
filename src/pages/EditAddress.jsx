@@ -20,6 +20,7 @@ const EditAddress = () => {
     const mobileRef = useRef(null);
     const streetRef = useRef(null);
     const cityRef = useRef(null);
+    const lastInitializedUserIdRef = useRef(null);
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -83,24 +84,28 @@ const EditAddress = () => {
         };
         fetchCities();
 
-        // Initialize form with user data
+        // Initialize form with user data once per user session (prevents wiping user input on location detect)
         if (user) {
-            const userDisplayName = user.fullName || user.name || '';
-            const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
-            let loadedStreet = user.address?.street || '';
-            let loadedCity = user.address?.city || '';
-            // If street was erroneously saved identical to city (e.g. Chennai / Chennai), clear it
-            if (loadedStreet && loadedCity && loadedStreet.trim().toLowerCase() === loadedCity.trim().toLowerCase()) {
-                loadedStreet = '';
+            const currentUserId = user._id || user.id || 'current_user';
+            if (lastInitializedUserIdRef.current !== currentUserId) {
+                lastInitializedUserIdRef.current = currentUserId;
+                const userDisplayName = user.fullName || user.name || '';
+                const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
+                let loadedStreet = user.address?.street || '';
+                let loadedCity = user.address?.city || '';
+                // If street was erroneously saved identical to city (e.g. Chennai / Chennai), clear it
+                if (loadedStreet && loadedCity && loadedStreet.trim().toLowerCase() === loadedCity.trim().toLowerCase()) {
+                    loadedStreet = '';
+                }
+                setFormData({
+                    fullName: isGuestName ? '' : userDisplayName,
+                    mobile: user.mobile || user.phone || '',
+                    street: loadedStreet,
+                    city: loadedCity,
+                    zip: user.address?.zip || '630702',
+                    location: user.location || ''
+                });
             }
-            setFormData({
-                fullName: isGuestName ? '' : userDisplayName,
-                mobile: user.mobile || user.phone || '',
-                street: loadedStreet,
-                city: loadedCity,
-                zip: user.address?.zip || '630702',
-                location: user.location || ''
-            });
         }
     }, [user]);
 
