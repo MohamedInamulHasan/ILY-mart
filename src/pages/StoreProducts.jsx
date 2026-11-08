@@ -743,18 +743,17 @@ const StoreProducts = () => {
 
             {subcategoryData.length > 0 && (
                 <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
-                    {/* Zepto-style category scroller with continuous baseline and upward curved indicator ________/-------\________ */}
-                    <div className="flex items-center gap-4 sm:gap-5 overflow-x-auto scrollbar-hide relative pb-3 pt-1 border-b-[1.5px] border-gray-200 dark:border-gray-700/60 min-w-full">
+                    <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/60 dark:border-gray-800">
                         <button
                             type="button"
                             onClick={(e) => {
                                 setSelectedSubcategory(null);
                                 e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                             }}
-                            className={`text-xs sm:text-sm font-semibold transition-all relative whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 ${
+                            className={`pb-2.5 text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap flex items-center gap-1.5 ${
                                 !selectedSubcategory 
-                                    ? 'text-gray-900 dark:text-white font-bold' 
-                                    : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                    ? 'text-black dark:text-white font-bold' 
+                                    : 'text-gray-400 hover:text-black dark:hover:text-white'
                             }`}
                         >
                             {categoryProductImageMap['_all_'] && (
@@ -768,29 +767,7 @@ const StoreProducts = () => {
                             )}
                             <span>{t('All')}</span>
                             {!selectedSubcategory && (
-                                <motion.div
-                                    layoutId="zepto-category-curve"
-                                    className="absolute -bottom-[2.5px] -left-1.5 -right-1.5 h-[14px] pointer-events-none z-10"
-                                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                                >
-                                    <svg 
-                                        className="w-full h-full overflow-visible" 
-                                        viewBox="0 0 100 14" 
-                                        preserveAspectRatio="none"
-                                    >
-                                        {/* Mask underlying gray baseline */}
-                                        <rect x="8" y="10" width="84" height="4" className="fill-white dark:fill-gray-900" />
-                                        {/* Zepto Curve: ________/-------\________ */}
-                                        <path
-                                            d="M 0,12 L 8,12 C 16,12 20,2 30,2 L 70,2 C 80,2 84,12 92,12 L 100,12"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2.5"
-                                            strokeLinecap="round"
-                                            className="text-[#2E5A2E] dark:text-[#CBF9B2]"
-                                        />
-                                    </svg>
-                                </motion.div>
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                             )}
                         </button>
                         {subcategoryData.map(({ name }) => {
@@ -804,10 +781,10 @@ const StoreProducts = () => {
                                         setSelectedSubcategory(name);
                                         e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                                     }}
-                                    className={`text-xs sm:text-sm font-semibold transition-all relative whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 ${
+                                    className={`pb-2.5 text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap flex items-center gap-1.5 ${
                                         isSelected 
-                                            ? 'text-gray-900 dark:text-white font-bold' 
-                                            : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                            ? 'text-black dark:text-white font-bold' 
+                                            : 'text-gray-400 hover:text-black dark:hover:text-white'
                                     }`}
                                 >
                                     {catImg && (
@@ -821,29 +798,7 @@ const StoreProducts = () => {
                                     )}
                                     <span>{getCleanCategoryName(name, language)}</span>
                                     {isSelected && (
-                                        <motion.div
-                                            layoutId="zepto-category-curve"
-                                            className="absolute -bottom-[2.5px] -left-1.5 -right-1.5 h-[14px] pointer-events-none z-10"
-                                            transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                                        >
-                                            <svg 
-                                                className="w-full h-full overflow-visible" 
-                                                viewBox="0 0 100 14" 
-                                                preserveAspectRatio="none"
-                                            >
-                                                {/* Mask underlying gray baseline */}
-                                                <rect x="8" y="10" width="84" height="4" className="fill-white dark:fill-gray-900" />
-                                                {/* Zepto Curve: ________/-------\________ */}
-                                                <path
-                                                    d="M 0,12 L 8,12 C 16,12 20,2 30,2 L 70,2 C 80,2 84,12 92,12 L 100,12"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2.5"
-                                                    strokeLinecap="round"
-                                                    className="text-[#2E5A2E] dark:text-[#CBF9B2]"
-                                                />
-                                            </svg>
-                                        </motion.div>
+                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                     )}
                                 </button>
                             );
