@@ -68,10 +68,18 @@ const NotificationOverlay = () => {
             return;
         }
 
-        const pendingOrder = processingOrders.find(o => {
-            const oId = o._id || o.id;
-            return oId && !skippedOrderIds.has(oId);
-        });
+        const unskippedOrders = processingOrders
+            .filter(o => {
+                const oId = o._id || o.id;
+                return oId && !skippedOrderIds.has(oId);
+            })
+            .sort((a, b) => {
+                const timeA = new Date(a.createdAt || a.date || 0).getTime();
+                const timeB = new Date(b.createdAt || b.date || 0).getTime();
+                return timeB - timeA;
+            });
+
+        const pendingOrder = unskippedOrders[0];
 
         if (pendingOrder) {
             setStartWithAcceptView(false);

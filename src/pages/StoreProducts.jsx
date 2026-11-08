@@ -282,6 +282,9 @@ const StoreProducts = () => {
     // Resolves category display name with uploaded emoji for the store page
     const getCategoryDisplayName = (name) => {
         if (!name) return '';
+        if (normKey(name) === 'all') {
+            return getCleanCategoryName('All', language, null, { keepEmoji: true });
+        }
         const nKey = normKey(name);
         const foundCat = categories.find(c => {
             return normKey(c?.name) === nKey ||
@@ -387,7 +390,7 @@ const StoreProducts = () => {
             if (!subOrder.includes(catNorm)) subOrder.push(catNorm);
         });
 
-        return result.sort((a, b) => {
+        const sorted = result.sort((a, b) => {
             const indexA = subOrder.indexOf(normKey(a.name));
             const indexB = subOrder.indexOf(normKey(b.name));
 
@@ -400,6 +403,13 @@ const StoreProducts = () => {
             }
             return a.name.localeCompare(b.name);
         });
+
+        // If there are 2 or more subcategories in that store, prepend "All" as first option
+        if (sorted.length >= 2) {
+            return [{ name: 'All', count: groupedStoreProducts.length }, ...sorted];
+        }
+
+        return sorted;
     }, [groupedStoreProducts, categories, store]);
 
     const totalProductCount = useMemo(() => groupedStoreProducts.length, [groupedStoreProducts]);
@@ -424,7 +434,7 @@ const StoreProducts = () => {
             )
             : groupedStoreProducts;
 
-        if (!effectiveSubcategory) {
+        if (!effectiveSubcategory || normKey(effectiveSubcategory) === 'all') {
             const allItems = [...filteredList];
             if (allItems.length === 0) return [];
 

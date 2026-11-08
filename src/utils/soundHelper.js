@@ -205,8 +205,8 @@ export const startIncomingOrderAlertSound = () => {
         }
     };
 
+    // Play chime once on incoming order alert (no repeating loop)
     playToneBurst();
-    incomingOrderInterval = setInterval(playToneBurst, 1500);
 };
 
 export const stopIncomingOrderAlertSound = () => {
