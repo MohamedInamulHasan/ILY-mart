@@ -858,12 +858,12 @@ const Checkout = () => {
                                                     </p>
                                                 )}
                                                 <div className="flex items-center justify-between mt-1">
-                                                    <div>
+                                                    <div className="flex items-baseline gap-1.5">
                                                         <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
-                                                        {(item.selectedMention || item.mention || item.unit || item.weight) && (
-                                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                                {item.selectedMention || item.mention || item.unit || item.weight}
-                                                            </p>
+                                                        {(item.selectedMention || item.mention || item.unit || item.weight || item.product?.unit) && (
+                                                            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                                ({item.selectedMention || item.mention || item.unit || item.weight || item.product?.unit})
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-3">

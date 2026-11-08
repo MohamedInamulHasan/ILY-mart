@@ -1321,123 +1321,91 @@ const StoreManagement = () => {
                                 />
                             </div>
 
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('Mention (e.g., kg, packs)')}</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (mentionInput && mentionInput.trim()) {
-                                                const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
-                                                if (!currentList.includes(mentionInput.trim())) {
-                                                    const updated = [...currentList, mentionInput.trim()].join(', ');
-                                                    setProductForm({ ...productForm, unit: updated });
-                                                }
-                                                setMentionInput('');
-                                            } else {
-                                                const val = prompt(t('Enter mention (e.g. S, M, L, XL, 500g):'));
-                                                if (val && val.trim()) {
-                                                    const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
-                                                    const updated = [...currentList, val.trim()].join(', ');
-                                                    setProductForm({ ...productForm, unit: updated });
-                                                }
-                                            }
-                                        }}
-                                        className="text-xs font-semibold text-[#2E5A2E] dark:text-[#7CA90E] hover:underline cursor-pointer"
-                                    >
-                                        + {t('Add mention')}
-                                    </button>
-                                </div>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={mentionInput}
-                                        onChange={(e) => setMentionInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                if (mentionInput.trim()) {
-                                                    const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
-                                                    if (!currentList.includes(mentionInput.trim())) {
-                                                        const updated = [...currentList, mentionInput.trim()].join(', ');
-                                                        setProductForm({ ...productForm, unit: updated });
+                            {(() => {
+                                const selectedCat = categories.find(c => c.name === productForm.category);
+                                const isPreviewCat = Boolean(selectedCat?.isPreview === true || selectedCat?.mode === 'preview');
+                                return isPreviewCat ? (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('Mention / Sizes (e.g., S, M, L, XL)')}</label>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={mentionInput}
+                                                onChange={(e) => setMentionInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (mentionInput.trim()) {
+                                                            const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                            if (!currentList.includes(mentionInput.trim())) {
+                                                                const updated = [...currentList, mentionInput.trim()].join(', ');
+                                                                setProductForm({ ...productForm, unit: updated });
+                                                            }
+                                                            setMentionInput('');
+                                                        }
                                                     }
-                                                    setMentionInput('');
-                                                }
-                                            }
-                                        }}
-                                        className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
-                                        placeholder={t('e.g., S, M, L, XL, 1 kg...')}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (mentionInput.trim()) {
-                                                const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
-                                                if (!currentList.includes(mentionInput.trim())) {
-                                                    const updated = [...currentList, mentionInput.trim()].join(', ');
-                                                    setProductForm({ ...productForm, unit: updated });
-                                                }
-                                                setMentionInput('');
-                                            }
-                                        }}
-                                        className="px-3.5 py-2 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
-                                    >
-                                        {t('Add')}
-                                    </button>
-                                </div>
-
-                                {/* Mention Tag Pills arranged below the input with X icon */}
-                                {Boolean(productForm.unit) && (
-                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean).map((tag, idx) => (
-                                            <span
-                                                key={idx}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 shadow-xs"
+                                                }}
+                                                className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                                placeholder={t('e.g., S, M, L, XL...')}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (mentionInput.trim()) {
+                                                        const currentList = productForm.unit ? productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean) : [];
+                                                        if (!currentList.includes(mentionInput.trim())) {
+                                                            const updated = [...currentList, mentionInput.trim()].join(', ');
+                                                            setProductForm({ ...productForm, unit: updated });
+                                                        }
+                                                        setMentionInput('');
+                                                    }
+                                                }}
+                                                className="px-3.5 py-2 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
                                             >
-                                                {tag}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const currentList = productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean);
-                                                        const updated = currentList.filter((_, i) => i !== idx).join(', ');
-                                                        setProductForm({ ...productForm, unit: updated });
-                                                    }}
-                                                    className="text-gray-400 hover:text-red-500 cursor-pointer p-0.5 rounded transition-colors"
-                                                    title={t('Remove')}
-                                                >
-                                                    <X size={13} />
-                                                </button>
-                                            </span>
-                                        ))}
+                                                {t('Add')}
+                                            </button>
+                                        </div>
+
+                                        {Boolean(productForm.unit) && (
+                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                                {productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean).map((tag, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 shadow-xs"
+                                                    >
+                                                        {tag}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const currentList = productForm.unit.split(/[,/|]+/).map(s => s.trim()).filter(Boolean);
+                                                                const updated = currentList.filter((_, i) => i !== idx).join(', ');
+                                                                setProductForm({ ...productForm, unit: updated });
+                                                            }}
+                                                            className="text-gray-400 hover:text-red-500 cursor-pointer p-0.5 rounded transition-colors"
+                                                            title={t('Remove')}
+                                                        >
+                                                            <X size={13} />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Category')}</label>
-                                <select
-                                    value={productForm.category}
-                                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value, subcategory: [] })}
-                                    className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
-                                    required
-                                >
-                                    <option value="">{t('Select Category')}</option>
-                                    {categories && categories.length > 0 ? (
-                                        categories.map((cat) => (
-                                            <option key={cat._id || cat.id} value={cat.name}>
-                                                {t(cat.name)}
-                                            </option>
-                                        ))
-                                    ) : (
-                                        <>
-                                            <option value="Electronics">{t('Electronics')}</option>
-                                            <option value="Fashion">{t('Fashion')}</option>
-                                            <option value="Home">{t('Home')}</option>
-                                            <option value="Beauty">{t('Beauty')}</option>
-                                        </>
-                                    )}
-                                </select>
-                            </div>
+                                ) : (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Unit (e.g., kg, pcs)')}</label>
+                                        <input
+                                            type="text"
+                                            value={productForm.unit}
+                                            onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}
+                                            className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                            placeholder={t('e.g., 1 kg, 500g, 1 pcs')}
+                                        />
+                                    </div>
+                                );
+                            })()}
 
                             {/* Subcategory multi-select */}
                             <div className="col-span-1 md:col-span-2">
@@ -1579,13 +1547,38 @@ const StoreManagement = () => {
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <RichDescriptionEditor
-                                value={productForm.description}
-                                onChange={(val) => setProductForm({ ...productForm, description: val })}
-                                placeholder={t('Product description...')}
-                            />
-                        </div>
+                        {(() => {
+                            const selectedCat = categories.find(c => c.name === productForm.category);
+                            const isPreviewCat = Boolean(selectedCat?.isPreview === true || selectedCat?.mode === 'preview');
+                            return isPreviewCat ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Product Description & Specifications')}</label>
+                                    <RichDescriptionEditor
+                                        value={productForm.description}
+                                        onChange={(val) => setProductForm({ ...productForm, description: val })}
+                                        placeholder={t('Product description...')}
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Description')}</label>
+                                    <textarea
+                                        value={typeof productForm.description === 'string' && productForm.description.startsWith('{') && productForm.description.includes('"blocks"') ? (() => {
+                                            try {
+                                                const parsed = JSON.parse(productForm.description);
+                                                return (parsed.blocks || []).map(b => b.content || (b.points ? b.points.join('\n') : '')).filter(Boolean).join('\n\n');
+                                            } catch (e) {
+                                                return productForm.description;
+                                            }
+                                        })() : (productForm.description || '')}
+                                        onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                                        rows={4}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                        placeholder={t('Product description...')}
+                                    />
+                                </div>
+                            );
+                        })()}
 
                         <div className="flex justify-end">
                             <button

@@ -429,9 +429,11 @@ const Home = () => {
                     {loadingMainCats && (!Array.isArray(mainCategories) || mainCategories.length === 0) ? (
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="flex flex-col items-center">
-                                    <div className="w-full aspect-[16/9] rounded-2xl blinkit-shimmer border border-gray-100 dark:border-gray-800" />
-                                    <div className="mt-2 h-3.5 w-24 rounded-md blinkit-shimmer" />
+                                <div key={i} className="flex flex-col rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 pb-2 sm:pb-2.5 bg-white dark:bg-gray-800 shadow-sm">
+                                    <div className="w-full aspect-[16/9] blinkit-shimmer" />
+                                    <div className="pt-2 px-2 flex justify-center">
+                                        <div className="h-3.5 w-24 rounded-md blinkit-shimmer" />
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -443,10 +445,10 @@ const Home = () => {
                                     <div 
                                         key={mainCat.id || mainCat._id || mainCat.name}
                                         onClick={() => handleMainCategoryClick(mainCat)}
-                                        className="flex flex-col items-center cursor-pointer group select-none active:scale-[0.98] transition-transform"
+                                        className="flex flex-col cursor-pointer group select-none active:scale-[0.98] transition-transform rounded-2xl overflow-hidden shadow-sm border border-[#2E5A2E]/15 dark:border-gray-700/80 bg-gradient-to-b from-white via-[#F7FCF5] to-[#E3F9DC] dark:from-gray-800 dark:via-gray-800 dark:to-[#2E5A2E]/25 pb-2 sm:pb-2.5"
                                     >
                                         {/* 16:9 Rectangular Card (Edge-to-Edge Image Fit) */}
-                                        <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-sm border border-[#2E5A2E]/15 dark:border-gray-700/80 bg-gradient-to-b from-white via-[#F7FCF5] to-[#E3F9DC] dark:from-gray-800 dark:via-gray-800 dark:to-[#2E5A2E]/25 relative">
+                                        <div className="w-full aspect-[16/9] overflow-hidden relative">
                                             <img 
                                                 src={mainCat.image} 
                                                 alt={cleanName} 
@@ -459,10 +461,12 @@ const Home = () => {
                                                 }}
                                             />
                                         </div>
-                                        {/* Main Category Name Below (Bracket Cleaned & 2-Line Multi-line Support) */}
-                                        <span className="mt-1 sm:mt-1.5 text-[12.5px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-100 text-center line-clamp-2 leading-tight w-full px-1">
-                                            {cleanName}
-                                        </span>
+                                        {/* Main Category Name Inside Card with added bottom padding */}
+                                        <div className="pt-1.5 sm:pt-2 px-1.5 sm:px-2 flex items-center justify-center min-h-[36px] sm:min-h-[40px]">
+                                            <span className="text-[12.5px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-100 text-center line-clamp-2 leading-tight w-full">
+                                                {cleanName}
+                                            </span>
+                                        </div>
                                     </div>
                                 );
                             })}

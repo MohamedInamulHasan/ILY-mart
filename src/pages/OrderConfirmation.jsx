@@ -317,12 +317,12 @@ const OrderConfirmation = () => {
                                             </p>
                                         )}
                                         <div className="flex items-center justify-between mt-1">
-                                            <div>
+                                            <div className="flex items-baseline gap-1.5">
                                                 <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
-                                                {item.unit && (
-                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                                                        {item.selectedMention || item.mention || item.unit}
-                                                    </p>
+                                                {(item.selectedMention || item.mention || item.unit || item.product?.unit) && (
+                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                        ({item.selectedMention || item.mention || item.unit || item.product?.unit})
+                                                    </span>
                                                 )}
                                             </div>
                                             <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">

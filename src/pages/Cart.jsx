@@ -145,16 +145,16 @@ const Cart = () => {
 
                                   {/* Bottom row: Price and Controls */}
                                   <div className="flex justify-between items-end mt-1.5">
-                                       <div className="flex flex-col justify-end">
-                                            <span className="text-[14px] sm:text-[15px] font-extrabold text-gray-900 dark:text-white leading-tight">
-                                                ₹ {(item.price * item.quantity).toFixed(0)}
-                                            </span>
-                                            {item.unit && (
-                                                <span className="text-[10px] text-gray-400 font-medium leading-tight mt-0.5">
-                                                    {item.unit}
-                                                </span>
-                                            )}
-                                       </div>
+                                       <div className="flex items-baseline gap-1.5">
+                                             <span className="text-[14px] sm:text-[15px] font-extrabold text-gray-900 dark:text-white leading-tight">
+                                                 ₹ {(item.price * item.quantity).toFixed(0)}
+                                             </span>
+                                             {(item.unit || item.mention || item.selectedMention || item.product?.unit) && (
+                                                 <span className="text-xs text-gray-400 dark:text-gray-500 font-medium leading-tight">
+                                                     ({item.unit || item.mention || item.selectedMention || item.product?.unit})
+                                                 </span>
+                                             )}
+                                        </div>
 
                                        <div className="flex items-center gap-2 sm:gap-2.5">
                                             <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-1 text-[#2E5A2E] hover:text-[#1E3A1E] active:scale-90 transition-transform">

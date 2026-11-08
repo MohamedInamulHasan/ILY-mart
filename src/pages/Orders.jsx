@@ -200,35 +200,39 @@ const Orders = () => {
                     <div className="space-y-3 sm:space-y-3.5">
                         {loadingOrders ? (
                             // Blinkit-style Orders Skeleton Loader
-                            <div className="grid grid-cols-1 gap-2.5 sm:gap-3 w-full">
+                            <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
                                 {[1, 2, 3].map((i) => (
                                     <div
                                         key={i}
-                                        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-3.5 sm:p-4 shadow-sm"
+                                        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-4 sm:p-5 shadow-sm"
                                     >
                                         {/* Top Header: Package icon box + Order ID/Date + Status Badge */}
-                                        <div className="flex justify-between items-center gap-2 mb-2 pb-1.5 border-b border-gray-100/80 dark:border-gray-700/40">
-                                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                <div className="w-7 h-7 rounded-lg blinkit-shimmer flex-shrink-0" />
-                                                <div className="space-y-1 flex-1 min-w-0">
-                                                    <div className="h-3.5 w-20 rounded-md blinkit-shimmer" />
-                                                    <div className="h-2.5 w-28 rounded-md blinkit-shimmer" />
+                                        <div className="flex justify-between items-start gap-2 mb-3 pb-2.5 border-b border-gray-100/80 dark:border-gray-700/40">
+                                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                <div className="w-8 h-8 rounded-lg blinkit-shimmer flex-shrink-0" />
+                                                <div className="space-y-1.5 flex-1 min-w-0">
+                                                    <div className="h-4 w-24 rounded-md blinkit-shimmer" />
+                                                    <div className="h-3 w-32 rounded-md blinkit-shimmer" />
                                                 </div>
                                             </div>
-                                            <div className="h-5 w-18 rounded-md blinkit-shimmer flex-shrink-0" />
+                                            <div className="h-6 w-20 rounded-full blinkit-shimmer flex-shrink-0" />
                                         </div>
 
                                         {/* Items Section: 2 item rows matching real card */}
                                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
                                             {[1, 2].map((itemIdx) => (
-                                                <div key={itemIdx} className="py-1.5 flex items-center gap-2.5">
-                                                    <div className="h-12 w-12 rounded-xl blinkit-shimmer flex-shrink-0" />
-                                                    <div className="flex-1 space-y-1 min-w-0">
-                                                        <div className="h-3.5 w-3/4 rounded-md blinkit-shimmer" />
-                                                        <div className="h-2.5 w-2/5 rounded-md blinkit-shimmer" />
+                                                <div key={itemIdx} className="py-2.5 flex items-center gap-3 first:pt-0">
+                                                    {/* 14x14 (56px) rounded product image skeleton */}
+                                                    <div className="h-14 w-14 rounded-xl blinkit-shimmer flex-shrink-0" />
+                                                    <div className="flex-1 space-y-1.5 min-w-0">
+                                                        {/* Product title */}
+                                                        <div className="h-4 w-3/4 rounded-md blinkit-shimmer" />
+                                                        {/* Store name */}
+                                                        <div className="h-3 w-2/5 rounded-md blinkit-shimmer" />
+                                                        {/* Price & Quantity badge */}
                                                         <div className="flex items-center justify-between pt-0.5">
-                                                            <div className="h-3.5 w-14 rounded-md blinkit-shimmer" />
-                                                            <div className="h-4 w-7 rounded-md blinkit-shimmer" />
+                                                            <div className="h-4 w-16 rounded-md blinkit-shimmer" />
+                                                            <div className="h-5 w-8 rounded-md blinkit-shimmer" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -236,18 +240,18 @@ const Orders = () => {
                                         </div>
 
                                         {/* Bottom Footer: Total Amount + Details */}
-                                        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
+                                        <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
                                             <div className="space-y-1">
-                                                <div className="h-2 w-14 rounded-full blinkit-shimmer" />
-                                                <div className="h-4 w-18 rounded-md blinkit-shimmer" />
+                                                <div className="h-2.5 w-16 rounded-full blinkit-shimmer" />
+                                                <div className="h-5 w-20 rounded-md blinkit-shimmer" />
                                             </div>
-                                            <div className="h-3.5 w-12 rounded-md blinkit-shimmer" />
+                                            <div className="h-4 w-14 rounded-md blinkit-shimmer" />
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : filteredOrders.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-2.5 sm:gap-3 w-full">
+                            <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
                             {filteredOrders.map(order => (
                                 <div
                                     key={order._id || order.id}
@@ -255,15 +259,15 @@ const Orders = () => {
                                     className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 cursor-pointer group relative"
                                 >
 
-                                    <div className="p-3.5 sm:p-4">
-                                        <div className="flex justify-between items-center gap-2 mb-2 pb-1.5 border-b border-gray-100/60 dark:border-gray-700/40">
-                                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                <div className="p-1 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0">
-                                                    <Package size={16} />
+                                    <div className="p-4 sm:p-5">
+                                        <div className="flex justify-between items-center gap-2 mb-3 pb-2.5 border-b border-gray-100/60 dark:border-gray-700/40">
+                                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                <div className="p-1.5 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0">
+                                                    <Package size={18} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">#{String(order._id || order.id).slice(-6).toUpperCase()}</p>
-                                                    <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate leading-tight">
+                                                    <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white truncate">#{String(order._id || order.id).slice(-6).toUpperCase()}</p>
+                                                    <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
                                                         {formatOrderDateTime(order.createdAt || order.date)}
                                                     </p>
                                                 </div>
@@ -278,8 +282,8 @@ const Orders = () => {
 
                                         <div className="divide-y divide-gray-50 dark:divide-gray-700">
                                             {order.items?.slice(0, 2).map((item, idx) => (
-                                                <div key={idx} className="py-1.5 flex items-center gap-2.5">
-                                                    <div className="h-12 w-12 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
+                                                <div key={idx} className="py-2.5 flex items-center gap-3 first:pt-0">
+                                                    <div className="h-14 w-14 rounded-xl bg-gray-50 border border-gray-100 dark:border-gray-700 overflow-hidden flex-shrink-0 relative">
                                                         {isItemFree(item) && (
                                                             <div className="absolute top-0 left-0 right-0 z-[10] bg-[#E11D48] text-white text-[5.5px] font-bold uppercase tracking-tight py-0.5 text-center leading-none shadow-xs select-none pointer-events-none whitespace-nowrap overflow-hidden">
                                                                 {t('Free Delivery')}
@@ -299,28 +303,28 @@ const Orders = () => {
 
                                                     </div>
                                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                        <div className="leading-tight">
+                                                        <h4 className="mb-0.5 leading-tight">
                                                             {renderBilingualTitle(t(item, 'name') || t(item, 'title') || item.adTitle || item.name || item.title, language, {
                                                                 hideTag: true,
-                                                                mainClassName: 'text-[12.5px] font-semibold leading-tight text-gray-900 dark:text-white',
-                                                                subClassName: 'text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-tight mt-0.5'
+                                                                mainClassName: 'text-sm font-semibold text-gray-900 dark:text-white',
+                                                                subClassName: 'text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight'
                                                             })}
-                                                        </div>
+                                                        </h4>
                                                         {(item.storeId || item.storeName) && (
-                                                            <p className="text-[10.5px] font-normal text-gray-400 dark:text-gray-500 truncate leading-tight mt-0.5">
+                                                            <p className="text-[11px] font-normal text-gray-400 dark:text-gray-500 truncate mt-0.5">
                                                                 {getStoreName(item.storeId, stores) || item.storeName}
                                                             </p>
                                                         )}
-                                                        <div className="flex items-center justify-between mt-1">
+                                                        <div className="flex items-center justify-between mt-0.5">
                                                             <div className="flex items-baseline gap-1.5">
-                                                                <span className="text-sm font-bold text-gray-900 dark:text-white leading-none">₹{((item.price * item.quantity) || 0).toFixed(0)}</span>
-                                                                {(item.unit || item.product?.unit) && (
-                                                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                                                                        {item.unit || item.product?.unit}
+                                                                <span className="text-sm font-bold text-gray-900 dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</span>
+                                                                {(item.unit || item.product?.unit || item.mention || item.selectedMention) && (
+                                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                                        ({item.unit || item.product?.unit || item.mention || item.selectedMention})
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
+                                                            <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400">
                                                                 x{item.quantity}
                                                             </div>
                                                         </div>
@@ -328,16 +332,16 @@ const Orders = () => {
                                                 </div>
                                             ))}
                                             {order.items.length > 2 && (
-                                                <div className="py-1 text-xs text-gray-500 dark:text-gray-400">
+                                                <div className="py-2 text-sm text-gray-500 dark:text-gray-400">
                                                     +{order.items.length - 2} {t('more items')}
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
+                                        <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700/80 flex justify-between items-center">
                                             <div>
-                                                <p className="text-[10.5px] text-gray-500 dark:text-gray-400 font-medium leading-none mb-0.5">{t('Total Amount')}</p>
-                                                <p className="font-bold text-[14.5px] sm:text-[15.5px] text-gray-900 dark:text-white leading-tight">₹{order.total.toFixed(0)}</p>
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-none mb-1">{t('Total Amount')}</p>
+                                                <p className="font-bold text-[15px] sm:text-[16px] text-gray-900 dark:text-white leading-tight">₹{order.total.toFixed(0)}</p>
                                             </div>
                                             <div className="text-[#2E5A2E] dark:text-[#CBF9B2] text-xs font-semibold hover:opacity-80 transition-opacity">
                                                 {t('Details')}
