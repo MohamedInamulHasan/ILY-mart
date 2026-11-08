@@ -87,6 +87,8 @@ const Profile = () => {
     const { mutate: updateProfile } = useUpdateProfile();
 
     // 10-click delivery auth easter egg
+    const nameClickCountRef = useRef(0);
+    const nameClickTimerRef = useRef(null);
     const [showDeliveryAuthModal, setShowDeliveryAuthModal] = useState(false);
     const [deliveryAuthId, setDeliveryAuthId] = useState('');
     const [deliveryAuthPassword, setDeliveryAuthPassword] = useState('');
@@ -94,6 +96,23 @@ const Profile = () => {
     const [deliveryAuthLoading, setDeliveryAuthLoading] = useState(false);
     const [deliveryAuthError, setDeliveryAuthError] = useState('');
     const [customLoginMode, setCustomLoginMode] = useState(false);
+
+    const handleNameCardClick = () => {
+        nameClickCountRef.current += 1;
+        if (nameClickTimerRef.current) clearTimeout(nameClickTimerRef.current);
+        nameClickTimerRef.current = setTimeout(() => {
+            nameClickCountRef.current = 0;
+        }, 3000);
+        if (nameClickCountRef.current >= 10) {
+            nameClickCountRef.current = 0;
+            setCustomLoginMode(true);
+            setDeliveryAuthId('');
+            setDeliveryAuthPassword('');
+            setShowDeliveryPassword(false);
+            setDeliveryAuthError('');
+            setShowDeliveryAuthModal(true);
+        }
+    };
 
     const handleDeliveryLogin = async (e) => {
         e.preventDefault();
@@ -272,7 +291,7 @@ const Profile = () => {
                                    <Camera size={12} />
                                </button>
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0" onClick={handleNameCardClick} style={{ cursor: 'default' }}>
                                 {/* Name + Coin inline */}
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     <h2 className="text-[15.5px] sm:text-[16.5px] font-bold text-gray-900 dark:text-white leading-tight tracking-tight truncate">
@@ -362,24 +381,6 @@ const Profile = () => {
 
                           <MenuLink to="/services" icon={<Wrench size={17} strokeWidth={2} />} title={t('Services')} />
                           <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
-
-                          {!isDeliveryBoy && !isAdmin && (
-                              <>
-                                  <MenuLink 
-                                      onClick={() => {
-                                          setCustomLoginMode(true);
-                                          setDeliveryAuthId('');
-                                          setDeliveryAuthPassword('');
-                                          setDeliveryAuthError('');
-                                          setShowDeliveryPassword(false);
-                                          setShowDeliveryAuthModal(true);
-                                      }} 
-                                      icon={<Truck size={17} strokeWidth={2} />} 
-                                      title={t('Delivery Boy Login')} 
-                                  />
-                                  <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5"></div>
-                              </>
-                          )}
 
                           {/* Settings Dropdown/Accordion */}
                           <button 

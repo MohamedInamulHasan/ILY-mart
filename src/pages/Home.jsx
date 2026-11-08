@@ -14,7 +14,6 @@ import { useData } from '../context/DataContext';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import HomeHeader from '../components/home/HomeHeader';
 import HeroBanner from '../components/home/HeroBanner';
-import SortDropdown from '../components/SortDropdown';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { useCart } from '../context/CartContext';
 
@@ -297,9 +296,7 @@ const Home = () => {
                             </form>
                         </div>
                         
-                        {/* Sort Dropdown */}
-                        <SortDropdown currentSort={globalSortOrder} onSortChange={setGlobalSortOrder} />
-
+                        
                         {/* Search Results Dropdown (Matching CategoryProducts design) */}
                         {searchQuery.trim() && (
                             <div className="absolute top-[calc(100%+12px)] left-0 right-0 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-[200] animate-in fade-in slide-in-from-top-2 duration-300 shadow-xl">

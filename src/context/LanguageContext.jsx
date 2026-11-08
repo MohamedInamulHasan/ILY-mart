@@ -395,6 +395,17 @@ export const LanguageProvider = ({ children }) => {
         'Are you sure you want to cancel this order?': { en: 'Are you sure you want to cancel this order?', ta: 'இந்த ஆர்டரை நிச்சயமாக ரத்து செய்ய விரும்புகிறீர்களா?' },
         'Keep Order': { en: 'Keep Order', ta: 'ஆர்டரை வைத்திருக்கவும்' },
         'Close View': { en: 'Close View', ta: 'மூடவும்' },
+        'Call and book the service': { en: 'Call and book the service', ta: 'அழைத்து சேவையை முன்பதிவு செய்யவும்' },
+        'Call Now': { en: 'Call Now', ta: 'இப்போது அழைக்கவும்' },
+        'Directly connect with the service provider to schedule and book your appointment.': { 
+            en: 'Directly connect with the service provider to schedule and book your appointment.', 
+            ta: 'சேவை வழங்குநரை நேரடியாக அழைத்து முன்பதிவு செய்யுங்கள்.' 
+        },
+        'Need urgent assistance? Call directly or select a service below.': {
+            en: 'Need urgent assistance? Call directly or select a service below.',
+            ta: 'அவசர உதவி தேவையா? நேரடியாக அழைக்கவும் அல்லது கீழே உள்ள சேவையைத் தேர்ந்தெடுக்கவும்.'
+        },
+        'Or Request Service Online': { en: 'Or Request Service Online', ta: 'அல்லது ஆன்லைனில் கோரிக்கை விடுக்கவும்' },
     };
 
     const t = (key, field = null) => {

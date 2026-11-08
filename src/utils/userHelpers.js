@@ -39,14 +39,14 @@ export const getUserRoles = (user) => {
         const uMobile = (userObj?.mobile || '').toString().replace(/\D/g, '').slice(-10);
         const cMobile = (cachedObj?.mobile || '').toString().replace(/\D/g, '').slice(-10);
 
-        // Prevent cross-user pollution: only add cached roles if it belongs to the same user
-        if (!user || (uId && cId && uId === cId) || (uMobile && cMobile && uMobile === cMobile)) {
+        // Prevent cross-user pollution: only add cached roles if it belongs to the same active user
+        if (user && ((uId && cId && uId === cId) || (uMobile && cMobile && uMobile === cMobile))) {
             addRoles(cached);
             if (cached?.data) addRoles(cached.data);
         }
     } catch {}
 
-    // 3. Fallback for store owner / admin mobile (9500171980)
+    // 3. Fallback for store owner / admin mobile (9500171980) - only for active matching user
     const cleanMobile = (user?.mobile || user?.data?.mobile || '').toString().replace(/\D/g, '');
     let cachedMobile = '';
     try {
@@ -55,8 +55,8 @@ export const getUserRoles = (user) => {
     } catch {}
 
     if (
-        cleanMobile.endsWith('9500171980') || cleanMobile === '9500171980' ||
-        cachedMobile.endsWith('9500171980') || cachedMobile === '9500171980'
+        (cleanMobile && (cleanMobile.endsWith('9500171980') || cleanMobile === '9500171980')) ||
+        (user && cachedMobile && (cachedMobile.endsWith('9500171980') || cachedMobile === '9500171980'))
     ) {
         set.add('admin');
     }
