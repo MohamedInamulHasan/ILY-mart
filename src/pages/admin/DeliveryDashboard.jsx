@@ -80,6 +80,7 @@ const DeliveryDashboard = () => {
     }, [activeTab]);
     const [searchQuery, setSearchQuery] = useState('');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showOrdersFeed, setShowOrdersFeed] = useState(false);
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
@@ -442,10 +443,16 @@ const DeliveryDashboard = () => {
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-44">
             <LogoutModal
                 isOpen={showLogoutModal}
-                onClose={() => setShowLogoutModal(false)}
-                onConfirm={() => {
-                    logout();
-                    navigate('/login');
+                isLoggingOut={isLoggingOut}
+                onClose={() => !isLoggingOut && setShowLogoutModal(false)}
+                onConfirm={async () => {
+                    setIsLoggingOut(true);
+                    localStorage.setItem('delivery_boy_logged_out', 'true');
+                    try {
+                        await logout();
+                    } finally {
+                        navigate('/login');
+                    }
                 }}
             />
 

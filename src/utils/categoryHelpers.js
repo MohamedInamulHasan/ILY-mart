@@ -84,13 +84,33 @@ const staticCategoryTranslations = {
 };
 
 /**
+ * Utility to strip emojis and pictographs from text for strict text-only rendering.
+ */
+export const stripEmojis = (str) => {
+    if (!str || typeof str !== 'string') return '';
+    try {
+        return str
+            .replace(/\p{Extended_Pictographic}/gu, '')
+            .replace(/[\u{1F300}-\u{1F9FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1FA00}-\u{1FAFF}\u{FE00}-\u{FE0F}]/gu, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    } catch {
+        return str.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '').replace(/\s+/g, ' ').trim();
+    }
+};
+
+/**
  * Helper to get clean category or subcategory name based on active language.
  * Completely strips brackets and hides the other language:
  * - When language is 'en': shows only English (no Tamil brackets).
  * - When language is 'ta': shows only Tamil (no English brackets).
+ * - Unless options.keepEmoji is true (e.g. store page horizontal category scroller),
+ *   strictly strips all emojis and returns text only.
  */
-export const getCleanCategoryName = (categoryOrName, language = 'en', t = null) => {
+export const getCleanCategoryName = (categoryOrName, language = 'en', t = null, options = {}) => {
     if (!categoryOrName) return '';
+    const { keepEmoji = false } = (typeof options === 'object' && options !== null) ? options : {};
+
     let full = '';
     if (typeof categoryOrName === 'object') {
         if (language === 'ta' && categoryOrName.name_ta) {
@@ -134,24 +154,27 @@ export const getCleanCategoryName = (categoryOrName, language = 'en', t = null) 
             tamStr = part2;
         }
 
-        if (language === 'ta') {
-            return tamStr || engStr || full;
-        } else {
-            return engStr || tamStr || full;
-        }
+        const chosen = (language === 'ta' ? tamStr : engStr) || tamStr || engStr || full;
+        return keepEmoji ? chosen.trim() : stripEmojis(chosen);
     }
 
     // If no brackets, check static translations dictionary
     const trimmed = full.trim();
+    const cleanNoEmoji = stripEmojis(trimmed);
+    let resolved = trimmed;
+
     if (staticCategoryTranslations[trimmed]) {
-        return staticCategoryTranslations[trimmed][language] || trimmed;
-    }
-    // Check reverse (Tamil to English or vice-versa)
-    for (const item of Object.values(staticCategoryTranslations)) {
-        if (item.en === trimmed || item.ta === trimmed) {
-            return item[language] || trimmed;
+        resolved = staticCategoryTranslations[trimmed][language] || trimmed;
+    } else if (cleanNoEmoji && staticCategoryTranslations[cleanNoEmoji]) {
+        resolved = staticCategoryTranslations[cleanNoEmoji][language] || cleanNoEmoji;
+    } else {
+        for (const item of Object.values(staticCategoryTranslations)) {
+            if (item.en === trimmed || item.ta === trimmed || (cleanNoEmoji && (item.en === cleanNoEmoji || item.ta === cleanNoEmoji))) {
+                resolved = item[language] || trimmed;
+                break;
+            }
         }
     }
 
-    return full;
+    return keepEmoji ? resolved.trim() : stripEmojis(resolved);
 };

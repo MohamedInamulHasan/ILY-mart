@@ -72,19 +72,25 @@ export const SocketProvider = ({ children }) => {
         });
 
         newSocket.on('product:updated', () => {
-            queryClient.invalidateQueries(['products']);
+            try {
+                localStorage.removeItem('homly_cached_products_v1');
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: ['products'] });
         });
 
         newSocket.on('service:updated', () => {
-            queryClient.invalidateQueries(['services']);
+            queryClient.invalidateQueries({ queryKey: ['services'] });
         });
 
         newSocket.on('category:updated', () => {
-            queryClient.invalidateQueries(['categories']);
+            try {
+                localStorage.removeItem('homly_cached_categories_v3');
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
         });
 
         newSocket.on('ads:updated', () => {
-            queryClient.invalidateQueries(['ads']);
+            queryClient.invalidateQueries({ queryKey: ['ads'] });
         });
 
         newSocket.on('user:updated', (updatedUser) => {

@@ -61,7 +61,10 @@ export const useCreateStore = () => {
     return useMutation({
         mutationFn: (newStore) => apiService.createStore(newStore),
         onSuccess: () => {
-            queryClient.invalidateQueries(storeKeys.lists());
+            try {
+                localStorage.removeItem(STORE_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: storeKeys.all });
         }
     });
 };
@@ -72,8 +75,13 @@ export const useUpdateStore = () => {
     return useMutation({
         mutationFn: ({ id, data }) => apiService.updateStore(id, data),
         onSuccess: (data, variables) => {
-            queryClient.invalidateQueries(storeKeys.lists());
-            queryClient.invalidateQueries(storeKeys.detail(variables.id));
+            try {
+                localStorage.removeItem(STORE_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: storeKeys.all });
+            if (variables?.id) {
+                queryClient.invalidateQueries({ queryKey: storeKeys.detail(variables.id) });
+            }
         }
     });
 };
@@ -84,7 +92,10 @@ export const useDeleteStore = () => {
     return useMutation({
         mutationFn: (id) => apiService.deleteStore(id),
         onSuccess: () => {
-            queryClient.invalidateQueries(storeKeys.lists());
+            try {
+                localStorage.removeItem(STORE_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: storeKeys.all });
         }
     });
 };
@@ -95,7 +106,10 @@ export const useUpdateStoreOrder = () => {
     return useMutation({
         mutationFn: (orderedIds) => apiService.updateStoresOrder(orderedIds),
         onSuccess: () => {
-            queryClient.invalidateQueries(storeKeys.lists());
+            try {
+                localStorage.removeItem(STORE_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: storeKeys.all });
         }
     });
 };

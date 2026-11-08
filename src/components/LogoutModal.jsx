@@ -3,7 +3,7 @@ import { X, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 
-const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
+const LogoutModal = ({ isOpen, onClose, onConfirm, isLoggingOut = false }) => {
     const { t } = useLanguage();
 
     return (
@@ -15,7 +15,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={onClose}
+                        onClick={!isLoggingOut ? onClose : undefined}
                         className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-[999] transition-all"
                     />
 
@@ -34,8 +34,10 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
                                 {t('Logout')}
                             </h3>
                             <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400"
+                                type="button"
+                                onClick={!isLoggingOut ? onClose : undefined}
+                                disabled={isLoggingOut}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400 disabled:opacity-40"
                             >
                                 <X size={24} />
                             </button>
@@ -53,14 +55,18 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
                             {/* Buttons */}
                             <div className="flex flex-col gap-2 w-full">
                                 <button
+                                    type="button"
                                     onClick={onConfirm}
-                                    className="w-full py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all"
+                                    disabled={isLoggingOut}
+                                    className="w-full py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {t('Yes, Logout')}
+                                    {isLoggingOut ? t('Logging out...') : t('Yes, Logout')}
                                 </button>
                                 <button
-                                    onClick={onClose}
-                                    className="w-full py-3 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 rounded-full font-bold text-base border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                                    type="button"
+                                    onClick={!isLoggingOut ? onClose : undefined}
+                                    disabled={isLoggingOut}
+                                    className="w-full py-3 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 rounded-full font-bold text-base border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     {t('Cancel')}
                                 </button>

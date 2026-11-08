@@ -275,6 +275,10 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
+            const roles = Array.isArray(user?.role) ? user.role : [user?.role || ''];
+            if (roles.includes('delivery_boy')) {
+                localStorage.setItem('delivery_boy_logged_out', 'true');
+            }
             await apiService.logout();
         } catch (err) {
             console.error('Logout failed on server', err);

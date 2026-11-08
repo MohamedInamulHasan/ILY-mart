@@ -99,7 +99,10 @@ export const useCreateProduct = () => {
     return useMutation({
         mutationFn: (newProduct) => apiService.createProduct(newProduct),
         onSuccess: () => {
-            queryClient.invalidateQueries(productKeys.lists()); // Refresh lists
+            try {
+                localStorage.removeItem(PRODUCTS_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: productKeys.all });
         }
     });
 };
@@ -110,8 +113,13 @@ export const useUpdateProduct = () => {
     return useMutation({
         mutationFn: ({ id, data }) => apiService.updateProduct(id, data),
         onSuccess: (data, variables) => {
-            queryClient.invalidateQueries(productKeys.lists());
-            queryClient.invalidateQueries(productKeys.detail(variables.id));
+            try {
+                localStorage.removeItem(PRODUCTS_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: productKeys.all });
+            if (variables?.id) {
+                queryClient.invalidateQueries({ queryKey: productKeys.detail(variables.id) });
+            }
         }
     });
 };
@@ -122,7 +130,10 @@ export const useDeleteProduct = () => {
     return useMutation({
         mutationFn: (id) => apiService.deleteProduct(id),
         onSuccess: () => {
-            queryClient.invalidateQueries(productKeys.lists());
+            try {
+                localStorage.removeItem(PRODUCTS_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: productKeys.all });
         }
     });
 };
@@ -133,7 +144,10 @@ export const useUpdateProductOrder = () => {
     return useMutation({
         mutationFn: (orderedIds) => apiService.updateProductsOrder(orderedIds),
         onSuccess: () => {
-            queryClient.invalidateQueries(productKeys.lists());
+            try {
+                localStorage.removeItem(PRODUCTS_CACHE_KEY);
+            } catch (e) {}
+            queryClient.invalidateQueries({ queryKey: productKeys.all });
         }
     });
 };

@@ -19,13 +19,18 @@ import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
 import api, { apiService } from '../utils/api';
 import { getUserRoles } from '../utils/userHelpers';
 
-const MenuLink = ({ icon, title, to, onClick, isRed = false }) => {
-    const Wrapper = to ? Link : 'button';
+const MenuLink = ({ icon, title, to, onClick, isRed = false, disabled = false }) => {
+    const Wrapper = to && !disabled ? Link : 'button';
     return (
         <Wrapper 
-            to={to} 
-            onClick={onClick}
-            className={`w-full flex items-center justify-between py-2.5 sm:py-3 px-2.5 hover:bg-gray-100/50 dark:hover:bg-gray-800 transition-colors group ${!to ? 'cursor-pointer focus:outline-none' : ''}`}
+            to={!disabled ? to : undefined} 
+            onClick={!disabled ? onClick : undefined}
+            disabled={disabled}
+            className={`w-full flex items-center justify-between py-2.5 sm:py-3 px-2.5 transition-colors group ${
+                disabled
+                    ? 'opacity-40 cursor-not-allowed select-none pointer-events-none'
+                    : `hover:bg-gray-100/50 dark:hover:bg-gray-800 ${!to ? 'cursor-pointer focus:outline-none' : ''}`
+            }`}
         >
             <div className="flex items-center gap-3 sm:gap-3.5">
                 <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 ${isRed ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}>
@@ -35,7 +40,13 @@ const MenuLink = ({ icon, title, to, onClick, isRed = false }) => {
                     {title}
                 </span>
             </div>
-            <ChevronRight size={17} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+            {!disabled ? (
+                <ChevronRight size={17} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+            ) : (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                    Disabled
+                </span>
+            )}
         </Wrapper>
     );
 };
@@ -124,6 +135,7 @@ const Profile = () => {
             const token = data?.token || data?.authToken || res?.token;
             const userData = data?.user || data?.data || data;
             if (token) {
+                localStorage.removeItem('delivery_boy_logged_out');
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('userInfo', JSON.stringify(userData));
                 setAuthUser(userData);
@@ -330,7 +342,9 @@ const Profile = () => {
                             )}
                             {isDeliveryBoy && !isAdmin && (
                                 <MenuLink 
+                                    disabled={localStorage.getItem('delivery_boy_logged_out') === 'true'}
                                     onClick={() => {
+                                        if (localStorage.getItem('delivery_boy_logged_out') === 'true') return;
                                         setDeliveryAuthId(authUser?.deliveryId || user?.deliveryId || '');
                                         setDeliveryAuthPassword('');
                                         setDeliveryAuthError('');
