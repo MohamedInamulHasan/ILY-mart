@@ -64,11 +64,11 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
             return (
                 <span className="flex flex-col w-full max-w-full">
-                    <span className={`inline-flex items-center gap-1 max-w-full leading-snug py-0.5 ${mainClassName}`}>
+                    <span className={`inline-flex items-center gap-1 max-w-full leading-tight ${mainClassName}`}>
                         <span className="truncate">{mainText}</span>
                         {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
                     </span>
-                    <span className={`truncate leading-normal pt-0.5 pb-1 ${subClassName}`}>
+                    <span className={`truncate leading-tight ${subClassName}`}>
                         ({subText})
                     </span>
                 </span>
@@ -84,7 +84,7 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
         return (
             <span className="flex flex-col w-full max-w-full">
-                <span className={`inline-flex items-start gap-1 max-w-full leading-snug py-0.5 ${multilineMainClass} line-clamp-2 break-words whitespace-normal`}>
+                <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass} line-clamp-2 break-words whitespace-normal`}>
                     <span className="line-clamp-2 break-words whitespace-normal">{cleanTitle}</span>
                     {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
                 </span>
@@ -128,12 +128,12 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
     return (
         <span className="flex flex-col w-full max-w-full">
-            <span className={`inline-flex items-center gap-1 max-w-full leading-snug py-0.5 ${mainClassName}`}>
+            <span className={`inline-flex items-center gap-1 max-w-full leading-tight ${mainClassName}`}>
                 <span className="truncate">{mainText}</span>
                 {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
             {subText && (
-                <span className={`truncate leading-normal pt-0.5 pb-1 ${subClassName}`}>
+                <span className={`truncate leading-tight ${subClassName}`}>
                     ({subText})
                 </span>
             )}
