@@ -353,11 +353,8 @@ const Services = () => {
                                                     }}
                                                 />
 
-                                                {/* Vignette Overlay */}
-                                                <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.38)_100%)] z-10" />
-
-                                                {/* Dark Gradient Overlay */}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300 z-10" />
+                                                {/* Bottom Vignette Gradient Only */}
+                                                <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none z-10" />
                                             </div>
 
                                             {/* Closed Status Overlay */}

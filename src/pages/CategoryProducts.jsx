@@ -469,21 +469,21 @@ const CategoryProducts = () => {
                     </div>
                 </section>
 
-                {/* Categories Bar (Side-scrollable with reconstructed skeleton) */}
+                {/* Categories Bar (4 per row on mobile, scrollable, box effect) */}
                 {isLoading ? (
                     <div className="w-full px-4 mb-4 sm:mb-5">
-                        <div className="flex items-start gap-4 overflow-x-auto scrollbar-hide py-1">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                                    <div className="w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] rounded-full blinkit-shimmer" />
-                                    <div className="h-3 w-14 rounded-md blinkit-shimmer" />
+                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] p-2 rounded-xl flex flex-col items-center gap-1.5 flex-shrink-0">
+                                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl blinkit-shimmer" />
+                                    <div className="h-3 w-12 rounded-md blinkit-shimmer" />
                                 </div>
                             ))}
                         </div>
                     </div>
                 ) : categories.length > 1 ? (
                 <div className="w-full px-4 mb-4 sm:mb-5">
-                    <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1">
+                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                         {categories.map((category) => {
                             const isSelected = activeCategory && activeCategory.toLowerCase() === category.name.toLowerCase();
                             const cleanTitle = getCleanCategoryName(category, language);
@@ -498,10 +498,14 @@ const CategoryProducts = () => {
                                             window.history.replaceState(location.state, '', `/category/${encodeURIComponent(category.name)}`);
                                         } catch {}
                                     }}
-                                    className="flex flex-col items-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-transform"
+                                    className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl flex flex-col items-center justify-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border ${
+                                        isSelected
+                                            ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
+                                            : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
+                                    }`}
                                 >
-                                    {/* Uniform Category Image - NO white bg card, pure transparent icon */}
-                                    <div className="w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] aspect-square flex items-center justify-center bg-transparent">
+                                    {/* Uniform Category Image - larger and clear */}
+                                    <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent">
                                         <img
                                             src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                             alt={category.name}
@@ -510,22 +514,18 @@ const CategoryProducts = () => {
                                         />
                                     </div>
 
-                                    {/* Text: clean single-language, little thick, with bottom padding for Tamil diacritics */}
-                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-[72px] sm:w-[78px] max-w-[72px] sm:max-w-[78px] px-0.5 pb-1">
+                                    {/* Text */}
+                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-full px-0.5">
                                         <span 
-                                            className={`leading-normal truncate block text-center w-full transition-colors text-[11px] sm:text-[11.5px] ${
+                                            className={`leading-tight truncate block text-center w-full transition-colors text-[11.5px] sm:text-[12.5px] ${
                                                 isSelected 
-                                                    ? 'font-bold text-black dark:text-white' 
+                                                    ? 'font-bold text-gray-900 dark:text-white' 
                                                     : 'font-semibold text-gray-700 dark:text-gray-300'
                                             }`} 
                                             title={cleanTitle}
                                         >
                                             {cleanTitle}
                                         </span>
-                                        {/* Underline line effect only below selected category with gap */}
-                                        {isSelected && (
-                                            <div className="h-[2px] w-8 sm:w-10 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full mx-auto mt-2 animate-in fade-in zoom-in-75 duration-200" />
-                                        )}
                                     </div>
                                 </div>
                             );

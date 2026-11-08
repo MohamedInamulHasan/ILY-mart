@@ -329,19 +329,19 @@ const Shop = () => {
                         </div>
 
 
-                        {/* Categories Horizontal Scroller with box effect */}
+                        {/* Categories Horizontal Scroller with underline indicator */}
                         {viewType === 'store' && (
                             isCategoriesLoading ? (
-                                <div className="max-w-7xl mx-auto mb-3 sm:mb-4">
-                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                                        {[1, 2, 3, 4].map((i) => (
-                                            <div key={i} className="flex-shrink-0 min-w-[calc((100%-24px)/4)] sm:min-w-[80px] h-9 rounded-xl blinkit-shimmer"></div>
+                                <div className="max-w-7xl mx-auto mb-4">
+                                    <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide py-1">
+                                        {[1, 2, 3, 4, 5].map((i) => (
+                                            <div key={i} className="flex-shrink-0 h-4 w-16 rounded-full blinkit-shimmer"></div>
                                         ))}
                                     </div>
                                 </div>
                             ) : (
-                                <div className="max-w-7xl mx-auto mb-3 sm:mb-4">
-                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                                <div className="max-w-7xl mx-auto mb-4 border-b border-gray-100 dark:border-gray-800">
+                                    <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide">
                                         {categoryData.map((category) => {
                                             const isActive = category.name === categoryFilter;
                                             return (
@@ -357,12 +357,15 @@ const Shop = () => {
                                                             inline: 'center'
                                                         });
                                                     }}
-                                                    className={`min-w-[calc((100%-24px)/4)] sm:min-w-fit flex-shrink-0 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-xs sm:text-[13.5px] transition-all whitespace-nowrap flex items-center justify-center cursor-pointer border ${isActive
-                                                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold shadow-xs border-gray-200/90 dark:border-gray-700'
-                                                        : 'text-gray-500 dark:text-gray-400 font-medium border-transparent hover:text-black dark:hover:text-white'
+                                                    className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap cursor-pointer ${isActive
+                                                        ? 'text-black dark:text-white font-bold'
+                                                        : 'text-gray-400 hover:text-black dark:hover:text-white font-semibold'
                                                         }`}
                                                 >
-                                                    <span className="truncate">{getCleanCategoryName(category, language)}</span>
+                                                    {getCleanCategoryName(category, language)}
+                                                    {isActive && (
+                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                                                    )}
                                                 </button>
                                             );
                                         })}
