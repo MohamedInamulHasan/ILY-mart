@@ -13,71 +13,6 @@ import { useServices, useServiceItems } from '../hooks/queries/useServices';
 import { API_BASE_URL } from '../utils/api';
 import { isStoreOpen as isServiceOpen } from '../utils/storeHelpers';
 
-const ServicePersonSvg = ({ size = 140, className = '' }) => (
-    <svg 
-        width={size} 
-        height={size} 
-        viewBox="0 0 200 200" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-        className={`drop-shadow-sm select-none ${className}`}
-    >
-        {/* Soft background aura circles */}
-        <circle cx="100" cy="100" r="92" fill="#CBF9B2" fillOpacity="0.32" />
-        <circle cx="100" cy="100" r="74" fill="#CBF9B2" fillOpacity="0.55" />
-        
-        {/* Body / Torso in brand dark green */}
-        <path d="M48 184C48 148 70 120 100 120C130 120 152 148 152 184H48Z" fill="#2E5A2E" />
-        {/* Uniform Collar */}
-        <path d="M84 120L100 142L116 120" stroke="#CBF9B2" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <line x1="100" y1="142" x2="100" y2="184" stroke="#CBF9B2" strokeWidth="2.5" strokeDasharray="3 3" opacity="0.8" />
-        
-        {/* Neck */}
-        <rect x="91" y="98" width="18" height="26" rx="9" fill="#FAD0B1" />
-        
-        {/* Head / Face */}
-        <ellipse cx="100" cy="80" rx="28" ry="32" fill="#FAD0B1" />
-        {/* Hair */}
-        <path d="M72 74C72 58.5 84.5 46 100 46C115.5 46 128 58.5 128 74V78C128 78 123 68 100 68C77 68 72 78 72 78V74Z" fill="#3D2314" />
-        
-        {/* Professional Service Cap */}
-        <path d="M68 62C70 42 84 34 100 34C116 34 130 42 132 62H68Z" fill="#2E5A2E" />
-        <path d="M60 62C60 62 76 58 100 58C124 58 140 62 140 62C143 62 145 64 143 67C141 70 132 72 100 72C68 72 59 70 57 67C55 64 57 62 60 62Z" fill="#1E3E1E" />
-        {/* Cap Star/Logo */}
-        <circle cx="100" cy="48" r="4.5" fill="#CBF9B2" />
-        
-        {/* Cheerful Eyes */}
-        <path d="M87 78C88.5 80 91.5 80 93 78" stroke="#3D2314" strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M107 78C108.5 80 111.5 80 113 78" stroke="#3D2314" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Smile */}
-        <path d="M92 92C96 97 104 97 108 92" stroke="#B85D36" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Cheeks */}
-        <circle cx="84" cy="86" r="4.5" fill="#F49E82" fillOpacity="0.6" />
-        <circle cx="116" cy="86" r="4.5" fill="#F49E82" fillOpacity="0.6" />
-        
-        {/* Left Hand holding Smartphone */}
-        <g transform="translate(136, 118)">
-            <rect x="0" y="0" width="22" height="42" rx="4" fill="#1F2937" />
-            <rect x="2" y="3" width="18" height="32" rx="2" fill="#CBF9B2" />
-            <line x1="5" y1="9" x2="17" y2="9" stroke="#2E5A2E" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="5" y1="14" x2="14" y2="14" stroke="#2E5A2E" strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="11" cy="38" r="1.8" fill="#9CA3AF" />
-            <path d="M-8 28C-2 26 2 28 4 32" stroke="#FAD0B1" strokeWidth="7" strokeLinecap="round" />
-        </g>
-        
-        {/* Right Arm Thumbs Up */}
-        <g transform="translate(44, 124)">
-            <path d="M20 20L5 12C3 11 1 13 1 15C1 17 3 20 7 22L18 28" fill="#2E5A2E" />
-            <circle cx="3" cy="12" r="5" fill="#FAD0B1" />
-            <rect x="1" y="4" width="4.5" height="9" rx="2" fill="#FAD0B1" />
-        </g>
-        
-        {/* Top-right Verified Badge */}
-        <circle cx="156" cy="46" r="15" fill="#2E5A2E" stroke="#FFFFFF" strokeWidth="2" />
-        <path d="M151 46L154.5 49.5L161 43" stroke="#CBF9B2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
 const Services = () => {
     const navigate = useNavigate();
     const { t } = useLanguage();
@@ -493,29 +428,22 @@ const Services = () => {
                                 ))
                             ) : serviceItems.length > 0 ? (
                                 <>
-                                    {/* Call and book the service Header Banner */}
-                                    <div className="col-span-full bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-emerald-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4 mb-1">
-                                        <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                                            <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center">
-                                                <ServicePersonSvg size={56} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
-                                                    {t('Call and book the service')}
-                                                </h3>
-                                                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                                                    {t('Need urgent assistance? Call directly or select a service below.')}
-                                                </p>
-                                            </div>
+                                    {/* Dialogue Header Banner - Character & Dialogue (No extra buttons) */}
+                                    <div className="col-span-full bg-white dark:bg-gray-800 rounded-2xl p-3.5 sm:p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3.5 mb-1">
+                                        <img 
+                                            src="/service-character-transparent.png" 
+                                            alt="Service Character" 
+                                            className="h-16 w-16 object-contain flex-shrink-0 drop-shadow-sm select-none"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = "/service-character.png"; }}
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
+                                                {t('Call and book the service')}
+                                            </h3>
+                                            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                                                {t('Directly connect with the service provider to schedule and book your appointment.')}
+                                            </p>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleCallProvider}
-                                            className="flex-shrink-0 h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 font-bold text-xs flex items-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition-all cursor-pointer"
-                                        >
-                                            <Phone size={14} className="fill-current" />
-                                            <span>{t('Call Now')}</span>
-                                        </button>
                                     </div>
 
                                     {serviceItems.map((sub, idx) => (
@@ -554,37 +482,33 @@ const Services = () => {
                                     ))}
                                 </>
                             ) : (
-                                /* Clean, beautiful Empty State with Big Person SVG */
-                                <div className="col-span-full flex flex-col items-center justify-center text-center py-10 px-4 animate-in fade-in zoom-in-95 duration-300">
-                                    <div className="mb-5 relative flex items-center justify-center">
-                                        <ServicePersonSvg size={140} />
+                                /* Clean, beautiful Empty State with Uploaded Character & Dialogue Below (No extra call or request button) */
+                                <div className="col-span-full flex flex-col items-center justify-center text-center py-6 px-4 animate-in fade-in zoom-in-95 duration-300 select-none">
+                                    {/* Uploaded Service Character Image */}
+                                    <div className="relative flex items-center justify-center mb-3">
+                                        <img 
+                                            src="/service-character-transparent.png" 
+                                            alt="Service Character" 
+                                            className="h-64 sm:h-72 w-auto object-contain drop-shadow-md select-none pointer-events-none"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "/service-character.png";
+                                            }}
+                                        />
                                     </div>
                                     
-                                    <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
-                                        {t('Call and book the service')}
-                                    </h2>
-                                    
-                                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-6 leading-relaxed">
-                                        {t('Directly connect with the service provider to schedule and book your appointment.')}
-                                    </p>
-                                    
-                                    <div className="w-full max-w-xs space-y-3">
-                                        <button
-                                            type="button"
-                                            onClick={handleCallProvider}
-                                            className="w-full py-3.5 px-6 rounded-2xl bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 font-bold text-[14.5px] flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
-                                        >
-                                            <Phone size={18} className="fill-current" />
-                                            <span>{t('Call Now')}</span>
-                                        </button>
+                                    {/* Dialogue Card Below Character */}
+                                    <div className="relative max-w-sm w-full bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                                        {/* Speech Bubble Arrow */}
+                                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-gray-800 rotate-45 border-t border-l border-gray-100 dark:border-gray-700" />
                                         
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRequestSubService({ name: activeService?.name || 'General Service', price: 'TBD', description: 'Standard service request' })}
-                                            className="w-full py-2.5 px-4 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors cursor-pointer"
-                                        >
-                                            {t('Or Request Service Online')}
-                                        </button>
+                                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight mb-1 relative z-10">
+                                            {t('Call and book the service')}
+                                        </h2>
+                                        
+                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed relative z-10">
+                                            {t('Directly connect with the service provider to schedule and book your appointment.')}
+                                        </p>
                                     </div>
                                 </div>
                             )}
