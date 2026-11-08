@@ -385,27 +385,19 @@ const Shop = () => {
                                 transition={{ duration: 0.2 }}
                             >
                                 {isStoresLoading ? (
-                                    /* Store cards skeleton matching new StoreCard layout */
+                                    /* Store cards skeleton matching StoreCard layout */
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
                                         {[...Array(6)].map((_, i) => (
                                             <div
                                                 key={i}
-                                                className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden w-full shadow-xs border border-gray-100/80 dark:border-gray-700/60 flex flex-col"
+                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-xs border border-gray-100 dark:border-gray-700/60 blinkit-shimmer"
                                             >
-                                                {/* Full 16:9 Image Shimmer */}
-                                                <div className="w-full aspect-[16/9] blinkit-shimmer" />
-
-                                                {/* Content Section Skeleton */}
-                                                <div className="p-3 sm:p-3.5 space-y-2 bg-white dark:bg-gray-800 flex-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="h-4 w-36 rounded-md blinkit-shimmer" />
-                                                        <div className="w-6 h-6 rounded-full blinkit-shimmer flex-shrink-0" />
+                                                <div className="absolute bottom-0 left-0 right-0 p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                                    <div className="space-y-1.5 flex-1 pr-2">
+                                                        <div className="h-4 w-32 rounded-md bg-gray-200 dark:bg-gray-700" />
+                                                        <div className="h-3 w-24 rounded-md bg-gray-100 dark:bg-gray-600" />
                                                     </div>
-                                                    <div className="h-3 w-28 rounded-md blinkit-shimmer" />
-                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                        <div className="w-3 h-3 rounded-full blinkit-shimmer flex-shrink-0" />
-                                                        <div className="h-3.5 w-32 rounded-md blinkit-shimmer" />
-                                                    </div>
+                                                    <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
                                                 </div>
                                             </div>
                                         ))}
