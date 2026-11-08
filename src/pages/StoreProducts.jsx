@@ -32,6 +32,58 @@ const ProductSkeleton = ({ fastMode }) => (
 const StoreAdsBanner = ({ ads, t }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const scrollRef = useRef(null);
+    const navigate = useNavigate();
+
+    const handleOrderNow = (e, ad) => {
+        if (e) e.stopPropagation();
+
+        // 1. If ad has a specific link, navigate to it
+        if (ad.link) {
+            if (ad.link.startsWith('/')) {
+                navigate(ad.link);
+                return;
+            } else if (ad.link.startsWith('http')) {
+                window.open(ad.link, '_blank');
+                return;
+            }
+        }
+
+        // 2. If ad has a price, navigate directly to checkout (matching HeroBanner direct purchase)
+        if (ad.price && Number(ad.price) > 0) {
+            const adItem = {
+                id: ad._id || ad.id,
+                product: ad._id || ad.id,
+                title: ad.offerTitle || ad.title || 'Special Offer',
+                name: ad.offerTitle || ad.title || 'Special Offer',
+                price: Number(ad.price),
+                quantity: 1,
+                image: ad.image || `${API_BASE_URL}/ads/${ad._id || ad.id}/image`,
+                storeId: ad.storeId,
+                storeName: ad.storeName,
+                isFromAd: true,
+                adTitle: ad.offerTitle || ad.title,
+                unit: ad.unit || ''
+            };
+            navigate('/checkout', {
+                state: {
+                    directPurchase: {
+                        items: [adItem],
+                        total: adItem.price
+                    }
+                }
+            });
+            return;
+        }
+
+        // 3. If ad references a product
+        if (ad.productId) {
+            navigate(`/product/${ad.productId}`);
+            return;
+        }
+
+        // 4. Default: navigate to checkout
+        navigate('/checkout');
+    };
 
     useEffect(() => {
         if (!ads || ads.length <= 1) return;
@@ -74,7 +126,8 @@ const StoreAdsBanner = ({ ads, t }) => {
                 {ads.map((ad, idx) => (
                     <div
                         key={ad._id || ad.id || idx}
-                        className="w-full flex-shrink-0 snap-center relative aspect-[16/7] sm:aspect-[21/9]"
+                        onClick={(e) => handleOrderNow(e, ad)}
+                        className="w-full flex-shrink-0 snap-center relative aspect-[16/7] sm:aspect-[21/9] cursor-pointer"
                     >
                         <img
                             src={ad.image || `${API_BASE_URL}/ads/${ad._id || ad.id}/image`}
@@ -88,9 +141,13 @@ const StoreAdsBanner = ({ ads, t }) => {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
 
                         {/* Order Now Tag in the right side of image: white card, black thick text */}
-                        <div className="absolute right-3.5 bottom-3.5 sm:right-4 sm:bottom-4 z-20 bg-white text-black font-extrabold text-[11px] sm:text-[12px] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg flex items-center gap-1.5 select-none active:scale-95 transition-transform cursor-pointer border border-black/5">
+                        <button
+                            type="button"
+                            onClick={(e) => handleOrderNow(e, ad)}
+                            className="absolute right-3.5 bottom-3.5 sm:right-4 sm:bottom-4 z-20 bg-white text-black font-extrabold text-[11px] sm:text-[12px] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg flex items-center gap-1.5 select-none active:scale-95 transition-transform cursor-pointer border border-black/5"
+                        >
                             <span>{t('Order Now')}</span>
-                        </div>
+                        </button>
                     </div>
                 ))}
             </div>

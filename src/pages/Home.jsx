@@ -383,11 +383,11 @@ const Home = () => {
                                         className="flex flex-col items-center cursor-pointer group select-none active:scale-[0.98] transition-transform"
                                     >
                                         {/* 16:9 Rectangular Card */}
-                                        <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 relative">
+                                        <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-sm border border-[#2E5A2E]/15 dark:border-gray-700/80 bg-gradient-to-b from-white via-[#F7FCF5] to-[#E3F9DC] dark:from-gray-800 dark:via-gray-800 dark:to-[#2E5A2E]/25 relative flex items-center justify-center p-2 sm:p-2.5">
                                             <img 
                                                 src={mainCat.image} 
                                                 alt={cleanName} 
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
                                                 loading="lazy"
                                                 decoding="async"
                                                 onError={(e) => {
@@ -395,7 +395,6 @@ const Home = () => {
                                                     e.target.src = 'https://placehold.co/800x450?text=' + encodeURIComponent(cleanName);
                                                 }}
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none opacity-40"></div>
                                         </div>
                                         {/* Main Category Name Below */}
                                         <span className="mt-2 text-[12.5px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-100 text-center truncate block w-full px-1">
