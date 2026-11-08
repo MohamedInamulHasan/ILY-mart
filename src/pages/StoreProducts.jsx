@@ -9,6 +9,7 @@ import { useAds } from '../hooks/queries/useAds';
 import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
+import CategoryIcon from '../components/CategoryIcon';
 import { API_BASE_URL } from '../utils/api';
 import { groupProducts } from '../utils/productGrouping';
 import ProductCard from '../components/ProductCard';
@@ -691,19 +692,46 @@ const StoreProducts = () => {
 
             {subcategoryData.length > 0 && (
                 <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
-                    <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
+                    {/* Zepto-style category scroller with continuous baseline and curved indicator */}
+                    <div className="flex items-center gap-5 sm:gap-6 overflow-x-auto scrollbar-hide relative pb-2.5 pt-1 border-b-[1.5px] border-gray-200 dark:border-gray-700/60 min-w-full">
                         <button
                             type="button"
-                            onClick={() => setSelectedSubcategory(null)}
-                            className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${
+                            onClick={(e) => {
+                                setSelectedSubcategory(null);
+                                e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                            }}
+                            className={`text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap flex items-center gap-1.5 px-1 py-1 ${
                                 !selectedSubcategory 
-                                    ? 'text-black dark:text-white font-bold' 
-                                    : 'text-gray-400 hover:text-black dark:hover:text-white'
+                                    ? 'text-gray-900 dark:text-white font-bold' 
+                                    : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                         >
-                            {t('All')}
+                            <CategoryIcon category="all" className="w-4 h-4 flex-shrink-0" />
+                            <span>{t('All')}</span>
                             {!selectedSubcategory && (
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                                <motion.div
+                                    layoutId="zepto-category-curve"
+                                    className="absolute -bottom-[2.5px] -left-1.5 -right-1.5 h-[11px] pointer-events-none z-10"
+                                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                                >
+                                    <svg 
+                                        className="w-full h-full overflow-visible" 
+                                        viewBox="0 0 100 12" 
+                                        preserveAspectRatio="none"
+                                    >
+                                        {/* Mask underlying gray baseline */}
+                                        <rect x="1" y="0" width="98" height="4" className="fill-white dark:fill-gray-900" />
+                                        {/* Zepto Curve dipping smoothly under the active category */}
+                                        <path
+                                            d="M 0,2 C 18,2 24,10 50,10 C 76,10 82,2 100,2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            className="text-[#2E5A2E] dark:text-[#CBF9B2]"
+                                        />
+                                    </svg>
+                                </motion.div>
                             )}
                         </button>
                         {subcategoryData.map(({ name }) => {
@@ -712,16 +740,42 @@ const StoreProducts = () => {
                                 <button
                                     key={name}
                                     type="button"
-                                    onClick={() => setSelectedSubcategory(name)}
-                                    className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${
+                                    onClick={(e) => {
+                                        setSelectedSubcategory(name);
+                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                    }}
+                                    className={`text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap flex items-center gap-1.5 px-1 py-1 ${
                                         isSelected 
-                                            ? 'text-black dark:text-white font-bold' 
-                                            : 'text-gray-400 hover:text-black dark:hover:text-white'
+                                            ? 'text-gray-900 dark:text-white font-bold' 
+                                            : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                     }`}
                                 >
-                                    {getCleanCategoryName(name, language)}
+                                    <CategoryIcon category={name} className="w-4 h-4 flex-shrink-0" />
+                                    <span>{getCleanCategoryName(name, language)}</span>
                                     {isSelected && (
-                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                                        <motion.div
+                                            layoutId="zepto-category-curve"
+                                            className="absolute -bottom-[2.5px] -left-1.5 -right-1.5 h-[11px] pointer-events-none z-10"
+                                            transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                                        >
+                                            <svg 
+                                                className="w-full h-full overflow-visible" 
+                                                viewBox="0 0 100 12" 
+                                                preserveAspectRatio="none"
+                                            >
+                                                {/* Mask underlying gray baseline */}
+                                                <rect x="1" y="0" width="98" height="4" className="fill-white dark:fill-gray-900" />
+                                                {/* Zepto Curve dipping smoothly under the active category */}
+                                                <path
+                                                    d="M 0,2 C 18,2 24,10 50,10 C 76,10 82,2 100,2"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                    className="text-[#2E5A2E] dark:text-[#CBF9B2]"
+                                                />
+                                            </svg>
+                                        </motion.div>
                                     )}
                                 </button>
                             );
@@ -768,6 +822,7 @@ const StoreProducts = () => {
                                     <div className="flex justify-between items-center mb-3.5 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm -mx-4 px-4 py-2.5">
                                         <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                             <div className="w-1.5 h-6 bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full"></div>
+                                            <CategoryIcon category={groupName} className="w-5 h-5 flex-shrink-0" />
                                             {(() => {
                                                 const fullTitle = t(groupName);
                                                 if (language !== 'ta') return fullTitle;

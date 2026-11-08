@@ -72,9 +72,9 @@ const StoreCard = ({ store }) => {
 
                 {/* Timing if mentioned */}
                 {timeLabel && (
-                    <div className="flex items-center gap-1.5 text-[11.5px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        <Clock size={12} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                        <span className="truncate">{timeLabel}</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        <Clock size={12} className="text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0" />
+                        <span className="text-[12px] sm:text-[13px] font-medium text-gray-600 dark:text-gray-300 truncate">{timeLabel}</span>
                     </div>
                 )}
 
