@@ -36,15 +36,9 @@ const StoreCard = ({ store }) => {
                         e.target.src = "https://placehold.co/800x450?text=Store";
                     }}
                 />
-                
-                {/* Category Tag Overlay (Top Left) */}
-                {store.category && (
-                    <div className="absolute top-2.5 left-2.5 z-20">
-                        <span className="px-2.5 py-1 bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9.5px] font-bold rounded-full uppercase tracking-wider shadow-sm truncate max-w-[120px] block">
-                            {store.category}
-                        </span>
-                    </div>
-                )}
+
+                {/* Vignette Effect */}
+                <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.38)_100%)] z-10" />
 
                 {/* Closed Status Overlay */}
                 {!isOpen && (

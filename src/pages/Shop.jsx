@@ -393,11 +393,7 @@ const Shop = () => {
                                                 className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden w-full shadow-xs border border-gray-100/80 dark:border-gray-700/60 flex flex-col"
                                             >
                                                 {/* Full 16:9 Image Shimmer */}
-                                                <div className="w-full aspect-[16/9] blinkit-shimmer relative">
-                                                    <div className="absolute top-2.5 left-2.5">
-                                                        <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
-                                                    </div>
-                                                </div>
+                                                <div className="w-full aspect-[16/9] blinkit-shimmer" />
 
                                                 {/* Content Section Skeleton */}
                                                 <div className="p-3 sm:p-3.5 space-y-2 bg-white dark:bg-gray-800 flex-1">

@@ -303,11 +303,7 @@ const Services = () => {
                                         className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden w-full shadow-xs border border-gray-100/80 dark:border-gray-700/60 flex flex-col"
                                     >
                                         {/* Full 16:9 Image Shimmer */}
-                                        <div className="w-full aspect-[16/9] blinkit-shimmer relative">
-                                            <div className="absolute top-2.5 left-2.5">
-                                                <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
-                                            </div>
-                                        </div>
+                                        <div className="w-full aspect-[16/9] blinkit-shimmer" />
 
                                         {/* Content Section Skeleton */}
                                         <div className="p-3 sm:p-3.5 space-y-2 bg-white dark:bg-gray-800 flex-1">
@@ -364,14 +360,8 @@ const Services = () => {
                                                     }}
                                                 />
 
-                                                {/* Category Tag Overlay (Top Left) */}
-                                                {service.category && (
-                                                    <div className="absolute top-2.5 left-2.5 z-20">
-                                                        <span className="px-2.5 py-1 bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9.5px] font-bold rounded-full uppercase tracking-wider shadow-sm truncate max-w-[120px] block">
-                                                            {service.category}
-                                                        </span>
-                                                    </div>
-                                                )}
+                                                {/* Vignette Effect */}
+                                                <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.38)_100%)] z-10" />
 
                                                 {/* Closed Status Overlay */}
                                                 {isClosed && (

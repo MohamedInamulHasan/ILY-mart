@@ -9,7 +9,6 @@ import { useAds } from '../hooks/queries/useAds';
 import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
-import CategoryIcon from '../components/CategoryIcon';
 import { API_BASE_URL } from '../utils/api';
 import { groupProducts } from '../utils/productGrouping';
 import ProductCard from '../components/ProductCard';
@@ -336,6 +335,58 @@ const StoreProducts = () => {
     }, [groupedStoreProducts, categories, store]);
 
     const totalProductCount = useMemo(() => groupedStoreProducts.length, [groupedStoreProducts]);
+
+    // Select a real product image from this store for each category (displayed without bg)
+    const categoryProductImageMap = useMemo(() => {
+        const map = {};
+        if (!groupedStoreProducts || groupedStoreProducts.length === 0) return map;
+
+        // "All" tab image: pick first product with an image
+        const firstProdWithImage = groupedStoreProducts.find(p => p.image);
+        if (firstProdWithImage) {
+            map['_all_'] = firstProdWithImage.image;
+        }
+
+        // For each category/subcategory in subcategoryData:
+        subcategoryData.forEach(({ name }) => {
+            const normName = normalizeSub(name).toLowerCase();
+            const match = groupedStoreProducts.find(p => {
+                if (!p.image) return false;
+                const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+                const matchSub = subs.some(s => normalizeSub(s).toLowerCase() === normName);
+                const matchCat = p.category && normalizeSub(p.category).toLowerCase() === normName;
+                return matchSub || matchCat;
+            });
+
+            if (match) {
+                map[name] = match.image;
+            } else {
+                const parentCat = categories?.find(c => {
+                    const subs = Array.isArray(c.subcategories) ? c.subcategories : [];
+                    return subs.some(s => normalizeSub(s).toLowerCase() === normName) ||
+                           c.name?.toLowerCase() === normName;
+                });
+                if (parentCat?.image) {
+                    map[name] = parentCat.image;
+                }
+            }
+        });
+
+        return map;
+    }, [groupedStoreProducts, subcategoryData, categories]);
+
+    const getCategoryProductImage = (name) => {
+        if (!name) return null;
+        if (categoryProductImageMap[name]) return categoryProductImageMap[name];
+        const norm = normalizeSub(name).toLowerCase();
+        const match = groupedStoreProducts?.find(p => {
+            if (!p.image) return false;
+            const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+            return subs.some(s => normalizeSub(s).toLowerCase() === norm) ||
+                   (p.category && normalizeSub(p.category).toLowerCase() === norm);
+        });
+        return match ? match.image : null;
+    };
 
     // Group and sort logic (matches CategoryProducts.jsx)
     const sections = useMemo(() => {
@@ -692,38 +743,46 @@ const StoreProducts = () => {
 
             {subcategoryData.length > 0 && (
                 <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
-                    {/* Zepto-style category scroller with continuous baseline and curved indicator */}
-                    <div className="flex items-center gap-5 sm:gap-6 overflow-x-auto scrollbar-hide relative pb-2.5 pt-1 border-b-[1.5px] border-gray-200 dark:border-gray-700/60 min-w-full">
+                    {/* Zepto-style category scroller with continuous baseline and upward curved indicator ________/-------\________ */}
+                    <div className="flex items-center gap-4 sm:gap-5 overflow-x-auto scrollbar-hide relative pb-3 pt-1 border-b-[1.5px] border-gray-200 dark:border-gray-700/60 min-w-full">
                         <button
                             type="button"
                             onClick={(e) => {
                                 setSelectedSubcategory(null);
                                 e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                             }}
-                            className={`text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap flex items-center gap-1.5 px-1 py-1 ${
+                            className={`text-xs sm:text-sm font-semibold transition-all relative whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 ${
                                 !selectedSubcategory 
                                     ? 'text-gray-900 dark:text-white font-bold' 
                                     : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                         >
-                            <CategoryIcon category="all" className="w-4 h-4 flex-shrink-0" />
+                            {categoryProductImageMap['_all_'] && (
+                                <img
+                                    src={categoryProductImageMap['_all_']}
+                                    alt="All"
+                                    className="w-5 h-5 sm:w-5.5 sm:h-5.5 object-contain flex-shrink-0 mix-blend-multiply dark:mix-blend-screen drop-shadow-xs"
+                                    loading="lazy"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                            )}
                             <span>{t('All')}</span>
                             {!selectedSubcategory && (
                                 <motion.div
                                     layoutId="zepto-category-curve"
-                                    className="absolute -bottom-[2.5px] -left-1.5 -right-1.5 h-[11px] pointer-events-none z-10"
+                                    className="absolute -bottom-[2.5px] -left-1.5 -right-1.5 h-[14px] pointer-events-none z-10"
                                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                                 >
                                     <svg 
                                         className="w-full h-full overflow-visible" 
-                                        viewBox="0 0 100 12" 
+                                        viewBox="0 0 100 14" 
                                         preserveAspectRatio="none"
                                     >
                                         {/* Mask underlying gray baseline */}
-                                        <rect x="1" y="0" width="98" height="4" className="fill-white dark:fill-gray-900" />
-                                        {/* Zepto Curve dipping smoothly under the active category */}
+                                        <rect x="8" y="10" width="84" height="4" className="fill-white dark:fill-gray-900" />
+                                        {/* Zepto Curve: ________/-------\________ */}
                                         <path
-                                            d="M 0,2 C 18,2 24,10 50,10 C 76,10 82,2 100,2"
+                                            d="M 0,12 L 8,12 C 16,12 20,2 30,2 L 70,2 C 80,2 84,12 92,12 L 100,12"
                                             fill="none"
                                             stroke="currentColor"
                                             strokeWidth="2.5"
@@ -736,6 +795,7 @@ const StoreProducts = () => {
                         </button>
                         {subcategoryData.map(({ name }) => {
                             const isSelected = selectedSubcategory === name;
+                            const catImg = categoryProductImageMap[name];
                             return (
                                 <button
                                     key={name}
@@ -744,30 +804,38 @@ const StoreProducts = () => {
                                         setSelectedSubcategory(name);
                                         e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                                     }}
-                                    className={`text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap flex items-center gap-1.5 px-1 py-1 ${
+                                    className={`text-xs sm:text-sm font-semibold transition-all relative whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 ${
                                         isSelected 
                                             ? 'text-gray-900 dark:text-white font-bold' 
                                             : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                     }`}
                                 >
-                                    <CategoryIcon category={name} className="w-4 h-4 flex-shrink-0" />
+                                    {catImg && (
+                                        <img
+                                            src={catImg}
+                                            alt={name}
+                                            className="w-5 h-5 sm:w-5.5 sm:h-5.5 object-contain flex-shrink-0 mix-blend-multiply dark:mix-blend-screen drop-shadow-xs"
+                                            loading="lazy"
+                                            onError={(e) => { e.target.style.display = 'none'; }}
+                                        />
+                                    )}
                                     <span>{getCleanCategoryName(name, language)}</span>
                                     {isSelected && (
                                         <motion.div
                                             layoutId="zepto-category-curve"
-                                            className="absolute -bottom-[2.5px] -left-1.5 -right-1.5 h-[11px] pointer-events-none z-10"
+                                            className="absolute -bottom-[2.5px] -left-1.5 -right-1.5 h-[14px] pointer-events-none z-10"
                                             transition={{ type: "spring", stiffness: 450, damping: 32 }}
                                         >
                                             <svg 
                                                 className="w-full h-full overflow-visible" 
-                                                viewBox="0 0 100 12" 
+                                                viewBox="0 0 100 14" 
                                                 preserveAspectRatio="none"
                                             >
                                                 {/* Mask underlying gray baseline */}
-                                                <rect x="1" y="0" width="98" height="4" className="fill-white dark:fill-gray-900" />
-                                                {/* Zepto Curve dipping smoothly under the active category */}
+                                                <rect x="8" y="10" width="84" height="4" className="fill-white dark:fill-gray-900" />
+                                                {/* Zepto Curve: ________/-------\________ */}
                                                 <path
-                                                    d="M 0,2 C 18,2 24,10 50,10 C 76,10 82,2 100,2"
+                                                    d="M 0,12 L 8,12 C 16,12 20,2 30,2 L 70,2 C 80,2 84,12 92,12 L 100,12"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     strokeWidth="2.5"
@@ -822,7 +890,15 @@ const StoreProducts = () => {
                                     <div className="flex justify-between items-center mb-3.5 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm -mx-4 px-4 py-2.5">
                                         <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                             <div className="w-1.5 h-6 bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full"></div>
-                                            <CategoryIcon category={groupName} className="w-5 h-5 flex-shrink-0" />
+                                            {getCategoryProductImage(groupName) && (
+                                                <img
+                                                    src={getCategoryProductImage(groupName)}
+                                                    alt={groupName}
+                                                    className="w-6 h-6 object-contain flex-shrink-0 mix-blend-multiply dark:mix-blend-screen drop-shadow-xs"
+                                                    loading="lazy"
+                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                />
+                                            )}
                                             {(() => {
                                                 const fullTitle = t(groupName);
                                                 if (language !== 'ta') return fullTitle;
