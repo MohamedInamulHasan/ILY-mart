@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ShoppingCart, Wrench, ShieldCheck, MapPin, CheckCircle, Phone, Send, Check, Search, X, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ShoppingCart, Wrench, ShieldCheck, MapPin, CheckCircle, Phone, Send, Check, Search, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { useData } from '../context/DataContext';
@@ -11,7 +11,7 @@ import SwipeActionButton from '../components/SwipeActionButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useServices, useServiceItems } from '../hooks/queries/useServices';
 import { API_BASE_URL } from '../utils/api';
-import { isStoreOpen as isServiceOpen, getStoreTimeLabel } from '../utils/storeHelpers';
+import { isStoreOpen as isServiceOpen } from '../utils/storeHelpers';
 
 const Services = () => {
     const navigate = useNavigate();
@@ -332,7 +332,6 @@ const Services = () => {
                                 return filteredServices.map((service, index) => {
                                     const isOpen = isServiceOpen(service);
                                     const isClosed = !isOpen;
-                                    const timeLabel = getStoreTimeLabel(service) || service.timings || service.timing || service.workingHours;
                                     return (
                                         <div 
                                             key={service._id || index} 
@@ -360,23 +359,6 @@ const Services = () => {
                                                 {/* Dark Gradient Overlay */}
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300 z-10" />
                                             </div>
-
-                                            {/* Category Tag Overlay (Top Left) */}
-                                            {service.category && (
-                                                <div className="absolute top-3 left-3 z-20">
-                                                    <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[9.5px] font-bold rounded-full uppercase tracking-wider shadow-sm truncate max-w-[120px] block">
-                                                        {service.category}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {/* Rectangular Timing Badge (Top Right) - No pill */}
-                                            {timeLabel && (
-                                                <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-black/65 backdrop-blur-sm text-white px-2 py-1 rounded-md shadow-xs border border-white/10">
-                                                    <Clock size={10} className="text-[#CBF9B2] flex-shrink-0" />
-                                                    <span className="text-[10px] font-semibold tracking-tight leading-none">{timeLabel}</span>
-                                                </div>
-                                            )}
 
                                             {/* Closed Status Overlay */}
                                             {isClosed && (
@@ -437,77 +419,54 @@ const Services = () => {
                                     </div>
                                 ))
                             ) : serviceItems.length > 0 ? (
-                                <>
-                                    {/* Message Box Card - Call to get the service */}
-                                    <div 
-                                        onClick={handleCallProvider}
-                                        className="col-span-full bg-white dark:bg-gray-800 rounded-2xl p-3.5 sm:p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3.5 mb-1 cursor-pointer active:scale-[0.99] transition-all"
+                                serviceItems.map((sub, idx) => (
+                                    <div
+                                        key={sub._id || idx}
+                                        onClick={() => handleRequestSubService(sub)}
+                                        className={`group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md transition-all duration-300 aspect-[16/9] w-full border-2 border-transparent hover:shadow-xl hover:border-gray-200 dark:hover:border-gray-700 cursor-pointer active:scale-[0.99]`}
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-[#CBF9B2]/60 dark:bg-[#2E5A2E]/30 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center flex-shrink-0">
-                                            <Phone size={18} className="fill-current" />
+                                        {/* Full Background Image */}
+                                        <div className="absolute inset-0">
+                                            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                            <img
+                                                src={sub.image}
+                                                alt={sub.name}
+                                                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x250?text=No+Image'; }}
+                                            />
+                                            {/* Gradient Overlay */}
+                                            <div className="absolute inset-0 transition-opacity bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-85" />
                                         </div>
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
-                                                {t('Call to get the service')}
-                                            </h3>
-                                            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                                                {t('Directly connect with the service provider to schedule and book your appointment.')}
-                                            </p>
+
+                                        {/* Content Overlay */}
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 z-20 flex flex-col justify-end h-full">
+                                            <div className="transform translate-y-0 transition-transform duration-300">
+                                                <h3 className="text-base sm:text-lg font-black text-white mb-0.5 line-clamp-1 leading-tight drop-shadow-md">
+                                                    {sub.name}
+                                                </h3>
+                                                {sub.price && (
+                                                    <p className="text-xs sm:text-sm text-gray-200 font-semibold drop-shadow-sm">
+                                                        {typeof sub.price === 'number' ? `₹${sub.price}` : sub.price}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-
-                                    {serviceItems.map((sub, idx) => (
-                                        <div
-                                            key={sub._id || idx}
-                                            onClick={() => handleRequestSubService(sub)}
-                                            className={`group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md transition-all duration-300 aspect-[16/9] w-full border-2 border-transparent hover:shadow-xl hover:border-gray-200 dark:hover:border-gray-700 cursor-pointer active:scale-[0.99]`}
-                                        >
-                                            {/* Full Background Image */}
-                                            <div className="absolute inset-0">
-                                                <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                                <img
-                                                    src={sub.image}
-                                                    alt={sub.name}
-                                                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x250?text=No+Image'; }}
-                                                />
-                                                {/* Gradient Overlay */}
-                                                <div className="absolute inset-0 transition-opacity bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-85" />
-                                            </div>
-
-                                            {/* Content Overlay */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 z-20 flex flex-col justify-end h-full">
-                                                <div className="transform translate-y-0 transition-transform duration-300">
-                                                    <h3 className="text-base sm:text-lg font-black text-white mb-0.5 line-clamp-1 leading-tight drop-shadow-md">
-                                                        {sub.name}
-                                                    </h3>
-                                                    {sub.price && (
-                                                        <p className="text-xs sm:text-sm text-gray-200 font-semibold drop-shadow-sm">
-                                                            {typeof sub.price === 'number' ? `₹${sub.price}` : sub.price}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </>
+                                ))
                             ) : (
-                                /* Clean Message Box Card: Call to get the service */
-                                <div className="col-span-full flex flex-col items-center justify-center text-center py-10 px-4 animate-in fade-in zoom-in-95 duration-300 select-none">
-                                    <div 
-                                        onClick={handleCallProvider}
-                                        className="relative max-w-sm w-full bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-7 border border-gray-100 dark:border-gray-700 shadow-sm cursor-pointer active:scale-95 transition-all text-center group"
-                                    >
-                                        <div className="w-14 h-14 mx-auto mb-3.5 rounded-full bg-[#CBF9B2]/60 dark:bg-[#2E5A2E]/30 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                                            <Phone size={24} className="fill-current" />
+                                /* Clean non-clickable empty state when no sub-services listed */
+                                <div className="col-span-full flex flex-col items-center justify-center text-center py-16 px-4 animate-in fade-in zoom-in-95 duration-300 select-none">
+                                    <div className="relative max-w-sm w-full bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-7 border border-gray-100 dark:border-gray-700 shadow-xs text-center pointer-events-none">
+                                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-400 dark:text-gray-300 flex items-center justify-center">
+                                            <Wrench size={22} />
                                         </div>
                                         
-                                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight mb-1.5">
-                                            {t('Call to get the service')}
+                                        <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white tracking-tight mb-1">
+                                            {t('No sub-services listed')}
                                         </h2>
                                         
                                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
-                                            {t('Directly connect with the service provider to schedule and book your appointment.')}
+                                            {t('No specific services currently listed for this provider.')}
                                         </p>
                                     </div>
                                 </div>
@@ -522,7 +481,7 @@ const Services = () => {
                     className="fixed bottom-24 sm:bottom-8 left-0 right-0 px-4 sm:px-6 z-[60] flex justify-center pointer-events-none"
                 >
                     <div className={`w-[260px] sm:w-[280px] transition-all duration-500 ease-in-out transform ${
-                        viewMode === 'details' && !showConfirmation && !requestSuccess
+                        viewMode === 'details' && !showConfirmation && !requestSuccess && serviceItems.length > 0
                             ? 'translate-y-0 opacity-100 pointer-events-auto'
                             : 'translate-y-12 opacity-0 pointer-events-none'
                     }`}>

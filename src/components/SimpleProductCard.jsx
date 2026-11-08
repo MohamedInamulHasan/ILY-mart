@@ -378,14 +378,14 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                         onClick={handleDecrement}
                                         className={`${largeControls ? "w-8 h-8 sm:w-9 sm:h-9" : "w-6 h-7 sm:w-7 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors cursor-pointer`}
                                     >
-                                        <Minus size={largeControls ? 15 : 13} strokeWidth={2.8} />
+                                        <Minus size={largeControls ? 14 : 13} strokeWidth={2.8} />
                                     </button>
                                     <span className={`font-bold ${largeControls ? "text-[14px] min-w-[18px]" : "text-sm sm:text-[14px] min-w-[16px]"} text-center select-none text-gray-800 dark:text-gray-100`}>{cartQuantity}</span>
                                     <button 
                                         onClick={handleIncrement}
                                         className={`${largeControls ? "w-8 h-8 sm:w-9 sm:h-9" : "w-6 h-7 sm:w-7 sm:h-7"} flex items-center justify-center text-gray-700 dark:text-gray-300 hover:opacity-80 transition-colors cursor-pointer`}
                                     >
-                                        <Plus size={largeControls ? 15 : 13} strokeWidth={2.8} />
+                                        <Plus size={largeControls ? 14 : 13} strokeWidth={2.8} />
                                     </button>
                                 </div>
                             ) : (
@@ -393,7 +393,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                                     onClick={handleFastPurchaseClick}
                                     className={`${largeControls ? "w-9 h-9 sm:w-10 sm:h-10 rounded-lg" : "w-8 h-8 sm:w-9 sm:h-9 rounded-[4px]"} flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 active:scale-95 transition-all shadow-sm cursor-pointer`}
                                 >
-                                    <Plus size={largeControls ? 18 : 15} strokeWidth={2.8} />
+                                    <Plus size={largeControls ? 16 : 15} strokeWidth={2.8} />
                                 </button>
                             )}
                         </div>

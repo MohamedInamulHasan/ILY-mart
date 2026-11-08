@@ -451,7 +451,8 @@ const Profile = () => {
             {/* Floating WhatsApp Button */}
             <button 
                 onClick={() => window.open('https://wa.me/919500171980', '_blank')}
-                className="fixed bottom-[108px] right-5 sm:bottom-[114px] sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-[60]"
+                style={{ bottom: 'calc(7.2rem + env(safe-area-inset-bottom, 0px))' }}
+                className="fixed right-5 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-[60]"
                 aria-label="Contact on WhatsApp"
             >
                 <svg 
