@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { MapPin, Search, Star, Clock, Phone, Store, Wrench, ArrowRight, X } from 'lucide-react';
+import { MapPin, Search, Star, Clock, Phone, Store, Wrench, ArrowRight, X, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useCart } from '../context/CartContext';
 import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { isStoreOpen, formatTime12h } from '../utils/storeHelpers';
 import StoreCard from '../components/StoreCard';
@@ -11,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import HomeHeader from '../components/home/HomeHeader';
 
 const Shop = () => {
+    const { cartCount } = useCart();
     const [searchQuery, setSearchQuery] = useState('');
     const [viewType, setViewType] = useState('store'); // 'store' or 'service'
     const [searchParams, setSearchParams] = useSearchParams();
@@ -92,11 +94,41 @@ const Shop = () => {
 
     return (
         <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full">
-            {/* Premium Light Green Header Card / Dark Mode Adjusted */}
+            {/* Premium Light Green Header Card (Matching Store Products Page Header) */}
             <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none"></div>
                 <div className="relative z-10">
-                    <HomeHeader />
+                    <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                            <button 
+                                onClick={() => navigate(-1)} 
+                                className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
+                                aria-label="Go back"
+                            >
+                                <ArrowLeft size={19} />
+                            </button>
+                        </div>
+                        <div className="flex flex-col items-center text-center px-10 min-w-0">
+                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate">
+                                {t('Store')}
+                            </h1>
+                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
+                        </div>
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <Link 
+                                to="/cart"
+                                className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
+                                aria-label="View cart"
+                            >
+                                <ShoppingCart size={19} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
+                                {cartCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-[18px] w-[18px] rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -297,42 +329,58 @@ const Shop = () => {
                         </div>
 
 
-                        {/* Category Tabs - Only show for stores */}
+                        {/* Category Pills - Light green selected pill, transparent image with no round or bg */}
                         {viewType === 'store' && (
                             isCategoriesLoading ? (
-                                <div className="max-w-7xl mx-auto mb-6">
-                                    <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50 pb-2">
+                                <div className="max-w-7xl mx-auto mb-4">
+                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                                         {[1, 2, 3, 4, 5].map((i) => (
-                                            <div key={i} className="flex-shrink-0 bg-gray-200 dark:bg-gray-700 animate-pulse w-16 h-4 rounded"></div>
+                                            <div key={i} className="flex-shrink-0 bg-gray-200 dark:bg-gray-700 animate-pulse w-24 h-8 rounded-full"></div>
                                         ))}
                                     </div>
                                 </div>
                             ) : (
                                 <div className="max-w-7xl mx-auto mb-4 mt-0">
-                                    <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
+                                    <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide py-1.5 px-0.5">
                                         {categoryData.map((category) => {
                                             const isActive = category.name === categoryFilter;
+                                            const cleanName = getCleanCategoryName(category, language);
+                                            const isAll = category.name === 'All';
+                                            const matchedCat = !isAll ? (dbCategories || []).find(c => (c.name || '').toLowerCase().trim() === category.name.toLowerCase().trim()) : null;
+                                            const imgSrc = matchedCat?.image || (matchedCat?._id || matchedCat?.id ? `${API_BASE_URL}/categories/${matchedCat._id || matchedCat.id}/image` : null);
+
                                             return (
                                                 <button
                                                     key={category.name}
                                                     id={isActive ? "active-category-pill" : undefined}
+                                                    type="button"
                                                     onClick={() => {
                                                         handleCategoryClick(category.name);
-                                                        document.getElementById("active-category-pill")?.scrollIntoView({
-                                                            behavior: 'smooth',
-                                                            block: 'nearest',
-                                                            inline: 'center'
-                                                        });
                                                     }}
-                                                    className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${isActive
-                                                        ? 'text-black dark:text-white'
-                                                        : 'text-gray-400 hover:text-black dark:hover:text-white'
-                                                        }`}
+                                                    className={`flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
+                                                        isActive
+                                                            ? 'bg-[#CBF9B2] text-[#1B381B] border-[#9ee478] shadow-sm font-bold'
+                                                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
+                                                    }`}
                                                 >
-                                                    {getCleanCategoryName(category, language)}
-                                                    {isActive && (
-                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
-                                                    )}
+                                                    <div className="w-6 h-6 flex items-center justify-center bg-transparent flex-shrink-0">
+                                                        {imgSrc ? (
+                                                            <img
+                                                                src={imgSrc}
+                                                                alt={cleanName}
+                                                                className="w-full h-full object-contain bg-transparent"
+                                                                onError={(e) => {
+                                                                    e.target.onerror = null;
+                                                                    e.target.style.display = 'none';
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-[11px] font-bold">
+                                                                {isAll ? '★' : cleanName.charAt(0).toUpperCase()}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="whitespace-nowrap leading-none">{cleanName}</span>
                                                 </button>
                                             );
                                         })}

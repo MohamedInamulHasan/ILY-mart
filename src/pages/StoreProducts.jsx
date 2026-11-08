@@ -116,18 +116,18 @@ const StoreAdsBanner = ({ ads, t }) => {
     if (!ads || ads.length === 0) return null;
 
     return (
-        <div className="relative w-full rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800">
+        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800">
             <div
                 ref={scrollRef}
                 onScroll={handleScroll}
-                className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+                className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory w-full h-full"
                 style={{ scrollSnapType: 'x mandatory' }}
             >
                 {ads.map((ad, idx) => (
                     <div
                         key={ad._id || ad.id || idx}
                         onClick={(e) => handleOrderNow(e, ad)}
-                        className="w-full flex-shrink-0 snap-center relative aspect-[16/9] cursor-pointer"
+                        className="w-full h-full flex-shrink-0 snap-center relative aspect-[16/9] cursor-pointer"
                     >
                         <img
                             src={ad.image || `${API_BASE_URL}/ads/${ad._id || ad.id}/image`}
@@ -188,17 +188,17 @@ const StoreProducts = () => {
 
     // Matching ads mentioning this store
     const storeAds = useMemo(() => {
-        if (!store || !Array.isArray(allAds) || allAds.length === 0) return [];
-        const sName = (store.name || '').toLowerCase().trim();
-        const sId = String(store._id || store.id || '');
+        if (!Array.isArray(allAds) || allAds.length === 0) return [];
+        const sName = (store?.name || '').toLowerCase().trim();
+        const sId = String(store?._id || store?.id || '');
         
-        return allAds.filter(ad => {
+        const matched = allAds.filter(ad => {
             if (ad.isActive === false) return false;
             const adStoreId = String(ad.storeId?._id || ad.storeId || '');
-            if (adStoreId && adStoreId === sId) return true;
+            if (adStoreId && sId && adStoreId === sId) return true;
             
             const adStoreName = String(ad.storeName || '').toLowerCase().trim();
-            if (adStoreName && (adStoreName === sName || sName.includes(adStoreName) || adStoreName.includes(sName))) return true;
+            if (adStoreName && sName && (adStoreName === sName || sName.includes(adStoreName) || adStoreName.includes(sName))) return true;
             
             const adTitle = String(ad.title || '').toLowerCase().trim();
             if (adTitle && sName && (adTitle.includes(sName) || sName.includes(adTitle))) return true;
@@ -208,6 +208,9 @@ const StoreProducts = () => {
             
             return false;
         });
+
+        if (matched.length > 0) return matched;
+        return allAds.filter(ad => ad.isActive !== false);
     }, [allAds, store]);
 
     // All products for this store (INCLUDE closed for search)
@@ -247,7 +250,7 @@ const StoreProducts = () => {
         return clean.charAt(0).toUpperCase() + clean.slice(1);
     };
 
-    // Extract unique subcategories and their counts from the store's products
+    // Extract unique categories and subcategories for the store page category scroller
     const subcategoryData = useMemo(() => {
         const counts = {};
         const relevantCategoryIds = new Set();
@@ -260,7 +263,14 @@ const StoreProducts = () => {
 
         groupedStoreProducts.forEach(p => {
             const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-            const unique = [...new Set(subs.map(normalizeSub).filter(Boolean))];
+            let items = subs.map(normalizeSub).filter(Boolean);
+            
+            // If product has no subcategory, extract its category
+            if (items.length === 0 && p.category) {
+                items = [normalizeSub(p.category)];
+            }
+
+            const unique = [...new Set(items.filter(Boolean))];
             unique.forEach(s => {
                 counts[s] = (counts[s] || 0) + 1;
             });
@@ -269,6 +279,15 @@ const StoreProducts = () => {
                 relevantCategoryIds.add(String(catId));
             }
         });
+
+        // Fallback: If counts is empty, populate from store.type or categories
+        if (Object.keys(counts).length === 0 && store?.type) {
+            const types = Array.isArray(store.type) ? store.type : [store.type];
+            types.filter(Boolean).forEach(t => {
+                const norm = normalizeSub(t);
+                if (norm) counts[norm] = 1;
+            });
+        }
 
         const result = Object.entries(counts)
             .map(([name, count]) => ({ name, count }));
@@ -287,6 +306,10 @@ const StoreProducts = () => {
                             subOrder.push(normalized);
                         }
                     });
+                }
+                const catNorm = normalizeSub(cat.name);
+                if (!subOrder.includes(catNorm)) {
+                    subOrder.push(catNorm);
                 }
             }
         });
@@ -442,15 +465,23 @@ const StoreProducts = () => {
         const norm = String(subName).toLowerCase().trim();
         
         // 1. Check if matching category exists
-        const matchingCat = categories?.find(c => (c.name || '').toLowerCase().trim() === norm);
+        const matchingCat = categories?.find(c => {
+            const cName = (c.name || '').toLowerCase().trim();
+            const cClean = getCleanCategoryName(c, 'en').toLowerCase().trim();
+            const cTa = getCleanCategoryName(c, 'ta').toLowerCase().trim();
+            return cName === norm || cClean === norm || cTa === norm || norm.includes(cClean) || cClean.includes(norm);
+        });
         if (matchingCat) {
             return matchingCat.image || `${API_BASE_URL}/categories/${matchingCat._id || matchingCat.id}/image`;
         }
         
-        // 2. Check if a product with this subcategory has an image
+        // 2. Check if a product with this subcategory or category has an image
         const matchingProduct = groupedStoreProducts?.find(p => {
             const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-            return subs.some(s => normalizeSub(s).toLowerCase() === norm);
+            const matchSub = subs.some(s => normalizeSub(s).toLowerCase() === norm);
+            if (matchSub) return true;
+            const matchCat = normalizeSub(p.category || '').toLowerCase() === norm;
+            return matchCat;
         });
         if (matchingProduct?.image) {
             return matchingProduct.image;
@@ -491,9 +522,7 @@ const StoreProducts = () => {
                                 </button>
                             </div>
                             <div className="flex flex-col items-center text-center px-10 min-w-0">
-                                <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[220px] sm:max-w-[320px]">
-                                    {store?.name || t('Store')}
-                                </h1>
+                                <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[220px] sm:max-w-[320px]">{t('Store')}</h1>
                                 <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
                             </div>
                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -653,36 +682,34 @@ const StoreProducts = () => {
             </section>
 
             {subcategoryData.length > 0 && (
-                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-4">
-                    <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide py-1 px-0.5">
+                <div className="max-w-7xl mx-auto px-4 mb-3.5 sm:mb-4">
+                    <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide py-1.5 px-0.5">
                         {/* "All" Pill */}
                         <button
                             type="button"
                             onClick={() => setSelectedSubcategory(null)}
-                            className={`flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
+                            className={`flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
                                 !selectedSubcategory
-                                    ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm font-bold'
+                                    ? 'bg-[#CBF9B2] text-[#1B381B] border-[#9ee478] shadow-sm font-bold'
                                     : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
                             }`}
                         >
-                            <div className={`w-6 h-6 sm:w-6 sm:h-6 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
-                                !selectedSubcategory ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'
-                            }`}>
+                            <div className="w-6 h-6 flex items-center justify-center bg-transparent flex-shrink-0">
                                 {storePillImage ? (
                                     <img 
                                         src={storePillImage} 
                                         alt={t('All')} 
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-contain bg-transparent"
                                         onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
                                     />
                                 ) : (
-                                    <span className="text-[10px] font-bold">★</span>
+                                    <span className="text-[11px] font-bold">★</span>
                                 )}
                             </div>
                             <span className="whitespace-nowrap leading-none">{t('All')}</span>
                         </button>
 
-                        {/* Subcategory Pills */}
+                        {/* Category / Subcategory Pills */}
                         {subcategoryData.map(({ name }) => {
                             const isSelected = selectedSubcategory === name;
                             const subImage = getSubcategoryImage(name);
@@ -693,27 +720,25 @@ const StoreProducts = () => {
                                     key={name}
                                     type="button"
                                     onClick={() => setSelectedSubcategory(name)}
-                                    className={`flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
+                                    className={`flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
                                         isSelected
-                                            ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm font-bold'
+                                            ? 'bg-[#CBF9B2] text-[#1B381B] border-[#9ee478] shadow-sm font-bold'
                                             : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
                                     }`}
                                 >
-                                    <div className={`w-6 h-6 sm:w-6 sm:h-6 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
-                                        isSelected ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'
-                                    }`}>
+                                    <div className="w-6 h-6 flex items-center justify-center bg-transparent flex-shrink-0">
                                         {subImage ? (
                                             <img
                                                 src={subImage}
                                                 alt={cleanName}
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-full object-contain bg-transparent"
                                                 onError={(e) => {
                                                     e.target.onerror = null;
                                                     e.target.style.display = 'none';
                                                 }}
                                             />
                                         ) : (
-                                            <span className="text-[10px] font-bold">
+                                            <span className="text-[11px] font-bold">
                                                 {cleanName.charAt(0).toUpperCase()}
                                             </span>
                                         )}
