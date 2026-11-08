@@ -314,11 +314,13 @@ export const CartProvider = ({ children }) => {
     const isItemFree = (item) => Boolean(
         item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
     );
-    // Only make delivery free if ONLY free products are in the cart
+    // Delivery is ONLY free if ALL items in cart are free delivery products
+    // If ANY non-free product is added, standard delivery charge applies
     const isOnlyFreeProducts = cartItems.length > 0 && cartItems.every(isItemFree);
     const hasGoldProduct = isOnlyFreeProducts;
-    const baseDeliveryCharge = calculateDeliveryCharge(cartItems);
-    const deliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
+    const nonFreeItems = cartItems.filter(item => !isItemFree(item));
+    const baseDeliveryCharge = calculateDeliveryCharge(nonFreeItems.length > 0 ? nonFreeItems : cartItems);
+    const deliveryCharge = isOnlyFreeProducts ? 0 : baseDeliveryCharge;
 
     const value = {
         cartItems,

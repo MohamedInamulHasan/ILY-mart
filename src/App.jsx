@@ -100,20 +100,23 @@ const RoleRedirectHandler = () => {
         const roles = getUserRoles(user);
         const isAdmin = roles.includes('admin');
         const isDeliveryBoy = roles.includes('delivery_boy');
-        
-        console.log('RoleRedirectHandler: Checking role', { roles, pathname: location.pathname });
 
-        // Only route to active delivery order if user specifically has one locked
+        // STRICT ACCESS CONTROL: Delivery boy has NO access to other pages except delivery panel and orders list
         if (isDeliveryBoy && !isAdmin) {
+            const allowedPrefixes = ['/admin', '/login', '/forgot-password', '/reset-password'];
+            const isAllowed = allowedPrefixes.some(p => location.pathname === p || location.pathname.startsWith(p));
+            if (!isAllowed) {
+                navigate('/admin', { replace: true });
+                return;
+            }
+
             const activeOrderId = localStorage.getItem('active_delivery_order_id');
             const activeStay = localStorage.getItem('active_delivery_stay');
             if (activeOrderId && activeStay !== 'false' && !location.pathname.startsWith('/admin/delivery-order')) {
-                console.log('RoleRedirectHandler: Staying on active delivery order', activeOrderId);
                 navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
                 return;
             }
         }
-        // No longer forcing admin to /admin automatically here, so they can "see all pages"
     }, [user, loading, location.pathname, navigate]);
 
     return null;

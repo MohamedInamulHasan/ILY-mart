@@ -2411,14 +2411,13 @@ const CategoryManagement = () => {
         // Use API fallback for image if not directly stored
         const imageUrl = category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`;
         setFormData({
-            name: category.name,
+            name: category.name || '',
             image: imageUrl,
-            subcategories: category.subcategories || [],
+            subcategories: Array.isArray(category.subcategories) ? category.subcategories : [],
             subcategoryImages: category.subcategoryImages || {},
             isPreview: Boolean(category.isPreview === true || category.mode === 'preview')
         });
         setNewSubcategory('');
-        setNewSubcategoryImage('');
         setView('form');
     };
 
@@ -2482,7 +2481,6 @@ const CategoryManagement = () => {
             }
             setFormData({ name: '', image: '', subcategories: [], subcategoryImages: {}, isPreview: false });
             setNewSubcategory('');
-            setNewSubcategoryImage('');
             setEditingCategory(null);
             setView('list');
         } catch (error) {
@@ -2926,7 +2924,7 @@ const CategoryManagement = () => {
                                             </td>
                                         </tr>
                                         {items.length > 0 ? items.map(category => (
-                                            <SortableRow key={category._id || category.id} data-id={category._id || category.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors bg-white dark:bg-gray-800">
+                                            <SortableRow key={category._id || category.id} id={category._id || category.id} data-id={category._id || category.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors bg-white dark:bg-gray-800">
                                                 <td className="p-4">
                                                     <DragHandle className="cursor-grab text-gray-400 hover:text-gray-600">
                                                         <GripVertical size={20} />
@@ -3002,18 +3000,31 @@ const CategoryManagement = () => {
                                                         );
                                                     })()}
                                                 </td>
-                                                <td className="p-4">
-                                                    <div className="flex gap-2 relative z-20" onPointerDown={(e) => e.stopPropagation()}>
-                                                        {/* Stop propagation to prevent drag start on buttons */}
+                                                <td className="p-4" onPointerDown={(e) => e.stopPropagation()}>
+                                                    <div className="flex gap-2 items-center relative z-20">
                                                         <button
-                                                            onClick={(e) => { e.stopPropagation(); handleEdit(category); }}
-                                                            className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] rounded-xl transition-colors"
+                                                            type="button"
+                                                            onPointerDown={(e) => e.stopPropagation()}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleEdit(category);
+                                                            }}
+                                                            className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] rounded-xl transition-colors cursor-pointer"
+                                                            title={t('Edit')}
                                                         >
                                                             <Edit2 size={18} />
                                                         </button>
                                                         <button
-                                                            onClick={(e) => { e.stopPropagation(); handleDelete(category._id || category.id); }}
-                                                            className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                                                            type="button"
+                                                            onPointerDown={(e) => e.stopPropagation()}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleDelete(category._id || category.id);
+                                                            }}
+                                                            className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer"
+                                                            title={t('Delete')}
                                                         >
                                                             <Trash2 size={18} />
                                                         </button>
@@ -5073,7 +5084,8 @@ const CityManagement = () => {
 };
 
 // Sortable Row Component for DnD tables
-const SortableRow = ({ children, ...props }) => {
+const SortableRow = ({ children, id, ...props }) => {
+    const rowId = id || props['data-id'];
     const {
         attributes,
         listeners,
@@ -5082,7 +5094,7 @@ const SortableRow = ({ children, ...props }) => {
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: props['data-id'] });
+    } = useSortable({ id: rowId });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -5094,7 +5106,7 @@ const SortableRow = ({ children, ...props }) => {
 
     return (
         <SortableItemContext.Provider value={{ attributes, listeners, ref: setActivatorNodeRef }}>
-            <tr ref={setNodeRef} style={style} className={`${props.className} ${isDragging ? 'bg-[#E8F5E9] dark:bg-[#2E5A2E]/20' : ''}`}>
+            <tr ref={setNodeRef} style={style} className={`${props.className || ''} ${isDragging ? 'bg-[#E8F5E9] dark:bg-[#2E5A2E]/20' : ''}`}>
                 {children}
             </tr>
         </SortableItemContext.Provider>

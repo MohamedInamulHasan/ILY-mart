@@ -372,13 +372,13 @@ const Checkout = () => {
 
                 // Step B: Calculate delivery & slot parameters
                 const currentUser = userProfile?.data || updatedUserData;
-                const hasCoins = currentUser?.coins > 0;
                 const isItemFree = (item) => Boolean(
                     item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
                 );
                 const isOnlyFreeProducts = displayItems.length > 0 && displayItems.every(isItemFree);
-                const baseDeliveryCharge = calculateDeliveryCharge(displayItems);
-                const finalDeliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
+                const nonFreeItems = displayItems.filter(item => !isItemFree(item));
+                const baseDeliveryCharge = calculateDeliveryCharge(nonFreeItems.length > 0 ? nonFreeItems : displayItems);
+                const finalDeliveryCharge = isOnlyFreeProducts ? 0 : baseDeliveryCharge;
 
                 const isScheduledMode = settings?.deliveryTimingType !== 'instant' && !hasPreviewItems;
                 const deliveryTimeParam = isScheduledMode && selectedTimeSlot 
@@ -439,14 +439,14 @@ const Checkout = () => {
 
     // Use userProfile for fresh coin data, fallback to user from auth
     const currentUser = userProfile?.data || user;
-    const hasCoins = currentUser?.coins > 0;
     const isItemFree = (item) => Boolean(
         item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
     );
     const isOnlyFreeProducts = displayItems.length > 0 && displayItems.every(isItemFree);
     const hasGoldProduct = isOnlyFreeProducts;
-    const baseDeliveryCharge = calculateDeliveryCharge(displayItems);
-    const deliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
+    const nonFreeItems = displayItems.filter(item => !isItemFree(item));
+    const baseDeliveryCharge = calculateDeliveryCharge(nonFreeItems.length > 0 ? nonFreeItems : displayItems);
+    const deliveryCharge = isOnlyFreeProducts ? 0 : baseDeliveryCharge;
     const finalTotal = displayTotal + deliveryCharge;
 
     return (

@@ -58,9 +58,8 @@ const IncomingOrderModal = ({
 
     // Only play alert sound for fresh pending/processing orders
     useEffect(() => {
-        if (!order || !onClose) return;
-        return registerModalBackHandler(onClose);
-    }, [order, onClose]);
+        // Alert card stays active until delivery boy accepts or skips; not dismissed by back button
+    }, []);
 
 // In-app alert shows until skipped or viewed (no 8s auto-countdown)
 
@@ -281,12 +280,13 @@ const IncomingOrderModal = ({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 onClick={(e) => {
-                    if (e.target === e.currentTarget) handleDismissView();
+                    // Alert card stays locked in front of delivery boy until Accept or Skip
+                    e.stopPropagation();
                 }}
                 onPointerDown={(e) => {
-                    if (e.target === e.currentTarget) handleDismissView();
+                    e.stopPropagation();
                 }}
-                className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 select-none cursor-pointer"
+                className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 select-none"
             >
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}

@@ -100,7 +100,6 @@ const DeliveryDashboard = () => {
         if (!socket) return;
         const handleNewOrder = () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            playSuccessSound();
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate([200, 100, 200]);
             }

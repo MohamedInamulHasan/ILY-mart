@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
+import { useAuth } from '../context/AuthContext';
+import { getUserRoles } from './userHelpers';
 
 // Global stack for modal dismissal on Android hardware back button
 const modalBackStack = [];
@@ -61,6 +63,9 @@ export const useBackButton = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const locationRef = useRef(location);
+    const { user } = useAuth();
+    const userRef = useRef(user);
+    useEffect(() => { userRef.current = user; }, [user]);
 
     useEffect(() => {
         locationRef.current = location;
@@ -96,6 +101,25 @@ export const useBackButton = () => {
             }
 
             const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
+
+            // DELIVERY BOY STRICT NAVIGATION: Never go to customer pages on back click
+            const roles = getUserRoles(userRef.current);
+            const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
+            if (isDeliveryBoy) {
+                // If viewing an active order, back button returns to the delivery panel (/admin)
+                if (currentPath.startsWith('/admin/delivery-order')) {
+                    localStorage.setItem('active_delivery_stay', 'false');
+                    navigate('/admin', { replace: true });
+                    return true;
+                }
+                // If on delivery panel root, do not navigate back to customer pages; minimize app
+                if (currentPath === '/admin') {
+                    return false;
+                }
+                // If on any other page, immediately navigate to /admin
+                navigate('/admin', { replace: true });
+                return true;
+            }
             const orderJustPlaced = (() => {
                 try {
                     return sessionStorage.getItem('orderJustPlaced') === 'true';

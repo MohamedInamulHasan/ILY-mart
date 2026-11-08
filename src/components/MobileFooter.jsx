@@ -1,3 +1,4 @@
+import { getUserRoles } from '../utils/userHelpers';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
@@ -128,6 +129,12 @@ const MobileFooter = () => {
         { path: '/orders', icon: OrdersIcon, label: 'Orders' },
         { path: '/profile', icon: ProfileIcon, label: 'Profile' },
     ];
+
+    const roles = getUserRoles(user);
+    const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
+    if (isDeliveryBoy) {
+        return null; // Delivery boy has no access to customer navigation footer
+    }
 
     const allowedFooterRoutes = ['/', '/store', '/orders', '/profile', '/categories'];
     const isAllowedRoute = (pathname) => allowedFooterRoutes.includes(pathname) || pathname.startsWith('/category/') || pathname.startsWith('/main-category');

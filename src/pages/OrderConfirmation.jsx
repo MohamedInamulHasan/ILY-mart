@@ -61,10 +61,11 @@ const OrderConfirmation = () => {
         setCreatedOrderId(instantOrderId);
 
         // Use provided delivery charge or default to 20
-        const finalDeliveryCharge = deliveryCharge !== undefined ? deliveryCharge : 20;
-
-        // NEW: Use dynamic delivery charge calculation
-        const baseDeliveryCharge = calculateDeliveryCharge(cartItems);
+        const isOnlyFreeProducts = (cartItems || []).length > 0 && (cartItems || []).every(isItemFree);
+        const nonFreeItems = (cartItems || []).filter(item => !isItemFree(item));
+        const baseDeliveryCharge = calculateDeliveryCharge(nonFreeItems.length > 0 ? nonFreeItems : (cartItems || []));
+        const computedDeliveryCharge = isOnlyFreeProducts ? 0 : baseDeliveryCharge;
+        const finalDeliveryCharge = deliveryCharge !== undefined ? deliveryCharge : computedDeliveryCharge;
 
         // Create order object matching backend schema
         const newOrder = {

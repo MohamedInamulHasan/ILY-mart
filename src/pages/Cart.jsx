@@ -19,14 +19,14 @@ const Cart = () => {
     const navigate = useNavigate();
 
     const currentUser = userProfile?.data || user;
-    const hasCoins = currentUser?.coins > 0;
     const isItemFree = (item) => Boolean(
         item && (item.isGold === true || (item.product && item.product.isGold === true) || item.deliveryCharge === 0 || item.isFreeDelivery === true || item.freeDelivery === true)
     );
     const isOnlyFreeProducts = cartItems.length > 0 && cartItems.every(isItemFree);
     const hasGoldProduct = isOnlyFreeProducts;
-    const baseDeliveryCharge = calculateDeliveryCharge(cartItems);
-    const deliveryCharge = (hasCoins || isOnlyFreeProducts) ? 0 : baseDeliveryCharge;
+    const nonFreeItems = cartItems.filter(item => !isItemFree(item));
+    const baseDeliveryCharge = calculateDeliveryCharge(nonFreeItems.length > 0 ? nonFreeItems : cartItems);
+    const deliveryCharge = isOnlyFreeProducts ? 0 : baseDeliveryCharge;
     const finalTotal = cartTotal + deliveryCharge;
 
     const handleBackNav = () => {

@@ -9,6 +9,13 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
     const location = useLocation();
 
     // Admin-only routes: require a real admin/staff account
+    // If delivery boy tries to access non-admin customer routes, redirect to delivery panel
+    const roles = getUserRoles(user);
+    const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
+    if (isDeliveryBoy && !adminOnly) {
+        return <Navigate to="/admin" replace />;
+    }
+
     if (adminOnly) {
         // If still loading and we don't have cached admin credentials yet, show spinner
         if (loading && !hasAdminAccess(user)) {
