@@ -29,11 +29,21 @@ export const getUserRoles = (user) => {
     addRoles(user);
     if (user?.data) addRoles(user.data);
 
-    // 2. Check localStorage cached userInfo
+        // 2. Check localStorage cached userInfo ONLY IF user matches or no user object passed
     try {
         const cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        addRoles(cached);
-        if (cached?.data) addRoles(cached.data);
+        const userObj = user?.data || user;
+        const cachedObj = cached?.data || cached;
+        const uId = String(userObj?._id || userObj?.id || '');
+        const cId = String(cachedObj?._id || cachedObj?.id || '');
+        const uMobile = (userObj?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+        const cMobile = (cachedObj?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+
+        // Prevent cross-user pollution: only add cached roles if it belongs to the same user
+        if (!user || (uId && cId && uId === cId) || (uMobile && cMobile && uMobile === cMobile)) {
+            addRoles(cached);
+            if (cached?.data) addRoles(cached.data);
+        }
     } catch {}
 
     // 3. Fallback for store owner / admin mobile (9500171980)

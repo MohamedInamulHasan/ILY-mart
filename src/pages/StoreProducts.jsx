@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, Phone, ChevronRight, AlertCircle, Zap, Search, ListFilter, ShoppingCart, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
@@ -139,6 +140,12 @@ const StoreAdsBanner = ({ ads, t }) => {
                             }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
+                        {/* Continuous light sheen shine effect */}
+                        <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none z-[15]"
+                            animate={{ x: ['-100%', '150%'] }}
+                            transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
+                        />
 
                         {/* Order Now Tag in the right side of image: white card, black thick text */}
                         <button
@@ -188,11 +195,11 @@ const StoreProducts = () => {
 
     // Matching ads mentioning this store
     const storeAds = useMemo(() => {
-        if (!Array.isArray(allAds) || allAds.length === 0) return [];
+        if (!store || !Array.isArray(allAds) || allAds.length === 0) return [];
         const sName = (store?.name || '').toLowerCase().trim();
         const sId = String(store?._id || store?.id || '');
         
-        const matched = allAds.filter(ad => {
+        return allAds.filter(ad => {
             if (ad.isActive === false) return false;
             const adStoreId = String(ad.storeId?._id || ad.storeId || '');
             if (adStoreId && sId && adStoreId === sId) return true;
@@ -200,7 +207,7 @@ const StoreProducts = () => {
             const adStoreName = String(ad.storeName || '').toLowerCase().trim();
             if (adStoreName && sName && (adStoreName === sName || sName.includes(adStoreName) || adStoreName.includes(sName))) return true;
             
-            const adTitle = String(ad.title || '').toLowerCase().trim();
+            const adTitle = String(ad.title || ad.offerTitle || '').toLowerCase().trim();
             if (adTitle && sName && (adTitle.includes(sName) || sName.includes(adTitle))) return true;
             
             const adLink = String(ad.link || '');
@@ -208,9 +215,6 @@ const StoreProducts = () => {
             
             return false;
         });
-
-        if (matched.length > 0) return matched;
-        return allAds.filter(ad => ad.isActive !== false);
     }, [allAds, store]);
 
     // All products for this store (INCLUDE closed for search)
@@ -682,68 +686,39 @@ const StoreProducts = () => {
             </section>
 
             {subcategoryData.length > 0 && (
-                <div className="max-w-7xl mx-auto px-4 mb-3.5 sm:mb-4">
-                    <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide py-1.5 px-0.5">
-                        {/* "All" Pill */}
+                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
+                    <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
                         <button
                             type="button"
                             onClick={() => setSelectedSubcategory(null)}
-                            className={`flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
-                                !selectedSubcategory
-                                    ? 'bg-[#CBF9B2] text-[#1B381B] border-[#9ee478] shadow-sm font-bold'
-                                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
+                            className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${
+                                !selectedSubcategory 
+                                    ? 'text-black dark:text-white font-bold' 
+                                    : 'text-gray-400 hover:text-black dark:hover:text-white'
                             }`}
                         >
-                            <div className="w-6 h-6 flex items-center justify-center bg-transparent flex-shrink-0">
-                                {storePillImage ? (
-                                    <img 
-                                        src={storePillImage} 
-                                        alt={t('All')} 
-                                        className="w-full h-full object-contain bg-transparent"
-                                        onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
-                                    />
-                                ) : (
-                                    <span className="text-[11px] font-bold">★</span>
-                                )}
-                            </div>
-                            <span className="whitespace-nowrap leading-none">{t('All')}</span>
+                            {t('All')}
+                            {!selectedSubcategory && (
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                            )}
                         </button>
-
-                        {/* Category / Subcategory Pills */}
                         {subcategoryData.map(({ name }) => {
                             const isSelected = selectedSubcategory === name;
-                            const subImage = getSubcategoryImage(name);
-                            const cleanName = getCleanCategoryName(name, language);
-
                             return (
                                 <button
                                     key={name}
                                     type="button"
                                     onClick={() => setSelectedSubcategory(name)}
-                                    className={`flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
-                                        isSelected
-                                            ? 'bg-[#CBF9B2] text-[#1B381B] border-[#9ee478] shadow-sm font-bold'
-                                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
+                                    className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${
+                                        isSelected 
+                                            ? 'text-black dark:text-white font-bold' 
+                                            : 'text-gray-400 hover:text-black dark:hover:text-white'
                                     }`}
                                 >
-                                    <div className="w-6 h-6 flex items-center justify-center bg-transparent flex-shrink-0">
-                                        {subImage ? (
-                                            <img
-                                                src={subImage}
-                                                alt={cleanName}
-                                                className="w-full h-full object-contain bg-transparent"
-                                                onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.style.display = 'none';
-                                                }}
-                                            />
-                                        ) : (
-                                            <span className="text-[11px] font-bold">
-                                                {cleanName.charAt(0).toUpperCase()}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className="whitespace-nowrap leading-none">{cleanName}</span>
+                                    {getCleanCategoryName(name, language)}
+                                    {isSelected && (
+                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                                    )}
                                 </button>
                             );
                         })}

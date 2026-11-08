@@ -61,6 +61,21 @@ const MainCategoryProducts = () => {
         return found || { name: decodedMainCatName, categories: [] };
     }, [location.state, mainCategories, decodedMainCatName]);
 
+        // Automatically direct connect to Second Home Page (/category/:categoryName)
+    useEffect(() => {
+        if (!loadingMainCats && !loadingCategories) {
+            const first = subCategories[0]?.name || subCategories[0] || currentMainCat?.name || 'All';
+            const catFilters = subCategories.map(c => c.name || c);
+            navigate(`/category/${encodeURIComponent(first)}`, {
+                replace: true,
+                state: {
+                    mainCategory: currentMainCat?.name || decodedMainCatName,
+                    filterCategories: catFilters.length > 0 ? catFilters : [first]
+                }
+            });
+        }
+    }, [loadingMainCats, loadingCategories, subCategories, currentMainCat, decodedMainCatName, navigate]);
+
     // Categories belonging to this Main Category
     const subCategories = useMemo(() => {
         const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);

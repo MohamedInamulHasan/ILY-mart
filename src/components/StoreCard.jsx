@@ -1,16 +1,15 @@
 import React, { memo } from 'react';
 import { getThumbnailUrl } from '../utils/imageOptimizer';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, ArrowRight } from 'lucide-react';
+import { MapPin, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { isStoreOpen, getStoreTimeLabel } from '../utils/storeHelpers';
+import { isStoreOpen } from '../utils/storeHelpers';
 import { API_BASE_URL } from '../utils/api';
 
 const StoreCard = ({ store }) => {
     const { t } = useLanguage();
     const navigate = useNavigate();
     const isOpen = isStoreOpen(store);
-    const timeLabel = getStoreTimeLabel(store);
 
     const handleVisit = () => {
         if (isOpen) {
@@ -51,13 +50,6 @@ const StoreCard = ({ store }) => {
                 </div>
             )}
 
-            {/* Timing Badge (Top Right) */}
-            {timeLabel && (
-                <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2 py-1 rounded-full shadow-xs">
-                    <Clock size={9} className="flex-shrink-0 opacity-80" />
-                    <span className="text-[9px] font-bold tracking-tight leading-none">{timeLabel}</span>
-                </div>
-            )}
 
             {/* Closed Status Overlay */}
             {!isOpen && (

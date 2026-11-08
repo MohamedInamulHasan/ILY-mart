@@ -158,6 +158,28 @@ const Profile = () => {
 
 
 
+        // Only show delivery boy card when the user's mobile number is registered with delivery_boy role
+    const hasDeliveryRole = (obj) => {
+        if (!obj) return false;
+        const r = obj.role || obj.roles;
+        if (Array.isArray(r)) return r.some(item => typeof item === 'string' && ['delivery_boy', 'deliveryboy'].includes(item.toLowerCase().trim()));
+        if (typeof r === 'string') return ['delivery_boy', 'deliveryboy'].includes(r.toLowerCase().trim());
+        return Boolean(obj.isDeliveryBoy);
+    };
+
+    const isDeliveryBoy = useMemo(() => {
+        const activeUser = userProfile?.data || userProfile || user || authUser;
+        const mobile = (activeUser?.mobile || user?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+        // Delivery boy must have a valid phone number and explicit delivery_boy role on profile
+        if (!mobile) return false;
+        return Boolean(
+            hasDeliveryRole(userProfile?.data) ||
+            hasDeliveryRole(userProfile) ||
+            hasDeliveryRole(user) ||
+            hasDeliveryRole(authUser)
+        );
+    }, [userProfile, user, authUser]);
+
     // Robust extraction of all roles from every available source
     const roles = useMemo(() => {
         return getUserRoles(userProfile?.data || userProfile || user || authUser);
@@ -166,7 +188,6 @@ const Profile = () => {
     const isAdmin = roles.includes('admin');
     const isStoreAdmin = roles.includes('store_admin');
     const isServiceAdmin = roles.includes('service_admin');
-    const isDeliveryBoy = roles.includes('delivery_boy');
     const isAdminView = isAdmin || isStoreAdmin || isServiceAdmin || isDeliveryBoy;
     const addressObj = user?.address || {};
     const isAddressObject = typeof user?.address === 'object' && user?.address !== null;

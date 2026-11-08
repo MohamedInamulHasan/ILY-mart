@@ -335,7 +335,7 @@ const Shop = () => {
                                 <div className="max-w-7xl mx-auto mb-4">
                                     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                                         {[1, 2, 3, 4, 5].map((i) => (
-                                            <div key={i} className="flex-shrink-0 bg-gray-200 dark:bg-gray-700 animate-pulse w-24 h-8 rounded-full"></div>
+                                            <div key={i} className="flex-shrink-0 h-[36px] w-24 rounded-full blinkit-shimmer"></div>
                                         ))}
                                     </div>
                                 </div>
@@ -357,29 +357,31 @@ const Shop = () => {
                                                     onClick={() => {
                                                         handleCategoryClick(category.name);
                                                     }}
-                                                    className={`flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
-                                                        isActive
-                                                            ? 'bg-[#CBF9B2] text-[#1B381B] border-[#9ee478] shadow-sm font-bold'
-                                                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
-                                                    }`}
+                                                    className={`flex items-center gap-2 ${isAll ? 'px-4' : 'pl-2 pr-3.5'} h-[36px] min-h-[36px] rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
+    isActive
+        ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm font-bold'
+        : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
+}`}
                                                 >
-                                                    <div className="w-6 h-6 flex items-center justify-center bg-transparent flex-shrink-0">
-                                                        {imgSrc ? (
-                                                            <img
-                                                                src={imgSrc}
-                                                                alt={cleanName}
-                                                                className="w-full h-full object-contain bg-transparent"
-                                                                onError={(e) => {
-                                                                    e.target.onerror = null;
-                                                                    e.target.style.display = 'none';
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <span className="text-[11px] font-bold">
-                                                                {isAll ? '★' : cleanName.charAt(0).toUpperCase()}
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                    {!isAll && (
+                                                        <div className="w-6 h-6 flex items-center justify-center bg-transparent flex-shrink-0">
+                                                            {imgSrc ? (
+                                                                <img
+                                                                    src={imgSrc}
+                                                                    alt={cleanName}
+                                                                    className="w-full h-full object-contain bg-transparent"
+                                                                    onError={(e) => {
+                                                                        e.target.onerror = null;
+                                                                        e.target.style.display = 'none';
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <span className="text-[11px] font-bold">
+                                                                    {cleanName.charAt(0).toUpperCase()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     <span className="whitespace-nowrap leading-none">{cleanName}</span>
                                                 </button>
                                             );
@@ -405,7 +407,7 @@ const Shop = () => {
                                         {[...Array(6)].map((_, i) => (
                                             <div
                                                 key={i}
-                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/10] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
+                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
                                             >
                                                 {/* Full Card Shimmer Image Background */}
                                                 <div className="absolute inset-0 blinkit-shimmer" />
@@ -415,10 +417,7 @@ const Shop = () => {
                                                     <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
                                                 </div>
 
-                                                {/* Timing Badge Skeleton (Top Right) */}
-                                                <div className="absolute top-3 right-3 z-10">
-                                                    <div className="h-5 w-16 rounded-full bg-black/20 dark:bg-white/10 backdrop-blur-sm" />
-                                                </div>
+                                                
 
                                                 {/* Content Section - White Banner at Bottom */}
                                                 <div className="absolute bottom-0 left-0 right-0 py-2 px-3.5 z-10 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
@@ -472,7 +471,7 @@ const Shop = () => {
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
                                             <div
                                                 key={i}
-                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/10] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
+                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
                                             >
                                                 <div className="absolute inset-0 blinkit-shimmer" />
                                                 <div className="absolute top-3 left-3 z-10">

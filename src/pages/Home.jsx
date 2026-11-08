@@ -54,15 +54,55 @@ const Home = () => {
     // Data Fetching
     const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
     const { data: ads = [], isLoading: loadingAds } = useAds();
+
+    // Home page only shows non-mentioned banners (general platform ads that do not mention a specific store)
+    const homeAds = useMemo(() => {
+        if (!Array.isArray(ads) || ads.length === 0) return [];
+        return ads.filter(ad => {
+            if (ad.isActive === false) return false;
+            const hasStoreId = Boolean(ad.storeId && (ad.storeId._id || String(ad.storeId).trim() !== ''));
+            const hasStoreName = Boolean(ad.storeName && String(ad.storeName).trim() !== '');
+            // Exclude if it mentions a store
+            if (hasStoreId || hasStoreName) return false;
+            return true;
+        });
+    }, [ads]);
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
     const { data: rawStores = [], isLoading: loadingStores } = useStores();
-    const { data: mainCategories = [] } = useMainCategories();
+    const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
 
-    const handleMainCategoryClick = (mainCat) => {
+        const handleMainCategoryClick = (mainCat) => {
         if (!mainCat) return;
-        navigate(`/main-category/${encodeURIComponent(mainCat.name)}`, {
+        const catList = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
+        const allProds = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
+        let filtered = catList.filter(c => !c.isHidden);
+        if (allProds.length > 0) {
+            const productCategories = new Set(
+                allProds.filter(p => p.isAvailable !== false).map(p => String(p.category || '').toLowerCase().trim())
+            );
+            filtered = filtered.filter(cat => productCategories.has(String(cat.name || '').toLowerCase().trim()));
+        }
+        const assigned = Array.isArray(mainCat.categories) ? mainCat.categories : [];
+        let subCats = [];
+        if (assigned.length > 0) {
+            const assignedSet = new Set(assigned.map(c => String(c).toLowerCase().trim()));
+            subCats = filtered.filter(cat =>
+                assignedSet.has(String(cat.name || '').toLowerCase().trim()) ||
+                assignedSet.has(String(cat._id || cat.id || '').toLowerCase().trim())
+            );
+        }
+        if (subCats.length === 0) {
+            const normMainName = String(mainCat.name || '').toLowerCase().trim();
+            subCats = filtered.filter(c => c.mainCategory && c.mainCategory.toLowerCase().trim() === normMainName);
+        }
+
+        const firstCatName = subCats.length > 0 ? (subCats[0].name || subCats[0]) : (mainCat.name || 'All');
+        const filterCatNames = subCats.length > 0 ? subCats.map(c => c.name || c) : (assigned.length > 0 ? assigned : [firstCatName]);
+
+        navigate(`/category/${encodeURIComponent(firstCatName)}`, {
             state: {
-                mainCategory: mainCat
+                mainCategory: mainCat.name,
+                filterCategories: filterCatNames
             }
         });
     };
@@ -363,16 +403,25 @@ const Home = () => {
                 </section>
 
                 {/* Ads */}
-                <HeroBanner slides={ads} isLoading={loadingAds} />
+                <HeroBanner slides={homeAds} isLoading={loadingAds} />
 
-                {/* Main Categories below Shop by Categories text (Home page only shows Main Categories cards) */}
-                {Array.isArray(mainCategories) && mainCategories.length > 0 && (
-                    <section className="pt-2 pb-3.5 mt-1 sm:mt-1.5 px-3 sm:px-4 mb-4">
-                        <div className="flex justify-between items-center mb-3 px-1">
-                            <h2 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
-                                {t('Shop By Categories')}
-                            </h2>
+                {/* Main Categories Section with Reconstructed Skeleton */}
+                <section className="pt-2 pb-3.5 mt-1 sm:mt-1.5 px-3 sm:px-4 mb-4">
+                    <div className="flex justify-between items-center mb-3 px-1">
+                        <h2 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
+                            {t('Shop By Categories')}
+                        </h2>
+                    </div>
+                    {loadingMainCats && (!Array.isArray(mainCategories) || mainCategories.length === 0) ? (
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="flex flex-col items-center">
+                                    <div className="w-full aspect-[16/9] rounded-2xl blinkit-shimmer border border-gray-100 dark:border-gray-800" />
+                                    <div className="mt-2 h-3.5 w-24 rounded-md blinkit-shimmer" />
+                                </div>
+                            ))}
                         </div>
+                    ) : Array.isArray(mainCategories) && mainCategories.length > 0 ? (
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             {mainCategories.map((mainCat) => {
                                 const cleanName = getCleanCategoryName(mainCat.name, language);
@@ -397,15 +446,15 @@ const Home = () => {
                                             />
                                         </div>
                                         {/* Main Category Name Below (Bracket Cleaned & 2-Line Multi-line Support) */}
-                                        <span className="mt-2 text-[12.5px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-100 text-center line-clamp-2 leading-tight min-h-[2.4em] flex items-center justify-center w-full px-1">
+                                        <span className="mt-1 sm:mt-1.5 text-[12.5px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-100 text-center line-clamp-2 leading-tight w-full px-1">
                                             {cleanName}
                                         </span>
                                     </div>
                                 );
                             })}
                         </div>
-                    </section>
-                )}
+                    ) : null}
+                </section>
 
                 </div>
             </div>

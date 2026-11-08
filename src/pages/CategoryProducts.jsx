@@ -445,8 +445,19 @@ const CategoryProducts = () => {
                     </div>
                 </section>
 
-                {/* Categories Bar (Side-scrollable like Home page with line effect - hidden if only 1 category) */}
-                {categories.length > 1 && (
+                {/* Categories Bar (Side-scrollable with reconstructed skeleton) */}
+                {loadingCategories && (!categories || categories.length === 0) ? (
+                    <div className="w-full px-4 mb-4 sm:mb-5">
+                        <div className="flex items-start gap-4 overflow-x-auto scrollbar-hide py-1">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                                    <div className="w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] rounded-full blinkit-shimmer" />
+                                    <div className="h-3 w-14 rounded-md blinkit-shimmer" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : categories.length > 1 ? (
                 <div className="w-full px-4 mb-4 sm:mb-5">
                     <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1">
                         {categories.map((category) => {
@@ -498,7 +509,7 @@ const CategoryProducts = () => {
                         })}
                     </div>
                 </div>
-                )}
+                ) : null}
 
                 {/* Related Products:
                     - If only ONE store in category: 2 cards per row with slightly bigger quantity controls!
@@ -506,15 +517,25 @@ const CategoryProducts = () => {
                 */}
                 <div className="px-3 sm:px-4 max-w-7xl mx-auto mt-4 sm:mt-5 pt-1">
                     {isLoading ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 px-1">
-                            {[1, 2, 3, 4, 5, 6].map((i) => (
-                                <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-2.5 shadow-xs border border-gray-100 dark:border-gray-700 space-y-2">
-                                    <div className="aspect-square w-full rounded-xl blinkit-shimmer"></div>
-                                    <div className="h-3.5 rounded-md w-full blinkit-shimmer"></div>
-                                    <div className="h-3 rounded-md w-2/3 blinkit-shimmer"></div>
-                                    <div className="flex items-center justify-between pt-1">
-                                        <div className="h-4 w-12 rounded-md blinkit-shimmer"></div>
-                                        <div className="h-8 w-8 rounded-full blinkit-shimmer"></div>
+                        <div className="space-y-6">
+                            {[1, 2].map((s) => (
+                                <div key={s} className="space-y-3">
+                                    <div className="flex justify-between items-center px-1">
+                                        <div className="h-4 w-36 sm:w-44 rounded-md blinkit-shimmer" />
+                                        <div className="h-3 w-14 rounded-md blinkit-shimmer" />
+                                    </div>
+                                    <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="w-[155px] sm:w-[170px] flex-shrink-0 bg-white dark:bg-gray-800 rounded-2xl p-2.5 shadow-xs border border-gray-100 dark:border-gray-700 space-y-2">
+                                                <div className="aspect-square w-full rounded-xl blinkit-shimmer"></div>
+                                                <div className="h-3.5 rounded-md w-full blinkit-shimmer"></div>
+                                                <div className="h-3 rounded-md w-2/3 blinkit-shimmer"></div>
+                                                <div className="flex items-center justify-between pt-1">
+                                                    <div className="h-5 w-12 rounded-md blinkit-shimmer"></div>
+                                                    <div className="h-7 w-7 rounded-lg blinkit-shimmer"></div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             ))}
