@@ -582,9 +582,11 @@ const StoreManagement = () => {
                                         <SortableStoreCard key={store.id || store._id} store={store}>
                                             <div className={`group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm flex flex-col h-full transition-all duration-300 ${isClosed ? '' : ''}`}>
                                                 <div className={`relative h-44 overflow-hidden ${isClosed ? 'opacity-60' : ''}`}>
-                                                    <DragHandle className="absolute top-3 left-3 z-30 p-2 bg-black/50 hover:bg-black/70 text-white rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg">
-                                                        <GripVertical size={18} />
-                                                    </DragHandle>
+                                                    {!isStoreAdmin && (
+                                                        <DragHandle className="absolute top-3 left-3 z-30 p-2 bg-black/50 hover:bg-black/70 text-white rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg">
+                                                            <GripVertical size={18} />
+                                                        </DragHandle>
+                                                    )}
 
                                                     <img
                                                         src={store.image || `${API_BASE_URL}/stores/${store.id || store._id}/image`}
@@ -1033,9 +1035,11 @@ const StoreManagement = () => {
                                             }).map(product => (
                                                 <SortableProductRow key={product._id || product.id} product={product}>
                                                     <td className="p-4">
+                                                        {!isStoreAdmin && (
                                                         <DragHandle className="text-gray-400 hover:text-gray-600">
                                                             <GripVertical size={20} />
                                                         </DragHandle>
+                                                    )}
                                                     </td>
                                                     <td className="p-4">
                                                         <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-white">

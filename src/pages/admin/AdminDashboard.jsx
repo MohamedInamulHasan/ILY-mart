@@ -2072,6 +2072,35 @@ const OrderManagement = () => {
     );
 };
 
+const SortableMainCategoryItem = ({ mainCat, children }) => {
+    const id = mainCat.id || mainCat._id || mainCat.name;
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        setActivatorNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.6 : 1,
+        position: 'relative',
+        zIndex: isDragging ? 999 : 1,
+    };
+
+    return (
+        <SortableItemContext.Provider value={{ attributes, listeners, ref: setActivatorNodeRef }}>
+            <div ref={setNodeRef} style={style} className={`${isDragging ? 'bg-[#E8F5E9] dark:bg-[#2E5A2E]/20' : ''}`}>
+                {children}
+            </div>
+        </SortableItemContext.Provider>
+    );
+};
+
 const CategoryManagement = () => {
     // const {categories, fetchCategories, addCategory, updateCategory, deleteCategory} = useData();
     // NEW HOOKS
@@ -2107,6 +2136,21 @@ const CategoryManagement = () => {
             categories: Array.isArray(mainCat.categories) ? mainCat.categories : []
         });
         setMainCatView('form');
+    };
+
+        const handleMainCategoryDragEnd = async (event) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        const oldIndex = mainCategories.findIndex(m => (m.id || m._id || m.name) === active.id);
+        const newIndex = mainCategories.findIndex(m => (m.id || m._id || m.name) === over.id);
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const reordered = arrayMove(mainCategories, oldIndex, newIndex);
+            try {
+                await saveMainCategories(reordered);
+            } catch (err) {
+                console.error('Failed to save reordered main categories:', err);
+            }
+        }
     };
 
     const handleDeleteMainCategory = async (mainCatId) => {
@@ -2439,9 +2483,9 @@ const CategoryManagement = () => {
                                     setMainCatView('list');
                                 }
                             }}
-                            className="px-4 py-2 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-2 font-bold shadow-sm"
+                            className="px-3 py-1.5 bg-[#2E5A2E] text-white text-xs sm:text-sm rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-1.5 font-semibold shadow-sm"
                         >
-                            {mainCatView === 'list' ? <Plus size={20} /> : <List size={20} />}
+                            {mainCatView === 'list' ? <Plus size={16} /> : <List size={16} />}
                             {mainCatView === 'list' ? t('Add Main Category') : t('View List')}
                         </button>
                     </div>
@@ -2449,72 +2493,80 @@ const CategoryManagement = () => {
                     {mainCatView === 'list' ? (
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                             {mainCategories.length > 0 ? (
-                                <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {mainCategories.map((mainCat) => {
-                                        const assignedCats = Array.isArray(mainCat.categories) ? mainCat.categories : [];
-                                        return (
-                                            <div 
-                                                key={mainCat.id || mainCat._id || mainCat.name} 
-                                                className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors"
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    {/* 16:9 Thumbnail preview */}
-                                                    <div className="w-24 sm:w-28 aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex-shrink-0">
-                                                        <img 
-                                                            src={mainCat.image} 
-                                                            alt={mainCat.name} 
-                                                            className="w-full h-full object-cover"
-                                                            onError={(e) => {
-                                                                e.target.onerror = null;
-                                                                e.target.src = 'https://placehold.co/450x800?text=' + encodeURIComponent(mainCat.name);
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                                                            {mainCat.name}
-                                                        </h3>
-                                                        <div className="flex flex-wrap gap-1 mt-1.5">
-                                                            {assignedCats.length > 0 ? (
-                                                                assignedCats.map((cName) => (
-                                                                    <span 
-                                                                        key={cName} 
-                                                                        className="text-[11px] bg-green-50 dark:bg-green-900/30 text-[#2E5A2E] dark:text-[#CBF9B2] px-2 py-0.5 rounded-full font-medium"
-                                                                    >
-                                                                        {getCleanCategoryName(cName, language)}
-                                                                    </span>
-                                                                ))
-                                                            ) : (
-                                                                <span className="text-xs text-gray-400 italic">
-                                                                    {t('No categories assigned')}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMainCategoryDragEnd}>
+                                    <SortableContext items={mainCategories.map(m => m.id || m._id || m.name)} strategy={verticalListSortingStrategy}>
+                                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                                            {mainCategories.map((mainCat) => {
+                                                const assignedCats = Array.isArray(mainCat.categories) ? mainCat.categories : [];
+                                                return (
+                                                    <SortableMainCategoryItem key={mainCat.id || mainCat._id || mainCat.name} mainCat={mainCat}>
+                                                        <div 
+                                                            className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                                                                <DragHandle className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing flex-shrink-0">
+                                                                    <GripVertical size={18} />
+                                                                </DragHandle>
+                                                                {/* 16:9 Thumbnail preview */}
+                                                                <div className="w-24 sm:w-28 aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex-shrink-0">
+                                                                    <img 
+                                                                        src={mainCat.image} 
+                                                                        alt={mainCat.name} 
+                                                                        className="w-full h-full object-cover"
+                                                                        onError={(e) => {
+                                                                            e.target.onerror = null;
+                                                                            e.target.src = 'https://placehold.co/450x800?text=' + encodeURIComponent(mainCat.name);
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
+                                                                        {mainCat.name}
+                                                                    </h3>
+                                                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                                                        {assignedCats.length > 0 ? (
+                                                                            assignedCats.map((cName) => (
+                                                                                <span 
+                                                                                    key={cName} 
+                                                                                    className="text-[11px] bg-green-50 dark:bg-green-900/30 text-[#2E5A2E] dark:text-[#CBF9B2] px-2 py-0.5 rounded-full font-medium"
+                                                                                >
+                                                                                    {getCleanCategoryName(cName, language)}
+                                                                                </span>
+                                                                            ))
+                                                                        ) : (
+                                                                            <span className="text-xs text-gray-400 italic">
+                                                                                {t('No categories assigned')}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
 
-                                                <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100 dark:border-gray-700">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleEditMainCategory(mainCat)}
-                                                        className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] dark:hover:bg-gray-700 rounded-xl transition-colors"
-                                                        title={t('Edit')}
-                                                    >
-                                                        <Edit2 size={18} />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDeleteMainCategory(mainCat.id || mainCat._id)}
-                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-                                                        title={t('Delete')}
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                                            <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100 dark:border-gray-700 flex-shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleEditMainCategory(mainCat)}
+                                                                    className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] dark:hover:bg-gray-700 rounded-xl transition-colors"
+                                                                    title={t('Edit')}
+                                                                >
+                                                                    <Edit2 size={18} />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteMainCategory(mainCat.id || mainCat._id)}
+                                                                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+                                                                    title={t('Delete')}
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </SortableMainCategoryItem>
+                                                );
+                                            })}
+                                        </div>
+                                    </SortableContext>
+                                </DndContext>
                             ) : (
                                 <div className="p-12 text-center text-gray-500 dark:text-gray-400">
                                     <p className="text-base font-medium">{t('No main categories created yet')}</p>

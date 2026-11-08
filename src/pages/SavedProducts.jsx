@@ -80,12 +80,12 @@ const SavedProducts = () => {
                                             product={product}
                                             isFastPurchase={true}
                                             showSave={true}
-                                            largeControls={true}
+                                            largeControls={false}
                                         />
                                     );
                                 }
 
-                                return <ProductCard key={product._id || product.id} product={product} stores={stores} showCartControls={true} showHeart={true} largeControls={true} />;
+                                return <ProductCard key={product._id || product.id} product={product} stores={stores} showCartControls={true} showHeart={true} largeControls={false} />;
                             })}
                     </div>
                 )}

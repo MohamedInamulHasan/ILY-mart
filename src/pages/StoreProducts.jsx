@@ -526,8 +526,12 @@ const StoreProducts = () => {
                                 </button>
                             </div>
                             <div className="flex flex-col items-center text-center px-10 min-w-0">
-                                <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[220px] sm:max-w-[320px]">{t('Store')}</h1>
-                                <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
+                                <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[220px] sm:max-w-[320px]">
+                                    {t(store?.name || 'Store')}
+                                </h1>
+                                <p className="text-[10px] font-semibold text-gray-700 mt-0.5 truncate max-w-[200px] sm:max-w-[280px]">
+                                    {t(store?.address || store?.location || 'Ilayangudi')}
+                                </p>
                             </div>
                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
                                 <button 

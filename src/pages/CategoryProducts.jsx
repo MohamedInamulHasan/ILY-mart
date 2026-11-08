@@ -470,10 +470,9 @@ const CategoryProducts = () => {
                                     id={isSelected ? "active-category-pill" : undefined}
                                     onClick={() => {
                                         setActiveCategory(category.name);
-                                        navigate(`/category/${encodeURIComponent(category.name)}`, { 
-                                            replace: true,
-                                            state: location.state
-                                        });
+                                        try {
+                                            window.history.replaceState(location.state, '', `/category/${encodeURIComponent(category.name)}`);
+                                        } catch {}
                                     }}
                                     className="flex flex-col items-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-transform"
                                 >
@@ -541,38 +540,16 @@ const CategoryProducts = () => {
                             ))}
                         </div>
                     ) : isSingleStore ? (
-                        /* Only ONE store in the category: Show as 2 cards per row with store name and address above cards */
+                        /* Only ONE store in the category: Directly show cards without store name and See All */
                         groupedCategoryProducts.length > 0 ? (
                             <div className="space-y-3">
-                                {singleStore && (
-                                    <div className="flex justify-between items-end mb-2.5 px-2">
-                                        <div className="flex flex-col min-w-0 flex-1 pr-2">
-                                            <h3 className="text-[15px] sm:text-[17px] font-bold text-gray-900 dark:text-white truncate">
-                                                {t(singleStore.name || singleStore)}
-                                            </h3>
-                                            {(singleStore.address || singleStore.location) && (
-                                                <p className="text-[10.5px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                                    {singleStore.address || singleStore.location}
-                                                </p>
-                                            )}
-                                        </div>
-                                        {singleStore._id && !singleStore.isGeneral && (
-                                            <Link 
-                                                to={`/store/${singleStore._id || singleStore.id}`} 
-                                                className="text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-75 transition-opacity shrink-0"
-                                            >
-                                                {t('See All')}
-                                            </Link>
-                                        )}
-                                    </div>
-                                )}
                                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 px-1">
                                     {groupedCategoryProducts.map((product) => (
                                         <div key={product._id || product.id} className="animate-in fade-in duration-300">
                                             <ProductCard 
                                                 product={product}
                                                 showCartControls={true}
-                                                largeControls={true}
+                                                largeControls={false}
                                             />
                                         </div>
                                     ))}

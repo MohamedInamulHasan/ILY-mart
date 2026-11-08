@@ -8,23 +8,23 @@ const serviceSchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        required: [true, 'Please add a description']
+        default: ''
     },
     image: {
-        type: String, // Base64 image
-        required: [true, 'Please add an image']
+        type: String,
+        default: ''
     },
     address: {
         type: String,
-        required: [true, 'Please add an address']
+        default: ''
     },
     mobile: {
         type: String,
-        required: [true, 'Please add a mobile number']
+        default: ''
     },
     category: {
         type: String,
-        required: [true, 'Please add a category'], // e.g., 'Home', 'Vehicle', 'Personal'
+        default: 'General',
         trim: true
     },
     isActive: {

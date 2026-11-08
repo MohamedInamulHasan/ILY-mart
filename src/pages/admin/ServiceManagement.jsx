@@ -43,7 +43,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
 
     // Form States
     const [serviceForm, setServiceForm] = useState({
-        name: '', category: '', description: '', image: '', address: '', mobile: '',
+        name: '', category: 'General', description: '', image: '', address: '', mobile: '',
         timingType: 'daily', openingTime: '09:00', closingTime: '21:00', isManuallyClosed: false
     });
     const [itemForm, setItemForm] = useState({
@@ -71,7 +71,7 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
         setEditingData(service);
         setServiceForm({
             name: service.name || '',
-            category: service.category || '',
+            category: service.category || 'General',
             description: service.description || '',
             image: service.image || '',
             address: service.address || '',
@@ -106,16 +106,22 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
     const handleServiceSubmit = async (e) => {
         e.preventDefault();
         try {
+            const payload = {
+                ...serviceForm,
+                category: serviceForm.category?.trim() || 'General'
+            };
             if (editingData) {
-                await updateService({ id: editingData._id || editingData.id, data: serviceForm });
+                await updateService({ id: editingData._id || editingData.id, data: payload });
                 alert(t('Service updated successfully!'));
             } else {
-                await addService(serviceForm);
+                await addService(payload);
                 alert(t('Service added successfully!'));
             }
             setView('list');
         } catch (err) {
-            alert(t('Failed to save service. Please try again.'));
+            console.error('Service save error:', err);
+            const msg = err.response?.data?.message || err.message || t('Failed to save service. Please try again.');
+            alert(msg);
         }
     };
 
@@ -400,6 +406,14 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                     </button>
                                 </div>
 
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Category')}</label>
+                                    <input 
+                                        type="text" value={serviceForm.category} onChange={e => setServiceForm(p => ({...p, category: e.target.value}))}
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2E5A2E] transition-all"
+                                        placeholder={t('e.g., General, Home, Vehicle, Electronics')}
+                                    />
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Address')}</label>
                                     <input 

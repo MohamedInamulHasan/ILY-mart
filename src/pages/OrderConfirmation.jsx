@@ -242,36 +242,38 @@ const OrderConfirmation = () => {
 
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-40 relative">
-            {/* Premium Green Header matching other pages */}
-            <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none" />
-                <div className="relative z-10">
-                    <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                            <button 
-                                type="button"
-                                onClick={() => {
-                                    if (showSuccessModal || createdOrderId) {
-                                        navigate('/', { replace: true });
-                                    } else {
-                                        navigate(-1);
-                                    }
-                                }} 
-                                className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
-                            >
-                                <ArrowLeft size={19} />
-                            </button>
-                        </div>
-                        <div className="flex flex-col text-center">
-                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{t('Confirmation')}</h1>
-                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Order Summary')}</p>
-                        </div>
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <div className="w-[38px] h-[38px]" />
+            {/* Premium Green Header matching other pages (hidden when success modal is showing) */}
+            {!showSuccessModal && (
+                <div className="fixed top-0 left-0 right-0 z-[100] w-full bg-[#CBF9B2] dark:bg-[#CBF9B2] rounded-b-[2.5rem] px-4 pt-3.5 pb-3.5 shadow-sm overflow-hidden">
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 dark:bg-[#CBF9B2]/20 rounded-full blur-3xl pointer-events-none" />
+                    <div className="relative z-10">
+                        <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
+                            <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        if (showSuccessModal || createdOrderId) {
+                                            navigate('/', { replace: true });
+                                        } else {
+                                            navigate(-1);
+                                        }
+                                    }} 
+                                    className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
+                                >
+                                    <ArrowLeft size={19} />
+                                </button>
+                            </div>
+                            <div className="flex flex-col text-center">
+                                <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{t('Confirmation')}</h1>
+                                <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Order Summary')}</p>
+                            </div>
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                <div className="w-[38px] h-[38px]" />
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             <div className="pt-[88px] max-w-3xl mx-auto px-3.5 sm:px-5 lg:px-6 space-y-3 sm:space-y-3.5">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">

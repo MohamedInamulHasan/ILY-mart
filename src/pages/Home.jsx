@@ -67,6 +67,23 @@ const Home = () => {
             return true;
         });
     }, [ads]);
+
+    // Remember if home has ads across sessions to avoid flashing skeleton banner when there are no banners
+    const hasCachedHomeAds = useMemo(() => {
+        try {
+            return localStorage.getItem('has_home_ads') === 'true';
+        } catch {
+            return false;
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!loadingAds) {
+            try {
+                localStorage.setItem('has_home_ads', homeAds.length > 0 ? 'true' : 'false');
+            } catch {}
+        }
+    }, [loadingAds, homeAds.length]);
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
     const { data: rawStores = [], isLoading: loadingStores } = useStores();
     const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
@@ -403,7 +420,7 @@ const Home = () => {
                 </section>
 
                 {/* Ads */}
-                <HeroBanner slides={homeAds} isLoading={loadingAds} />
+                <HeroBanner slides={homeAds} isLoading={loadingAds && (hasCachedHomeAds || homeAds.length > 0)} />
 
                 {/* Main Categories Section with Reconstructed Skeleton */}
                 <section className="pt-2 pb-3.5 mt-1 sm:mt-1.5 px-3 sm:px-4 mb-4">

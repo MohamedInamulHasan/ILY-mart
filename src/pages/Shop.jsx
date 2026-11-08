@@ -110,7 +110,7 @@ const Shop = () => {
                         </div>
                         <div className="flex flex-col items-center text-center px-10 min-w-0">
                             <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate">
-                                {t('Store')}
+                                {t('Stores list')}
                             </h1>
                             <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
                         </div>
@@ -329,60 +329,43 @@ const Shop = () => {
                         </div>
 
 
-                        {/* Category Pills - Light green selected pill, transparent image with no round or bg */}
+                        {/* Categories Horizontal Scroller with underline indicator */}
                         {viewType === 'store' && (
                             isCategoriesLoading ? (
                                 <div className="max-w-7xl mx-auto mb-4">
-                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                                    <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide py-1">
                                         {[1, 2, 3, 4, 5].map((i) => (
-                                            <div key={i} className="flex-shrink-0 h-[36px] w-24 rounded-full blinkit-shimmer"></div>
+                                            <div key={i} className="flex-shrink-0 h-4 w-16 rounded-full blinkit-shimmer"></div>
                                         ))}
                                     </div>
                                 </div>
                             ) : (
-                                <div className="max-w-7xl mx-auto mb-4 mt-0">
-                                    <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide py-1.5 px-0.5">
+                                <div className="max-w-7xl mx-auto mb-4 border-b border-gray-100 dark:border-gray-800">
+                                    <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide">
                                         {categoryData.map((category) => {
                                             const isActive = category.name === categoryFilter;
-                                            const cleanName = getCleanCategoryName(category, language);
-                                            const isAll = category.name === 'All';
-                                            const matchedCat = !isAll ? (dbCategories || []).find(c => (c.name || '').toLowerCase().trim() === category.name.toLowerCase().trim()) : null;
-                                            const imgSrc = matchedCat?.image || (matchedCat?._id || matchedCat?.id ? `${API_BASE_URL}/categories/${matchedCat._id || matchedCat.id}/image` : null);
-
                                             return (
                                                 <button
                                                     key={category.name}
                                                     id={isActive ? "active-category-pill" : undefined}
                                                     type="button"
-                                                    onClick={() => {
+                                                    onClick={(e) => {
                                                         handleCategoryClick(category.name);
+                                                        e.currentTarget.scrollIntoView({
+                                                            behavior: 'smooth',
+                                                            block: 'nearest',
+                                                            inline: 'center'
+                                                        });
                                                     }}
-                                                    className={`flex items-center gap-2 ${isAll ? 'px-4' : 'pl-2 pr-3.5'} h-[36px] min-h-[36px] rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
-    isActive
-        ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm font-bold'
-        : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
-}`}
+                                                    className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap cursor-pointer ${isActive
+                                                        ? 'text-black dark:text-white font-bold'
+                                                        : 'text-gray-400 hover:text-black dark:hover:text-white font-semibold'
+                                                        }`}
                                                 >
-                                                    {!isAll && (
-                                                        <div className="w-6 h-6 flex items-center justify-center bg-transparent flex-shrink-0">
-                                                            {imgSrc ? (
-                                                                <img
-                                                                    src={imgSrc}
-                                                                    alt={cleanName}
-                                                                    className="w-full h-full object-contain bg-transparent"
-                                                                    onError={(e) => {
-                                                                        e.target.onerror = null;
-                                                                        e.target.style.display = 'none';
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <span className="text-[11px] font-bold">
-                                                                    {cleanName.charAt(0).toUpperCase()}
-                                                                </span>
-                                                            )}
-                                                        </div>
+                                                    {getCleanCategoryName(category, language)}
+                                                    {isActive && (
+                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                                     )}
-                                                    <span className="whitespace-nowrap leading-none">{cleanName}</span>
                                                 </button>
                                             );
                                         })}

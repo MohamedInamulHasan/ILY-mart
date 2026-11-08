@@ -39,19 +39,20 @@ export const createService = async (req, res) => {
         const { name, description, image, address, mobile, category, timingType, openingTime, closingTime, isManuallyClosed } = req.body;
         const service = await Service.create({
             name,
-            description,
-            image,
-            address,
-            mobile,
-            category,
-            timingType,
-            openingTime,
-            closingTime,
-            isManuallyClosed
+            description: description || '',
+            image: image || '',
+            address: address || '',
+            mobile: mobile || '',
+            category: category?.trim() || 'General',
+            timingType: timingType || 'daily',
+            openingTime: openingTime || '09:00',
+            closingTime: closingTime || '21:00',
+            isManuallyClosed: Boolean(isManuallyClosed)
         });
         res.status(201).json(service);
         getIO().emit('service:updated', service);
     } catch (error) {
+        console.error('Error creating service:', error);
         res.status(400).json({ message: error.message });
     }
 };
@@ -61,7 +62,7 @@ export const createService = async (req, res) => {
 // @access  Private/Admin
 export const updateService = async (req, res) => {
     try {
-        const service = await Service.findById(req.params.id).lean();
+        const service = await Service.findById(req.params.id);
         if (service) {
             // Ownership check for service_admin
             const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
@@ -69,12 +70,12 @@ export const updateService = async (req, res) => {
                 return res.status(403).json({ message: 'Not authorized to manage this service' });
             }
 
-            service.name = req.body.name || service.name;
-            service.description = req.body.description || service.description;
-            service.image = req.body.image || service.image;
-            service.address = req.body.address || service.address;
-            service.mobile = req.body.mobile || service.mobile;
-            service.category = req.body.category || service.category;
+            if (req.body.name !== undefined) service.name = req.body.name;
+            if (req.body.description !== undefined) service.description = req.body.description;
+            if (req.body.image !== undefined) service.image = req.body.image;
+            if (req.body.address !== undefined) service.address = req.body.address;
+            if (req.body.mobile !== undefined) service.mobile = req.body.mobile;
+            if (req.body.category !== undefined) service.category = req.body.category?.trim() || 'General';
             
             // New fields
             if (req.body.timingType !== undefined) service.timingType = req.body.timingType;
@@ -89,6 +90,7 @@ export const updateService = async (req, res) => {
             res.status(404).json({ message: 'Service not found' });
         }
     } catch (error) {
+        console.error('Error updating service:', error);
         res.status(400).json({ message: error.message });
     }
 };
