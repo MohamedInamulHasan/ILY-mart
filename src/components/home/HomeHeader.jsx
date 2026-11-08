@@ -47,10 +47,10 @@ const HomeHeader = () => {
                         <circle cx="12" cy="9" r="2.6" fill="white" />
                     </svg>
                 </div>
-                <div className="flex flex-col min-w-0 flex-1">
+                <div className="flex flex-col min-w-0 flex-1 items-start">
                     <span className="text-[9px] text-gray-700 dark:text-gray-700 font-semibold uppercase tracking-wider leading-tight">{t('Delivery to')}</span>
-                    <Link to="/edit-address" className="flex items-center gap-1 group cursor-pointer border-b border-dashed border-gray-400 dark:border-gray-600 max-w-[260px] xs:max-w-[300px] sm:max-w-[440px] mt-0.5 min-w-0">
-                        <span className="text-[13px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-900 truncate leading-tight">{displayAddress}</span>
+                    <Link to="/edit-address" className="inline-flex items-center gap-1 group cursor-pointer max-w-full mt-0.5 min-w-0 self-start">
+                        <span className="text-[13px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-900 truncate leading-tight border-b border-dashed border-gray-400 dark:border-gray-600 pb-0.5">{displayAddress}</span>
                         <ChevronDown size={14} className="text-gray-600 dark:text-gray-700 flex-shrink-0" />
                     </Link>
                 </div>

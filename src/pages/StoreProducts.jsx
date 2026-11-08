@@ -127,7 +127,7 @@ const StoreAdsBanner = ({ ads, t }) => {
                     <div
                         key={ad._id || ad.id || idx}
                         onClick={(e) => handleOrderNow(e, ad)}
-                        className="w-full flex-shrink-0 snap-center relative aspect-[16/7] sm:aspect-[21/9] cursor-pointer"
+                        className="w-full flex-shrink-0 snap-center relative aspect-[16/9] cursor-pointer"
                     >
                         <img
                             src={ad.image || `${API_BASE_URL}/ads/${ad._id || ad.id}/image`}
@@ -436,6 +436,43 @@ const StoreProducts = () => {
 
     const storeIsOpen = isStoreOpen(store);
 
+    // Helper to get image for store category/subcategory pill
+    const getSubcategoryImage = (subName) => {
+        if (!subName) return null;
+        const norm = String(subName).toLowerCase().trim();
+        
+        // 1. Check if matching category exists
+        const matchingCat = categories?.find(c => (c.name || '').toLowerCase().trim() === norm);
+        if (matchingCat) {
+            return matchingCat.image || `${API_BASE_URL}/categories/${matchingCat._id || matchingCat.id}/image`;
+        }
+        
+        // 2. Check if a product with this subcategory has an image
+        const matchingProduct = groupedStoreProducts?.find(p => {
+            const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+            return subs.some(s => normalizeSub(s).toLowerCase() === norm);
+        });
+        if (matchingProduct?.image) {
+            return matchingProduct.image;
+        }
+        if (matchingProduct && (matchingProduct._id || matchingProduct.id)) {
+            return `${API_BASE_URL}/products/${matchingProduct._id || matchingProduct.id}/image`;
+        }
+
+        // 3. Check if parent category has this subcategory
+        const parentCat = categories?.find(c => {
+            const subs = Array.isArray(c.subcategories) ? c.subcategories : [];
+            return subs.some(s => normalizeSub(s).toLowerCase() === norm);
+        });
+        if (parentCat) {
+            return parentCat.image || `${API_BASE_URL}/categories/${parentCat._id || parentCat.id}/image`;
+        }
+
+        return null;
+    };
+
+    const storePillImage = store?.image || (store?._id || store?.id ? `${API_BASE_URL}/stores/${store._id || store.id}/image` : null);
+
     return (
         <PullToRefreshLayout>
             <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
@@ -453,14 +490,11 @@ const StoreProducts = () => {
                                     <ArrowLeft size={19} />
                                 </button>
                             </div>
-                            <div className="flex flex-col items-center text-center px-12 min-w-0">
-                                <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[220px] sm:max-w-[320px]">{store?.name}</h1>
-                                {store?.address && (
-                                    <div className="flex items-center justify-center gap-1 mt-0.5 max-w-[240px] sm:max-w-[340px] truncate">
-                                        <MapPin size={10} className="text-[#2E5A2E] flex-shrink-0" />
-                                        <p className="text-[10px] font-semibold text-gray-700 truncate">{store?.address}</p>
-                                    </div>
-                                )}
+                            <div className="flex flex-col items-center text-center px-10 min-w-0">
+                                <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate max-w-[220px] sm:max-w-[320px]">
+                                    {store?.name || t('Store')}
+                                </h1>
+                                <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
                             </div>
                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
                                 <button 
@@ -619,38 +653,75 @@ const StoreProducts = () => {
             </section>
 
             {subcategoryData.length > 0 && (
-                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
-                    <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide border-b border-gray-100/50">
+                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-4">
+                    <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide py-1 px-0.5">
+                        {/* "All" Pill */}
                         <button
+                            type="button"
                             onClick={() => setSelectedSubcategory(null)}
-                            className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${
-                                !selectedSubcategory 
-                                ? 'text-black dark:text-white' 
-                                : 'text-gray-400 hover:text-black dark:hover:text-white'
+                            className={`flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
+                                !selectedSubcategory
+                                    ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm font-bold'
+                                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
                             }`}
                         >
-                            {t('All')}
-                            {!selectedSubcategory && (
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
-                            )}
-                        </button>
-                        
-                        {subcategoryData.map(({ name }) => (
-                            <button
-                                key={name}
-                                onClick={() => setSelectedSubcategory(name)}
-                                className={`pb-2 text-sm font-medium transition-all relative whitespace-nowrap ${
-                                    selectedSubcategory === name 
-                                    ? 'text-black dark:text-white' 
-                                    : 'text-gray-400 hover:text-black dark:hover:text-white'
-                                }`}
-                            >
-                                {getCleanCategoryName(name, language)}
-                                {selectedSubcategory === name && (
-                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                            <div className={`w-6 h-6 sm:w-6 sm:h-6 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
+                                !selectedSubcategory ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'
+                            }`}>
+                                {storePillImage ? (
+                                    <img 
+                                        src={storePillImage} 
+                                        alt={t('All')} 
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+                                    />
+                                ) : (
+                                    <span className="text-[10px] font-bold">★</span>
                                 )}
-                            </button>
-                        ))}
+                            </div>
+                            <span className="whitespace-nowrap leading-none">{t('All')}</span>
+                        </button>
+
+                        {/* Subcategory Pills */}
+                        {subcategoryData.map(({ name }) => {
+                            const isSelected = selectedSubcategory === name;
+                            const subImage = getSubcategoryImage(name);
+                            const cleanName = getCleanCategoryName(name, language);
+
+                            return (
+                                <button
+                                    key={name}
+                                    type="button"
+                                    onClick={() => setSelectedSubcategory(name)}
+                                    className={`flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full transition-all duration-200 flex-shrink-0 cursor-pointer text-xs sm:text-[13px] select-none active:scale-95 shadow-sm border ${
+                                        isSelected
+                                            ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm font-bold'
+                                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 font-semibold'
+                                    }`}
+                                >
+                                    <div className={`w-6 h-6 sm:w-6 sm:h-6 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
+                                        isSelected ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'
+                                    }`}>
+                                        {subImage ? (
+                                            <img
+                                                src={subImage}
+                                                alt={cleanName}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.style.display = 'none';
+                                                }}
+                                            />
+                                        ) : (
+                                            <span className="text-[10px] font-bold">
+                                                {cleanName.charAt(0).toUpperCase()}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="whitespace-nowrap leading-none">{cleanName}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}

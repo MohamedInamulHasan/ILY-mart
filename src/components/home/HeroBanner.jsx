@@ -89,7 +89,7 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
         return (
             <section className="px-4 py-1.5 relative">
                 {/* Clean Ads Card Skeleton Loader without inner skeleton */}
-                <div className="relative rounded-3xl overflow-hidden shadow-sm h-44 md:h-64 lg:h-80 xl:h-[400px] blinkit-shimmer border border-gray-100 dark:border-gray-800/60" />
+                <div className="w-full aspect-[16/9] relative rounded-3xl overflow-hidden shadow-sm blinkit-shimmer border border-gray-100 dark:border-gray-800/60" />
             </section>
         );
     }
@@ -100,7 +100,7 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
 
     return (
         <section className="px-4 py-1.5 relative">
-            <div className="relative rounded-3xl overflow-hidden shadow-sm bg-gray-100 dark:bg-gray-800 h-44 md:h-64 lg:h-80 xl:h-[400px]">
+            <div className="w-full aspect-[16/9] relative rounded-3xl overflow-hidden shadow-sm bg-gray-100 dark:bg-gray-800">
                 {/* Scrollable Container */}
                 <div 
                     ref={scrollRef}

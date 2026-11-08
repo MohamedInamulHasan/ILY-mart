@@ -118,7 +118,7 @@ const MobileFooter = () => {
     }, []);
 
     const isActive = (path) => {
-        if (path === '/') return location.pathname === '/' || location.pathname.startsWith('/category/');
+        if (path === '/') return location.pathname === '/' || location.pathname.startsWith('/category/') || location.pathname.startsWith('/main-category');
         return location.pathname.startsWith(path);
     };
 
@@ -130,7 +130,7 @@ const MobileFooter = () => {
     ];
 
     const allowedFooterRoutes = ['/', '/store', '/orders', '/profile', '/categories'];
-    const isAllowedRoute = (pathname) => allowedFooterRoutes.includes(pathname) || pathname.startsWith('/category/');
+    const isAllowedRoute = (pathname) => allowedFooterRoutes.includes(pathname) || pathname.startsWith('/category/') || pathname.startsWith('/main-category');
     if (!isAllowedRoute(location.pathname) || isKeyboardOpen) {
         return null;
     }

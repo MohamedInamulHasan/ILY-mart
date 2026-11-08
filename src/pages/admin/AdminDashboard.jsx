@@ -2458,7 +2458,7 @@ const CategoryManagement = () => {
                                                 className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors"
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    {/* 9:16 Thumbnail preview */}
+                                                    {/* 16:9 Thumbnail preview */}
                                                     <div className="w-24 sm:w-28 aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex-shrink-0">
                                                         <img 
                                                             src={mainCat.image} 
@@ -2481,7 +2481,7 @@ const CategoryManagement = () => {
                                                                         key={cName} 
                                                                         className="text-[11px] bg-green-50 dark:bg-green-900/30 text-[#2E5A2E] dark:text-[#CBF9B2] px-2 py-0.5 rounded-full font-medium"
                                                                     >
-                                                                        {cName}
+                                                                        {getCleanCategoryName(cName, language)}
                                                                     </span>
                                                                 ))
                                                             ) : (
@@ -2541,7 +2541,7 @@ const CategoryManagement = () => {
                                     />
                                 </div>
 
-                                {/* 2. Image (9:16) */}
+                                {/* 2. Image (16:9) */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         {t('Main Category Image')} (16:9 Aspect Ratio) <span className="text-red-500">*</span>

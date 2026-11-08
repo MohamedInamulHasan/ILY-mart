@@ -445,7 +445,8 @@ const CategoryProducts = () => {
                     </div>
                 </section>
 
-                {/* Categories Bar (Side-scrollable like Home page with line effect) */}
+                {/* Categories Bar (Side-scrollable like Home page with line effect - hidden if only 1 category) */}
+                {categories.length > 1 && (
                 <div className="w-full px-4 mb-4 sm:mb-5">
                     <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1">
                         {categories.map((category) => {
@@ -497,6 +498,7 @@ const CategoryProducts = () => {
                         })}
                     </div>
                 </div>
+                )}
 
                 {/* Related Products:
                     - If only ONE store in category: 2 cards per row with slightly bigger quantity controls!

@@ -325,8 +325,8 @@ const MainCategoryProducts = () => {
                         </div>
                     </section>
 
-                    {/* Categories list like in the home page */}
-                    {subCategories.length > 0 && (
+                    {/* Categories list like in the home page (hidden if only 1 category in main category) */}
+                    {subCategories.length > 1 && (
                         <section className="pt-1 pb-4 px-3 sm:px-4 mb-3">
                             {/* 4 items per row grid - NO white bg card, BIG category images, thick text - exactly like home page */}
                             <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-1 sm:px-2 py-1">

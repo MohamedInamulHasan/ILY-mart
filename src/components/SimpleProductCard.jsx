@@ -14,7 +14,7 @@ import { useCategories } from '../hooks/queries/useCategories';
 import { useState, useEffect } from 'react';
 
 const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSave = false, largeControls = false }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { data: queryCategories = [] } = useCategories();
     const { stores: contextStores, savedProducts, toggleSaveProduct, categories: contextCategories } = useData();
     const categories = (queryCategories && queryCategories.length > 0) ? queryCategories : (contextCategories || []);
@@ -194,7 +194,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 </div>
                 <div className="p-3 flex flex-col flex-1 border-t border-gray-100 dark:border-gray-700">
                     <div className="w-full mb-1 min-h-[38px] sm:min-h-[40px] flex flex-col justify-start">
-                        {renderBilingualTitle(t(product, 'title') || product.title || product.name, useLanguage().language, {
+                        {renderBilingualTitle(t(product, 'title') || product.title || product.name, language, {
                             mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full',
                             subClassName: 'text-xs text-gray-600 dark:text-gray-300 font-medium truncate w-full pt-0.5 pb-0.5 leading-normal'
                         })}
@@ -347,7 +347,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             <div className="p-3 flex flex-col flex-1">
                 
                 <div className="w-full mb-1 min-h-[38px] sm:min-h-[40px] flex flex-col justify-start">
-                    {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, useLanguage().language, {
+                    {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, language, {
                         mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full',
                         subClassName: 'text-xs text-gray-600 dark:text-gray-300 font-medium truncate w-full pt-0.5 pb-0.5 leading-normal'
                     })}
