@@ -296,72 +296,100 @@ const StoreProducts = () => {
 
     // Extract unique categories and subcategories for the store page category scroller
     const subcategoryData = useMemo(() => {
-        const counts = {};
-        const relevantCategoryIds = new Set();
-        const relevantCategoryNames = new Set();
+        const itemMap = new Map();
 
-        if (store && store.type) {
-            const types = Array.isArray(store.type) ? store.type : [store.type];
-            types.forEach(t => relevantCategoryNames.add(normKey(t)));
-        }
+        // 1. Valid category and subcategory names from database categories
+        const validCategoryNorms = new Set();
+        const normToOfficialName = new Map();
 
+        categories.forEach(cat => {
+            if (!cat) return;
+            const cNorm = normKey(cat.name);
+            if (cNorm) {
+                validCategoryNorms.add(cNorm);
+                normToOfficialName.set(cNorm, cat.name);
+            }
+            if (cat.name_ta) {
+                const taNorm = normKey(cat.name_ta);
+                if (taNorm) {
+                    validCategoryNorms.add(taNorm);
+                    normToOfficialName.set(taNorm, cat.name);
+                }
+            }
+            if (Array.isArray(cat.subcategories)) {
+                cat.subcategories.forEach(sub => {
+                    const sNorm = normKey(sub);
+                    if (sNorm) {
+                        validCategoryNorms.add(sNorm);
+                        normToOfficialName.set(sNorm, sub);
+                    }
+                });
+            }
+        });
+
+        // 2. Count matching products and merge identical categories
         groupedStoreProducts.forEach(p => {
             const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-            let items = subs.map(normalizeSub).filter(Boolean);
+            let items = subs.filter(Boolean);
             
             // If product has no subcategory, extract its category
             if (items.length === 0 && p.category) {
-                items = [normalizeSub(p.category)];
+                items = [p.category];
             }
 
-            const unique = [...new Set(items.filter(Boolean))];
-            unique.forEach(s => {
-                counts[s] = (counts[s] || 0) + 1;
+            const seenForThisProduct = new Set();
+            items.forEach(rawItem => {
+                const nKey = normKey(rawItem);
+                if (!nKey || seenForThisProduct.has(nKey)) return;
+                seenForThisProduct.add(nKey);
+
+                // If categories are loaded, filter out deleted categories that are no longer in categories list
+                if (validCategoryNorms.size > 0 && !validCategoryNorms.has(nKey)) {
+                    const storeTypes = Array.isArray(store?.type) ? store.type : (store?.type ? [store.type] : []);
+                    const matchesStoreType = storeTypes.some(t => normKey(t) === nKey);
+                    if (!matchesStoreType) return;
+                }
+
+                const officialName = normToOfficialName.get(nKey) || String(rawItem).trim();
+
+                if (!itemMap.has(nKey)) {
+                    itemMap.set(nKey, { name: officialName, count: 1 });
+                } else {
+                    itemMap.get(nKey).count += 1;
+                }
             });
-            const catId = p.categoryId?._id || p.categoryId;
-            if (catId) {
-                relevantCategoryIds.add(String(catId));
-            }
         });
 
-        // Fallback: If counts is empty, populate from store.type or categories
-        if (Object.keys(counts).length === 0 && store?.type) {
+        // Fallback: If itemMap is empty and store has types
+        if (itemMap.size === 0 && store?.type) {
             const types = Array.isArray(store.type) ? store.type : [store.type];
             types.filter(Boolean).forEach(t => {
-                const norm = normalizeSub(t);
-                if (norm) counts[norm] = 1;
+                const nKey = normKey(t);
+                if (nKey && !itemMap.has(nKey)) {
+                    const officialName = normToOfficialName.get(nKey) || String(t).trim();
+                    itemMap.set(nKey, { name: officialName, count: 1 });
+                }
             });
         }
 
-        const result = Object.entries(counts)
-            .map(([name, count]) => ({ name, count }));
+        const result = Array.from(itemMap.values());
 
-        // Get the subcategory order from the relevant categories
+        // Sort based on category order in database
         const subOrder = [];
         categories.forEach(cat => {
-            const isMatch = relevantCategoryIds.has(String(cat._id || cat.id)) ||
-                relevantCategoryNames.has(normKey(cat.name));
-
-            if (isMatch) {
-                if (cat.subcategories && Array.isArray(cat.subcategories)) {
-                    cat.subcategories.forEach(s => {
-                        const normalized = normalizeSub(s);
-                        if (!subOrder.includes(normalized)) {
-                            subOrder.push(normalized);
-                        }
-                    });
-                }
-                const catNorm = normalizeSub(cat.name);
-                if (!subOrder.includes(catNorm)) {
-                    subOrder.push(catNorm);
-                }
+            if (Array.isArray(cat.subcategories)) {
+                cat.subcategories.forEach(s => {
+                    const n = normKey(s);
+                    if (!subOrder.includes(n)) subOrder.push(n);
+                });
             }
+            const catNorm = normKey(cat.name);
+            if (!subOrder.includes(catNorm)) subOrder.push(catNorm);
         });
 
-        // Sort based on the subOrder if available, otherwise fallback to alphabetical
         return result.sort((a, b) => {
-            const indexA = subOrder.indexOf(a.name);
-            const indexB = subOrder.indexOf(b.name);
+            const indexA = subOrder.indexOf(normKey(a.name));
+            const indexB = subOrder.indexOf(normKey(b.name));
 
             if (indexA !== -1 && indexB !== -1) {
                 return indexA - indexB;

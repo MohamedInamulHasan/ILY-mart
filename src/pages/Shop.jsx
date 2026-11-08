@@ -4,7 +4,9 @@ import { MapPin, Search, Star, Clock, Phone, Store, Wrench, ArrowRight, X, Arrow
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
-import { getCleanCategoryName } from '../utils/categoryHelpers';
+import { useCategories } from '../hooks/queries/useCategories';
+import { useStores } from '../hooks/queries/useStores';
+import { getCleanCategoryName, stripEmojis } from '../utils/categoryHelpers';
 import { isStoreOpen, formatTime12h } from '../utils/storeHelpers';
 import StoreCard from '../components/StoreCard';
 import { API_BASE_URL } from '../utils/api';
@@ -16,62 +18,97 @@ const Shop = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [viewType, setViewType] = useState('store'); // 'store' or 'service'
     const [searchParams, setSearchParams] = useSearchParams();
-    const { stores, categories: dbCategories, loading, initialLoading } = useData();
+    const { stores: dataStores, categories: dataCategories, loading, initialLoading } = useData();
+    const { data: rawCategories = [], refetch: refetchCategories } = useCategories();
+    const { data: rawStores = [], refetch: refetchStores } = useStores();
+
+    const dbCategories = useMemo(() => {
+        if (Array.isArray(rawCategories) && rawCategories.length > 0) return rawCategories;
+        return Array.isArray(dataCategories) ? dataCategories : [];
+    }, [rawCategories, dataCategories]);
+
+    const stores = useMemo(() => {
+        if (Array.isArray(rawStores) && rawStores.length > 0) return rawStores;
+        return Array.isArray(dataStores) ? dataStores : [];
+    }, [rawStores, dataStores]);
+
+    useEffect(() => {
+        refetchCategories?.();
+        refetchStores?.();
+    }, []);
+
     const services = [];
     const servicesLoading = false;
     const { t, language } = useLanguage();
 
+    const normKey = (s) => stripEmojis(String(s || '')).trim().toLowerCase();
+
     // Create a Set of valid category names for filtering store tags
-    const validCategoryNames = useMemo(() => new Set((dbCategories || []).map(c => c.name.toLowerCase())), [dbCategories]);
+    const validCategoryNames = useMemo(() => new Set((dbCategories || []).map(c => normKey(c.name))), [dbCategories]);
     const navigate = useNavigate();
 
     const categoryFilter = searchParams.get('category') || 'All';
 
-    // Create categories array with "All" option first, then add categories from database
-    const categoriesList = useMemo(() => [
-        { name: 'All' },
-        ...(dbCategories || []).map(cat => ({
-            ...cat,
-            name: cat.name
-        }))
-    ], [dbCategories]);
-
     // Safety check for stores array to prevent crash if undefined & filter active only
     const safeStores = useMemo(() => (stores || []).filter(s => s.isActive !== false), [stores]);
 
-    // Calculate store counts per category
+    // Calculate store counts per category using normalized key matching
     const categoryData = useMemo(() => {
         const counts = {};
         safeStores.forEach(store => {
             const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
             types.forEach(t => {
-                const typeName = t.toLowerCase();
-                counts[typeName] = (counts[typeName] || 0) + 1;
+                const nKey = normKey(t);
+                if (nKey) {
+                    counts[nKey] = (counts[nKey] || 0) + 1;
+                }
             });
         });
 
-        return categoriesList.map(cat => {
-            const name = cat.name;
-            let count = 0;
-            if (name === 'All') {
-                count = safeStores.length;
-            } else {
-                count = counts[name.toLowerCase()] || 0;
+        const result = [{ name: 'All', count: safeStores.length }];
+
+        // Map categories from database with uploaded emojis
+        (dbCategories || []).forEach(cat => {
+            if (!cat || !cat.name) return;
+            const nKey = normKey(cat.name);
+            const count = counts[nKey] || 0;
+            if (count > 0) {
+                result.push({
+                    ...cat,
+                    name: cat.name,
+                    count
+                });
             }
-            return { ...cat, name, count };
-        }).filter(cat => cat.count > 0);
-    }, [safeStores, categoriesList]);
+        });
+
+        // Also check if any store type is not in dbCategories but has stores
+        Object.entries(counts).forEach(([nKey, count]) => {
+            if (count > 0 && !result.some(r => normKey(r.name) === nKey)) {
+                let originalName = '';
+                for (const store of safeStores) {
+                    const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
+                    const found = types.find(t => normKey(t) === nKey);
+                    if (found) { originalName = found; break; }
+                }
+                if (originalName) {
+                    result.push({ name: originalName, count });
+                }
+            }
+        });
+
+        return result;
+    }, [safeStores, dbCategories]);
 
     const getCategoryDisplay = (category) => {
         if (!category) return '';
-        if (category.name === 'All') {
+        if (normKey(category.name) === 'all') {
             return getCleanCategoryName('All', language, null, { keepEmoji: true });
         }
-        const catNameLower = String(category.name || '').toLowerCase().trim();
+        const nKey = normKey(category.name);
         const found = (dbCategories || []).find(c => {
-            return (c.name && c.name.toLowerCase().trim() === catNameLower) ||
-                   (c.name_ta && c.name_ta.toLowerCase().trim() === catNameLower) ||
-                   (c._id && String(c._id) === String(category._id || category.id));
+            return normKey(c?.name) === nKey ||
+                   normKey(c?.name_ta) === nKey ||
+                   (c?._id && String(c._id) === String(category._id || category.id));
         });
         const target = found || category;
         return getCleanCategoryName(target, language, null, { keepEmoji: true });
@@ -81,11 +118,11 @@ const Shop = () => {
         const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (store.address && store.address.toLowerCase().includes(searchQuery.toLowerCase()));
         
-        // Flexible matching for category/type (Handle Array or String)
-        const matchesCategory = categoryFilter === 'All' ||
+        const normFilter = normKey(categoryFilter);
+        const matchesCategory = normFilter === 'all' ||
             (Array.isArray(store.type)
-                ? store.type.some(t => t.toLowerCase() === categoryFilter.toLowerCase())
-                : store.type && store.type.toLowerCase() === categoryFilter.toLowerCase());
+                ? store.type.some(t => normKey(t) === normFilter)
+                : store.type && normKey(store.type) === normFilter);
 
         return matchesSearch && matchesCategory;
     }).sort((a, b) => {
@@ -97,7 +134,7 @@ const Shop = () => {
     });
 
     const handleCategoryClick = (categoryName) => {
-        setSearchParams({ category: categoryName });
+        setSearchParams({ category: normKey(categoryName) === 'all' ? 'All' : categoryName });
     };
 
     useEffect(() => {
@@ -361,7 +398,7 @@ const Shop = () => {
                                 <div className="max-w-7xl mx-auto mb-4 border-b border-gray-100 dark:border-gray-800">
                                     <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide">
                                         {categoryData.map((category) => {
-                                            const isActive = category.name === categoryFilter;
+                                            const isActive = normKey(category.name) === normKey(categoryFilter);
                                             return (
                                                 <button
                                                     key={category.name}
