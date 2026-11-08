@@ -336,6 +336,16 @@ const StoreProducts = () => {
 
     const totalProductCount = useMemo(() => groupedStoreProducts.length, [groupedStoreProducts]);
 
+    const effectiveSubcategory = useMemo(() => {
+        if (subcategoryData.length >= 2) {
+            if (selectedSubcategory && subcategoryData.some(s => s.name === selectedSubcategory)) {
+                return selectedSubcategory;
+            }
+            return subcategoryData[0]?.name || null;
+        }
+        return null;
+    }, [subcategoryData, selectedSubcategory]);
+
     // Select a real product image from this store for each category (displayed without bg)
     const categoryProductImageMap = useMemo(() => {
         const map = {};
@@ -350,6 +360,20 @@ const StoreProducts = () => {
         // For each category/subcategory in subcategoryData:
         subcategoryData.forEach(({ name }) => {
             const normName = normalizeSub(name).toLowerCase();
+
+            // Priority 1: Check if any category has this subcategory's uploaded image
+            const catWithSubImg = categories?.find(c => {
+                if (!c.subcategoryImages) return false;
+                return Object.keys(c.subcategoryImages).some(k => normalizeSub(k).toLowerCase() === normName && c.subcategoryImages[k]);
+            });
+            if (catWithSubImg) {
+                const subKey = Object.keys(catWithSubImg.subcategoryImages).find(k => normalizeSub(k).toLowerCase() === normName);
+                if (subKey && catWithSubImg.subcategoryImages[subKey]) {
+                    map[name] = catWithSubImg.subcategoryImages[subKey];
+                    return;
+                }
+            }
+
             const match = groupedStoreProducts.find(p => {
                 if (!p.image) return false;
                 const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
@@ -400,8 +424,8 @@ const StoreProducts = () => {
             )
             : groupedStoreProducts;
 
-        if (!selectedSubcategory) {
-            const allItems = filteredList;
+        if (!effectiveSubcategory) {
+            const allItems = [...filteredList];
             if (allItems.length === 0) return [];
 
             if (globalSortOrder !== 'none') {
@@ -413,83 +437,26 @@ const StoreProducts = () => {
             }
             return [['_all_', allItems]];
         }
-        const storeTypes = store ? (Array.isArray(store.type) ? store.type : [store.type]) : [];
-        const isFoodStore = storeTypes.some(type =>
-            ['foods', 'hotels', 'restaurants', 'food', 'hotel', 'restaurant'].includes(type?.toLowerCase())
-        );
 
-        const getCurrentMeal = () => {
-            const hour = new Date().getHours();
-            if (hour >= 5 && hour < 12) return 'Breakfast';
-            if (hour >= 12 && hour < 17) return 'Lunch';
-            return 'Dinner';
-        };
-
-        const currentMeal = getCurrentMeal();
-
-        // Separate 'All' products to always be top or bottom if needed
-        // For food stores, we prioritize current meal subcategories in the 'All' section
-        // We handle grouping products into subcategories
-        filteredList.forEach(p => {
-            const rawSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-            const normalizedSubs = [...new Set(
-                rawSubs
-                    .filter(Boolean)
-                    .map(normalizeSub)
-                    .filter(s => s !== '')
-            )].sort();
-
-            const subKey = normalizedSubs.join(' & ') || 'Other';
-            if (!groups[subKey]) groups[subKey] = [];
-            groups[subKey].push(p);
-        });
-
-        // 1. Sort products WITHIN each group by their manual 'order'
-        Object.keys(groups).forEach(key => {
-            groups[key].sort((a, b) => {
-                // If sorting by price is active, it takes precedence
+        const normalizedSelected = normalizeSub(effectiveSubcategory).toLowerCase();
+        const filteredProducts = filteredList
+            .filter(p => {
+                const rawSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+                const matchSub = rawSubs.some(s => normalizeSub(s).toLowerCase() === normalizedSelected);
+                const matchCat = p.category && normalizeSub(p.category).toLowerCase() === normalizedSelected;
+                return matchSub || (rawSubs.length === 0 && matchCat);
+            })
+            .sort((a, b) => {
                 if (globalSortOrder !== 'none') {
                     const priceA = Number(a.price || 0);
                     const priceB = Number(b.price || 0);
                     return globalSortOrder === 'lowToHigh' ? priceA - priceB : priceB - priceA;
                 }
-                // Fallback to manual order
                 return (a.order || 0) - (b.order || 0);
             });
-        });
 
-        // 2. Filter by selected subcategory if one is active
-        if (selectedSubcategory) {
-            const normalizedSelected = normalizeSub(selectedSubcategory);
-            const filteredProducts = filteredList
-                .filter(p => {
-                    const rawSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-                    return rawSubs.some(s => normalizeSub(s) === normalizedSelected);
-                })
-                .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-            return [['_all_', filteredProducts]];
-        }
-
-        // 3. Sort the GROUPS themselves
-        return Object.entries(groups).sort((a, b) => {
-            const [nameA, productsA] = a;
-            const [nameB, productsB] = b;
-
-            // Prioritize by food meal times if it's a food store
-            if (isFoodStore) {
-                const aIsMeal = [currentMeal, 'Meals', 'Tiffin'].some(m => nameA.includes(m));
-                const bIsMeal = [currentMeal, 'Meals', 'Tiffin'].some(m => nameB.includes(m));
-                if (aIsMeal && !bIsMeal) return -1;
-                if (!aIsMeal && bIsMeal) return 1;
-            }
-
-            // Fallback to the 'order' of the first product in the group
-            const orderA = productsA[0]?.order || 0;
-            const orderB = productsB[0]?.order || 0;
-            return orderA - orderB;
-        });
-    }, [groupedStoreProducts, selectedSubcategory, globalSortOrder, searchQuery, t, store]);
+        return [['_all_', filteredProducts]];
+    }, [groupedStoreProducts, effectiveSubcategory, globalSortOrder, searchQuery]);
 
     // Keep displayProducts for simple count checks
     const displayProducts = useMemo(() => sections.flatMap(s => s[1]), [sections]);
@@ -499,7 +466,7 @@ const StoreProducts = () => {
         if (activePill) {
             activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
-    }, [selectedSubcategory]);
+    }, [effectiveSubcategory]);
 
     if (!store || store.isActive === false) {
         return (
@@ -518,7 +485,18 @@ const StoreProducts = () => {
     // Helper to get image for store category/subcategory pill
     const getSubcategoryImage = (subName) => {
         if (!subName) return null;
+        if (categoryProductImageMap[subName]) return categoryProductImageMap[subName];
         const norm = String(subName).toLowerCase().trim();
+
+        // 0. Check if any category has uploaded image for this subcategory
+        const catWithSubImg = categories?.find(c => {
+            if (!c.subcategoryImages) return false;
+            return Object.keys(c.subcategoryImages).some(k => normalizeSub(k).toLowerCase() === norm && c.subcategoryImages[k]);
+        });
+        if (catWithSubImg) {
+            const subKey = Object.keys(catWithSubImg.subcategoryImages).find(k => normalizeSub(k).toLowerCase() === norm);
+            if (subKey && catWithSubImg.subcategoryImages[subKey]) return catWithSubImg.subcategoryImages[subKey];
+        }
         
         // 1. Check if matching category exists
         const matchingCat = categories?.find(c => {
@@ -741,38 +719,16 @@ const StoreProducts = () => {
                 </div>
             </section>
 
-            {subcategoryData.length > 0 && (
+            {subcategoryData.length >= 2 && (
                 <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
                     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                setSelectedSubcategory(null);
-                                e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                            }}
-                            className={`text-xs sm:text-[13px] transition-all whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${
-                                !selectedSubcategory 
-                                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold shadow-xs border-gray-200/90 dark:border-gray-700' 
-                                    : 'text-gray-500 dark:text-gray-400 font-medium border-transparent hover:text-black dark:hover:text-white'
-                            }`}
-                        >
-                            {categoryProductImageMap['_all_'] && (
-                                <img
-                                    src={categoryProductImageMap['_all_']}
-                                    alt="All"
-                                    className="w-5 h-5 sm:w-5.5 sm:h-5.5 object-contain flex-shrink-0 mix-blend-multiply dark:mix-blend-screen drop-shadow-xs"
-                                    loading="lazy"
-                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                />
-                            )}
-                            <span>{t('All')}</span>
-                        </button>
                         {subcategoryData.map(({ name }) => {
-                            const isSelected = selectedSubcategory === name;
+                            const isSelected = effectiveSubcategory === name;
                             const catImg = categoryProductImageMap[name];
                             return (
                                 <button
                                     key={name}
+                                    id={isSelected ? 'active-sub-pill' : undefined}
                                     type="button"
                                     onClick={(e) => {
                                         setSelectedSubcategory(name);
@@ -835,7 +791,7 @@ const StoreProducts = () => {
                     <div className="space-y-3.5 sm:space-y-4">
                         {sections.map(([groupName, groupProducts]) => (
                             <div key={groupName}>
-                                {groupName !== '_all_' && !selectedSubcategory && (
+                                {groupName !== '_all_' && !effectiveSubcategory && (
                                     <div className="flex justify-between items-center mb-3.5 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm -mx-4 px-4 py-2.5">
                                         <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                             <div className="w-1.5 h-6 bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full"></div>
@@ -886,16 +842,23 @@ const StoreProducts = () => {
                             <Search className="text-gray-400 dark:text-gray-500" size={32} />
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                            {searchQuery.trim() || selectedSubcategory ? t('No matches found') : t('Store is Empty')}
+                            {searchQuery.trim() || effectiveSubcategory ? t('No matches found') : t('Store is Empty')}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                            {searchQuery.trim() || selectedSubcategory 
+                            {searchQuery.trim() || effectiveSubcategory 
                                 ? t('Try adjusting your search or category filter.')
                                 : t('This store has no products yet.')}
                         </p>
-                        {(searchQuery.trim() || selectedSubcategory) && (
+                        {(searchQuery.trim() || (effectiveSubcategory && subcategoryData.length >= 2 && effectiveSubcategory !== subcategoryData[0]?.name)) && (
                             <button
-                                onClick={() => { setSearchQuery(''); setSelectedSubcategory(null); }}
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    if (subcategoryData.length >= 2) {
+                                        setSelectedSubcategory(subcategoryData[0]?.name);
+                                    } else {
+                                        setSelectedSubcategory(null);
+                                    }
+                                }}
                                 className="px-6 py-2 bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 rounded-xl font-bold text-sm active:scale-95 transition-all shadow-sm"
                             >
                                 {t('Clear All')}

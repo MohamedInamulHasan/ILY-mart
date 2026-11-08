@@ -28,6 +28,10 @@ const categorySchema = new mongoose.Schema({
         type: [String],
         default: []
     },
+    subcategoryImages: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     isActive: {
         type: Boolean,
         default: true
