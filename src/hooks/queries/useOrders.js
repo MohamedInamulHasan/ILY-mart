@@ -53,7 +53,7 @@ export const useCreateOrder = () => {
     return useMutation({
         mutationFn: (newOrder) => apiService.createOrder(newOrder),
         onSuccess: () => {
-            queryClient.invalidateQueries(orderKeys.lists());
+            queryClient.invalidateQueries({ queryKey: orderKeys.all });
         }
     });
 };

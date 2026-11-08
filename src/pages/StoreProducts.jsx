@@ -271,15 +271,28 @@ const StoreProducts = () => {
         return groupProducts(availableStoreProducts, stores, { forcedStoreId: storeId });
     }, [availableStoreProducts, stores, storeId]);
 
-    // Clean subcategory normalization without corrupting subcategory names
+    // Clean subcategory normalization without corrupting subcategory names or emoji surrogate pairs
     const normalizeSub = (s) => {
         if (!s) return '';
-        const trimmed = String(s).trim();
-        if (!trimmed) return '';
-        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+        return String(s).trim();
     };
 
     const normKey = (s) => stripEmojis(String(s || '')).trim().toLowerCase();
+
+    // Resolves category display name with uploaded emoji for the store page
+    const getCategoryDisplayName = (name) => {
+        if (!name) return '';
+        const nKey = normKey(name);
+        const foundCat = categories.find(c => {
+            return normKey(c?.name) === nKey ||
+                   normKey(c?.name_ta) === nKey ||
+                   (c?._id && String(c._id) === String(name));
+        });
+        if (foundCat) {
+            return getCleanCategoryName(foundCat, language, null, { keepEmoji: true });
+        }
+        return getCleanCategoryName(name, language, null, { keepEmoji: true });
+    };
 
     // Extract unique categories and subcategories for the store page category scroller
     const subcategoryData = useMemo(() => {
@@ -644,7 +657,7 @@ const StoreProducts = () => {
                                             : 'text-gray-500 dark:text-gray-400 font-medium border-transparent hover:text-black dark:hover:text-white'
                                     }`}
                                 >
-                                    <span>{getCleanCategoryName(name, language, null, { keepEmoji: true })}</span>
+                                    <span>{getCategoryDisplayName(name)}</span>
                                 </button>
                             );
                         })}
@@ -690,23 +703,7 @@ const StoreProducts = () => {
                                     <div className="flex justify-between items-center mb-3.5 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm -mx-4 px-4 py-2.5">
                                         <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                             <div className="w-1.5 h-6 bg-[#2E5A2E] dark:bg-[#8bc910] rounded-full"></div>
-                                            {(() => {
-                                                const fullTitle = t(groupName);
-                                                if (language !== 'ta') return fullTitle;
-                                                
-                                                const bracketIndex = fullTitle.indexOf('(');
-                                                if (bracketIndex === -1) return fullTitle;
-
-                                                const part1 = fullTitle.substring(0, bracketIndex).trim();
-                                                const part2 = fullTitle.substring(bracketIndex + 1, fullTitle.length - 1).trim();
-                                                
-                                                const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-                                                const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-                                                
-                                                if (isPart1Tamil && !isPart2Tamil) return `${part1} (${part2})`;
-                                                if (isPart2Tamil && !isPart1Tamil) return `${part2} (${part1})`;
-                                                return fullTitle;
-                                            })()}
+                                            {getCategoryDisplayName(groupName)}
                                         </h2>
                                     </div>
                                 )}

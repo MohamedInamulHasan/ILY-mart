@@ -100,6 +100,20 @@ export const stripEmojis = (str) => {
 };
 
 /**
+ * Utility to extract emojis from a string.
+ */
+export const extractEmojis = (str) => {
+    if (!str || typeof str !== 'string') return '';
+    try {
+        const matches = str.match(/\p{Extended_Pictographic}/gu);
+        return matches ? matches.join(' ') : '';
+    } catch {
+        const matches = str.match(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g);
+        return matches ? matches.join(' ') : '';
+    }
+};
+
+/**
  * Helper to get clean category or subcategory name based on active language.
  * Completely strips brackets and hides the other language:
  * - When language is 'en': shows only English (no Tamil brackets).
@@ -112,7 +126,10 @@ export const getCleanCategoryName = (categoryOrName, language = 'en', t = null, 
     const { keepEmoji = false } = (typeof options === 'object' && options !== null) ? options : {};
 
     let full = '';
+    let categoryEmoji = '';
+
     if (typeof categoryOrName === 'object') {
+        categoryEmoji = categoryOrName.emoji || categoryOrName.icon || '';
         if (language === 'ta' && categoryOrName.name_ta) {
             full = categoryOrName.name_ta;
         } else {
@@ -124,6 +141,10 @@ export const getCleanCategoryName = (categoryOrName, language = 'en', t = null, 
 
     if (!full) return '';
 
+    // Extract any embedded emoji from string
+    const embeddedEmojis = extractEmojis(full);
+    const activeEmoji = categoryEmoji || embeddedEmojis;
+
     // Check optional translation function
     if (t && typeof t === 'function' && full.indexOf('(') === -1) {
         const translated = t(full);
@@ -133,6 +154,8 @@ export const getCleanCategoryName = (categoryOrName, language = 'en', t = null, 
     }
 
     const bracketIndex = full.indexOf('(');
+    let chosenText = full;
+
     if (bracketIndex !== -1) {
         const part1 = full.substring(0, bracketIndex).trim();
         const part2 = full.substring(bracketIndex).replace(/^\(/, '').replace(/\)$/, '').trim();
@@ -154,27 +177,38 @@ export const getCleanCategoryName = (categoryOrName, language = 'en', t = null, 
             tamStr = part2;
         }
 
-        const chosen = (language === 'ta' ? tamStr : engStr) || tamStr || engStr || full;
-        return keepEmoji ? chosen.trim() : stripEmojis(chosen);
-    }
-
-    // If no brackets, check static translations dictionary
-    const trimmed = full.trim();
-    const cleanNoEmoji = stripEmojis(trimmed);
-    let resolved = trimmed;
-
-    if (staticCategoryTranslations[trimmed]) {
-        resolved = staticCategoryTranslations[trimmed][language] || trimmed;
-    } else if (cleanNoEmoji && staticCategoryTranslations[cleanNoEmoji]) {
-        resolved = staticCategoryTranslations[cleanNoEmoji][language] || cleanNoEmoji;
+        chosenText = (language === 'ta' ? tamStr : engStr) || tamStr || engStr || full;
     } else {
-        for (const item of Object.values(staticCategoryTranslations)) {
-            if (item.en === trimmed || item.ta === trimmed || (cleanNoEmoji && (item.en === cleanNoEmoji || item.ta === cleanNoEmoji))) {
-                resolved = item[language] || trimmed;
-                break;
+        // If no brackets, check static translations dictionary
+        const trimmed = full.trim();
+        const cleanNoEmoji = stripEmojis(trimmed);
+        let resolved = trimmed;
+
+        if (staticCategoryTranslations[trimmed]) {
+            resolved = staticCategoryTranslations[trimmed][language] || trimmed;
+        } else if (cleanNoEmoji && staticCategoryTranslations[cleanNoEmoji]) {
+            resolved = staticCategoryTranslations[cleanNoEmoji][language] || cleanNoEmoji;
+        } else {
+            for (const item of Object.values(staticCategoryTranslations)) {
+                if (item.en === trimmed || item.ta === trimmed || (cleanNoEmoji && (item.en === cleanNoEmoji || item.ta === cleanNoEmoji))) {
+                    resolved = item[language] || trimmed;
+                    break;
+                }
             }
         }
+        chosenText = resolved;
     }
 
-    return keepEmoji ? resolved.trim() : stripEmojis(resolved);
+    const cleanFinalText = stripEmojis(chosenText);
+
+    // If keepEmoji is requested, prepend the emoji if present
+    if (keepEmoji) {
+        if (activeEmoji) {
+            return `${activeEmoji} ${cleanFinalText}`.trim();
+        }
+        return chosenText.trim();
+    }
+
+    // Strictly text only everywhere else
+    return cleanFinalText;
 };

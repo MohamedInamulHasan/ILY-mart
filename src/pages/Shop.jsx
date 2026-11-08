@@ -28,10 +28,13 @@ const Shop = () => {
     const categoryFilter = searchParams.get('category') || 'All';
 
     // Create categories array with "All" option first, then add categories from database
-    const categoriesList = [
+    const categoriesList = useMemo(() => [
         { name: 'All' },
-        ...(dbCategories || []).map(cat => ({ name: cat.name }))
-    ];
+        ...(dbCategories || []).map(cat => ({
+            ...cat,
+            name: cat.name
+        }))
+    ], [dbCategories]);
 
     // Safety check for stores array to prevent crash if undefined & filter active only
     const safeStores = useMemo(() => (stores || []).filter(s => s.isActive !== false), [stores]);
@@ -55,9 +58,24 @@ const Shop = () => {
             } else {
                 count = counts[name.toLowerCase()] || 0;
             }
-            return { name, count };
+            return { ...cat, name, count };
         }).filter(cat => cat.count > 0);
-    }, [safeStores, dbCategories]);
+    }, [safeStores, categoriesList]);
+
+    const getCategoryDisplay = (category) => {
+        if (!category) return '';
+        if (category.name === 'All') {
+            return getCleanCategoryName('All', language, null, { keepEmoji: true });
+        }
+        const catNameLower = String(category.name || '').toLowerCase().trim();
+        const found = (dbCategories || []).find(c => {
+            return (c.name && c.name.toLowerCase().trim() === catNameLower) ||
+                   (c.name_ta && c.name_ta.toLowerCase().trim() === catNameLower) ||
+                   (c._id && String(c._id) === String(category._id || category.id));
+        });
+        const target = found || category;
+        return getCleanCategoryName(target, language, null, { keepEmoji: true });
+    };
 
     const filteredStores = safeStores.filter(store => {
         const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -362,7 +380,7 @@ const Shop = () => {
                                                         : 'text-gray-400 hover:text-black dark:hover:text-white font-semibold'
                                                         }`}
                                                 >
-                                                    {getCleanCategoryName(category, language)}
+                                                    {getCategoryDisplay(category)}
                                                     {isActive && (
                                                         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                                     )}

@@ -12,6 +12,7 @@ import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrd
 import { triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
 import { apiService } from '../utils/api';
 import { registerModalBackHandler } from '../utils/useBackButton';
+import { getUserRoles } from '../utils/userHelpers';
 
 const NotificationOverlay = () => {
     const { socket } = useSocket();
@@ -25,12 +26,11 @@ const NotificationOverlay = () => {
     const shownOrderIdsRef = useRef(new Set());
     const navigate = useNavigate();
 
-    const roles = Array.isArray(user?.role) ? user.role : [user?.role];
-    const isDeliveryBoy = roles.some(r => {
-        const normalized = String(r || '').toLowerCase().trim();
-        return normalized === 'delivery_boy' || normalized === 'deliveryboy';
-    });
-    const isAdmin = roles.some(r => String(r || '').toLowerCase().trim() === 'admin');
+    const roles = useMemo(() => getUserRoles(user), [user]);
+    const isDeliveryBoy = useMemo(() => {
+        return roles.includes('delivery_boy') || roles.includes('deliveryboy');
+    }, [roles]);
+    const isAdmin = useMemo(() => roles.includes('admin'), [roles]);
 
     const { data: rawOrders = [] } = useOrders();
     const allOrders = useMemo(() => {
@@ -57,6 +57,31 @@ const NotificationOverlay = () => {
         if (!isDeliveryBoy) return [];
         return allOrders.filter(o => isProcessingStatus(o.status));
     }, [allOrders, isDeliveryBoy]);
+
+    // Check processing orders continuously and pop up card alert modal on ANY page until accepted or skipped
+    useEffect(() => {
+        if (!isDeliveryBoy) return;
+        if (hasActiveAcceptedOrder) return;
+        if (incomingOrder) return;
+
+        // Do not popup modal on top of active order details screen
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/delivery-order')) {
+            return;
+        }
+
+        const pendingOrder = processingOrders.find(o => {
+            const oId = o._id || o.id;
+            return oId && !skippedOrderIds.has(oId) && !shownOrderIdsRef.current.has(oId);
+        });
+
+        if (pendingOrder) {
+            const oId = pendingOrder._id || pendingOrder.id;
+            shownOrderIdsRef.current.add(oId);
+            setStartWithAcceptView(false);
+            setIncomingOrder(pendingOrder);
+            triggerIncomingOrderAlert();
+        }
+    }, [isDeliveryBoy, hasActiveAcceptedOrder, incomingOrder, processingOrders, skippedOrderIds]);
 
     // If delivery boy accepts an order, dismiss any incoming order popup so they are not interrupted
     useEffect(() => {
@@ -101,6 +126,26 @@ const NotificationOverlay = () => {
             }
         }
     }, [isDeliveryBoy]);
+
+    // Listen to custom orders:refresh event dispatched by SocketContext
+    useEffect(() => {
+        const handleOrdersRefresh = (e) => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            const newOrder = e.detail;
+            if (newOrder && isDeliveryBoy && !hasActiveAcceptedOrder) {
+                const oId = newOrder._id || newOrder.id;
+                if (oId && !shownOrderIdsRef.current.has(oId) && !skippedOrderIds.has(oId) && isProcessingStatus(newOrder.status)) {
+                    shownOrderIdsRef.current.add(oId);
+                    setStartWithAcceptView(false);
+                    setIncomingOrder(newOrder);
+                    triggerIncomingOrderAlert();
+                }
+            }
+        };
+
+        window.addEventListener('orders:refresh', handleOrdersRefresh);
+        return () => window.removeEventListener('orders:refresh', handleOrdersRefresh);
+    }, [isDeliveryBoy, hasActiveAcceptedOrder, skippedOrderIds, queryClient]);
 
     // Listen for native intent/card clicks when app was closed/backgrounded
     useEffect(() => {
@@ -258,6 +303,11 @@ const NotificationOverlay = () => {
             // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
             queryClient.invalidateQueries({ queryKey: ['orders'] });
 
+            if (hasActiveAcceptedOrder) return;
+            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/delivery-order')) {
+                return;
+            }
+
             // Pop up the new incoming order card modal for the delivery boy and trigger alert
             setStartWithAcceptView(false);
             setIncomingOrder(order);
@@ -295,7 +345,7 @@ const NotificationOverlay = () => {
             socket.off('order:updated', handleOrderUpdated);
             socket.off('order:created', handleOrderCreated);
         };
-    }, [socket, user, isDeliveryBoy, t, navigate, queryClient]);
+    }, [socket, user, isDeliveryBoy, hasActiveAcceptedOrder, skippedOrderIds, t, navigate, queryClient]);
 
     const addNotification = (notif) => {
         setNotifications(prev => [...prev, notif]);

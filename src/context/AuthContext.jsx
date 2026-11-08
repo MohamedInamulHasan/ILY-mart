@@ -150,6 +150,7 @@ export const AuthProvider = ({ children }) => {
 
             setUser(data.data);
             localStorage.setItem('userInfo', JSON.stringify(data.data));
+            localStorage.removeItem('delivery_boy_logged_out');
             if (data.token) {
                 localStorage.setItem('authToken', data.token); // Store token for Hybrid Auth
             }
@@ -173,6 +174,7 @@ export const AuthProvider = ({ children }) => {
 
             setUser(data.data);
             localStorage.setItem('userInfo', JSON.stringify(data.data));
+            localStorage.removeItem('delivery_boy_logged_out');
             if (data.token) {
                 localStorage.setItem('authToken', data.token); // Store token for Hybrid Auth
             }
@@ -278,6 +280,7 @@ export const AuthProvider = ({ children }) => {
             const roles = Array.isArray(user?.role) ? user.role : [user?.role || ''];
             if (roles.includes('delivery_boy')) {
                 localStorage.setItem('delivery_boy_logged_out', 'true');
+                localStorage.setItem('delivery_floating_overlay_enabled', 'false');
             }
             await apiService.logout();
         } catch (err) {
