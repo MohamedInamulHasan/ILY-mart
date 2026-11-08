@@ -11,7 +11,7 @@ export const getSettings = async (req, res) => {
             if (!setting) {
                 // If requesting a specific key that doesn't exist, return default structure or 404
                 // For delivery_times, if it doesn't exist, we might want to return a default
-                if (key === 'delivery_times' || key === 'cities') {
+                if (key === 'delivery_times' || key === 'cities' || key === 'main_categories') {
                     return res.json({ success: true, data: { value: [] } }); // Return empty array implies no restriction or need to handle on frontend
                 }
                 return res.status(404).json({ success: false, message: 'Setting not found' });

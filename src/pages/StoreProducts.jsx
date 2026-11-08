@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, MapPin, Clock, Phone, ChevronRight, AlertCircle, Zap, Search, ListFilter, ShoppingCart, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAds } from '../hooks/queries/useAds';
 import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
@@ -27,6 +28,90 @@ const ProductSkeleton = ({ fastMode }) => (
     </div>
 );
 
+
+const StoreAdsBanner = ({ ads, t }) => {
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const scrollRef = useRef(null);
+
+    useEffect(() => {
+        if (!ads || ads.length <= 1) return;
+        const interval = setInterval(() => {
+            setCurrentSlide(prev => {
+                const next = (prev + 1) % ads.length;
+                if (scrollRef.current) {
+                    const width = scrollRef.current.offsetWidth;
+                    scrollRef.current.scrollTo({
+                        left: width * next,
+                        behavior: 'smooth'
+                    });
+                }
+                return next;
+            });
+        }, 4000);
+        return () => clearInterval(interval);
+    }, [ads]);
+
+    const handleScroll = () => {
+        if (scrollRef.current) {
+            const width = scrollRef.current.offsetWidth;
+            const newIndex = Math.round(scrollRef.current.scrollLeft / width);
+            if (newIndex !== currentSlide) {
+                setCurrentSlide(newIndex);
+            }
+        }
+    };
+
+    if (!ads || ads.length === 0) return null;
+
+    return (
+        <div className="relative w-full rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800">
+            <div
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+                style={{ scrollSnapType: 'x mandatory' }}
+            >
+                {ads.map((ad, idx) => (
+                    <div
+                        key={ad._id || ad.id || idx}
+                        className="w-full flex-shrink-0 snap-center relative aspect-[16/7] sm:aspect-[21/9]"
+                    >
+                        <img
+                            src={ad.image || `${API_BASE_URL}/ads/${ad._id || ad.id}/image`}
+                            alt={ad.title || 'Store Ad'}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://placehold.co/800x350?text=Special+Offer';
+                            }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
+
+                        {/* Order Now Tag in the right side of image: white card, black thick text */}
+                        <div className="absolute right-3.5 bottom-3.5 sm:right-4 sm:bottom-4 z-20 bg-white text-black font-extrabold text-[11px] sm:text-[12px] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg flex items-center gap-1.5 select-none active:scale-95 transition-transform cursor-pointer border border-black/5">
+                            <span>{t('Order Now')}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Pagination dots if multiple ads */}
+            {ads.length > 1 && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                    {ads.map((_, i) => (
+                        <div
+                            key={i}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                                i === currentSlide ? 'w-4 bg-white' : 'w-1.5 bg-white/50'
+                            }`}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const StoreProducts = () => {
     const { id } = useParams();
     const { products, stores, categories, loading, fastMode, toggleFastMode, globalSortOrder, setGlobalSortOrder } = useData();
@@ -41,6 +126,32 @@ const StoreProducts = () => {
 
     // Find store and its products
     const store = stores.find(s => (s._id || s.id) === storeId);
+
+    const { data: allAds = [] } = useAds();
+
+    // Matching ads mentioning this store
+    const storeAds = useMemo(() => {
+        if (!store || !Array.isArray(allAds) || allAds.length === 0) return [];
+        const sName = (store.name || '').toLowerCase().trim();
+        const sId = String(store._id || store.id || '');
+        
+        return allAds.filter(ad => {
+            if (ad.isActive === false) return false;
+            const adStoreId = String(ad.storeId?._id || ad.storeId || '');
+            if (adStoreId && adStoreId === sId) return true;
+            
+            const adStoreName = String(ad.storeName || '').toLowerCase().trim();
+            if (adStoreName && (adStoreName === sName || sName.includes(adStoreName) || adStoreName.includes(sName))) return true;
+            
+            const adTitle = String(ad.title || '').toLowerCase().trim();
+            if (adTitle && sName && (adTitle.includes(sName) || sName.includes(adTitle))) return true;
+            
+            const adLink = String(ad.link || '');
+            if (sId && adLink.includes(sId)) return true;
+            
+            return false;
+        });
+    }, [allAds, store]);
 
     // All products for this store (INCLUDE closed for search)
     const storeProducts = useMemo(() => {
@@ -312,6 +423,13 @@ const StoreProducts = () => {
                 </div>
 
                 <div className="pt-[88px]">
+
+                {/* Ads mentioning this store - auto-scroll banner with Order Now tag */}
+                {storeAds.length > 0 && (
+                    <div className="max-w-2xl mx-auto px-4 mb-3 sm:mb-3.5">
+                        <StoreAdsBanner ads={storeAds} t={t} />
+                    </div>
+                )}
 
                 {/* Store Search & Filter (Now Below the Design) */}
                 <section className="px-4 relative z-20 mb-3.5 sm:mb-4">

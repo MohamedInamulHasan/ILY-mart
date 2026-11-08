@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useCategories } from '../hooks/queries/useCategories';
@@ -18,6 +18,7 @@ import { API_BASE_URL } from '../utils/api';
 const CategoryProducts = () => {
     const { categoryName } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { stores = [], globalSortOrder, setGlobalSortOrder } = useData();
     const { t, language } = useLanguage();
     const { cartCount } = useCart();
@@ -66,9 +67,18 @@ const CategoryProducts = () => {
             );
             filtered = filtered.filter(cat => productCategories.has(String(cat.name || '').toLowerCase().trim()));
         }
+
+        // If navigated from a Main Category, filter to its assigned categories
+        if (Array.isArray(location.state?.filterCategories) && location.state.filterCategories.length > 0) {
+            const allowedSet = new Set(location.state.filterCategories.map(c => String(c).toLowerCase().trim()));
+            const subset = filtered.filter(cat => allowedSet.has(String(cat.name || '').toLowerCase().trim()));
+            if (subset.length > 0) {
+                filtered = subset;
+            }
+        }
         
         return filtered;
-    }, [rawCategories, rawProducts]);
+    }, [rawCategories, rawProducts, location.state]);
 
     const allProducts = useMemo(() => {
         return Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
@@ -126,6 +136,21 @@ const CategoryProducts = () => {
     }, [categoryProducts]);
 
     const isSingleStore = storeCount <= 1;
+
+    // Single store object for category view
+    const singleStore = useMemo(() => {
+        if (!categoryProducts || categoryProducts.length === 0) return null;
+        for (const p of categoryProducts) {
+            const rawStoreId = p.storeId?._id || p.storeId;
+            if (rawStoreId) {
+                const sId = String(rawStoreId);
+                const found = stores.find(s => String(s._id || s.id) === sId);
+                if (found) return found;
+                if (typeof p.storeId === 'object' && p.storeId?.name) return p.storeId;
+            }
+        }
+        return null;
+    }, [categoryProducts, stores]);
 
     // Multi-store sections (when more than 1 store)
     const storeSections = useMemo(() => {
@@ -416,7 +441,7 @@ const CategoryProducts = () => {
                                     </div>
 
                                     {/* Text: clean single-language, little thick, with bottom padding for Tamil diacritics */}
-                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-[72px] sm:w-[78px] max-w-[72px] sm:max-w-[78px] px-0.5 pb-0.5">
+                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-[72px] sm:w-[78px] max-w-[72px] sm:max-w-[78px] px-0.5 pb-1">
                                         <span 
                                             className={`leading-normal truncate block text-center w-full transition-colors text-[11px] sm:text-[11.5px] ${
                                                 isSelected 
@@ -427,9 +452,9 @@ const CategoryProducts = () => {
                                         >
                                             {cleanTitle}
                                         </span>
-                                        {/* Underline line effect only below selected category */}
+                                        {/* Underline line effect only below selected category with gap */}
                                         {isSelected && (
-                                            <div className="h-[2px] w-8 sm:w-10 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full mx-auto mt-0.5 animate-in fade-in zoom-in-75 duration-200" />
+                                            <div className="h-[2px] w-8 sm:w-10 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full mx-auto mt-2 animate-in fade-in zoom-in-75 duration-200" />
                                         )}
                                     </div>
                                 </div>
@@ -458,18 +483,42 @@ const CategoryProducts = () => {
                             ))}
                         </div>
                     ) : isSingleStore ? (
-                        /* Only ONE store in the category: Show as 2 cards per row with bigger quantity controls */
+                        /* Only ONE store in the category: Show as 2 cards per row with store name and address above cards */
                         groupedCategoryProducts.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 px-1">
-                                {groupedCategoryProducts.map((product) => (
-                                    <div key={product._id || product.id} className="animate-in fade-in duration-300">
-                                        <ProductCard 
-                                            product={product}
-                                            showCartControls={true}
-                                            largeControls={true}
-                                        />
+                            <div className="space-y-3">
+                                {singleStore && (
+                                    <div className="flex justify-between items-end mb-2.5 px-2">
+                                        <div className="flex flex-col min-w-0 flex-1 pr-2">
+                                            <h3 className="text-[15px] sm:text-[17px] font-bold text-gray-900 dark:text-white truncate">
+                                                {t(singleStore.name || singleStore)}
+                                            </h3>
+                                            {(singleStore.address || singleStore.location) && (
+                                                <p className="text-[10.5px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                    {singleStore.address || singleStore.location}
+                                                </p>
+                                            )}
+                                        </div>
+                                        {singleStore._id && !singleStore.isGeneral && (
+                                            <Link 
+                                                to={`/store/${singleStore._id || singleStore.id}`} 
+                                                className="text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-75 transition-opacity shrink-0"
+                                            >
+                                                {t('See All')}
+                                            </Link>
+                                        )}
                                     </div>
-                                ))}
+                                )}
+                                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 px-1">
+                                    {groupedCategoryProducts.map((product) => (
+                                        <div key={product._id || product.id} className="animate-in fade-in duration-300">
+                                            <ProductCard 
+                                                product={product}
+                                                showCartControls={true}
+                                                largeControls={true}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ) : (
                             <div className="text-center py-20 flex flex-col items-center justify-center gap-3">
@@ -498,9 +547,9 @@ const CategoryProducts = () => {
                                                     <h3 className="text-[15px] sm:text-[17px] font-bold text-gray-900 dark:text-white truncate">
                                                         {t(section.store?.name || section.store)}
                                                     </h3>
-                                                    {section.store?.address && (
-                                                        <p className="text-[10.5px] text-gray-500 dark:text-gray-400 truncate">
-                                                            {section.store.address}
+                                                    {(section.store?.address || section.store?.location) && (
+                                                        <p className="text-[10.5px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                            {section.store.address || section.store.location}
                                                         </p>
                                                     )}
                                                 </div>

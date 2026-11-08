@@ -6,13 +6,14 @@ import { useProducts } from '../hooks/queries/useProducts';
 import { useAds, adKeys } from '../hooks/queries/useAds';
 import { useCategories } from '../hooks/queries/useCategories';
 import { useStores } from '../hooks/queries/useStores';
+import { useMainCategories } from '../hooks/queries/useMainCategories';
+import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { useLanguage } from '../context/LanguageContext';
 import { useSocket } from '../context/SocketContext';
 import { useData } from '../context/DataContext';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import HomeHeader from '../components/home/HomeHeader';
 import HeroBanner from '../components/home/HeroBanner';
-import CategorySection from '../components/home/CategorySection';
 import StoreSection from '../components/home/StoreSection';
 import SortDropdown from '../components/SortDropdown';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
@@ -31,7 +32,7 @@ const Home = () => {
     }, []);
     const { globalSortOrder, setGlobalSortOrder, setIsFooterHidden } = useData();
     const navigate = useNavigate();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { socket } = useSocket();
     const queryClient = useQueryClient();
 
@@ -56,6 +57,16 @@ const Home = () => {
     const { data: ads = [], isLoading: loadingAds } = useAds();
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
     const { data: rawStores = [], isLoading: loadingStores } = useStores();
+    const { data: mainCategories = [] } = useMainCategories();
+
+    const handleMainCategoryClick = (mainCat) => {
+        if (!mainCat) return;
+        navigate(`/main-category/${encodeURIComponent(mainCat.name)}`, {
+            state: {
+                mainCategory: mainCat
+            }
+        });
+    };
 
     const products = useMemo(() => {
         const allProducts = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
@@ -355,13 +366,48 @@ const Home = () => {
                 {/* Ads */}
                 <HeroBanner slides={ads} isLoading={loadingAds} />
 
-                {/* Categories */}
-                <CategorySection 
-                    categories={featuredCategories} 
-                    isLoading={loadingCategories || loadingProducts} 
-                    selectedCategory={selectedCategory}
-                    onSelectCategory={handleSelectCategory}
-                />
+                {/* Main Categories below Shop by Categories text (Home page only shows Main Categories cards) */}
+                {Array.isArray(mainCategories) && mainCategories.length > 0 && (
+                    <section className="pt-2 pb-3.5 mt-1 sm:mt-1.5 px-3 sm:px-4 mb-4">
+                        <div className="flex justify-between items-center mb-3 px-1">
+                            <h2 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
+                                {t('Shop By Categories')}
+                            </h2>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            {mainCategories.map((mainCat) => {
+                                const cleanName = getCleanCategoryName(mainCat.name, language);
+                                return (
+                                    <div 
+                                        key={mainCat.id || mainCat._id || mainCat.name}
+                                        onClick={() => handleMainCategoryClick(mainCat)}
+                                        className="flex flex-col items-center cursor-pointer group select-none active:scale-[0.98] transition-transform"
+                                    >
+                                        {/* 16:9 Rectangular Card */}
+                                        <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 relative">
+                                            <img 
+                                                src={mainCat.image} 
+                                                alt={cleanName} 
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                loading="lazy"
+                                                decoding="async"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = 'https://placehold.co/800x450?text=' + encodeURIComponent(cleanName);
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none opacity-40"></div>
+                                        </div>
+                                        {/* Main Category Name Below */}
+                                        <span className="mt-2 text-[12.5px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-100 text-center truncate block w-full px-1">
+                                            {cleanName}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
+                )}
 
                 {/* Store Sections Loading Skeleton */}
                 {isLoadingAll ? (

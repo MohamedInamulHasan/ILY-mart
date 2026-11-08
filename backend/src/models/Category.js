@@ -44,6 +44,10 @@ const categorySchema = new mongoose.Schema({
     order: {
         type: Number,
         default: 0
+    },
+    mainCategory: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

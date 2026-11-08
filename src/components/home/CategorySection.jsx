@@ -61,10 +61,10 @@ const CategorySection = ({ categories = [], isLoading = false }) => {
                                 />
                             </div>
 
-                            {/* Clean, single-language title (little thick: font-semibold, no bracket text) */}
+                            {/* Clean, single-language title (thick: font-bold, no bracket text) */}
                             <div className="flex flex-col items-center justify-center text-center w-full px-0.5 pb-1">
                                 <span 
-                                    className="text-[11px] sm:text-[12px] font-semibold text-gray-700 dark:text-gray-200 leading-normal truncate block text-center w-full"
+                                    className="text-[11px] sm:text-[12px] font-bold text-gray-900 dark:text-gray-100 leading-normal truncate block text-center w-full"
                                     title={cleanTitle}
                                 >
                                     {cleanTitle}

@@ -70,7 +70,7 @@ export const getCategoryById = async (req, res, next) => {
 // @access  Private/Admin
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, name_ta, description, icon, image, subcategories, isPreview, mode } = req.body;
+        const { name, name_ta, description, icon, image, subcategories, isPreview, mode, mainCategory } = req.body;
 
         // Check if category already exists
         const categoryExists = await Category.findOne({ name });
@@ -88,7 +88,8 @@ export const createCategory = async (req, res, next) => {
             image,
             subcategories: subcategories || [],
             isPreview: Boolean(isPreview === true || mode === 'preview'),
-            mode: mode || (isPreview ? 'preview' : 'normal')
+            mode: mode || (isPreview ? 'preview' : 'normal'),
+            mainCategory: mainCategory || ''
         });
 
         invalidateCategoryCache();

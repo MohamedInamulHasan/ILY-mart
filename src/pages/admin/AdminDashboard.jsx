@@ -67,6 +67,8 @@ import { useStores } from '../../hooks/queries/useStores';
 import { useNews, useCreateNews, useUpdateNews, useDeleteNews } from '../../hooks/queries/useNews';
 import { useUsers, useDeleteUser, useUpdateUser, useCreateUser, userKeys } from '../../hooks/queries/useUsers';
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory, useUpdateCategoryOrder } from '../../hooks/queries/useCategories';
+import { useMainCategories, useSaveMainCategories } from '../../hooks/queries/useMainCategories';
+import { getCleanCategoryName } from '../../utils/categoryHelpers';
 import { useAds, useCreateAd, useDeleteAd, useUpdateAd, useUpdateAdOrder } from '../../hooks/queries/useAds';
 import { useServices, useCreateService, useUpdateService } from '../../hooks/queries/useServices';
 import { useServiceRequests, useUpdateServiceRequestStatus, useDeleteServiceRequest } from '../../hooks/queries/useServiceRequests';
@@ -2078,9 +2080,111 @@ const CategoryManagement = () => {
     const { mutateAsync: updateCategory } = useUpdateCategory();
     const { mutateAsync: deleteCategory } = useDeleteCategory();
     const { mutateAsync: updateOrder } = useUpdateCategoryOrder();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [view, setView] = useState('list');
     const [editingCategory, setEditingCategory] = useState(null);
+
+    // Sub-tab: 'categories' | 'main_categories'
+    const [subTab, setSubTab] = useState('categories');
+
+    // Main Categories State
+    const { data: mainCategories = [] } = useMainCategories();
+    const { mutateAsync: saveMainCategories } = useSaveMainCategories();
+    const [mainCatView, setMainCatView] = useState('list');
+    const [editingMainCat, setEditingMainCat] = useState(null);
+    const [mainCatForm, setMainCatForm] = useState({
+        name: '',
+        image: '',
+        categories: []
+    });
+    const [savingMainCat, setSavingMainCat] = useState(false);
+
+    const handleEditMainCategory = (mainCat) => {
+        setEditingMainCat(mainCat);
+        setMainCatForm({
+            name: mainCat.name || '',
+            image: mainCat.image || '',
+            categories: Array.isArray(mainCat.categories) ? mainCat.categories : []
+        });
+        setMainCatView('form');
+    };
+
+    const handleDeleteMainCategory = async (mainCatId) => {
+        if (!window.confirm(t('Are you sure you want to delete this main category?'))) return;
+        try {
+            const updated = mainCategories.filter(m => (m.id || m._id) !== mainCatId);
+            await saveMainCategories(updated);
+            alert(t('Main category deleted successfully!'));
+        } catch (err) {
+            console.error('Error deleting main category:', err);
+            alert(t('Failed to delete main category.'));
+        }
+    };
+
+    const handleSaveMainCategory = async (e) => {
+        e.preventDefault();
+        if (!mainCatForm.name.trim()) {
+            alert(t('Please enter a name for the main category'));
+            return;
+        }
+        if (!mainCatForm.image.trim()) {
+            alert(t('Please upload or provide an image for the main category'));
+            return;
+        }
+
+        setSavingMainCat(true);
+        try {
+            let updatedList = [...mainCategories];
+            const trimmedName = mainCatForm.name.trim();
+
+            if (editingMainCat) {
+                const targetId = editingMainCat.id || editingMainCat._id;
+                const idx = updatedList.findIndex(m => (m.id || m._id) === targetId);
+                if (idx !== -1) {
+                    updatedList[idx] = {
+                        ...updatedList[idx],
+                        name: trimmedName,
+                        image: mainCatForm.image,
+                        categories: mainCatForm.categories
+                    };
+                }
+            } else {
+                updatedList.push({
+                    id: 'mc_' + Date.now(),
+                    name: trimmedName,
+                    image: mainCatForm.image,
+                    categories: mainCatForm.categories
+                });
+            }
+
+            await saveMainCategories(updatedList);
+
+            // Assign particular categories to this main category
+            for (const catName of mainCatForm.categories) {
+                const catObj = categories.find(c => c.name === catName || (c._id || c.id) === catName);
+                if (catObj && catObj.mainCategory !== trimmedName) {
+                    try {
+                        await updateCategory({
+                            id: catObj._id || catObj.id,
+                            data: { ...catObj, mainCategory: trimmedName }
+                        });
+                    } catch (err) {
+                        console.warn('Failed to update category mainCategory field:', err);
+                    }
+                }
+            }
+
+            alert(t('Main category saved successfully!'));
+            setEditingMainCat(null);
+            setMainCatForm({ name: '', image: '', categories: [] });
+            setMainCatView('list');
+        } catch (err) {
+            console.error('Error saving main category:', err);
+            alert(t('Failed to save main category.'));
+        } finally {
+            setSavingMainCat(false);
+        }
+    };
     const [formData, setFormData] = useState({
         name: '',
         image: '',
@@ -2275,27 +2379,332 @@ const CategoryManagement = () => {
 
     return (
         <div className="max-w-5xl">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {view === 'list' ? t('Categories') : editingCategory ? t('Edit Category') : t('Add New Category')}
-                </h2>
+            {/* Top Sub-tabs Switcher */}
+            <div className="flex items-center gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-3">
                 <button
-                    onClick={() => {
-                        if (view === 'list') {
-                            setEditingCategory(null);
-                            setFormData({ name: '', image: '', subcategories: [], isPreview: false });
-                            setNewSubcategory('');
-                            setView('form');
-                        } else {
-                            setView('list');
-                        }
-                    }}
-                    className="px-4 py-2 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-2 font-bold shadow-sm"
+                    type="button"
+                    onClick={() => { setSubTab('categories'); setView('list'); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                        subTab === 'categories'
+                            ? 'bg-[#2E5A2E] text-white shadow-sm'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                    }`}
                 >
-                    {view === 'list' ? <Plus size={20} /> : <List size={20} />}
-                    {view === 'list' ? t('Add Category') : t('View List')}
+                    {t('Categories')}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => { setSubTab('main_categories'); setMainCatView('list'); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                        subTab === 'main_categories'
+                            ? 'bg-[#2E5A2E] text-white shadow-sm'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                    }`}
+                >
+                    <span>{t('Main Category')}</span>
+                    {Array.isArray(mainCategories) && mainCategories.length > 0 && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                            subTab === 'main_categories' ? 'bg-white text-[#2E5A2E]' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                        }`}>
+                            {mainCategories.length}
+                        </span>
+                    )}
                 </button>
             </div>
+
+            {subTab === 'main_categories' ? (
+                /* ================= MAIN CATEGORIES SECTION ================= */
+                <div>
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                {mainCatView === 'list' 
+                                    ? t('Main Categories') 
+                                    : editingMainCat 
+                                        ? t('Edit Main Category') 
+                                        : t('Add Main Category')}
+                            </h2>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                {t('Shown on the Home Page below the Ads Banner as 16:9 rectangular cards')}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (mainCatView === 'list') {
+                                    setEditingMainCat(null);
+                                    setMainCatForm({ name: '', image: '', categories: [] });
+                                    setMainCatView('form');
+                                } else {
+                                    setMainCatView('list');
+                                }
+                            }}
+                            className="px-4 py-2 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-2 font-bold shadow-sm"
+                        >
+                            {mainCatView === 'list' ? <Plus size={20} /> : <List size={20} />}
+                            {mainCatView === 'list' ? t('Add Main Category') : t('View List')}
+                        </button>
+                    </div>
+
+                    {mainCatView === 'list' ? (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                            {mainCategories.length > 0 ? (
+                                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {mainCategories.map((mainCat) => {
+                                        const assignedCats = Array.isArray(mainCat.categories) ? mainCat.categories : [];
+                                        return (
+                                            <div 
+                                                key={mainCat.id || mainCat._id || mainCat.name} 
+                                                className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    {/* 9:16 Thumbnail preview */}
+                                                    <div className="w-24 sm:w-28 aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex-shrink-0">
+                                                        <img 
+                                                            src={mainCat.image} 
+                                                            alt={mainCat.name} 
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.target.onerror = null;
+                                                                e.target.src = 'https://placehold.co/450x800?text=' + encodeURIComponent(mainCat.name);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                                                            {mainCat.name}
+                                                        </h3>
+                                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                                            {assignedCats.length > 0 ? (
+                                                                assignedCats.map((cName) => (
+                                                                    <span 
+                                                                        key={cName} 
+                                                                        className="text-[11px] bg-green-50 dark:bg-green-900/30 text-[#2E5A2E] dark:text-[#CBF9B2] px-2 py-0.5 rounded-full font-medium"
+                                                                    >
+                                                                        {cName}
+                                                                    </span>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400 italic">
+                                                                    {t('No categories assigned')}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100 dark:border-gray-700">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEditMainCategory(mainCat)}
+                                                        className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] dark:hover:bg-gray-700 rounded-xl transition-colors"
+                                                        title={t('Edit')}
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteMainCategory(mainCat.id || mainCat._id)}
+                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+                                                        title={t('Delete')}
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="p-12 text-center text-gray-500 dark:text-gray-400">
+                                    <p className="text-base font-medium">{t('No main categories created yet')}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{t('Click "+ Add Main Category" to create cards for the Home page.')}</p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* Main Category Form */
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                            <form onSubmit={handleSaveMainCategory} className="space-y-6">
+                                {/* 1. Name */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {t('Main Category Name')} <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={mainCatForm.name}
+                                        onChange={(e) => setMainCatForm({ ...mainCatForm, name: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                        placeholder={t('e.g., House holds')}
+                                        required
+                                    />
+                                </div>
+
+                                {/* 2. Image (9:16) */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {t('Main Category Image')} (16:9 Aspect Ratio) <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                        {mainCatForm.image && (
+                                            <div className="w-36 sm:w-44 aspect-[16/9] rounded-xl overflow-hidden ring-2 ring-[#2E5A2E] dark:ring-[#CBF9B2] bg-gray-100 flex-shrink-0 shadow-sm">
+                                                <img
+                                                    src={mainCatForm.image}
+                                                    alt="Preview"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = "https://via.placeholder.com/90x160?text=Preview";
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                        <label className="flex-1 cursor-pointer w-full">
+                                            <div className="w-full px-4 py-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
+                                                <Upload size={20} />
+                                                <span>{uploadingCategory ? t('Uploading...') : (mainCatForm.image ? t('Change Image') : t('Upload 16:9 Image'))}</span>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        try {
+                                                            const imageUrl = await uploadImage(file, { isCategory: true });
+                                                            setMainCatForm(prev => ({ ...prev, image: imageUrl }));
+                                                        } catch (error) {
+                                                            console.error('Error uploading main category image:', error);
+                                                            alert(t('Failed to upload image. Please try again.'));
+                                                        }
+                                                    }
+                                                }}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* 3. Categories Multiselection */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {t('Select Categories')} ({mainCatForm.categories.length} {t('selected')})
+                                    </label>
+                                    <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 max-h-64 overflow-y-auto space-y-2 bg-gray-50/50 dark:bg-gray-800/50">
+                                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-700 mb-2">
+                                            <span className="text-xs text-gray-500">{t('Assign categories to this main category')}</span>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMainCatForm(prev => ({ ...prev, categories: categories.map(c => c.name) }))}
+                                                    className="text-xs text-[#2E5A2E] dark:text-[#CBF9B2] font-semibold hover:underline"
+                                                >
+                                                    {t('Select All')}
+                                                </button>
+                                                <span className="text-gray-300">|</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMainCatForm(prev => ({ ...prev, categories: [] }))}
+                                                    className="text-xs text-red-500 font-semibold hover:underline"
+                                                >
+                                                    {t('Clear All')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {categories.map((cat) => {
+                                                const isSelected = mainCatForm.categories.includes(cat.name);
+                                                return (
+                                                    <label 
+                                                        key={cat._id || cat.id}
+                                                        className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer border transition-colors ${
+                                                            isSelected 
+                                                                ? 'bg-green-50 dark:bg-green-900/20 border-[#2E5A2E] dark:border-[#CBF9B2]' 
+                                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setMainCatForm(prev => ({ ...prev, categories: [...prev.categories, cat.name] }));
+                                                                } else {
+                                                                    setMainCatForm(prev => ({ ...prev, categories: prev.categories.filter(c => c !== cat.name) }));
+                                                                }
+                                                            }}
+                                                            className="rounded text-[#2E5A2E] focus:ring-[#2E5A2E] w-4 h-4 cursor-pointer"
+                                                        />
+                                                        <div className="w-7 h-7 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center">
+                                                            {cat.image ? (
+                                                                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-[10px] text-gray-400">IMG</span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate flex-1">
+                                                            {getCleanCategoryName(cat, language)}
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 4. Save Button */}
+                                <div className="flex justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={savingMainCat || uploadingCategory}
+                                        className={`w-full sm:w-auto px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+                                            savingMainCat || uploadingCategory
+                                                ? 'bg-gray-400 cursor-not-allowed text-white'
+                                                : 'bg-[#2E5A2E] text-white hover:bg-[#1a3d1a]'
+                                        }`}
+                                    >
+                                        {savingMainCat ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                                <span>{t('Saving...')}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save size={20} />
+                                                <span>{editingMainCat ? t('Update Main Category') : t('Save Main Category')}</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                /* ================= REGULAR CATEGORIES SECTION ================= */
+                <div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {view === 'list' ? t('Categories') : editingCategory ? t('Edit Category') : t('Add New Category')}
+                        </h2>
+                        <button
+                            onClick={() => {
+                                if (view === 'list') {
+                                    setEditingCategory(null);
+                                    setFormData({ name: '', image: '', subcategories: [], isPreview: false });
+                                    setNewSubcategory('');
+                                    setView('form');
+                                } else {
+                                    setView('list');
+                                }
+                            }}
+                            className="px-4 py-2 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-2 font-bold shadow-sm"
+                        >
+                            {view === 'list' ? <Plus size={20} /> : <List size={20} />}
+                            {view === 'list' ? t('Add Category') : t('View List')}
+                        </button>
+                    </div>
 
             {view === 'list' ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -2666,6 +3075,8 @@ const CategoryManagement = () => {
                             </button>
                         </div>
                     </form>
+                </div>
+            )}
                 </div>
             )}
         </div>

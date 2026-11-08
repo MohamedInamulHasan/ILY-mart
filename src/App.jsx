@@ -19,6 +19,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import DeliveryDashboard from './pages/admin/DeliveryDashboard';
 import DeliveryActiveOrder from './pages/admin/DeliveryActiveOrder';
 import CategoryProducts from './pages/CategoryProducts';
+import MainCategoryProducts from './pages/MainCategoryProducts';
 import ProductGroupProducts from './pages/ProductGroupProducts';
 import MyStore from './pages/MyStore';
 
@@ -400,6 +401,8 @@ function App() {
                                     <Route path="/delete-account" element={<DeleteAccount />} />
                                     <Route path="/categories" element={<Categories />} />
                                     <Route path="/category/:categoryName" element={<CategoryProducts />} />
+                                    <Route path="/main-category/:mainCategoryName" element={<MainCategoryProducts />} />
+                                    <Route path="/main-category" element={<MainCategoryProducts />} />
                                     <Route path="/product-group/:productName" element={<ProductGroupProducts />} />
                                     <Route
                                         path="/admin"

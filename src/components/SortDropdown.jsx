@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ArrowUpNarrowWide, ArrowDownWideNarrow, ListFilter } from 'lucide-react';
+import { ChevronDown, ArrowUpNarrowWide, ArrowDownWideNarrow, ListFilter, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -30,15 +30,11 @@ const SortDropdown = ({ currentSort, onSortChange }) => {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-12 h-12 sm:w-[52px] sm:h-[52px] flex-shrink-0 flex items-center justify-center rounded-2xl border transition-all duration-300 active:scale-95 ${isOpen
-                    ? 'border-[#2E5A2E] dark:border-[#CBF9B2] bg-[#2E5A2E]/5 dark:bg-[#CBF9B2]/10'
-                    : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800'
-                    }`}
-                title={t(selectedOption.label)}
+                className="w-12 h-12 sm:w-[52px] sm:h-[52px] flex-shrink-0 flex items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 transition-colors active:scale-95 cursor-pointer shadow-none"
+                title={t('Filter & Sort')}
+                aria-label={t('Filter & Sort')}
             >
-                <div className={`${isOpen ? 'text-[#2E5A2E] dark:text-[#CBF9B2]' : 'text-gray-900 dark:text-white'}`}>
-                    {selectedOption.icon}
-                </div>
+                <SlidersHorizontal size={20} className="stroke-[2.2] text-gray-700 dark:text-gray-200" />
             </button>
 
             <AnimatePresence>
