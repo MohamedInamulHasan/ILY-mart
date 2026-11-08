@@ -137,7 +137,7 @@ const MainCategoryProducts = () => {
         return list;
     }, [mainCategoryProducts, stores, globalSortOrder]);
 
-    // Store sections
+    // Store sections (Group products by store)
     const storeSections = useMemo(() => {
         const sections = [];
         const storeMap = new Map();
@@ -184,6 +184,7 @@ const MainCategoryProducts = () => {
 
     const cleanMainTitle = getCleanCategoryName(currentMainCat?.name || decodedMainCatName, language);
     const isLoading = loadingCategories || loadingProducts || loadingMainCats;
+    const isSingleStore = storeSections.length === 1;
 
     return (
         <PullToRefreshLayout>
@@ -341,7 +342,12 @@ const MainCategoryProducts = () => {
                                     return (
                                         <div
                                             key={category._id || category.id}
-                                            onClick={() => navigate(`/category/${encodeURIComponent(category.name)}`)}
+                                            onClick={() => navigate(`/category/${encodeURIComponent(category.name)}`, {
+                                                state: {
+                                                    mainCategory: currentMainCat?.name || decodedMainCatName,
+                                                    filterCategories: subCategories.map(c => c.name || c)
+                                                }
+                                            })}
                                             className="w-full flex flex-col items-center gap-1 group cursor-pointer select-none active:scale-95 transition-transform"
                                         >
                                             {/* Big category image directly on background */}
@@ -372,8 +378,8 @@ const MainCategoryProducts = () => {
                         </section>
                     )}
 
-                    {/* Products grouped by Store */}
-                    <div className="max-w-7xl mx-auto space-y-6">
+                    {/* Products grouped by Store - matching Home page store name & cards style */}
+                    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
                         {isLoading ? (
                             <div className="px-4">
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -390,48 +396,85 @@ const MainCategoryProducts = () => {
                             </div>
                         ) : (
                             storeSections.map(({ store, products: sProducts }) => {
-                                const isClosed = !store.isGeneral && !isStoreOpen(store);
+                                const isOpen = store.isGeneral ? true : isStoreOpen(store);
+                                const storeAddress = typeof store.address === 'object'
+                                    ? [store.address.street, store.address.city].filter(Boolean).join(', ') || store.address.address || ''
+                                    : (store.address || '');
+
                                 return (
-                                    <section key={store._id || store.id} className="px-3 sm:px-4">
-                                        {/* Store Header Card */}
-                                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 mb-3 shadow-sm border border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
-                                            <div className="flex flex-col min-w-0 pr-2">
+                                    <section 
+                                        key={store._id || store.id} 
+                                        className={`px-4 pt-2.5 pb-4 md:py-5 dark:bg-gray-900 transition-opacity duration-300 ${!isOpen ? 'opacity-80' : ''}`}
+                                    >
+                                        {/* Store Header matching Home Page exactly */}
+                                        <div className="flex justify-between items-end mb-3.5 sm:mb-4 px-1">
+                                            <div className="flex flex-col min-w-0 flex-1 pr-3">
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="font-extrabold text-[15px] sm:text-[16px] text-gray-900 dark:text-white truncate">
+                                                    <h2 
+                                                        className="text-[16px] sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white leading-tight truncate w-full" 
+                                                        title={store.name}
+                                                    >
                                                         {store.name}
-                                                    </h3>
-                                                    {isClosed && (
-                                                        <span className="bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800 flex-shrink-0">
-                                                            {t('Closed')}
-                                                        </span>
-                                                    )}
+                                                    </h2>
                                                 </div>
-                                                {store.address && (
-                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                                        {store.address.street || store.address.city || store.address.address || ''}
+                                                {storeAddress && (
+                                                    <p className="text-[11px] text-gray-400 font-medium mt-1 truncate w-full">
+                                                        {storeAddress}
+                                                    </p>
+                                                )}
+                                                {store.slogan && (
+                                                    <p className="text-[11px] text-gray-400 font-medium mt-1 truncate w-full">
+                                                        {t(store.slogan)}
                                                     </p>
                                                 )}
                                             </div>
-                                            {!store.isGeneral && (
-                                                <Link
-                                                    to={`/store/${store._id || store.id}`}
-                                                    className="text-[12px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2] hover:underline flex-shrink-0"
+
+                                            {/* See All link matching Home Page */}
+                                            {isOpen && !store.isGeneral ? (
+                                                <Link 
+                                                    to={`/store/${store._id || store.id}`} 
+                                                    className="text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-70 transition-all shrink-0"
                                                 >
-                                                    {t('View Store')} →
+                                                    {t('See All')}
                                                 </Link>
+                                            ) : (
+                                                <span className="text-xs font-semibold text-gray-400 dark:text-gray-650 cursor-not-allowed select-none shrink-0">
+                                                    {t('See All')}
+                                                </span>
                                             )}
                                         </div>
 
-                                        {/* Products Grid */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                            {sProducts.map((product) => {
-                                                return fastMode ? (
-                                                    <SimpleProductCard key={product.id || product._id} product={product} />
-                                                ) : (
-                                                    <ProductCard key={product.id || product._id} product={product} />
-                                                );
-                                            })}
-                                        </div>
+                                        {/* Product Cards: Side-Scrollable if multiple stores, Grid if single store */}
+                                        {isSingleStore ? (
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 px-1">
+                                                {sProducts.map((product, idx) => (
+                                                    <div key={`${product._id || product.id}-${idx}`}>
+                                                        {fastMode ? (
+                                                            <SimpleProductCard product={product} />
+                                                        ) : (
+                                                            <ProductCard product={product} showCartControls={true} />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 pb-2 px-1">
+                                                <div className="flex gap-3 md:gap-4">
+                                                    {sProducts.map((product, idx) => (
+                                                        <div 
+                                                            key={`${product._id || product.id}-${idx}`} 
+                                                            className="w-[142px] sm:w-[155px] md:w-[175px] lg:w-[195px] shrink-0"
+                                                        >
+                                                            {fastMode ? (
+                                                                <SimpleProductCard product={product} />
+                                                            ) : (
+                                                                <ProductCard product={product} showCartControls={true} />
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </section>
                                 );
                             })

@@ -14,7 +14,6 @@ import { useData } from '../context/DataContext';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import HomeHeader from '../components/home/HomeHeader';
 import HeroBanner from '../components/home/HeroBanner';
-import StoreSection from '../components/home/StoreSection';
 import SortDropdown from '../components/SortDropdown';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { useCart } from '../context/CartContext';
@@ -407,63 +406,6 @@ const Home = () => {
                             })}
                         </div>
                     </section>
-                )}
-
-                {/* Store Sections Loading Skeleton */}
-                {isLoadingAll ? (
-                    <div className="space-y-4 py-2">
-                        {[1, 2].map((sectionIndex) => (
-                            <section key={sectionIndex} className="px-4 pt-1.5 pb-3">
-                                {/* Section Header — shop name + See All */}
-                                <div className="flex justify-between items-end mb-2.5 px-1">
-                                    <div className="flex flex-col gap-2 flex-1">
-                                        <div className="h-6 w-48 rounded-xl blinkit-shimmer"></div>
-                                        <div className="h-3 w-32 rounded-lg blinkit-shimmer"></div>
-                                    </div>
-                                    <div className="h-5 w-14 rounded-full blinkit-shimmer"></div>
-                                </div>
-
-                                {/* Horizontal Product Cards — Blinkit shimmer style */}
-                                <div className="flex gap-2.5 sm:gap-3 overflow-hidden pb-1 px-1">
-                                    {[1, 2, 3, 4].map((cardIndex) => (
-                                        <div
-                                            key={cardIndex}
-                                            className="w-[142px] sm:w-[155px] md:w-[175px] shrink-0 bg-white dark:bg-gray-800 rounded-2xl p-2.5 shadow-sm border border-gray-100 dark:border-gray-700/50 flex flex-col space-y-2.5"
-                                        >
-                                            {/* Product Image placeholder */}
-                                            <div className="aspect-square w-full rounded-2xl blinkit-shimmer"></div>
-                                            {/* Product Title */}
-                                            <div className="space-y-2">
-                                                <div className="h-3.5 rounded-lg w-full blinkit-shimmer"></div>
-                                                <div className="h-3 rounded-md w-2/3 blinkit-shimmer"></div>
-                                            </div>
-                                            {/* Price + Add button */}
-                                            <div className="flex items-center justify-between pt-1">
-                                                <div className="h-5 w-14 rounded-md blinkit-shimmer"></div>
-                                                <div className="h-9 w-9 rounded-full blinkit-shimmer"></div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        ))}
-                    </div>
-                ) : displaySections.length > 0 ? (
-                    <div className="space-y-2 md:space-y-4">
-                        {displaySections.map((section) => (
-                            <StoreSection 
-                                key={section.id} 
-                                section={section} 
-                                products={groupedByStore[section.id] || []}
-                                selectedCategory={selectedCategory}
-                                singleStore={displaySections.length === 1}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                        {t('No products found')}
-                    </div>
                 )}
 
                 </div>

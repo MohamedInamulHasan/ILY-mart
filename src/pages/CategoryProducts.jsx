@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useCategories } from '../hooks/queries/useCategories';
+import { useMainCategories } from '../hooks/queries/useMainCategories';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, ShoppingCart, Search, ChevronDown, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -49,6 +50,7 @@ const CategoryProducts = () => {
     // Fetch categories and products
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
     const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
+    const { data: mainCategories = [] } = useMainCategories();
 
     const categories = useMemo(() => {
         const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
@@ -68,17 +70,30 @@ const CategoryProducts = () => {
             filtered = filtered.filter(cat => productCategories.has(String(cat.name || '').toLowerCase().trim()));
         }
 
-        // If navigated from a Main Category, filter to its assigned categories
+        // 1. If navigated from a Main Category with filterCategories in location.state
         if (Array.isArray(location.state?.filterCategories) && location.state.filterCategories.length > 0) {
             const allowedSet = new Set(location.state.filterCategories.map(c => String(c).toLowerCase().trim()));
             const subset = filtered.filter(cat => allowedSet.has(String(cat.name || '').toLowerCase().trim()));
             if (subset.length > 0) {
-                filtered = subset;
+                return subset;
+            }
+        }
+
+        // 2. Otherwise find if activeCategory belongs to any Main Category
+        const normActive = String(activeCategory || '').toLowerCase().trim();
+        const parentMainCat = mainCategories.find(mc => 
+            Array.isArray(mc.categories) && mc.categories.some(c => String(c).toLowerCase().trim() === normActive)
+        );
+        if (parentMainCat && Array.isArray(parentMainCat.categories) && parentMainCat.categories.length > 0) {
+            const allowedSet = new Set(parentMainCat.categories.map(c => String(c).toLowerCase().trim()));
+            const subset = filtered.filter(cat => allowedSet.has(String(cat.name || '').toLowerCase().trim()));
+            if (subset.length > 0) {
+                return subset;
             }
         }
         
         return filtered;
-    }, [rawCategories, rawProducts, location.state]);
+    }, [rawCategories, rawProducts, location.state, activeCategory, mainCategories]);
 
     const allProducts = useMemo(() => {
         return Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
@@ -426,7 +441,10 @@ const CategoryProducts = () => {
                                     id={isSelected ? "active-category-pill" : undefined}
                                     onClick={() => {
                                         setActiveCategory(category.name);
-                                        navigate(`/category/${encodeURIComponent(category.name)}`, { replace: true });
+                                        navigate(`/category/${encodeURIComponent(category.name)}`, { 
+                                            replace: true,
+                                            state: location.state
+                                        });
                                     }}
                                     className="flex flex-col items-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-transform"
                                 >
