@@ -196,7 +196,7 @@ const IncomingOrderModal = ({
                 await updateOrderStatus({
                     id,
                     status: 'Out for Delivery',
-                    deliveredBy: user?._id
+                    deliveredBy: user?._id || user?.id
                 });
                 playOrderAcceptedSound();
                 localStorage.setItem('active_delivery_order_id', id);
@@ -399,17 +399,28 @@ const IncomingOrderModal = ({
                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                         <SwipeActionButton
                             variant="yellow"
-                            label={t('VIEW ORDER')}
+                            label={t('SWIPE TO ACCEPT')}
+                            loadingLabel={t('Accepting...')}
+                            isLoading={isActionLoading}
                             autoReset={true}
                             heightClass="h-[50px] sm:h-[52px]"
                             knobSizeClass="w-[38px] h-[38px]"
                             iconSize={18}
-                            onSuccess={() => {
+                            onSuccess={handleMainSwipeAction}
+                        />
+
+                        {/* View Order Details link */}
+                        <button
+                            type="button"
+                            onClick={() => {
                                 stopIncomingOrderAlertSound();
                                 onClose?.();
                                 navigate(`/admin/delivery-order/${order._id || order.id}`, { state: { order } });
                             }}
-                        />
+                            className="w-full mt-2 text-center text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:underline cursor-pointer select-none"
+                        >
+                            {t('View Order Details')}
+                        </button>
 
                         {/* Skip Button like Porter App */}
                         <button
@@ -422,7 +433,7 @@ const IncomingOrderModal = ({
                                     handleDismissView();
                                 }
                             }}
-                            className="w-full mt-2.5 py-1 text-center text-xs sm:text-[13px] font-bold text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 tracking-widest uppercase active:scale-95 transition-all cursor-pointer"
+                            className="w-full mt-1.5 py-1 text-center text-xs sm:text-[13px] font-bold text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 tracking-widest uppercase active:scale-95 transition-all cursor-pointer select-none"
                         >
                             {t('SKIP')}
                         </button>

@@ -58,10 +58,9 @@ const NotificationOverlay = () => {
         return allOrders.filter(o => isProcessingStatus(o.status));
     }, [allOrders, isDeliveryBoy]);
 
-    // Check processing orders continuously and pop up card alert modal on ANY page until accepted or skipped
+    // Check processing orders continuously and pop up card alert modal on ANY page (including Delivery Panel) until accepted or skipped
     useEffect(() => {
         if (!isDeliveryBoy) return;
-        if (hasActiveAcceptedOrder) return;
         if (incomingOrder) return;
 
         // Do not popup modal on top of active order details screen
@@ -71,29 +70,30 @@ const NotificationOverlay = () => {
 
         const pendingOrder = processingOrders.find(o => {
             const oId = o._id || o.id;
-            return oId && !skippedOrderIds.has(oId) && !shownOrderIdsRef.current.has(oId);
+            return oId && !skippedOrderIds.has(oId);
         });
 
         if (pendingOrder) {
-            const oId = pendingOrder._id || pendingOrder.id;
-            shownOrderIdsRef.current.add(oId);
             setStartWithAcceptView(false);
             setIncomingOrder(pendingOrder);
             triggerIncomingOrderAlert();
         }
-    }, [isDeliveryBoy, hasActiveAcceptedOrder, incomingOrder, processingOrders, skippedOrderIds]);
+    }, [isDeliveryBoy, incomingOrder, processingOrders, skippedOrderIds]);
 
-    // If delivery boy accepts an order, dismiss any incoming order popup so they are not interrupted
+    // Auto-dismiss popup if the current order is accepted or cancelled
     useEffect(() => {
-        if (hasActiveAcceptedOrder && incomingOrder) {
-            setIncomingOrder(null);
+        if (incomingOrder) {
+            const id = incomingOrder._id || incomingOrder.id;
+            const currentInDb = allOrders.find(o => (o._id || o.id) === id);
+            if (currentInDb && !isProcessingStatus(currentInDb.status)) {
+                setIncomingOrder(null);
+            }
         }
-    }, [hasActiveAcceptedOrder, incomingOrder]);
+    }, [allOrders, incomingOrder]);
 
-    const handleOrderSkip = () => {
-        const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
+    const handleOrderSkip = (orderToSkip) => {
+        const currentId = (orderToSkip?._id || orderToSkip?.id) || (incomingOrder ? (incomingOrder._id || incomingOrder.id) : null);
         if (currentId) {
-            shownOrderIdsRef.current.add(currentId);
             setSkippedOrderIds(prev => new Set([...prev, currentId]));
         }
         setIncomingOrder(null);
@@ -102,7 +102,6 @@ const NotificationOverlay = () => {
     const handleModalClose = () => {
         const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
         if (currentId) {
-            shownOrderIdsRef.current.add(currentId);
             setSkippedOrderIds(prev => new Set([...prev, currentId]));
         }
         setIncomingOrder(null);
@@ -115,7 +114,9 @@ const NotificationOverlay = () => {
 
     useEffect(() => {
         if (!incomingOrder) return;
-        return registerModalBackHandler(() => setIncomingOrder(null));
+        return registerModalBackHandler(() => {
+            // Keep incoming order modal locked until user explicitly accepts or skips
+        });
     }, [incomingOrder]);
 
     useEffect(() => {
@@ -132,10 +133,12 @@ const NotificationOverlay = () => {
         const handleOrdersRefresh = (e) => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             const newOrder = e.detail;
-            if (newOrder && isDeliveryBoy && !hasActiveAcceptedOrder) {
+            if (newOrder && isDeliveryBoy) {
                 const oId = newOrder._id || newOrder.id;
-                if (oId && !shownOrderIdsRef.current.has(oId) && !skippedOrderIds.has(oId) && isProcessingStatus(newOrder.status)) {
-                    shownOrderIdsRef.current.add(oId);
+                if (oId && !skippedOrderIds.has(oId) && isProcessingStatus(newOrder.status)) {
+                    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/delivery-order')) {
+                        return;
+                    }
                     setStartWithAcceptView(false);
                     setIncomingOrder(newOrder);
                     triggerIncomingOrderAlert();
@@ -145,7 +148,7 @@ const NotificationOverlay = () => {
 
         window.addEventListener('orders:refresh', handleOrdersRefresh);
         return () => window.removeEventListener('orders:refresh', handleOrdersRefresh);
-    }, [isDeliveryBoy, hasActiveAcceptedOrder, skippedOrderIds, queryClient]);
+    }, [isDeliveryBoy, skippedOrderIds, queryClient]);
 
     // Listen for native intent/card clicks when app was closed/backgrounded
     useEffect(() => {
@@ -297,13 +300,11 @@ const NotificationOverlay = () => {
             // Strictly only for Delivery Boys, NOT for customers or other roles
             if (!isDeliveryBoy) return;
             const oId = order?._id || order?.id;
-            if (oId && (shownOrderIdsRef.current.has(oId) || skippedOrderIds.has(oId))) return;
-            if (oId) shownOrderIdsRef.current.add(oId);
+            if (oId && skippedOrderIds.has(oId)) return;
 
             // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
             queryClient.invalidateQueries({ queryKey: ['orders'] });
 
-            if (hasActiveAcceptedOrder) return;
             if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/delivery-order')) {
                 return;
             }
@@ -365,13 +366,18 @@ const NotificationOverlay = () => {
                     key={incomingOrder._id || incomingOrder.id}
                     order={incomingOrder}
                     startWithViewCard={!startWithAcceptView}
+                    onAccepted={(acceptedOrder) => {
+                        setStartWithAcceptView(false);
+                        setIncomingOrder(null);
+                        queryClient.invalidateQueries({ queryKey: ['orders'] });
+                    }}
                     onClose={() => {
                         setStartWithAcceptView(false);
                         handleModalClose();
                     }}
-                    onSkip={() => {
+                    onSkip={(skippedOrder) => {
                         setStartWithAcceptView(false);
-                        handleOrderSkip();
+                        handleOrderSkip(skippedOrder);
                     }}
                     onAcceptViewOpened={handleAcceptViewOpened}
                 />
