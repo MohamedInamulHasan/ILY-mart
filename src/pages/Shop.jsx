@@ -385,34 +385,31 @@ const Shop = () => {
                                 transition={{ duration: 0.2 }}
                             >
                                 {isStoresLoading ? (
-                                    /* Store cards skeleton matching service cards exactly */
+                                    /* Store cards skeleton matching new StoreCard layout */
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
                                         {[...Array(6)].map((_, i) => (
                                             <div
                                                 key={i}
-                                                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
+                                                className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden w-full shadow-xs border border-gray-100/80 dark:border-gray-700/60 flex flex-col"
                                             >
-                                                {/* Full Card Shimmer Image Background */}
-                                                <div className="absolute inset-0 blinkit-shimmer" />
-
-                                                {/* Category Tag Overlay (Top Left) */}
-                                                <div className="absolute top-3 left-3 z-10">
-                                                    <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
+                                                {/* Full 16:9 Image Shimmer */}
+                                                <div className="w-full aspect-[16/9] blinkit-shimmer relative">
+                                                    <div className="absolute top-2.5 left-2.5">
+                                                        <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
+                                                    </div>
                                                 </div>
 
-                                                
-
-                                                {/* Content Section - White Banner at Bottom */}
-                                                <div className="absolute bottom-0 left-0 right-0 py-2 px-3.5 z-10 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
-                                                    <div className="space-y-1.5 flex-1 min-w-0 pr-3">
+                                                {/* Content Section Skeleton */}
+                                                <div className="p-3 sm:p-3.5 space-y-2 bg-white dark:bg-gray-800 flex-1">
+                                                    <div className="flex items-center justify-between">
                                                         <div className="h-4 w-36 rounded-md blinkit-shimmer" />
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="w-2.5 h-2.5 rounded-full blinkit-shimmer flex-shrink-0" />
-                                                            <div className="h-3 w-28 rounded-md blinkit-shimmer" />
-                                                        </div>
+                                                        <div className="w-6 h-6 rounded-full blinkit-shimmer flex-shrink-0" />
                                                     </div>
-                                                    {/* Right Action Arrow Skeleton */}
-                                                    <div className="w-7 h-7 rounded-full blinkit-shimmer flex-shrink-0" />
+                                                    <div className="h-3 w-28 rounded-md blinkit-shimmer" />
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <div className="w-3 h-3 rounded-full blinkit-shimmer flex-shrink-0" />
+                                                        <div className="h-3.5 w-32 rounded-md blinkit-shimmer" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}

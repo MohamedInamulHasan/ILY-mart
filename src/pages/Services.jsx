@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Wrench, ShieldCheck, MapPin, CheckCircle, Phone, Send, Check, Search, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Wrench, ShieldCheck, MapPin, CheckCircle, Phone, Send, Check, Search, X, Clock } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { useData } from '../context/DataContext';
@@ -11,7 +11,7 @@ import SwipeActionButton from '../components/SwipeActionButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useServices, useServiceItems } from '../hooks/queries/useServices';
 import { API_BASE_URL } from '../utils/api';
-import { isStoreOpen as isServiceOpen } from '../utils/storeHelpers';
+import { isStoreOpen as isServiceOpen, getStoreTimeLabel } from '../utils/storeHelpers';
 
 const Services = () => {
     const navigate = useNavigate();
@@ -300,24 +300,26 @@ const Services = () => {
                                 [...Array(6)].map((_, i) => (
                                     <div
                                         key={i}
-                                        className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full shadow-sm border border-gray-100/80 dark:border-gray-700/60"
+                                        className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden w-full shadow-xs border border-gray-100/80 dark:border-gray-700/60 flex flex-col"
                                     >
-                                        {/* Full Card Shimmer Image Background */}
-                                        <div className="absolute inset-0 blinkit-shimmer" />
-
-                                        
-
-                                        {/* Content Section - White Banner at Bottom */}
-                                        <div className="absolute bottom-0 left-0 right-0 py-2 px-3.5 z-10 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
-                                            <div className="space-y-1.5 flex-1 min-w-0 pr-3">
-                                                <div className="h-4 w-36 rounded-md blinkit-shimmer" />
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className="w-2.5 h-2.5 rounded-full blinkit-shimmer flex-shrink-0" />
-                                                    <div className="h-3 w-28 rounded-md blinkit-shimmer" />
-                                                </div>
+                                        {/* Full 16:9 Image Shimmer */}
+                                        <div className="w-full aspect-[16/9] blinkit-shimmer relative">
+                                            <div className="absolute top-2.5 left-2.5">
+                                                <div className="h-5 w-20 rounded-full bg-white/30 dark:bg-white/10 backdrop-blur-sm" />
                                             </div>
-                                            {/* Right Action Arrow Skeleton */}
-                                            <div className="w-7 h-7 rounded-full blinkit-shimmer flex-shrink-0" />
+                                        </div>
+
+                                        {/* Content Section Skeleton */}
+                                        <div className="p-3 sm:p-3.5 space-y-2 bg-white dark:bg-gray-800 flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="h-4 w-36 rounded-md blinkit-shimmer" />
+                                                <div className="w-6 h-6 rounded-full blinkit-shimmer flex-shrink-0" />
+                                            </div>
+                                            <div className="h-3 w-28 rounded-md blinkit-shimmer" />
+                                            <div className="flex items-center gap-1.5 mt-1">
+                                                <div className="w-3 h-3 rounded-full blinkit-shimmer flex-shrink-0" />
+                                                <div className="h-3.5 w-32 rounded-md blinkit-shimmer" />
+                                            </div>
                                         </div>
                                     </div>
                                 ))
@@ -342,64 +344,75 @@ const Services = () => {
                                 return filteredServices.map((service, index) => {
                                     const isOpen = isServiceOpen(service);
                                     const isClosed = !isOpen;
+                                    const timeLabel = getStoreTimeLabel(service) || service.timings || service.timing || service.workingHours;
                                     return (
                                         <div 
                                             key={service._id || index} 
                                             onClick={() => handleViewServices(service)}
-                                            className={`group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden transition-all duration-300 aspect-[16/9] md:aspect-[3/2] lg:aspect-[4/3] w-full cursor-pointer shadow-sm hover:shadow-md ${!isOpen ? 'cursor-not-allowed' : ''}`}
+                                            className={`group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden transition-all duration-300 w-full cursor-pointer shadow-xs hover:shadow-md border border-gray-100 dark:border-gray-700/60 flex flex-col ${!isOpen ? 'cursor-not-allowed opacity-85' : 'active:scale-[0.99]'}`}
                                         >
-                                            {/* Full Background Image */}
-                                            <div className={`absolute inset-0 z-0 ${!isOpen ? 'opacity-60' : ''}`}>
-                                                <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700" />
+                                            {/* Full 16:9 Image */}
+                                            <div className="w-full aspect-[16/9] relative overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
                                                 <img
                                                     src={service.image || `${API_BASE_URL}/services/${service._id || service.id}/image`}
                                                     alt={service.name}
-                                                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 z-10 ${!isOpen ? '' : ''}`}
+                                                    className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                                                     loading="lazy"
                                                     onError={(e) => {
                                                         e.target.onerror = null;
                                                         e.target.src = "https://placehold.co/800x450?text=Service";
                                                     }}
                                                 />
-                                                
-                                                {/* Dark Gradient Overlay */}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                                {/* Category Tag Overlay (Top Left) */}
+                                                {service.category && (
+                                                    <div className="absolute top-2.5 left-2.5 z-20">
+                                                        <span className="px-2.5 py-1 bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9.5px] font-bold rounded-full uppercase tracking-wider shadow-sm truncate max-w-[120px] block">
+                                                            {service.category}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Closed Status Overlay */}
+                                                {isClosed && (
+                                                    <div className="absolute inset-0 z-30 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
+                                                        <span className="bg-gray-900/90 text-white px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
+                                                            {t('Closed')}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {/* Content Section - White Banner at Bottom */}
-                                            <div className="absolute bottom-0 left-0 right-0 py-2 px-3.5 z-20 overflow-hidden">
-                                                {/* Solid White Banner Strip */}
-                                                <div className="absolute inset-0 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700" />
-                                                
-                                                <div className="relative z-10">
-                                                    <h3 className={`text-gray-900 dark:text-white text-[15px] font-semibold tracking-tight leading-tight mb-0.5 truncate pr-8 ${!isOpen ? 'opacity-60' : ''}`}>
+                                            {/* Content Section below the 16:9 image */}
+                                            <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 gap-1.5 bg-white dark:bg-gray-800">
+                                                {/* Service Name & Right Action Arrow */}
+                                                <div className="flex items-center justify-between min-w-0 gap-2">
+                                                    <h3 className={`text-gray-900 dark:text-white text-[15px] sm:text-[16px] font-bold tracking-tight leading-tight truncate flex-1 min-w-0 ${!isOpen ? 'opacity-60' : ''}`} title={service.name}>
                                                         {service.name}
                                                     </h3>
-                                                    <div className="flex items-center gap-1.5 opacity-90">
-                                                        <MapPin size={10} className="text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0" />
-                                                        <p className="text-gray-500 dark:text-gray-400 text-[11px] font-normal truncate">
-                                                            {service.address || t('Available Locally')}
-                                                        </p>
+                                                    <div className={`flex-shrink-0 transition-all duration-300 ${!isOpen ? 'opacity-0 scale-50' : ''}`}>
+                                                        <div className="w-6 h-6 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 flex items-center justify-center shadow-xs group-hover:scale-105 active:scale-95 transition-transform">
+                                                            <ArrowLeft size={13} className="rotate-180" />
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Right Action Arrow - Hide or dim if closed */}
-                                            <div className={`absolute bottom-2.5 right-3 z-30 transition-all duration-300 ${!isOpen ? 'opacity-0 scale-50' : ''}`}>
-                                                <div className="w-7 h-7 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 flex items-center justify-center scale-90 group-hover:scale-105 active:scale-90 transition-all shadow-sm">
-                                                    <ArrowLeft size={16} className="rotate-180" />
+                                                {/* Below Name: Timing if mentioned */}
+                                                {timeLabel && (
+                                                    <div className="flex items-center gap-1.5 text-[11.5px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                        <Clock size={12} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                                                        <span className="truncate">{timeLabel}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Below Timing: Location little big and increate grey */}
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <MapPin size={12} className="text-[#2E5A2E] dark:text-[#CBF9B2] flex-shrink-0" />
+                                                    <p className="text-[12px] sm:text-[13px] font-medium text-gray-600 dark:text-gray-300 truncate" title={service.address || t('Available Locally')}>
+                                                        {service.address || t('Available Locally')}
+                                                    </p>
                                                 </div>
                                             </div>
-
-                                            
-
-                                            {isClosed && (
-                                                <div className="absolute inset-0 z-30 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
-                                                    <span className="bg-gray-800 text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg animate-in fade-in zoom-in-95 duration-500">
-                                                        {t('Closed')}
-                                                    </span>
-                                                </div>
-                                            )}
                                         </div>
                                     );
                                 });
