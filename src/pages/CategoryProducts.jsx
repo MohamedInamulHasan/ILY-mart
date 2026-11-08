@@ -95,6 +95,21 @@ const CategoryProducts = () => {
         return filtered;
     }, [rawCategories, rawProducts, location.state, activeCategory, mainCategories]);
 
+    // Main category name for the header
+    const mainCategoryDisplayName = useMemo(() => {
+        if (location.state?.mainCategory) {
+            return getCleanCategoryName(location.state.mainCategory, language);
+        }
+        const normActive = String(activeCategory || '').toLowerCase().trim();
+        const parentMainCat = mainCategories.find(mc => 
+            Array.isArray(mc.categories) && mc.categories.some(c => String(c).toLowerCase().trim() === normActive)
+        );
+        if (parentMainCat?.name) {
+            return getCleanCategoryName(parentMainCat.name, language);
+        }
+        return t('Home');
+    }, [location.state, activeCategory, mainCategories, language, t]);
+
     const allProducts = useMemo(() => {
         return Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
     }, [rawProducts]);
@@ -261,8 +276,10 @@ const CategoryProducts = () => {
                                 <ArrowLeft size={19} className="text-gray-900 dark:text-gray-900" />
                             </button>
                         </div>
-                        <div className="flex flex-col text-center">
-                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{t('Home')}</h1>
+                        <div className="flex flex-col text-center px-10">
+                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate">
+                                {mainCategoryDisplayName}
+                            </h1>
                             <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">

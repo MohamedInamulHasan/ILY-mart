@@ -325,15 +325,9 @@ const MainCategoryProducts = () => {
                         </div>
                     </section>
 
-                    {/* Shop by Categories text and Categories list like in the home page */}
+                    {/* Categories list like in the home page */}
                     {subCategories.length > 0 && (
                         <section className="pt-1 pb-4 px-3 sm:px-4 mb-3">
-                            <div className="flex justify-between items-center mb-3 px-1">
-                                <h2 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
-                                    {t('Shop By Categories')}
-                                </h2>
-                            </div>
-
                             {/* 4 items per row grid - NO white bg card, BIG category images, thick text - exactly like home page */}
                             <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-1 sm:px-2 py-1">
                                 {subCategories.map((category) => {
