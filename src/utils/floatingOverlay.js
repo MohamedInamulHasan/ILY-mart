@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { formatDeliveryRangeFromDate } from './storeHelpers';
 
 // Register the custom native plugin
 export const FloatingOverlay = registerPlugin('FloatingOverlay');
@@ -93,7 +94,21 @@ export const setOverlayAuthToken = async (token) => {
 export const showPorterOrderCard = async (order) => {
     if (!isNativeAndroid() || !order) return;
     try {
-        await FloatingOverlay.showPorterOrderCard(order);
+        const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
+        const isValid = rawTime && String(rawTime).trim().toLowerCase() !== 'null' && String(rawTime).trim().toLowerCase() !== 'undefined' && String(rawTime).trim() !== '';
+        const timeDisplay = isValid ? (formatDeliveryRangeFromDate(rawTime) || rawTime) : 'Not Mentioned';
+
+        const sanitizedOrder = {
+            ...order,
+            scheduledDeliveryTime: timeDisplay,
+            deliveryTime: timeDisplay,
+            shippingAddress: order.shippingAddress ? {
+                ...order.shippingAddress,
+                deliveryTime: timeDisplay
+            } : undefined
+        };
+
+        await FloatingOverlay.showPorterOrderCard(sanitizedOrder);
     } catch (err) {
         console.warn('Error showing Porter order card:', err);
     }

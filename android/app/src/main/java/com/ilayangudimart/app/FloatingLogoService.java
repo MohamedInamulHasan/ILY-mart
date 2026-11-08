@@ -554,7 +554,6 @@ public class FloatingLogoService extends Service {
 
             // 5. Scheduled Delivery Label (address grey)
             TextView schedLabel = new TextView(this);
-            schedLabel.setText("Scheduled Delivery");
             schedLabel.setTextColor(Color.parseColor("#6B7280"));
             schedLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             LinearLayout.LayoutParams schedLabelParams = new LinearLayout.LayoutParams(
@@ -565,12 +564,21 @@ public class FloatingLogoService extends Service {
             schedLabel.setLayoutParams(schedLabelParams);
             detailsCol.addView(schedLabel);
 
-            // 6. Time Slot (bold black matching name - formatted range like '6 PM - 7 PM')
+            // 6. Time Slot (bold black matching name - formatted range like '6 PM - 7 PM' or 'Not Mentioned')
             String rawScheduledTime = order.optString("scheduledDeliveryTime", order.optString("deliveryTime", ""));
-            if (shippingAddress != null && rawScheduledTime.isEmpty()) {
+            if (shippingAddress != null && (rawScheduledTime.isEmpty() || rawScheduledTime.equalsIgnoreCase("null"))) {
                 rawScheduledTime = shippingAddress.optString("deliveryTime", "");
             }
+            if (rawScheduledTime == null || rawScheduledTime.equalsIgnoreCase("null")) {
+                rawScheduledTime = "";
+            }
+            boolean isScheduled = !rawScheduledTime.isEmpty() && !rawScheduledTime.toLowerCase().contains("instant") && !rawScheduledTime.equalsIgnoreCase("null") && !rawScheduledTime.equalsIgnoreCase("Not Mentioned");
+            schedLabel.setText(isScheduled ? "Scheduled Delivery" : "Delivery Time");
+
             String scheduledTime = formatDeliveryRange(rawScheduledTime);
+            if (scheduledTime == null || scheduledTime.trim().isEmpty() || scheduledTime.equalsIgnoreCase("null") || scheduledTime.equalsIgnoreCase("undefined")) {
+                scheduledTime = "Not Mentioned";
+            }
             TextView schedTimeView = new TextView(this);
             schedTimeView.setText(scheduledTime);
             schedTimeView.setTextColor(Color.parseColor("#111827"));
@@ -892,10 +900,15 @@ public class FloatingLogoService extends Service {
     }
 
     private String formatDeliveryRange(String raw) {
-        if (raw == null || raw.trim().isEmpty()) return "Standard Delivery";
+        if (raw == null || raw.trim().isEmpty() || raw.trim().equalsIgnoreCase("null") || raw.trim().equalsIgnoreCase("undefined")) {
+            return "Not Mentioned";
+        }
         String trimmed = raw.trim();
+        if (trimmed.equalsIgnoreCase("null") || trimmed.equalsIgnoreCase("undefined") || trimmed.equalsIgnoreCase("Not Mentioned")) {
+            return "Not Mentioned";
+        }
         if (trimmed.toLowerCase().contains("instant") || trimmed.toLowerCase().contains("standard")) {
-            return "Standard Delivery";
+            return "Not Mentioned";
         }
         if (trimmed.contains("-") && (trimmed.contains("AM") || trimmed.contains("PM") || trimmed.contains("am") || trimmed.contains("pm"))) {
             return trimmed;

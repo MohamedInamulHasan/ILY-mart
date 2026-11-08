@@ -376,9 +376,11 @@ const IncomingOrderModal = ({
                                 {/* Scheduled Delivery Time aligned with bottom green dot */}
                                 {(() => {
                                     const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
-                                    const isScheduled = rawTime && !String(rawTime).toLowerCase().includes('instant');
+                                    const isValidTime = rawTime && String(rawTime).trim().toLowerCase() !== 'null' && String(rawTime).trim().toLowerCase() !== 'undefined' && String(rawTime).trim() !== '';
+                                    const isScheduled = isValidTime && !String(rawTime).toLowerCase().includes('instant');
                                     const timeLabel = isScheduled ? t('Scheduled Delivery') : t('Delivery Time');
-                                    const timeRange = isScheduled ? formatDeliveryRangeFromDate(rawTime) : (formattedOrderTime || t('Standard Delivery'));
+                                    const formatted = isValidTime ? formatDeliveryRangeFromDate(rawTime) : null;
+                                    const timeRange = isValidTime ? (formatted || rawTime) : t('Not Mentioned');
 
                                     return (
                                         <div className="mt-2.5 pt-1">
@@ -408,19 +410,6 @@ const IncomingOrderModal = ({
                             iconSize={18}
                             onSuccess={handleMainSwipeAction}
                         />
-
-                        {/* View Order Details link */}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                stopIncomingOrderAlertSound();
-                                onClose?.();
-                                navigate(`/admin/delivery-order/${order._id || order.id}`, { state: { order } });
-                            }}
-                            className="w-full mt-2 text-center text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:underline cursor-pointer select-none"
-                        >
-                            {t('View Order Details')}
-                        </button>
 
                         {/* Skip Button like Porter App */}
                         <button

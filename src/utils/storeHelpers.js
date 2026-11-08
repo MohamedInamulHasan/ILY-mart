@@ -62,7 +62,7 @@ export const formatTime12h = (time24) => {
 
 // Convert HH:mm or period|HH:mm to 12-hour range format (e.g., "13:00" -> "1 PM - 2 PM", "today|11:00" -> "11 AM - 12 PM")
 export const formatDeliveryRange = (time24) => {
-    if (!time24) return '';
+    if (!time24 || String(time24).trim().toLowerCase() === 'null' || String(time24).trim().toLowerCase() === 'undefined') return '';
     try {
         let rawTime = time24;
         if (typeof time24 === 'string' && time24.includes('|')) {
@@ -70,9 +70,13 @@ export const formatDeliveryRange = (time24) => {
             rawTime = parts[1];
         }
 
-        const [hours, minutes] = rawTime.split(':');
+        const [hours, minutes] = String(rawTime).split(':');
         const hStart = parseInt(hours, 10);
-        if (isNaN(hStart)) return time24;
+        if (isNaN(hStart)) {
+            const trimmed = String(time24).trim();
+            if (trimmed.toLowerCase() === 'null' || trimmed.toLowerCase() === 'undefined') return '';
+            return trimmed;
+        }
         const hEnd = (hStart + 1) % 24;
 
         const formatShortTime = (h, m) => {
@@ -84,13 +88,13 @@ export const formatDeliveryRange = (time24) => {
 
         return `${formatShortTime(hStart, minutes)} - ${formatShortTime(hEnd, minutes)}`;
     } catch (e) {
-        return time24;
+        return '';
     }
 };
 
 // Convert Date or ISO string or period|HH:mm string to 12-hour range format
 export const formatDeliveryRangeFromDate = (date) => {
-    if (!date) return '';
+    if (!date || String(date).trim().toLowerCase() === 'null' || String(date).trim().toLowerCase() === 'undefined') return '';
     try {
         if (typeof date === 'string' && date.includes('|')) {
             return formatDeliveryRange(date);
@@ -112,7 +116,7 @@ export const formatDeliveryRangeFromDate = (date) => {
 
         return `${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
     } catch (e) {
-        return String(date || '');
+        return '';
     }
 };
 

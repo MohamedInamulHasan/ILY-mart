@@ -734,9 +734,11 @@ const DeliveryDashboard = () => {
                                                         {/* Scheduled Delivery Time (or Delivery Time) aligned with bottom green dot */}
                                                         {(() => {
                                                             const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
-                                                            const isScheduled = rawTime && !String(rawTime).toLowerCase().includes('instant');
+                                                            const isValidTime = rawTime && String(rawTime).trim().toLowerCase() !== 'null' && String(rawTime).trim().toLowerCase() !== 'undefined' && String(rawTime).trim() !== '';
+                                                            const isScheduled = isValidTime && !String(rawTime).toLowerCase().includes('instant');
                                                             const timeLabel = isScheduled ? t('Scheduled Delivery') : t('Delivery Time');
-                                                            const timeRange = isScheduled ? formatDeliveryRangeFromDate(rawTime) : (orderTimeStr || t('Standard Delivery'));
+                                                            const formatted = isValidTime ? formatDeliveryRangeFromDate(rawTime) : null;
+                                                            const timeRange = isValidTime ? (formatted || rawTime) : t('Not Mentioned');
 
                                                             return (
                                                                 <div className="mt-2.5 pt-1">

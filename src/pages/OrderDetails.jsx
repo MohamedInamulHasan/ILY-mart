@@ -485,21 +485,20 @@ const OrderDetails = () => {
                             )}
                         </div>
 
-                        {/* 5. Scheduled Delivery Time (Time logo removed) */}
+                        {/* 5. Scheduled Delivery Time */}
                         {(() => {
                             const rawTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
-                            if (!rawTime) return null;
-                            const strTime = String(rawTime).toLowerCase();
-                            if (strTime.includes('instant')) return null;
-
-                            const formattedRange = formatDeliveryRangeFromDate(rawTime);
-                            if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
+                            const isValidTime = rawTime && String(rawTime).trim().toLowerCase() !== 'null' && String(rawTime).trim().toLowerCase() !== 'undefined' && String(rawTime).trim() !== '';
+                            const isScheduled = isValidTime && !String(rawTime).toLowerCase().includes('instant');
+                            const timeLabel = isScheduled ? t('Scheduled Delivery') : t('Delivery Time');
+                            const formattedRange = isValidTime ? formatDeliveryRangeFromDate(rawTime) : null;
+                            const timeDisplay = isValidTime ? (formattedRange || rawTime) : t('Not Mentioned');
 
                             return (
                                 <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700 pl-2 sm:pl-3">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">{t('Scheduled Delivery')}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">{timeLabel}</p>
                                     <p className="font-bold text-gray-900 dark:text-white text-[15px] mt-0.5">
-                                        {formattedRange}
+                                        {timeDisplay}
                                     </p>
                                 </div>
                             );
