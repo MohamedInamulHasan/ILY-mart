@@ -27,6 +27,12 @@ const CategoryProducts = () => {
 
     const [activeCategory, setActiveCategory] = useState(decodeURIComponent(categoryName || ''));
     const [searchQuery, setSearchQuery] = useState('');
+    const [isInitialMount, setIsInitialMount] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsInitialMount(false), 300);
+        return () => clearTimeout(timer);
+    }, []);
 
         useEffect(() => {
         if (categoryName) {
@@ -50,7 +56,7 @@ const CategoryProducts = () => {
     // Fetch categories and products
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
     const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
-    const { data: mainCategories = [] } = useMainCategories();
+    const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
 
     const categories = useMemo(() => {
         const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
@@ -70,13 +76,31 @@ const CategoryProducts = () => {
             filtered = filtered.filter(cat => productCategories.has(String(cat.name || '').toLowerCase().trim()));
         }
 
-        // 1. If navigated from a Main Category with filterCategories in location.state
-        if (Array.isArray(location.state?.filterCategories) && location.state.filterCategories.length > 0) {
-            const allowedSet = new Set(location.state.filterCategories.map(c => String(c).toLowerCase().trim()));
-            const subset = filtered.filter(cat => allowedSet.has(String(cat.name || '').toLowerCase().trim()));
-            if (subset.length > 0) {
-                return subset;
+        // 1. If navigated from a Main Category
+        const mainCatName = location.state?.mainCategory;
+        if (mainCatName) {
+            const normMain = String(mainCatName).toLowerCase().trim();
+            const matchedMainCat = mainCategories.find(mc => String(mc.name || '').toLowerCase().trim() === normMain);
+            
+            const assigned = Array.isArray(matchedMainCat?.categories) 
+                ? matchedMainCat.categories 
+                : (Array.isArray(location.state?.filterCategories) ? location.state.filterCategories : []);
+
+            if (assigned.length > 0) {
+                const assignedSet = new Set(assigned.map(c => String(c).toLowerCase().trim()));
+                return filtered.filter(cat => 
+                    assignedSet.has(String(cat.name || '').toLowerCase().trim()) ||
+                    assignedSet.has(String(cat._id || cat.id || '').toLowerCase().trim())
+                );
             }
+
+            const byField = filtered.filter(c => c.mainCategory && String(c.mainCategory).toLowerCase().trim() === normMain);
+            if (byField.length > 0) {
+                return byField;
+            }
+
+            // Strictly return empty if main category has no assigned categories - NEVER dump all categories
+            return [];
         }
 
         // 2. Otherwise find if activeCategory belongs to any Main Category
@@ -86,10 +110,10 @@ const CategoryProducts = () => {
         );
         if (parentMainCat && Array.isArray(parentMainCat.categories) && parentMainCat.categories.length > 0) {
             const allowedSet = new Set(parentMainCat.categories.map(c => String(c).toLowerCase().trim()));
-            const subset = filtered.filter(cat => allowedSet.has(String(cat.name || '').toLowerCase().trim()));
-            if (subset.length > 0) {
-                return subset;
-            }
+            return filtered.filter(cat => 
+                allowedSet.has(String(cat.name || '').toLowerCase().trim()) ||
+                allowedSet.has(String(cat._id || cat.id || '').toLowerCase().trim())
+            );
         }
         
         return filtered;
@@ -255,7 +279,7 @@ const CategoryProducts = () => {
         return t('Add Location');
     })();
 
-    const isLoading = loadingCategories || loadingProducts;
+    const isLoading = loadingCategories || loadingProducts || loadingMainCats || rawProducts.length === 0 || isInitialMount;
 
     return (
         <PullToRefreshLayout>
@@ -446,7 +470,7 @@ const CategoryProducts = () => {
                 </section>
 
                 {/* Categories Bar (Side-scrollable with reconstructed skeleton) */}
-                {loadingCategories && (!categories || categories.length === 0) ? (
+                {isLoading ? (
                     <div className="w-full px-4 mb-4 sm:mb-5">
                         <div className="flex items-start gap-4 overflow-x-auto scrollbar-hide py-1">
                             {[1, 2, 3, 4, 5].map((i) => (
