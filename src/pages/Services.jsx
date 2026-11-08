@@ -428,17 +428,17 @@ const Services = () => {
                                 ))
                             ) : serviceItems.length > 0 ? (
                                 <>
-                                    {/* Dialogue Header Banner - Character & Dialogue (No extra buttons) */}
-                                    <div className="col-span-full bg-white dark:bg-gray-800 rounded-2xl p-3.5 sm:p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3.5 mb-1">
-                                        <img 
-                                            src="/service-character-transparent.png" 
-                                            alt="Service Character" 
-                                            className="h-16 w-16 object-contain flex-shrink-0 drop-shadow-sm select-none"
-                                            onError={(e) => { e.target.onerror = null; e.target.src = "/service-character.png"; }}
-                                        />
+                                    {/* Message Box Card - Call to get the service */}
+                                    <div 
+                                        onClick={handleCallProvider}
+                                        className="col-span-full bg-white dark:bg-gray-800 rounded-2xl p-3.5 sm:p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3.5 mb-1 cursor-pointer active:scale-[0.99] transition-all"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-[#CBF9B2]/60 dark:bg-[#2E5A2E]/30 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center flex-shrink-0">
+                                            <Phone size={18} className="fill-current" />
+                                        </div>
                                         <div className="min-w-0 flex-1">
                                             <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
-                                                {t('Call and book the service')}
+                                                {t('Call to get the service')}
                                             </h3>
                                             <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                                                 {t('Directly connect with the service provider to schedule and book your appointment.')}
@@ -482,31 +482,21 @@ const Services = () => {
                                     ))}
                                 </>
                             ) : (
-                                /* Clean, beautiful Empty State with Uploaded Character & Dialogue Below (No extra call or request button) */
-                                <div className="col-span-full flex flex-col items-center justify-center text-center py-6 px-4 animate-in fade-in zoom-in-95 duration-300 select-none">
-                                    {/* Uploaded Service Character Image */}
-                                    <div className="relative flex items-center justify-center mb-3">
-                                        <img 
-                                            src="/service-character-transparent.png" 
-                                            alt="Service Character" 
-                                            className="h-64 sm:h-72 w-auto object-contain drop-shadow-md select-none pointer-events-none"
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = "/service-character.png";
-                                            }}
-                                        />
-                                    </div>
-                                    
-                                    {/* Dialogue Card Below Character */}
-                                    <div className="relative max-w-sm w-full bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
-                                        {/* Speech Bubble Arrow */}
-                                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-gray-800 rotate-45 border-t border-l border-gray-100 dark:border-gray-700" />
+                                /* Clean Message Box Card: Call to get the service */
+                                <div className="col-span-full flex flex-col items-center justify-center text-center py-10 px-4 animate-in fade-in zoom-in-95 duration-300 select-none">
+                                    <div 
+                                        onClick={handleCallProvider}
+                                        className="relative max-w-sm w-full bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-7 border border-gray-100 dark:border-gray-700 shadow-sm cursor-pointer active:scale-95 transition-all text-center group"
+                                    >
+                                        <div className="w-14 h-14 mx-auto mb-3.5 rounded-full bg-[#CBF9B2]/60 dark:bg-[#2E5A2E]/30 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                                            <Phone size={24} className="fill-current" />
+                                        </div>
                                         
-                                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight mb-1 relative z-10">
-                                            {t('Call and book the service')}
+                                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight mb-1.5">
+                                            {t('Call to get the service')}
                                         </h2>
                                         
-                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed relative z-10">
+                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
                                             {t('Directly connect with the service provider to schedule and book your appointment.')}
                                         </p>
                                     </div>

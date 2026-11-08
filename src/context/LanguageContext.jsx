@@ -396,6 +396,7 @@ export const LanguageProvider = ({ children }) => {
         'Keep Order': { en: 'Keep Order', ta: 'ஆர்டரை வைத்திருக்கவும்' },
         'Close View': { en: 'Close View', ta: 'மூடவும்' },
         'Call and book the service': { en: 'Call and book the service', ta: 'அழைத்து சேவையை முன்பதிவு செய்யவும்' },
+        'Call to get the service': { en: 'Call to get the service', ta: 'சேவையைப் பெற அழைக்கவும்' },
         'Call Now': { en: 'Call Now', ta: 'இப்போது அழைக்கவும்' },
         'Directly connect with the service provider to schedule and book your appointment.': { 
             en: 'Directly connect with the service provider to schedule and book your appointment.', 
