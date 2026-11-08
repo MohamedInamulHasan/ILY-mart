@@ -65,11 +65,18 @@ const Shop = () => {
             });
         });
 
+        const isGeneral = (name) => {
+            if (!name) return false;
+            const clean = normKey(name).replace(/[\s_-]+/g, '');
+            return clean === 'generalstore' || clean === 'generalstores' || clean.includes('generalstore');
+        };
+
         const result = [{ name: 'All', count: safeStores.length }];
 
-        // Map categories from database with uploaded emojis
+        // Map categories from database with uploaded emojis (filter out General Stores)
         (dbCategories || []).forEach(cat => {
             if (!cat || !cat.name) return;
+            if (isGeneral(cat.name) || isGeneral(cat.name_ta)) return;
             const nKey = normKey(cat.name);
             const count = counts[nKey] || 0;
             if (count > 0) {
@@ -83,6 +90,7 @@ const Shop = () => {
 
         // Also check if any store type is not in dbCategories but has stores
         Object.entries(counts).forEach(([nKey, count]) => {
+            if (isGeneral(nKey)) return;
             if (count > 0 && !result.some(r => normKey(r.name) === nKey)) {
                 let originalName = '';
                 for (const store of safeStores) {
@@ -90,7 +98,7 @@ const Shop = () => {
                     const found = types.find(t => normKey(t) === nKey);
                     if (found) { originalName = found; break; }
                 }
-                if (originalName) {
+                if (originalName && !isGeneral(originalName)) {
                     result.push({ name: originalName, count });
                 }
             }
@@ -384,19 +392,19 @@ const Shop = () => {
                         </div>
 
 
-                        {/* Categories Horizontal Scroller with underline indicator */}
+                        {/* Categories Horizontal Scroller with Grey Card Effect */}
                         {viewType === 'store' && (
                             isCategoriesLoading ? (
                                 <div className="max-w-7xl mx-auto mb-4">
-                                    <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide py-1">
+                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                                         {[1, 2, 3, 4, 5].map((i) => (
-                                            <div key={i} className="flex-shrink-0 h-4 w-16 rounded-full blinkit-shimmer"></div>
+                                            <div key={i} className="flex-shrink-0 h-8 w-20 rounded-xl blinkit-shimmer"></div>
                                         ))}
                                     </div>
                                 </div>
                             ) : (
-                                <div className="max-w-7xl mx-auto mb-4 border-b border-gray-100 dark:border-gray-800">
-                                    <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide">
+                                <div className="max-w-7xl mx-auto mb-4">
+                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                                         {categoryData.map((category) => {
                                             const isActive = normKey(category.name) === normKey(categoryFilter);
                                             return (
@@ -412,15 +420,13 @@ const Shop = () => {
                                                             inline: 'center'
                                                         });
                                                     }}
-                                                    className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap cursor-pointer ${isActive
-                                                        ? 'text-black dark:text-white font-bold'
-                                                        : 'text-gray-400 hover:text-black dark:hover:text-white font-semibold'
-                                                        }`}
+                                                    className={`text-xs sm:text-[13px] transition-all whitespace-nowrap flex items-center justify-center px-3.5 py-1.5 rounded-xl border cursor-pointer select-none ${
+                                                        isActive
+                                                            ? 'bg-gray-800 text-white font-bold shadow-xs border-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
+                                                            : 'bg-transparent border-transparent text-gray-500 dark:text-gray-400 font-medium hover:text-black dark:hover:text-white'
+                                                    }`}
                                                 >
-                                                    {getCategoryDisplay(category)}
-                                                    {isActive && (
-                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] w-[80%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
-                                                    )}
+                                                    <span>{getCategoryDisplay(category)}</span>
                                                 </button>
                                             );
                                         })}
@@ -567,7 +573,7 @@ const Shop = () => {
                                                             />
                                                             {isClosed && (
                                                                 <div className="absolute inset-0 z-20 bg-black/10 flex items-center justify-center rounded-xl backdrop-blur-[1px]">
-                                                                    <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg animate-in fade-in zoom-in-95 duration-500">
+                                                                    <span className="bg-gray-800 text-white px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest shadow-lg animate-in fade-in zoom-in-95 duration-500 border border-white/10">
                                                                         {t('Closed')}
                                                                     </span>
                                                                 </div>

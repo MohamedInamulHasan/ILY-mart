@@ -666,8 +666,8 @@ const StoreProducts = () => {
             </section>
 
             {subcategoryData.length >= 2 && (
-                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
-                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5 border-b border-gray-200/80 dark:border-gray-800">
+                    <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide">
                         {subcategoryData.map(({ name }) => {
                             const isSelected = normKey(effectiveSubcategory) === normKey(name);
                             return (
@@ -679,13 +679,16 @@ const StoreProducts = () => {
                                         setSelectedSubcategory(name);
                                         e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                                     }}
-                                    className={`text-xs sm:text-[13px] transition-all whitespace-nowrap flex items-center justify-center px-3.5 py-1.5 rounded-lg border ${
+                                    className={`pb-2.5 text-xs sm:text-sm transition-all relative whitespace-nowrap cursor-pointer select-none ${
                                         isSelected 
-                                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold shadow-xs border-gray-200/90 dark:border-gray-700' 
-                                            : 'text-gray-500 dark:text-gray-400 font-medium border-transparent hover:text-black dark:hover:text-white'
+                                            ? 'text-black dark:text-white font-bold' 
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white font-semibold'
                                     }`}
                                 >
                                     <span>{getCategoryDisplayName(name)}</span>
+                                    {isSelected && (
+                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[85%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                                    )}
                                 </button>
                             );
                         })}

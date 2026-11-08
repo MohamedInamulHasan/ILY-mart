@@ -59,10 +59,10 @@ const StoreCard = ({ store }) => {
                 </div>
             )}
 
-            {/* Closed Status Overlay */}
+            {/* Closed Status Overlay (Rectangular Tag) */}
             {!isOpen && (
                 <div className="absolute inset-0 z-30 bg-black/30 flex items-center justify-center backdrop-blur-[1px]">
-                    <span className="bg-gray-900/90 text-white px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
+                    <span className="bg-gray-900/90 text-white px-3.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-md border border-white/10">
                         {t('Closed')}
                     </span>
                 </div>
