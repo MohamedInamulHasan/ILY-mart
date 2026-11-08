@@ -60,64 +60,55 @@ const CategoryProducts = () => {
 
     const categories = useMemo(() => {
         const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
-        const allProds = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
-        
-        // Hide categories with isHidden: true
-        let filtered = list.filter(c => !c.isHidden);
-        
-        // Hide non-listed categories (categories without any available products)
-        if (allProds.length > 0) {
-            const productCategories = new Set(
-                allProds
-                    .filter(p => p.isAvailable !== false)
-                    .map(p => String(p.category || '').toLowerCase().trim())
-                    .filter(Boolean)
-            );
-            filtered = filtered.filter(cat => productCategories.has(String(cat.name || '').toLowerCase().trim()));
-        }
+        let nonHidden = list.filter(c => !c.isHidden);
 
-        // 1. If navigated from a Main Category
         const mainCatName = location.state?.mainCategory;
         if (mainCatName) {
             const normMain = String(mainCatName).toLowerCase().trim();
             const matchedMainCat = mainCategories.find(mc => String(mc.name || '').toLowerCase().trim() === normMain);
-            
-            const assigned = Array.isArray(matchedMainCat?.categories) 
-                ? matchedMainCat.categories 
+            const assigned = Array.isArray(matchedMainCat?.categories) && matchedMainCat.categories.length > 0
+                ? matchedMainCat.categories
                 : (Array.isArray(location.state?.filterCategories) ? location.state.filterCategories : []);
 
             if (assigned.length > 0) {
-                const assignedSet = new Set(assigned.map(c => String(c).toLowerCase().trim()));
-                return filtered.filter(cat => 
-                    assignedSet.has(String(cat.name || '').toLowerCase().trim()) ||
-                    assignedSet.has(String(cat._id || cat.id || '').toLowerCase().trim())
-                );
+                const subset = nonHidden.filter(c => {
+                    const cName = String(c.name || '').toLowerCase().trim();
+                    const cId = String(c._id || c.id || '').toLowerCase().trim();
+                    const cBase = cName.split('(')[0].replace(/[^a-z0-9]/g, '');
+                    return assigned.some(a => {
+                        const aStr = String(a || '').toLowerCase().trim();
+                        const aBase = aStr.split('(')[0].replace(/[^a-z0-9]/g, '');
+                        return aStr === cName || aStr === cId || (aBase && cBase && aBase === cBase);
+                    });
+                });
+                if (subset.length > 0) return subset;
             }
 
-            const byField = filtered.filter(c => c.mainCategory && String(c.mainCategory).toLowerCase().trim() === normMain);
-            if (byField.length > 0) {
-                return byField;
-            }
-
-            // Strictly return empty if main category has no assigned categories - NEVER dump all categories
-            return [];
+            const byField = nonHidden.filter(c => c.mainCategory && String(c.mainCategory).toLowerCase().trim() === normMain);
+            if (byField.length > 0) return byField;
         }
 
-        // 2. Otherwise find if activeCategory belongs to any Main Category
+        // Parent main category fallback if activeCategory belongs to any
         const normActive = String(activeCategory || '').toLowerCase().trim();
-        const parentMainCat = mainCategories.find(mc => 
+        const parentMainCat = mainCategories.find(mc =>
             Array.isArray(mc.categories) && mc.categories.some(c => String(c).toLowerCase().trim() === normActive)
         );
         if (parentMainCat && Array.isArray(parentMainCat.categories) && parentMainCat.categories.length > 0) {
-            const allowedSet = new Set(parentMainCat.categories.map(c => String(c).toLowerCase().trim()));
-            return filtered.filter(cat => 
-                allowedSet.has(String(cat.name || '').toLowerCase().trim()) ||
-                allowedSet.has(String(cat._id || cat.id || '').toLowerCase().trim())
-            );
+            const subset = nonHidden.filter(c => {
+                const cName = String(c.name || '').toLowerCase().trim();
+                const cId = String(c._id || c.id || '').toLowerCase().trim();
+                const cBase = cName.split('(')[0].replace(/[^a-z0-9]/g, '');
+                return parentMainCat.categories.some(a => {
+                    const aStr = String(a || '').toLowerCase().trim();
+                    const aBase = aStr.split('(')[0].replace(/[^a-z0-9]/g, '');
+                    return aStr === cName || aStr === cId || (aBase && cBase && aBase === cBase);
+                });
+            });
+            if (subset.length > 0) return subset;
         }
-        
-        return filtered;
-    }, [rawCategories, rawProducts, location.state, activeCategory, mainCategories]);
+
+        return nonHidden;
+    }, [rawCategories, location.state, activeCategory, mainCategories]);
 
     // Main category name for the header
     const mainCategoryDisplayName = useMemo(() => {
@@ -151,13 +142,17 @@ const CategoryProducts = () => {
     }, [categories, activeCategory]);
 
     const categoryProducts = useMemo(() => {
-        const normalize = (str) => String(str || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        const activeNorm = normalize(activeCategory);
+        const norm = (str) => String(str || '').toLowerCase().trim();
+        const base = (str) => norm(str).split('(')[0].replace(/[^a-z0-9]/g, '');
+        const activeNorm = norm(activeCategory);
+        const activeBase = base(activeCategory);
 
         return allProducts.filter(p => {
             if (p.isAvailable === false) return false;
             if (activeNorm && activeNorm !== 'all') {
-                return normalize(p.category) === activeNorm;
+                const prodNorm = norm(p.category);
+                const prodBase = base(p.category);
+                return prodNorm === activeNorm || (prodBase && activeBase && prodBase === activeBase);
             }
             return true;
         });
@@ -481,41 +476,53 @@ const CategoryProducts = () => {
                             ))}
                         </div>
                     </div>
-                ) : categories.length > 1 ? (
+                ) : categories.length > 0 ? (
                 <div className="w-full px-4 mb-4 sm:mb-5">
                     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                         {categories.map((category) => {
-                            const isSelected = activeCategory && activeCategory.toLowerCase() === category.name.toLowerCase();
+                            const catNorm = String(category.name || '').toLowerCase().trim();
+                            const actNorm = String(activeCategory || '').toLowerCase().trim();
+                            const catBase = catNorm.split('(')[0].replace(/[^a-z0-9]/g, '');
+                            const actBase = actNorm.split('(')[0].replace(/[^a-z0-9]/g, '');
+                            const isSelected = actNorm === catNorm || (actBase && catBase && actBase === catBase);
                             const cleanTitle = getCleanCategoryName(category, language);
 
                             return (
-                                <div
+                                <button
+                                    type="button"
                                     key={category._id || category.id}
                                     id={isSelected ? "active-category-pill" : undefined}
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         setActiveCategory(category.name);
                                         try {
-                                            window.history.replaceState(location.state, '', `/category/${encodeURIComponent(category.name)}`);
-                                        } catch {}
+                                            navigate(`/category/${encodeURIComponent(category.name)}`, { replace: true, state: location.state });
+                                        } catch {
+                                            try {
+                                                window.history.replaceState(location.state, '', `/category/${encodeURIComponent(category.name)}`);
+                                            } catch {}
+                                        }
                                     }}
-                                    className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl flex flex-col items-center justify-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border ${
+                                    className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl flex flex-col items-center justify-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
                                         isSelected
                                             ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
                                             : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
                                     }`}
                                 >
                                     {/* Uniform Category Image - larger and clear */}
-                                    <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent">
+                                    <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent pointer-events-none">
                                         <img
                                             src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
                                             alt={category.name}
-                                            className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)]"
+                                            draggable={false}
+                                            className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none"
                                             onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
                                         />
                                     </div>
 
                                     {/* Text */}
-                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-full px-0.5">
+                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-full px-0.5 pointer-events-none">
                                         <span 
                                             className={`leading-tight truncate block text-center w-full transition-colors text-[11.5px] sm:text-[12.5px] ${
                                                 isSelected 
@@ -527,7 +534,7 @@ const CategoryProducts = () => {
                                             {cleanTitle}
                                         </span>
                                     </div>
-                                </div>
+                                </button>
                             );
                         })}
                     </div>

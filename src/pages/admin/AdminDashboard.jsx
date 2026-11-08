@@ -3125,7 +3125,7 @@ const CategoryManagement = () => {
                                                                             <GripVertical size={18} />
                                                                         </DragHandle>
                                                                         {isEditingThis ? (
-                                                                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                                                            <div className="flex items-center gap-1.5 flex-1 min-w-0" onPointerDown={(e) => e.stopPropagation()}>
                                                                                 <input
                                                                                     type="text"
                                                                                     value={editingSubcategoryValue}
@@ -3163,10 +3163,12 @@ const CategoryManagement = () => {
                                                                         )}
                                                                     </div>
                                                                     {!isEditingThis && (
-                                                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                                                        <div className="flex items-center gap-1 flex-shrink-0" onPointerDown={(e) => e.stopPropagation()}>
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => {
+                                                                                onPointerDown={(e) => e.stopPropagation()}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
                                                                                     setEditingSubcategoryIndex(index);
                                                                                     setEditingSubcategoryValue(sub);
                                                                                 }}
@@ -3177,7 +3179,11 @@ const CategoryManagement = () => {
                                                                             </button>
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => handleRemoveSubcategory(index)}
+                                                                                onPointerDown={(e) => e.stopPropagation()}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleRemoveSubcategory(index);
+                                                                                }}
                                                                                 className="text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 p-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                                                                 title={t('Delete')}
                                                                             >

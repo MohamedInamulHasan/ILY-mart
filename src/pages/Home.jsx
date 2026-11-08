@@ -90,32 +90,41 @@ const Home = () => {
         const handleMainCategoryClick = (mainCat) => {
         if (!mainCat) return;
         const catList = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
-        const allProds = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
-        let filtered = catList.filter(c => !c.isHidden);
-        if (allProds.length > 0) {
-            const productCategories = new Set(
-                allProds.filter(p => p.isAvailable !== false).map(p => String(p.category || '').toLowerCase().trim())
-            );
-            filtered = filtered.filter(cat => productCategories.has(String(cat.name || '').toLowerCase().trim()));
-        }
+        const nonHidden = catList.filter(c => !c.isHidden);
         const assigned = Array.isArray(mainCat.categories) ? mainCat.categories : [];
-        let subCats = [];
+
+        // Flexible matching for assigned categories (by id, name, or clean base name)
+        let matchedCats = [];
         if (assigned.length > 0) {
-            const assignedSet = new Set(assigned.map(c => String(c).toLowerCase().trim()));
-            subCats = filtered.filter(cat =>
-                assignedSet.has(String(cat.name || '').toLowerCase().trim()) ||
-                assignedSet.has(String(cat._id || cat.id || '').toLowerCase().trim())
-            );
-        }
-        if (subCats.length === 0) {
-            const normMainName = String(mainCat.name || '').toLowerCase().trim();
-            subCats = filtered.filter(c => c.mainCategory && c.mainCategory.toLowerCase().trim() === normMainName);
+            matchedCats = nonHidden.filter(c => {
+                const cName = String(c.name || '').toLowerCase().trim();
+                const cId = String(c._id || c.id || '').toLowerCase().trim();
+                const cBase = cName.split('(')[0].replace(/[^a-z0-9]/g, '');
+                return assigned.some(a => {
+                    const aStr = String(a || '').toLowerCase().trim();
+                    const aBase = aStr.split('(')[0].replace(/[^a-z0-9]/g, '');
+                    return aStr === cName || aStr === cId || (aBase && cBase && aBase === cBase);
+                });
+            });
         }
 
-        const firstCatName = subCats.length > 0 ? (subCats[0].name || subCats[0]) : (mainCat.name || 'All');
-        const filterCatNames = subCats.length > 0 ? subCats.map(c => c.name || c) : (assigned.length > 0 ? assigned : [firstCatName]);
+        if (matchedCats.length === 0) {
+            const normMain = String(mainCat.name || '').toLowerCase().trim();
+            matchedCats = nonHidden.filter(c => c.mainCategory && String(c.mainCategory).toLowerCase().trim() === normMain);
+        }
 
-        navigate(`/category/${encodeURIComponent(firstCatName)}`, {
+        if (matchedCats.length === 0) {
+            const normMain = String(mainCat.name || '').toLowerCase().trim();
+            const direct = nonHidden.find(c => String(c.name || '').toLowerCase().trim() === normMain);
+            if (direct) matchedCats = [direct];
+        }
+
+        const firstCat = matchedCats[0] || assigned[0];
+        const firstCatName = typeof firstCat === 'object' ? (firstCat?.name || '') : String(firstCat || '');
+        const targetCategory = firstCatName || mainCat.name || 'All';
+        const filterCatNames = matchedCats.length > 0 ? matchedCats.map(c => c.name || c) : (assigned.length > 0 ? assigned : [targetCategory]);
+
+        navigate(`/category/${encodeURIComponent(targetCategory)}`, {
             state: {
                 mainCategory: mainCat.name,
                 filterCategories: filterCatNames
@@ -422,16 +431,16 @@ const Home = () => {
                 {/* Main Categories Section with Reconstructed Skeleton */}
                 <section className="pt-2 pb-3.5 mt-1 sm:mt-1.5 px-3 sm:px-4 mb-4">
                     <div className="flex justify-between items-center mb-3 px-1">
-                        <h2 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
+                        <h2 className="text-[20px] sm:text-[22px] font-black text-gray-900 dark:text-white tracking-tight">
                             {t('Shop By Categories')}
                         </h2>
                     </div>
                     {loadingMainCats && (!Array.isArray(mainCategories) || mainCategories.length === 0) ? (
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="flex flex-col rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 pb-2 sm:pb-2.5 bg-white dark:bg-gray-800 shadow-sm">
+                                <div key={i} className="flex flex-col rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 pb-1 sm:pb-1.5 bg-white dark:bg-gray-800 shadow-sm">
                                     <div className="w-full aspect-[16/9] blinkit-shimmer" />
-                                    <div className="pt-2 px-2 flex justify-center">
+                                    <div className="pt-1 pb-1 px-2 flex justify-center">
                                         <div className="h-3.5 w-24 rounded-md blinkit-shimmer" />
                                     </div>
                                 </div>
@@ -445,25 +454,26 @@ const Home = () => {
                                     <div 
                                         key={mainCat.id || mainCat._id || mainCat.name}
                                         onClick={() => handleMainCategoryClick(mainCat)}
-                                        className="flex flex-col cursor-pointer group select-none active:scale-[0.98] transition-transform rounded-2xl overflow-hidden shadow-sm border border-[#2E5A2E]/15 dark:border-gray-700/80 bg-gradient-to-b from-white via-[#F7FCF5] to-[#E3F9DC] dark:from-gray-800 dark:via-gray-800 dark:to-[#2E5A2E]/25 pb-2 sm:pb-2.5"
+                                        className="flex flex-col cursor-pointer group select-none active:scale-[0.98] transition-transform rounded-2xl overflow-hidden shadow-sm border border-[#2E5A2E]/15 dark:border-gray-700/80 bg-gradient-to-b from-white via-[#F7FCF5] to-[#E3F9DC] dark:from-gray-800 dark:via-gray-800 dark:to-[#2E5A2E]/25 pb-1 sm:pb-1.5"
                                     >
-                                        {/* 16:9 Rectangular Card (Edge-to-Edge Image Fit) */}
-                                        <div className="w-full aspect-[16/9] overflow-hidden relative">
+                                        {/* 16:9 Rectangular Card (Edge-to-Edge Image with scaled graphics to eliminate dead space) */}
+                                        <div className="w-full aspect-[16/9] overflow-hidden relative flex items-center justify-center">
                                             <img 
                                                 src={mainCat.image} 
                                                 alt={cleanName} 
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                className="w-full h-full object-contain pointer-events-none select-none"
                                                 loading="lazy"
                                                 decoding="async"
+                                                draggable={false}
                                                 onError={(e) => {
                                                     e.target.onerror = null;
                                                     e.target.src = 'https://placehold.co/800x450?text=' + encodeURIComponent(cleanName);
                                                 }}
                                             />
                                         </div>
-                                        {/* Main Category Name Inside Card with added bottom padding */}
-                                        <div className="pt-1.5 sm:pt-2 px-1.5 sm:px-2 flex items-center justify-center min-h-[36px] sm:min-h-[40px]">
-                                            <span className="text-[12.5px] sm:text-[13.5px] font-bold text-gray-900 dark:text-gray-100 text-center line-clamp-2 leading-tight w-full">
+                                        {/* Main Category Name Inside Card with tight padding, removing large gap */}
+                                        <div className="pt-0.5 pb-1 px-1.5 flex items-center justify-center">
+                                            <span className="text-[12px] sm:text-[13px] font-bold text-gray-900 dark:text-gray-100 text-center line-clamp-2 leading-tight w-full pointer-events-none select-none">
                                                 {cleanName}
                                             </span>
                                         </div>
