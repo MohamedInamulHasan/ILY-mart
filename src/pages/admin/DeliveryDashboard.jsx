@@ -167,7 +167,12 @@ const DeliveryDashboard = () => {
             // When swipe to enable: DO NOT push user out of the app!
             const granted = await checkOverlayPermission();
             setHasOverlayPermission(granted);
-            if (!hasAcceptedCard && granted) {
+            if (granted) {
+                const currentToken = localStorage.getItem('authToken');
+                if (currentToken) {
+                    await setOverlayAuthToken(currentToken);
+                }
+                await setOverlayHasAcceptedOrder(hasAcceptedCard);
                 await showFloatingOverlay();
             }
         }
@@ -179,21 +184,15 @@ const DeliveryDashboard = () => {
         return orders.some(o => ['Accepted', 'Out for Delivery', 'Shipped'].includes(o.status));
     }, [orders]);
 
-    // Keep native overlay synced: show floating icon when enabled AND no accepted card
+    // Keep native overlay synced: hide floating icon when there's an accepted card, show when no accepted cards
     useEffect(() => {
         if (!isNativeAndroid()) return;
         setOverlayHasAcceptedOrder(hasAcceptedCard);
-        if (isFloatingEnabled && !hasAcceptedCard) {
-            showFloatingOverlay();
-        } else {
-            hideFloatingOverlay();
-        }
-    }, [hasAcceptedCard, isFloatingEnabled]);
+    }, [hasAcceptedCard]);
 
-    // Porter Partner Style Floating Logo: check permission & listen to app state change
+    // Porter Partner Style Floating Logo: check permission & sync initial auth token on mount
     useEffect(() => {
         let isMounted = true;
-        let appStateListener = null;
 
         const initOverlay = async () => {
             if (!isNativeAndroid()) return;
@@ -209,26 +208,11 @@ const DeliveryDashboard = () => {
                 setOverlayAuthToken(currentToken);
             }
 
-            // When enabled and NO accepted card, show floating icon
-            if (isFloatingEnabled && !hasAcceptedCard && granted) {
-                showFloatingOverlay();
-            } else {
-                hideFloatingOverlay();
-            }
+            setOverlayHasAcceptedOrder(hasAcceptedCard);
 
-            try {
-                const { App } = await import('@capacitor/app');
-                appStateListener = await App.addListener('appStateChange', ({ isActive }) => {
-                    const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-                    // Show floating icon when enabled AND no accepted card
-                    if (enabled && !hasAcceptedCard) {
-                        showFloatingOverlay();
-                    } else {
-                        hideFloatingOverlay();
-                    }
-                });
-            } catch (err) {
-                console.warn('Error setting up overlay appStateListener:', err);
+            const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+            if (enabled && granted) {
+                showFloatingOverlay();
             }
         };
 
@@ -236,12 +220,8 @@ const DeliveryDashboard = () => {
 
         return () => {
             isMounted = false;
-            if (appStateListener && appStateListener.remove) {
-                appStateListener.remove();
-            }
-            hideFloatingOverlay();
         };
-    }, [hasAcceptedCard, isFloatingEnabled]);
+    }, []);
 
     const getItemImage = (item) => {
         if (item.image && typeof item.image === 'string' && (item.image.startsWith('http') || item.image.startsWith('/') || item.image.startsWith('data:'))) {

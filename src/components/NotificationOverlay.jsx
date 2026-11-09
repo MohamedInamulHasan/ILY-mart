@@ -107,56 +107,48 @@ const NotificationOverlay = () => {
         }
     }, [hasActiveAcceptedOrder, incomingOrder]);
 
-    const alertCycleIndexRef = useRef(0);
+    // When floating overlay is disabled, immediately dismiss any incoming order popup
+    useEffect(() => {
+        const handleFloatingToggle = () => {
+            const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+            setIsFloatingEnabled(enabled);
+            if (!enabled) {
+                setIncomingOrder(null);
+                setStartWithAcceptView(false);
+            }
+        };
+        window.addEventListener('delivery:floating-toggle', handleFloatingToggle);
+        return () => window.removeEventListener('delivery:floating-toggle', handleFloatingToggle);
+    }, []);
+
+    // Dismiss incoming order popup immediately if user leaves delivery routes
+    useEffect(() => {
+        if (!isDeliveryPage && incomingOrder) {
+            setIncomingOrder(null);
+            setStartWithAcceptView(false);
+        }
+    }, [isDeliveryPage, incomingOrder]);
+
+    // Dismiss popup immediately if an order is accepted (hasActiveAcceptedOrder is true)
+    useEffect(() => {
+        if (hasActiveAcceptedOrder && incomingOrder) {
+            setIncomingOrder(null);
+            setStartWithAcceptView(false);
+        }
+    }, [hasActiveAcceptedOrder, incomingOrder]);
+
     const incomingOrderRef = useRef(incomingOrder);
     useEffect(() => {
         incomingOrderRef.current = incomingOrder;
     }, [incomingOrder]);
 
-    // Repeated pop-up alerts every 5 seconds for processing cards when NO accepted card is present
-    useEffect(() => {
-        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-
-        // When swipe to disable (isFloatingEnabled === false) OR there is an accepted card (hasActiveAcceptedOrder === true),
-        // DO NOT show repeated pop-up alerts!
-        if (!isDeliveryBoy || !isDeliveryPage || !isDeliverySessionActive || !isFloatingEnabled || hasActiveAcceptedOrder) {
-            return;
-        }
-
-        if (processingOrders.length === 0) return;
-
-        const interval = setInterval(() => {
-            const sessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-            const floatingOn = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-            if (!sessionActive || !floatingOn || hasActiveAcceptedOrder) {
-                return;
-            }
-
-            if (incomingOrderRef.current) return;
-
-            if (processingOrders.length > 0) {
-                const nextOrder = processingOrders[alertCycleIndexRef.current % processingOrders.length];
-                alertCycleIndexRef.current = (alertCycleIndexRef.current + 1) % processingOrders.length;
-                if (nextOrder) {
-                    setStartWithAcceptView(false);
-                    setIncomingOrder(nextOrder);
-                    try {
-                        playSuccessSound();
-                    } catch (_) {}
-                    triggerIncomingOrderAlert();
-                }
-            }
-        }, 5000);
-
-        return () => clearInterval(interval);
-    }, [isDeliveryBoy, isDeliveryPage, isFloatingEnabled, hasActiveAcceptedOrder, processingOrders]);
-
     // Only alert for NEW orders placed in real-time while in the app!
     // Do NOT alert if not in delivery panel or if overlay/alerts are disabled.
+    // Inside the app: NO repeated 5s alert loops (orders are already visible in dashboard cards)
     useEffect(() => {
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
         const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        if (!isDeliveryBoy || !isDeliveryPage || !isDeliverySessionActive || !isFloatingEnabled) return;
+        if (!isDeliveryBoy || !isDeliveryPage || !isDeliverySessionActive || !isFloatingEnabled || hasActiveAcceptedOrder) return;
         if (allOrders.length === 0) return;
 
         // On first load of orders, record all existing order IDs as known so we never alert old past orders
@@ -190,9 +182,11 @@ const NotificationOverlay = () => {
             knownOrderIdsRef.current.add(oId);
             setStartWithAcceptView(false);
             setIncomingOrder(newRealtimeOrder);
-            triggerIncomingOrderAlert();
+            try {
+                playSuccessSound();
+            } catch (_) {}
         }
-    }, [isDeliveryBoy, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds]);
+    }, [isDeliveryBoy, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds, hasActiveAcceptedOrder]);
 
     // Auto-dismiss popup if the current order is accepted or cancelled
     useEffect(() => {
@@ -269,7 +263,9 @@ const NotificationOverlay = () => {
                     }
                     setStartWithAcceptView(false);
                     setIncomingOrder(newOrder);
-                    triggerIncomingOrderAlert();
+                    try {
+                        playSuccessSound();
+                    } catch (_) {}
                 }
             }
         };

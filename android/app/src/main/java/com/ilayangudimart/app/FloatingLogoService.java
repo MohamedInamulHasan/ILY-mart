@@ -166,12 +166,21 @@ public class FloatingLogoService extends Service {
                     return;
                 }
 
-                // Show floating icon on screens when there is NO accepted card!
-                if (hasAccepted) {
+                if (inForeground) {
+                    // Inside the app: strictly DO NOT show floating icon or pop-up cards
                     instance.hideCircleBubble();
+                    instance.dismissPorterOrderCard();
                 } else {
-                    if (instance.orderCardView == null) {
-                        instance.showCircleBubble();
+                    // Out of the app:
+                    if (hasAccepted) {
+                        // When an order is accepted -> suppress both floating icon and repeated popups
+                        instance.hideCircleBubble();
+                        instance.dismissPorterOrderCard();
+                    } else {
+                        // No accepted cards -> show floating icon on phone screen
+                        if (instance.orderCardView == null) {
+                            instance.showCircleBubble();
+                        }
                     }
                 }
             });
@@ -295,13 +304,14 @@ public class FloatingLogoService extends Service {
             }
         });
 
-        // Add to windowManager only if app is not in foreground, enabled, and permitted
+        // Add to windowManager only if app is not in foreground, enabled, no accepted card, and permitted
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        boolean hasAccepted = prefs.getBoolean("has_accepted_order", false);
         boolean canDraw = Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this);
 
-        if (!isAppInForeground && enabled && sessionActive && canDraw) {
+        if (!isAppInForeground && !hasAccepted && enabled && sessionActive && canDraw) {
             try {
                 windowManager.addView(floatingCircleView, circleParams);
             } catch (Exception e) {
@@ -323,11 +333,7 @@ public class FloatingLogoService extends Service {
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
         boolean hasAcceptedOrder = prefs.getBoolean("has_accepted_order", false);
-        if (!enabled || !sessionActive) {
-            stopServiceAndHide();
-            return;
-        }
-        if (hasAcceptedOrder) {
+        if (!enabled || !sessionActive || isAppInForeground || hasAcceptedOrder) {
             hideCircleBubble();
             return;
         }
@@ -351,8 +357,8 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        if (!enabled || !sessionActive) {
-            stopServiceAndHide();
+        boolean hasAccepted = prefs.getBoolean("has_accepted_order", false);
+        if (!enabled || !sessionActive || hasAccepted) {
             return;
         }
 
@@ -919,7 +925,7 @@ public class FloatingLogoService extends Service {
         stopAlertEffects();
         dismissPorterOrderCardInternal();
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        if (!prefs.getBoolean("has_accepted_order", false)) {
+        if (!prefs.getBoolean("has_accepted_order", false) && !isAppInForeground) {
             showCircleBubble();
         }
         // 5s gap before showing the next pending processing order
@@ -927,12 +933,14 @@ public class FloatingLogoService extends Service {
         mainHandler.postDelayed(() -> {
             isGapWaiting = false;
             currentPendingOrderIndex++;
-            showNextPendingOrderIfAny();
+            if (!isAppInForeground) {
+                showNextPendingOrderIfAny();
+            }
         }, 5000);
     }
 
     public synchronized void showNextPendingOrderIfAny() {
-        if (orderCardView != null || isGapWaiting) return;
+        if (orderCardView != null || isGapWaiting || isAppInForeground) return;
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
@@ -987,7 +995,11 @@ public class FloatingLogoService extends Service {
     public synchronized void dismissPorterOrderCard() {
         stopAlertEffects();
         dismissPorterOrderCardInternal();
-        showCircleBubble();
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean hasAcceptedOrder = prefs.getBoolean("has_accepted_order", false);
+        if (!hasAcceptedOrder && !isAppInForeground) {
+            showCircleBubble();
+        }
     }
 
     private void dismissPorterOrderCardInternal() {
@@ -1099,11 +1111,14 @@ public class FloatingLogoService extends Service {
                 stopServiceAndHide();
                 return;
             }
-            if (hasAccepted) {
-                // When there is an accepted card in delivery panel -> do NOT show floating icon
+            if (hasAccepted || isAppInForeground) {
+                // When there is an accepted card in delivery panel OR inside the app -> do NOT show floating icon or card
                 hideCircleBubble();
+                if (hasAccepted) {
+                    dismissPorterOrderCard();
+                }
             } else {
-                // When there are NO accepted cards in delivery panel -> show floating icon!
+                // When there are NO accepted cards in delivery panel and out of the app -> show floating icon!
                 if (orderCardView == null) {
                     showCircleBubble();
                 }

@@ -170,6 +170,13 @@ public class FloatingOverlayPlugin extends Plugin {
     @PluginMethod
     public void triggerIncomingAlert(PluginCall call) {
         try {
+            if (FloatingLogoService.isAppInForeground) {
+                // App is already in foreground; do not call startActivity or interrupt window
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                call.resolve(ret);
+                return;
+            }
             Context context = getContext();
             Intent intent = new Intent(context, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
