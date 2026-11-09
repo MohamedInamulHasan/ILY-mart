@@ -109,8 +109,7 @@ const RoleRedirectHandler = () => {
 
         // ONLY enforce delivery panel lock if the delivery boy is in an active delivery panel session
         if (isDeliveryBoy && !isAdmin && isDeliverySessionActive) {
-            const allowedPrefixes = ['/admin', '/login', '/forgot-password', '/reset-password', '/profile', '/edit-address'];
-            const isAllowed = allowedPrefixes.some(p => location.pathname === p || location.pathname.startsWith(p));
+            const isAllowed = location.pathname.startsWith('/admin');
             if (!isAllowed) {
                 navigate('/admin', { replace: true });
                 return;

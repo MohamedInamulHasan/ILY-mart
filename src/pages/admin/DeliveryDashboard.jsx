@@ -60,7 +60,7 @@ import { registerModalBackHandler } from '../../utils/useBackButton';
 
 const DeliveryDashboard = () => {
     const navigate = useNavigate();
-    const { logout, user } = useAuth();
+    const { logout, user, setUser } = useAuth();
     const { t, language } = useLanguage();
     const { socket } = useSocket();
     const queryClient = useQueryClient();
@@ -94,6 +94,21 @@ const DeliveryDashboard = () => {
             navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
         }
     }, [navigate]);
+
+    // Lock navigation back from delivery panel: cannot go back to customer pages even on double back click
+    useEffect(() => {
+        window.history.pushState({ panel: 'delivery' }, '', window.location.href);
+
+        const handlePopState = () => {
+            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+            if (isDeliverySessionActive) {
+                window.history.pushState({ panel: 'delivery' }, '', '/admin');
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
 
 
     // Listen for incoming orders in real-time to alert delivery boy and refresh list
@@ -292,21 +307,28 @@ const DeliveryDashboard = () => {
 
             // When searching: allow ANY status so typing an ID or customer always reveals the card
             const rawQ = searchQuery.toLowerCase().trim();
-            const cleanQ = rawQ.replace(/^#/, '').trim();
+            const cleanQ = rawQ.replace(/^#+/, '').replace(/^order\s*(id)?\s*[:#-]?\s*/i, '').trim();
+
+            // If user typed only '#', show all orders
+            if (!cleanQ) return true;
+
             const orderId = String(order._id || order.id || '').toLowerCase();
             const orderIdShort = orderId.slice(-6);
+            const fullDisplayId = `#${orderIdShort}`;
             const customOrderNum = String(order.orderNumber || order.orderId || '').toLowerCase();
 
             const customerName = (order.shippingAddress?.name || order.user || '').toLowerCase();
             const customerMobile = (order.shippingAddress?.mobile || '').toLowerCase();
             const status = (order.status || '').toLowerCase();
 
-            const matchesId = Boolean(cleanQ && (
+            const matchesId = (
                 orderId.includes(cleanQ) ||
                 orderIdShort.includes(cleanQ) ||
                 customOrderNum.includes(cleanQ) ||
+                fullDisplayId.includes(rawQ) ||
+                cleanQ.includes(orderIdShort) ||
                 rawQ.includes(orderIdShort)
-            ));
+            );
 
             const matchesCustomer = customerName.includes(rawQ) || customerMobile.includes(cleanQ);
             const matchesItems = order.items?.some(item => (item.name || '').toLowerCase().includes(rawQ));
@@ -457,6 +479,11 @@ const DeliveryDashboard = () => {
                 isOpen={showLogoutModal}
                 isLoggingOut={isLoggingOut}
                 onClose={() => !isLoggingOut && setShowLogoutModal(false)}
+                title={t('Exit Delivery Mode')}
+                message={t('Exit delivery panel and return to normal user pages?')}
+                subtitle={t('You will remain logged in as a normal user.')}
+                confirmText={t('Exit to App')}
+                cancelText={t('Cancel')}
                 onConfirm={async () => {
                     setIsLoggingOut(true);
                     localStorage.setItem('delivery_boy_logged_out', 'true');
@@ -464,11 +491,26 @@ const DeliveryDashboard = () => {
                     localStorage.setItem('delivery_floating_overlay_enabled', 'false');
                     setIsFloatingEnabled(false);
                     await hideFloatingOverlay();
-                    try {
-                        await logout();
-                    } finally {
-                        navigate('/login');
+
+                    // Restore customer session if backup exists
+                    const backupToken = localStorage.getItem('customer_backup_token');
+                    const backupUser = localStorage.getItem('customer_backup_user');
+                    if (backupToken) {
+                        localStorage.setItem('authToken', backupToken);
+                        if (backupUser) {
+                            try {
+                                const parsed = JSON.parse(backupUser);
+                                localStorage.setItem('userInfo', backupUser);
+                                if (setUser) setUser(parsed);
+                            } catch (_) {}
+                        }
+                        localStorage.removeItem('customer_backup_token');
+                        localStorage.removeItem('customer_backup_user');
                     }
+
+                    setShowLogoutModal(false);
+                    setIsLoggingOut(false);
+                    navigate('/profile', { replace: true });
                 }}
             />
 

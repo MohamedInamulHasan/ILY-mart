@@ -92,7 +92,7 @@ const AdminDashboard = () => {
     const isDeliveryBoy = roles.includes('delivery_boy');
     const isAdmin = roles.includes('admin');
     const isCustomer = roles.includes('customer');
-    const defaultTab = isStoreAdmin ? 'stores' : isServiceAdmin ? 'services' : isDeliveryBoy ? 'orders' : (isAdmin ? 'products' : 'products');
+    const defaultTab = isAdmin ? 'products' : isStoreAdmin ? 'stores' : isServiceAdmin ? 'services' : (isDeliveryBoy ? 'orders' : 'products');
     const [activeTab, setActiveTab] = useState(defaultTab);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { t } = useLanguage();
@@ -322,7 +322,7 @@ const AdminDashboard = () => {
     }
 
     // --- DELIVERY BOY VIEW ---
-    if (isDeliveryBoy) {
+    if (isDeliveryBoy && !isAdmin) {
         return (
             <div className="h-screen bg-[#E8EAEF] dark:bg-gray-900 flex transition-colors duration-200 relative overflow-hidden">
                 <LogoutModal 
@@ -2363,8 +2363,28 @@ const CategoryManagement = () => {
         if (trimmed) {
             setFormData(prev => {
                 const updated = [...prev.subcategories];
+                const oldSub = updated[index];
                 updated[index] = trimmed;
-                return { ...prev, subcategories: updated };
+
+                const updatedImages = { ...(prev.subcategoryImages || {}) };
+                if (oldSub && updatedImages[oldSub] !== undefined) {
+                    updatedImages[trimmed] = updatedImages[oldSub];
+                    if (oldSub !== trimmed) {
+                        delete updatedImages[oldSub];
+                    }
+                }
+
+                const updatedRenames = { ...(prev.subcategoryRenames || {}) };
+                if (oldSub && oldSub !== trimmed) {
+                    updatedRenames[oldSub] = trimmed;
+                }
+
+                return {
+                    ...prev,
+                    subcategories: updated,
+                    subcategoryImages: updatedImages,
+                    subcategoryRenames: updatedRenames
+                };
             });
         }
         setEditingSubcategoryIndex(null);

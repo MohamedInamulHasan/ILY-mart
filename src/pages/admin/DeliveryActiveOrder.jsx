@@ -97,6 +97,22 @@ const DeliveryActiveOrder = () => {
         }
     }, [activeOrderId]);
 
+    // Back navigation lock: back button from order always returns to delivery panel (/admin)
+    useEffect(() => {
+        window.history.pushState({ panel: 'delivery-order' }, '', window.location.href);
+
+        const handlePopState = () => {
+            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+            if (isDeliverySessionActive) {
+                localStorage.setItem('active_delivery_stay', 'false');
+                navigate('/admin', { replace: true });
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [navigate]);
+
     // Fetch order directly if not present in cache
     useEffect(() => {
         if (!order && activeOrderId && !ordersLoading) {

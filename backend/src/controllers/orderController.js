@@ -263,11 +263,11 @@ export const getOrders = async (req, res, next) => {
         };
 
         // STRICT RBAC: Filter orders based on user role and context
-        if (isMyOrders) {
-            // Customer "My Orders" tab: ALWAYS returns only personal orders, even for admins/delivery boys
+        if (isMyOrders && !isAdmin) {
+            // Customer "My Orders" tab: ALWAYS returns only personal orders for regular customers
             query = getPersonalOrderQuery();
         } else if (isAdmin) {
-            // Global Admin Dashboard: Sees all orders
+            // Global Admin: Sees all orders across the entire platform (including on the Orders page)
             query = {};
         } else if (roles.includes('delivery_boy')) {
             // Delivery boy panel: Sees all orders for delivery dispatch

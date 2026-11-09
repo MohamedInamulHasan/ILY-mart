@@ -11,7 +11,7 @@ import { registerModalBackHandler } from '../utils/useBackButton';
 const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }) => {
     const { t } = useLanguage();
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { logout, setUser } = useAuth();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -38,9 +38,34 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                 <LogoutModal
                     isOpen={showLogoutModal}
                     onClose={() => setShowLogoutModal(false)}
-                    onConfirm={() => {
-                        logout();
-                        navigate('/login');
+                    title={t('Exit Delivery Mode')}
+                    message={t('Exit delivery panel and return to normal user pages?')}
+                    subtitle={t('You will remain logged in as a normal user.')}
+                    confirmText={t('Exit to App')}
+                    cancelText={t('Cancel')}
+                    onConfirm={async () => {
+                        localStorage.setItem('delivery_boy_logged_out', 'true');
+                        localStorage.removeItem('delivery_session_active');
+                        localStorage.setItem('delivery_floating_overlay_enabled', 'false');
+
+                        const backupToken = localStorage.getItem('customer_backup_token');
+                        const backupUser = localStorage.getItem('customer_backup_user');
+                        if (backupToken) {
+                            localStorage.setItem('authToken', backupToken);
+                            if (backupUser) {
+                                try {
+                                    const parsed = JSON.parse(backupUser);
+                                    localStorage.setItem('userInfo', backupUser);
+                                    if (setUser) setUser(parsed);
+                                } catch (_) {}
+                            }
+                            localStorage.removeItem('customer_backup_token');
+                            localStorage.removeItem('customer_backup_user');
+                        }
+
+                        setShowLogoutModal(false);
+                        if (onClose) onClose();
+                        navigate('/profile', { replace: true });
                     }}
                 />
 

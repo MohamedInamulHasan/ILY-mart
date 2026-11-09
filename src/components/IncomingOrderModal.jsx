@@ -262,9 +262,8 @@ const IncomingOrderModal = ({
         return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trimmed)}`;
     })();
 
-    // 1. Initial Step: Compact "VIEW ORDER" card (shown when delivery boy receives order outside or app opened)
-    if (viewMode === 'view' && isProcessing) {
-        return (
+    // Compact "VIEW ORDER" card (shown when delivery boy receives order outside or in delivery panel)
+    return (
             <>
                 <DeliveryStatusPopup
                     isOpen={popupState.isOpen}
@@ -399,18 +398,20 @@ const IncomingOrderModal = ({
 
                     {/* Bottom: View Order button with SKIP below */}
                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
-                        <button
-                            type="button"
-                            onClick={() => {
+                        <SwipeActionButton
+                            variant="yellow"
+                            label={t('VIEW ORDER')}
+                            loadingLabel={t('Opening...')}
+                            allowTap={true}
+                            heightClass="h-[56px] sm:h-[60px]"
+                            knobSizeClass="w-[44px] h-[44px] sm:w-[48px] sm:h-[48px]"
+                            onSuccess={() => {
                                 stopIncomingOrderAlertSound();
-                                setViewMode('details');
                                 if (onAcceptViewOpened) onAcceptViewOpened(order);
+                                if (onClose) onClose();
+                                navigate(`/admin/delivery-order/${order._id || order.id}`, { state: { order, status: order.status } });
                             }}
-                            className="w-full py-3.5 px-4 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white font-black text-sm uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer select-none"
-                        >
-                            <span>{t('VIEW ORDER')}</span>
-                            <ChevronsRight size={18} className="stroke-[2.5]" />
-                        </button>
+                        />
 
                         {/* Skip Button like Porter App */}
                         <button
@@ -432,312 +433,6 @@ const IncomingOrderModal = ({
             </motion.div>
             </>
         );
-    }
-
-    // 2. Full "ACCEPT ORDER" / Order Details View
-    return (
-        <>
-            <DeliveryStatusPopup
-                isOpen={popupState.isOpen}
-                type={popupState.type}
-                title={popupState.title}
-                subtitle={popupState.subtitle}
-                onComplete={handlePopupComplete}
-                duration={1800}
-            />
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={(e) => {
-                if (e.target === e.currentTarget) handleDismissView();
-            }}
-            onPointerDown={(e) => {
-                if (e.target === e.currentTarget) handleDismissView();
-            }}
-            className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 select-none cursor-pointer"
-        >
-            <motion.div
-                drag="y"
-                dragControls={dragControls}
-                dragListener={false}
-                dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={{ top: 0, bottom: 0.7 }}
-                onDragEnd={(e, info) => {
-                    if (info.offset.y > 80 || info.velocity.y > 350) {
-                        handleDismissView();
-                    }
-                }}
-                initial={{ y: '100%', opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 28, stiffness: 350 }}
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="bg-[#E8EAEF] dark:bg-gray-900 w-full max-w-lg rounded-t-[2.5rem] sm:rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[94vh] relative cursor-default"
-            >
-                {/* Full Accept View: Drag Handle Bar & Header (drag down from here to close) */}
-                <div 
-                    onPointerDown={(e) => dragControls.start(e)}
-                    className="bg-white dark:bg-gray-800 shrink-0 cursor-grab active:cursor-grabbing select-none touch-none pt-2.5 pb-2"
-                >
-                    {/* Thin Drag Handle Line */}
-                    <div className="w-10 sm:w-12 h-[2.5px] bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-2.5" />
-
-                    <div className="px-4 flex items-center justify-between text-gray-500 dark:text-gray-400">
-                        {/* Left: 🕒 Nov 6, 8.00 PM */}
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
-                            <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 tracking-wide truncate">
-                                {formatOrderBannerTime(order.createdAt || order.date) || formattedOrderTime || t('New Order')}
-                            </span>
-                        </div>
-
-                        {/* Right: #Order ID (same font-bold thickness and grey color) */}
-                        <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 font-mono shrink-0">
-                            #{orderIdShort}
-                        </span>
-                    </div>
-
-                </div>
-
-                {/* Scrollable Order Details Section matching OrderDetails.jsx exactly */}
-                <div className="p-3.5 sm:p-4 overflow-y-auto space-y-3 sm:space-y-3.5 flex-1">
-                    {/* CARD 1: Shipping Details Card - Matching Order Details Design */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/20 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                    <MapPin size={18} />
-                                </div>
-                                <h3 className="font-medium text-gray-900 dark:text-white text-base">{t('Shipping details')}</h3>
-                            </div>
-                            {customerPhone && (
-                                <a
-                                    href={`tel:${customerPhone}`}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black dark:bg-black text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-black/80"
-                                >
-                                    <Phone size={14} className="stroke-[2.5] text-white" />
-                                    <span>{t('Call')}</span>
-                                </a>
-                            )}
-                        </div>
-                        <div className="p-3.5 sm:p-4">
-                            <div className="pl-2 sm:pl-3 space-y-1">
-                                {/* 1. Name */}
-                                <p className="font-bold text-[16px] text-gray-900 dark:text-white">
-                                    {customerName}
-                                </p>
-
-                                {/* 2. Number */}
-                                {customerPhone && (
-                                    <p className="text-[13px] font-semibold text-gray-600 dark:text-gray-300">
-                                        {customerPhone}
-                                    </p>
-                                )}
-
-                                {/* 3. Address */}
-                                <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                                    {street}{city ? `, ${city}` : ''}{zip ? ` - ${zip}` : ''}
-                                </p>
-
-                                {/* 4. Pin / View on Map */}
-                                {dropMapsUrl && (
-                                    <div className="pt-1">
-                                        <a
-                                            href={dropMapsUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1.5 text-[#2E5A2E] dark:text-[#CBF9B2] text-[11px] font-bold bg-green-50 dark:bg-[#CBF9B2]/10 px-3 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-[#CBF9B2]/20 transition-all border border-[#2E5A2E]/10 dark:border-[#CBF9B2]/20 shadow-xs"
-                                        >
-                                            <Navigation size={13} className="text-[#2E5A2E] dark:text-[#CBF9B2]" />
-                                            <span>{t('View on Map')}</span>
-                                        </a>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 5. Scheduled Delivery Time */}
-                            {scheduledTimeDisplay && !String(scheduledTimeDisplay).toLowerCase().includes('instant') && (
-                                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700">
-                                    <div className="flex items-center gap-3 text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                        <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-[#CBF9B2]/10 flex items-center justify-center shrink-0">
-                                            <Clock size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('Scheduled Delivery')}</p>
-                                            <p className="font-medium text-gray-900 dark:text-white">
-                                                {scheduledTimeDisplay}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* CARD 2: Items Ordered Card - Matching Order Details Design */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="px-3.5 py-2.5 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="p-2 bg-green-50 dark:bg-[#CBF9B2]/10 rounded-lg text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                    <Package size={18} />
-                                </div>
-                                <h3 className="font-bold text-gray-900 dark:text-white">{t('Items Ordered')} ({items.length})</h3>
-                            </div>
-                            <span className="text-xs font-mono font-bold text-gray-400">
-                                #{orderIdShort}
-                            </span>
-                        </div>
-                        <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                            {items.map((item, index) => (
-                                <div key={index} className="p-3 sm:p-3.5 flex gap-3 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors first:pt-3">
-                                    <div className="w-14 h-14 bg-gray-50 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden flex-shrink-0 relative">
-                                        <img
-                                            src={getItemImage(item)}
-                                            alt={item.name}
-                                            className="h-full w-full object-cover"
-                                            onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/150?text=Product"; }}
-                                        />
-
-                                    </div>
-                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                        <div className="mb-0.5 leading-tight" title={item.name}>
-                                            {renderBilingualTitle(item.name || item.title, language, {
-                                                hideTag: true,
-                                                mainClassName: 'text-sm font-medium text-gray-900 dark:text-white leading-snug',
-                                                subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
-                                            })}
-                                        </div>
-                                        {(item.storeId || item.storeName) && (
-                                            <p className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                                {getItemStoreName(item)}
-                                            </p>
-                                        )}
-                                        <div className="flex items-center justify-between mt-1">
-                                            <div>
-                                                <p className="text-[15px] font-bold text-gray-900 dark:text-white leading-none">
-                                                    ₹{Number(item.price * item.quantity).toFixed(0)}
-                                                </p>
-                                                {(item.unit || item.product?.unit) && (
-                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-1">
-                                                        {item.unit || item.product?.unit}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
-                                                x{item.quantity}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* CARD 3: Payment Summary Card - Matching Order Details Design */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 text-[14px]">
-                        <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <CreditCard size={18} className="text-gray-400" />
-                            {t('Payment Summary')}
-                        </h3>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                                <span>{t('Item Total')}</span>
-                                <span className="font-medium text-gray-900 dark:text-white">₹{Number(subtotal).toFixed(0)}</span>
-                            </div>
-                            <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                                <span>{t('Delivery Fee')}</span>
-                                {Number(deliveryCharge) <= 0 ? (
-                                    <div className="text-right">
-                                        <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">{t('FREE')}</span>
-                                        <p className="text-[11px] text-amber-700 dark:text-amber-400 font-bold flex items-center justify-end gap-1.5">
-                                            <CartoonCoin size={17} /> <span>{t('Coin Applied')}</span>
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <span className="font-medium text-gray-900 dark:text-white">₹{Number(deliveryCharge).toFixed(0)}</span>
-                                )}
-                            </div>
-                            {order.discount > 0 && (
-                                <div className="flex justify-between text-green-600">
-                                    <span>{t('Discount')}</span>
-                                    <span>-₹{Number(order.discount).toFixed(0)}</span>
-                                </div>
-                            )}
-                            <div className="pt-2.5 border-t border-gray-100 dark:border-gray-700 mt-2.5 flex justify-between items-end">
-                                <span className="font-bold text-gray-900 dark:text-white">{t('Total to Collect')}</span>
-                                <span className="text-2xl font-black text-gray-900 dark:text-white">
-                                    ₹{Number(totalAmount).toFixed(0)}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {/* Bottom Action Area with safe mobile footer padding */}
-                <div className="p-4 pb-14 sm:pb-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
-                    {isOutForDelivery ? (
-                        <SwipeActionButton
-                            variant="green"
-                            label={t('DELIVERED')}
-                            loadingLabel={t('Delivering...')}
-                            isLoading={isActionLoading}
-                            heightClass="h-[68px] sm:h-[72px]"
-                            knobSizeClass="w-[56px] h-[56px] sm:w-[60px] sm:h-[60px]"
-                            onSuccess={handleMainSwipeAction}
-                        />
-                    ) : isProcessing ? (
-                        <div className="space-y-2.5 w-full">
-                            <SwipeActionButton
-                                variant="yellow"
-                                label={t('ACCEPT')}
-                                loadingLabel={t('Accepting...')}
-                                isLoading={isActionLoading}
-                                heightClass="h-[60px] sm:h-[64px]"
-                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
-                                onSuccess={handleMainSwipeAction}
-                            />
-                            {/* Cancel Button styled like Accept button in Grey */}
-                            <SwipeActionButton
-                                variant="gray"
-                                label={t('CANCEL')}
-                                loadingLabel={t('Cancelling...')}
-                                isLoading={isCancelling}
-                                heightClass="h-[60px] sm:h-[64px]"
-                                knobSizeClass="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]"
-                                autoReset={true}
-                                onSuccess={handleConfirmCancel}
-                            />
-                        </div>
-                    ) : isDelivered ? (
-                        <div className="relative overflow-hidden w-full py-4 rounded-full bg-[#00C988] text-white font-black text-sm flex items-center justify-center gap-2 shadow-md select-none">
-                            {/* Animated sheen shine effect */}
-                            <motion.div
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"
-                                animate={{ x: ['-100%', '200%'] }}
-                                transition={{
-                                    repeat: Infinity,
-                                    duration: 2,
-                                    ease: 'easeInOut',
-                                    repeatDelay: 0.5
-                                }}
-                            />
-                            <CheckCircle size={20} className="text-white stroke-[2.8] relative z-10" />
-                            <span className="relative z-10">{t('Delivered Successfully')}</span>
-                        </div>
-                    ) : (
-                        <div className="w-full py-3.5 rounded-full text-center text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                            {t(order.status)}
-                        </div>
-                    )}
-                </div>
-
-
-            </motion.div>
-        </motion.div>
-        </>
-    );
-};
+    };
 
 export default IncomingOrderModal;

@@ -79,6 +79,7 @@ export const useUpdateCategory = () => {
                 localStorage.removeItem(CAT_CACHE_KEY);
             } catch (e) {}
             queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+            queryClient.invalidateQueries({ queryKey: ['products'] });
         }
     });
 };

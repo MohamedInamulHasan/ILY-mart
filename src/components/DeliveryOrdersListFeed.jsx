@@ -63,8 +63,15 @@ const DeliveryOrdersListFeed = ({
         .filter((o) => {
             if (!['Processing', 'Pending', 'Order Placed', 'Delivered', 'Completed', 'Cancelled'].includes(o.status)) return false;
             if (!searchQuery) return true;
-            const q = searchQuery.toLowerCase().trim();
-            const orderId = String(o._id || o.id).toLowerCase();
+            const rawQ = searchQuery.trim();
+            if (!rawQ) return true;
+            const q = rawQ.toLowerCase();
+            const cleanQ = q.replace(/^#+/, '').replace(/^order\s*(id)?\s*[:#-]?\s*/i, '').trim();
+            if (!cleanQ) return true; // Typing '#' keeps all orders visible
+
+            const orderId = String(o._id || o.id || '').toLowerCase();
+            const orderIdShort = orderId.slice(-6);
+            const fullDisplayId = `#${orderIdShort}`;
             const customerName = (o.shippingAddress?.name || o.user || '').toLowerCase();
             const customerMobile = (o.shippingAddress?.mobile || '').toLowerCase();
             const status = (o.status || '').toLowerCase();
@@ -72,17 +79,20 @@ const DeliveryOrdersListFeed = ({
             const matchesProcess = (q.includes('process') || q.includes('pend')) && ['processing', 'pending', 'order placed'].includes(status);
             const matchesCancelled = (q.includes('cancel')) && status === 'cancelled';
             const matchesDelivered = (q.includes('deliver') || q.includes('complete')) && ['delivered', 'completed'].includes(status);
-            const matchesStatusDirect = status.includes(q);
+            const matchesStatusDirect = status.includes(q) || status.includes(cleanQ);
 
             return (
-                orderId.includes(q) ||
-                customerName.includes(q) ||
-                customerMobile.includes(q) ||
+                orderId.includes(cleanQ) ||
+                orderIdShort.includes(cleanQ) ||
+                fullDisplayId.includes(q) ||
+                cleanQ.includes(orderIdShort) ||
+                customerName.includes(cleanQ) ||
+                customerMobile.includes(cleanQ) ||
                 matchesStatusDirect ||
                 matchesProcess ||
                 matchesCancelled ||
                 matchesDelivered ||
-                o.items?.some(item => (item.name || '').toLowerCase().includes(q))
+                o.items?.some(item => (item.name || '').toLowerCase().includes(cleanQ))
             );
         })
         .slice()

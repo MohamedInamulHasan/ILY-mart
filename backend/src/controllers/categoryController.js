@@ -128,6 +128,80 @@ export const updateCategory = async (req, res, next) => {
             updateFields.mode = updateFields.isPreview ? 'preview' : 'normal';
         }
 
+        // Subcategory rename cascade to all products
+        if (Array.isArray(updateFields.subcategories) && Array.isArray(category.subcategories)) {
+            const oldSubs = category.subcategories;
+            const newSubs = updateFields.subcategories;
+            const renames = req.body.subcategoryRenames || {};
+
+            // If explicit renames not passed, detect positional or single-item renames
+            if (Object.keys(renames).length === 0) {
+                if (oldSubs.length === newSubs.length) {
+                    for (let i = 0; i < oldSubs.length; i++) {
+                        if (oldSubs[i] && newSubs[i] && oldSubs[i] !== newSubs[i] && !oldSubs.includes(newSubs[i])) {
+                            renames[oldSubs[i]] = newSubs[i];
+                        }
+                    }
+                } else {
+                    const removed = oldSubs.filter(s => !newSubs.includes(s));
+                    const added = newSubs.filter(s => !oldSubs.includes(s));
+                    if (removed.length === 1 && added.length === 1) {
+                        renames[removed[0]] = added[0];
+                    }
+                }
+            }
+
+            if (Object.keys(renames).length > 0) {
+                try {
+                    const Product = (await import('../models/Product.js')).default;
+                    const catNames = [oldName, updateFields.name || oldName].filter(Boolean);
+                    const catRegexes = catNames.map(n => new RegExp(`^${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'));
+                    const catFilter = { $in: [...catNames, ...catRegexes] };
+
+                    for (const [fromSub, toSub] of Object.entries(renames)) {
+                        if (!fromSub || !toSub || fromSub === toSub) continue;
+
+                        console.log(`🔄 Cascading subcategory rename in "${oldName}": "${fromSub}" → "${toSub}"`);
+
+                        // 1. Update products where subcategory is an array containing fromSub
+                        await Product.updateMany(
+                            {
+                                category: catFilter,
+                                subcategory: { $elemMatch: { $eq: fromSub } }
+                            },
+                            {
+                                $set: { "subcategory.$[elem]": toSub }
+                            },
+                            {
+                                arrayFilters: [{ elem: fromSub }]
+                            }
+                        );
+
+                        // 2. Also update products where subcategory might be stored as a string
+                        await Product.updateMany(
+                            {
+                                category: catFilter,
+                                subcategory: { $type: "string", $eq: fromSub }
+                            },
+                            {
+                                $set: { subcategory: [toSub] }
+                            }
+                        );
+
+                        // 3. Update subcategoryImages in updateFields if present
+                        if (updateFields.subcategoryImages && updateFields.subcategoryImages[fromSub]) {
+                            updateFields.subcategoryImages[toSub] = updateFields.subcategoryImages[fromSub];
+                            delete updateFields.subcategoryImages[fromSub];
+                        }
+                    }
+
+                    getIO().emit('products:updated');
+                } catch (subErr) {
+                    console.error('Failed to cascade subcategory rename (non-fatal):', subErr.message);
+                }
+            }
+        }
+
         invalidateCategoryCache();
         category = await Category.findByIdAndUpdate(
             req.params.id,

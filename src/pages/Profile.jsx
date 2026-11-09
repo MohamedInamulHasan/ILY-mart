@@ -139,6 +139,16 @@ const Profile = () => {
             const token = data?.token || data?.authToken || res?.token;
             const userData = data?.user || data?.data || data;
             if (token) {
+                // Backup current user/guest session so delivery boy logout returns to normal user pages without logging out
+                const prevToken = localStorage.getItem('authToken');
+                const prevUser = localStorage.getItem('userInfo');
+                if (prevToken && (!user?.role?.includes('delivery_boy') || prevToken !== token)) {
+                    if (!localStorage.getItem('customer_backup_token')) {
+                        localStorage.setItem('customer_backup_token', prevToken);
+                        if (prevUser) localStorage.setItem('customer_backup_user', prevUser);
+                    }
+                }
+
                 localStorage.removeItem('delivery_boy_logged_out');
                 localStorage.setItem('delivery_session_active', 'true');
                 localStorage.setItem('authToken', token);
@@ -204,10 +214,6 @@ const Profile = () => {
     };
 
     const isDeliveryBoy = useMemo(() => {
-        const activeUser = userProfile?.data || userProfile || user || authUser;
-        const mobile = (activeUser?.mobile || user?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
-        // Delivery boy must have a valid phone number and explicit delivery_boy role on profile
-        if (!mobile) return false;
         return Boolean(
             hasDeliveryRole(userProfile?.data) ||
             hasDeliveryRole(userProfile) ||
@@ -216,7 +222,7 @@ const Profile = () => {
         );
     }, [userProfile, user, authUser]);
 
-    const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy) });
+    const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy || isAdmin) });
     const pendingOrdersCount = useMemo(() => {
         if (!isDeliveryBoy) return 0;
         const list = Array.isArray(allOrders) ? allOrders : (allOrders?.data || []);
@@ -352,7 +358,10 @@ const Profile = () => {
                                     title={t('Admin Dashboard')} 
                                 />
                             )}
-                            {isDeliveryBoy && !isAdmin && (
+                            {isAdmin && isDeliveryBoy && (
+                                <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5" />
+                            )}
+                            {isDeliveryBoy && (
                                 <MenuLink 
                                     onClick={() => {
                                         setDeliveryAuthId(authUser?.deliveryId || user?.deliveryId || '');

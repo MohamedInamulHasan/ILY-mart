@@ -20,8 +20,10 @@ const Orders = () => {
 );
     const navigate = useNavigate();
     const { user } = useAuth();
+    const roles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
+    const isAdmin = roles.includes('admin');
     const currentMobile = user?.mobile || user?.phone || '';
-    const { data: orders = [], isLoading: loadingOrders } = useOrders({ myOrders: true, mobile: currentMobile });
+    const { data: orders = [], isLoading: loadingOrders } = useOrders(isAdmin ? {} : { myOrders: true, mobile: currentMobile });
     const { cartCount } = useCart();
     const { data: stores = [] } = useStores();
     const { mutate: deleteOrder } = useDeleteOrder();
@@ -46,24 +48,40 @@ const Orders = () => {
     
 
     const filteredOrders = orders.filter(order => {
-        if (!searchQuery.trim()) return true;
-        const query = searchQuery.toLowerCase().trim();
-        const cleanQ = query.replace(/^#/, '').trim();
+        const rawTrimmed = (searchQuery || '').trim();
+        if (!rawTrimmed) return true;
+
+        const query = rawTrimmed.toLowerCase();
+        // Remove leading '#' or 'order' prefix if present
+        const cleanQ = query.replace(/^#+/, '').replace(/^order\s*(id)?\s*[:#-]?\s*/i, '').trim();
+
+        // If user typed only '#', keep all orders visible so typing an ID doesn't show "No orders found"
+        if (!cleanQ) return true;
+
         const orderId = String(order._id || order.id || '').toLowerCase();
         const orderIdShort = orderId.slice(-6);
+        const fullDisplayId = `#${orderIdShort}`;
+        const customOrderNum = String(order.orderNumber || order.orderId || '').toLowerCase();
+        const customerName = (order.shippingAddress?.name || order.user?.name || '').toLowerCase();
+        const customerMobile = (order.shippingAddress?.mobile || order.shippingAddress?.phone || '').toLowerCase();
         const status = (order.status || '').toLowerCase();
 
-        const matchesId = Boolean(cleanQ && (
+        const matchesId = (
             orderId.includes(cleanQ) ||
             orderIdShort.includes(cleanQ) ||
-            query.includes(orderIdShort)
-        ));
+            customOrderNum.includes(cleanQ) ||
+            fullDisplayId.includes(query) ||
+            cleanQ.includes(orderIdShort) ||
+            query.includes(orderIdShort) ||
+            customerName.includes(cleanQ) ||
+            customerMobile.includes(cleanQ)
+        );
 
         const matchesProcess = (query.includes('process') || query.includes('pend')) && ['processing', 'pending', 'order placed'].includes(status);
         const matchesCancelled = (query.includes('cancel')) && status === 'cancelled';
         const matchesDelivered = (query.includes('deliver') || query.includes('complete')) && ['delivered', 'completed'].includes(status);
         const matchesAccepted = (query.includes('accept') || query.includes('ship')) && ['accepted', 'shipped', 'out for delivery'].includes(status);
-        const matchesStatusDirect = status.includes(query);
+        const matchesStatusDirect = status.includes(query) || status.includes(cleanQ);
 
         return (
             matchesId ||
@@ -75,7 +93,7 @@ const Orders = () => {
             order.items?.some(item => {
                 const itemName = (item.name || item.adTitle || '').toLowerCase();
                 const storeName = (item.storeName || item.storeId?.name || getStoreName(item.storeId, stores) || '').toLowerCase();
-                return itemName.includes(query) || storeName.includes(query);
+                return itemName.includes(query) || itemName.includes(cleanQ) || storeName.includes(query) || storeName.includes(cleanQ);
             })
         );
     });
@@ -160,8 +178,8 @@ const Orders = () => {
                             </button>
                         </div>
                         <div className="flex flex-col text-center">
-                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{t('My Orders')}</h1>
-                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Track packages')}</p>
+                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{isAdmin ? t('All Orders') : t('My Orders')}</h1>
+                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{isAdmin ? t('Manage & track all orders') : t('Track packages')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
                             <button 
@@ -279,6 +297,11 @@ const Orders = () => {
                                                     <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
                                                         {formatOrderDateTime(order.createdAt || order.date)}
                                                     </p>
+                                                    {isAdmin && (order.shippingAddress?.name || order.shippingAddress?.mobile) && (
+                                                        <p className="text-[11px] font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] truncate mt-0.5">
+                                                            {order.shippingAddress?.name || t('Customer')}{order.shippingAddress?.mobile ? ` • ${order.shippingAddress.mobile}` : ''}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 flex-shrink-0">

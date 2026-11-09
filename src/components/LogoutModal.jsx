@@ -3,8 +3,26 @@ import { X, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 
-const LogoutModal = ({ isOpen, onClose, onConfirm, isLoggingOut = false }) => {
+const LogoutModal = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    isLoggingOut = false,
+    title,
+    message,
+    subtitle,
+    confirmText,
+    cancelText
+}) => {
     const { t } = useLanguage();
+
+    const displayTitle = title || t('Logout');
+    const displayMessage = message || t('Are you sure want to Logout?');
+    const displaySubtitle = subtitle !== undefined ? subtitle : (
+        <>{t('Thank you and see you again!')} <span className="text-red-500">❤️</span></>
+    );
+    const displayConfirmText = isLoggingOut ? t('Logging out...') : (confirmText || t('Yes, Logout'));
+    const displayCancelText = cancelText || t('Cancel');
 
     return (
         <AnimatePresence>
@@ -31,7 +49,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm, isLoggingOut = false }) => {
                         {/* Header */}
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between border-b border-gray-50 dark:border-gray-800">
                             <h3 className="text-xl font-bold text-red-500 tracking-tight ml-auto mr-auto pl-6">
-                                {t('Logout')}
+                                {displayTitle}
                             </h3>
                             <button
                                 type="button"
@@ -46,11 +64,13 @@ const LogoutModal = ({ isOpen, onClose, onConfirm, isLoggingOut = false }) => {
                         {/* Content */}
                         <div className="px-5 py-4 pb-2 flex flex-col items-center">
                             <h2 className="text-[22px] font-bold text-gray-900 dark:text-white text-center mb-1.5 leading-tight">
-                                {t('Are you sure want to Logout?')}
+                                {displayMessage}
                             </h2>
-                            <p className="text-sm font-medium text-gray-400 dark:text-gray-500 text-center mb-4 flex items-center gap-2">
-                                {t('Thank you and see you again!')} <span className="text-red-500">❤️</span>
-                            </p>
+                            {displaySubtitle && (
+                                <p className="text-sm font-medium text-gray-400 dark:text-gray-500 text-center mb-4 flex items-center gap-2">
+                                    {displaySubtitle}
+                                </p>
+                            )}
 
                             {/* Buttons */}
                             <div className="flex flex-col gap-2 w-full">
@@ -60,7 +80,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm, isLoggingOut = false }) => {
                                     disabled={isLoggingOut}
                                     className="w-full py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isLoggingOut ? t('Logging out...') : t('Yes, Logout')}
+                                    {displayConfirmText}
                                 </button>
                                 <button
                                     type="button"
@@ -68,7 +88,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm, isLoggingOut = false }) => {
                                     disabled={isLoggingOut}
                                     className="w-full py-3 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 rounded-full font-bold text-base border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    {t('Cancel')}
+                                    {displayCancelText}
                                 </button>
                             </div>
                         </div>

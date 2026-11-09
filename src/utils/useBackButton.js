@@ -102,21 +102,23 @@ export const useBackButton = () => {
 
             const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
 
-            // DELIVERY BOY STRICT NAVIGATION: Never go to customer pages on back click
+            // DELIVERY BOY STRICT NAVIGATION: Never go to customer pages on back click (even on double click)
             const roles = getUserRoles(userRef.current);
             const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
-            if (isDeliveryBoy) {
+            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+
+            if ((isDeliveryBoy && isDeliverySessionActive) || (isDeliverySessionActive && currentPath.startsWith('/admin'))) {
                 // If viewing an active order, back button returns to the delivery panel (/admin)
                 if (currentPath.startsWith('/admin/delivery-order')) {
                     localStorage.setItem('active_delivery_stay', 'false');
                     navigate('/admin', { replace: true });
                     return true;
                 }
-                // If on delivery panel root, do not navigate back to customer pages; minimize app
-                if (currentPath === '/admin') {
+                // If on delivery panel root, stay locked to /admin. Minimize native app on back, never navigate to customer pages
+                if (currentPath === '/admin' || currentPath === '/admin/') {
                     return false;
                 }
-                // If on any other page, immediately navigate to /admin
+                // If on any other page while delivery session is active, strictly lock back to /admin
                 navigate('/admin', { replace: true });
                 return true;
             }

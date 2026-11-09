@@ -20,7 +20,8 @@ const SwipeActionButton = ({
     variant = 'green', // 'yellow' | 'amber' | 'blue' | 'sky' | 'green' | 'red'
     autoReset = false,
     className = '',
-    knobIcon = null
+    knobIcon = null,
+    allowTap = false
 }) => {
     const trackRef = useRef(null);
     const knobRef = useRef(null);
@@ -29,6 +30,24 @@ const SwipeActionButton = ({
     const [isCompleted, setIsCompleted] = useState(false);
     const [isNearEnd, setIsNearEnd] = useState(false);
     const [isSuccessState, setIsSuccessState] = useState(false);
+
+    const handleTapAction = () => {
+        if (!allowTap || isLoading || isCompleted || isSuccessState || isDragging) return;
+        setIsCompleted(true);
+        setIsSuccessState(true);
+        setTimeout(() => {
+            if (onSuccess) {
+                onSuccess();
+            }
+            if (autoReset) {
+                setTimeout(() => {
+                    setIsCompleted(false);
+                    setIsSuccessState(false);
+                    setIsNearEnd(false);
+                }, 400);
+            }
+        }, 220);
+    };
 
     // Color definitions based on variant
     const getColors = () => {
@@ -184,7 +203,8 @@ const SwipeActionButton = ({
     return (
         <div
             ref={trackRef}
-            className={`relative w-full ${heightClass} rounded-full ${colors.track} ${colors.text || "text-white"} flex items-center p-1 overflow-hidden select-none shadow-xs ${className}`}
+            onClick={handleTapAction}
+            className={`relative w-full ${heightClass} rounded-full ${colors.track} ${colors.text || "text-white"} flex items-center p-1 overflow-hidden select-none shadow-xs ${allowTap ? 'cursor-pointer active:scale-[0.99] transition-transform' : ''} ${className}`}
             style={{ touchAction: 'pan-y' }}
         >
             {/* Continuous sliding light sheen animation only for non-enable/disable buttons */}
