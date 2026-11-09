@@ -1066,6 +1066,87 @@ const Checkout = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* GPS Error Modal */}
+            <AnimatePresence>
+                {gpsError && (
+                    <div className="fixed inset-0 z-[99998] flex items-end sm:items-center justify-center p-4 pb-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/50"
+                            onClick={() => setGpsError(null)}
+                        />
+                        <motion.div
+                            initial={{ y: 60, opacity: 0, scale: 0.95 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            exit={{ y: 60, opacity: 0, scale: 0.95 }}
+                            className="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-2xl border border-gray-100 dark:border-gray-800 text-center z-10"
+                        >
+                            {/* Icon */}
+                            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+                                {gpsError.code === 'PERMISSION_DENIED'
+                                    ? <MapPin size={30} className="text-red-500" />
+                                    : gpsError.code === 'TIMEOUT'
+                                    ? <Navigation size={30} className="text-red-500" />
+                                    : <AlertCircle size={30} className="text-red-500" />
+                                }
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1.5">
+                                {gpsError.code === 'LOCATION_DISABLED'
+                                    ? (language === 'ta' ? 'GPS முடக்கப்பட்டுள்ளது' : 'Location is Turned OFF')
+                                    : gpsError.code === 'PERMISSION_DENIED'
+                                    ? (language === 'ta' ? 'இருப்பிட அனுமதி மறுக்கப்பட்டது' : 'Location Permission Denied')
+                                    : gpsError.code === 'TIMEOUT'
+                                    ? (language === 'ta' ? 'GPS சமிக்ஞை நேரம் முடிந்தது' : 'GPS Signal Timed Out')
+                                    : (language === 'ta' ? 'இருப்பிட பிழை' : 'Location Error')
+                                }
+                            </h3>
+
+                            {/* Message */}
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">
+                                {gpsError.code === 'LOCATION_DISABLED'
+                                    ? (language === 'ta'
+                                        ? 'உங்கள் சாதனத்தில் GPS/இட சேவை முடக்கப்பட்டுள்ளது. தயவுசெய்து அதை இயக்கி மீண்டும் முயற்சிக்கவும்.'
+                                        : 'GPS / Location is turned OFF on your device. Please turn ON Location in settings and try again.')
+                                    : gpsError.code === 'TIMEOUT'
+                                    ? (language === 'ta'
+                                        ? 'திறந்த வெளியில் நின்று மீண்டும் முயற்சிக்கவும், அல்லது கைமுறையாக முகவரியை உள்ளிடவும்.'
+                                        : 'Move to open sky & try again, or type your address manually.')
+                                    : gpsError.code === 'PERMISSION_DENIED'
+                                    ? (language === 'ta'
+                                        ? 'அமைப்புகளில் இட அணுகலை அனுமதிக்கவும் அல்லது கைமுறையாக முகவரியை உள்ளிடவும்.'
+                                        : 'Allow location access in Settings or type your address manually.')
+                                    : (gpsError.text || (language === 'ta'
+                                        ? 'GPS கண்டறிய இயலவில்லை. கைமுறையாக முகவரியை உள்ளிடவும்.'
+                                        : 'GPS could not be detected. Please enter your address manually.'))
+                                }
+                            </p>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setGpsError(null)}
+                                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-sm active:scale-95 transition-transform"
+                                >
+                                    {language === 'ta' ? 'சரி' : 'OK'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setGpsError(null); handleDetectLocation(); }}
+                                    className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm active:scale-95 transition-transform"
+                                >
+                                    {language === 'ta' ? 'மீண்டும் முயற்சி' : 'Try Again'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

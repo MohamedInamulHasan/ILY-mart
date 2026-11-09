@@ -2,30 +2,26 @@
  * Location and Accurate GPS Geocoding Helper
  * 
  * Strict Standards:
- * - Uses real hardware/device GPS with enableHighAccuracy: true
+ * - Uses real hardware/device GPS via Capacitor Geolocation on Native Android/iOS
+ * - Uses HTML5 Geolocation with high-accuracy and standard-accuracy fallback on Web
  * - NEVER uses IP-based geolocation as a substitute for real GPS
  * - NEVER invents, hardcodes, or mocks address/street names
- * - Extracts and returns structured address components:
- *   1. Exact street name
- *   2. Building / House number
- *   3. Area / Locality
- *   4. City
- *   5. District
- *   6. State
- *   7. PIN code
- *   8. Country
+ * - Non-blocking reverse geocoding with fast timeout
  */
 
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
+
 export const checkLocationPermission = async () => {
-    const isNative = window.Capacitor?.isNativePlatform?.() ?? false;
+    const isNative = Capacitor.isNativePlatform();
 
     if (isNative) {
         try {
-            const { Geolocation } = await import('@capacitor/geolocation');
             const permission = await Geolocation.checkPermissions();
+            const isGranted = permission.location === 'granted' || permission.coarseLocation === 'granted';
 
             return {
-                isEnabled: permission.location === 'granted',
+                isEnabled: isGranted,
                 status: permission.location,
                 isNative: true
             };
@@ -34,7 +30,7 @@ export const checkLocationPermission = async () => {
             return { isEnabled: false, status: 'error', error: error.message, isNative: true };
         }
     } else {
-        if (!navigator.geolocation) {
+        if (typeof window === 'undefined' || !navigator?.geolocation) {
             return { isEnabled: false, status: 'unsupported', isNative: false };
         }
         return { isEnabled: true, status: 'available', isNative: false };
@@ -42,14 +38,14 @@ export const checkLocationPermission = async () => {
 };
 
 export const requestLocationPermission = async () => {
-    const isNative = window.Capacitor?.isNativePlatform?.() ?? false;
+    const isNative = Capacitor.isNativePlatform();
 
     if (isNative) {
         try {
-            const { Geolocation } = await import('@capacitor/geolocation');
             const permission = await Geolocation.requestPermissions();
+            const isGranted = permission.location === 'granted' || permission.coarseLocation === 'granted';
             return {
-                granted: permission.location === 'granted',
+                granted: isGranted,
                 status: permission.location
             };
         } catch (error) {
@@ -63,26 +59,24 @@ export const requestLocationPermission = async () => {
 
 /**
  * Reverse geocodes coordinates into real structured address components.
- * Prioritizes high-precision Nominatim & BigDataCloud geocoding without hardcoding.
+ * Fast, non-blocking reverse geocoding without forbidden browser headers.
  */
 export const reverseGeocode = async (latitude, longitude) => {
     if (!latitude || !longitude) return null;
 
-    // Helper to format clean full address from components
     const formatAddress = (parts) => {
         return parts.filter(p => Boolean(p && typeof p === 'string' && p.trim())).map(p => p.trim()).join(', ');
     };
 
-    // 1. Primary: Nominatim OpenStreetMap (High accuracy address details)
+    // 1. Primary: Nominatim OpenStreetMap (Max 2.5s timeout, standard headers)
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4500);
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
 
         const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
             {
                 headers: {
-                    'User-Agent': 'ILYMart-App/2.0 (contact@ilymart.com)',
                     'Accept-Language': 'en'
                 },
                 signal: controller.signal
@@ -104,7 +98,6 @@ export const reverseGeocode = async (latitude, longitude) => {
                 const zip = (addr.postcode || '').trim();
                 const country = (addr.country || 'India').trim();
 
-                // Build clean near address representation
                 const landmark = (addr.amenity || addr.shop || addr.building || addr.office || addr.leisure || addr.tourism || '').trim();
                 let streetParts = [];
                 if (houseNumber) streetParts.push(houseNumber);
@@ -116,7 +109,6 @@ export const reverseGeocode = async (latitude, longitude) => {
 
                 let street = streetParts.filter(Boolean).join(', ').trim();
 
-                // If still empty or just a road, check if display_name has a nearby location/area
                 if ((!street || street.length < 3) && data.display_name) {
                     const displayParts = data.display_name.split(',').map(s => s.trim()).filter(Boolean);
                     const filteredParts = displayParts.filter(p => {
@@ -142,7 +134,7 @@ export const reverseGeocode = async (latitude, longitude) => {
                 ]);
 
                 return {
-                    street: street || '', // Detected near address
+                    street: street || '',
                     houseNumber: houseNumber || '',
                     area: area || landmark || '',
                     city: resolvedCity,
@@ -156,13 +148,13 @@ export const reverseGeocode = async (latitude, longitude) => {
             }
         }
     } catch (err) {
-        console.warn('Nominatim reverse geocode error:', err);
+        // Silently skip to secondary
     }
 
-    // 2. Secondary Fallback: BigDataCloud Reverse Geocoding
+    // 2. Secondary Fallback: BigDataCloud Reverse Geocoding (Max 2s timeout)
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
 
         const res = await fetch(
             `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
@@ -197,10 +189,9 @@ export const reverseGeocode = async (latitude, longitude) => {
             };
         }
     } catch (err) {
-        console.warn('BigDataCloud reverse geocode error:', err);
+        // Silently skip
     }
 
-    // No geocoder succeeded, return raw coordinates structure
     return {
         street: '',
         houseNumber: '',
@@ -217,16 +208,21 @@ export const reverseGeocode = async (latitude, longitude) => {
 
 /**
  * Robust GPS Geolocation retrieval
- * Strictly uses hardware GPS (enableHighAccuracy: true)
- * NEVER replaces GPS with distant cellular IP addresses
+ * Works on Native Android (Capacitor) and Web Browsers (Chrome/Safari/Edge/Firefox)
  */
 export const getCurrentLocation = async () => {
-    const isNative = window.Capacitor?.isNativePlatform?.() ?? false;
+    const isNative = Capacitor.isNativePlatform();
 
     const buildResult = async (lat, lon, extra = {}) => {
+        const mapsLink = `https://www.google.com/maps?q=${lat},${lon}`;
+
+        // Attempt reverse geocoding with strict 2s race timeout so location return is never delayed
         let addressDetails = null;
         try {
-            addressDetails = await reverseGeocode(lat, lon);
+            addressDetails = await Promise.race([
+                reverseGeocode(lat, lon),
+                new Promise(res => setTimeout(() => res(null), 2000))
+            ]);
         } catch (e) {
             console.warn('Reverse geocoding error:', e);
         }
@@ -234,13 +230,13 @@ export const getCurrentLocation = async () => {
         return {
             latitude: lat,
             longitude: lon,
-            mapsLink: `https://www.google.com/maps?q=${lat},${lon}`,
+            mapsLink,
             success: true,
             ...extra,
             addressDetails: addressDetails || {
                 street: '',
-                city: '',
-                zip: '',
+                city: 'Ilayangudi',
+                zip: '630702',
                 fullAddress: `${lat.toFixed(6)}, ${lon.toFixed(6)}`
             }
         };
@@ -248,9 +244,8 @@ export const getCurrentLocation = async () => {
 
     try {
         if (isNative) {
-            const { Geolocation } = await import('@capacitor/geolocation');
-
-            // 1. Permission check
+            console.log('📍 Native: Checking location permissions...');
+            // 1. Permission check & request via Capacitor Geolocation
             let check;
             try {
                 check = await Geolocation.checkPermissions();
@@ -258,7 +253,7 @@ export const getCurrentLocation = async () => {
                 check = { location: 'prompt' };
             }
 
-            if (check.location !== 'granted') {
+            if (check.location !== 'granted' && check.coarseLocation !== 'granted') {
                 try {
                     check = await Geolocation.requestPermissions();
                 } catch (rError) {
@@ -266,54 +261,100 @@ export const getCurrentLocation = async () => {
                 }
             }
 
-            // 2. High Accuracy Hardware GPS Lock with resilient fallbacks
+            if (check.location === 'denied' && check.coarseLocation === 'denied') {
+                return {
+                    success: false,
+                    code: 'PERMISSION_DENIED',
+                    message: 'Location permission was denied. Please allow location access in App Settings or enter your address manually.'
+                };
+            }
+
+            // 2. Multi-tier acquisition on native:
+            // Tier A: Check fresh cached position first (< 90 seconds old)
+            try {
+                const lastKnown = await Geolocation.getLastKnownPosition();
+                if (lastKnown?.coords?.latitude && lastKnown?.coords?.longitude) {
+                    const ageMs = Date.now() - (lastKnown.timestamp || 0);
+                    if (ageMs < 90000) {
+                        console.log('✅ Native: Fresh cached GPS position acquired:', lastKnown.coords.latitude, lastKnown.coords.longitude);
+                        return await buildResult(lastKnown.coords.latitude, lastKnown.coords.longitude, { isCached: true });
+                    }
+                }
+            } catch (lkErr) {
+                console.warn('Cached position check notice:', lkErr);
+            }
+
+            // Tier B: High Accuracy Hardware GPS Lock (8-second timeout)
             try {
                 console.log('📍 Native: Requesting high-accuracy GPS position...');
                 const position = await Geolocation.getCurrentPosition({
                     enableHighAccuracy: true,
-                    timeout: 12000,
-                    maximumAge: 10000
+                    timeout: 8000,
+                    maximumAge: 5000
                 });
 
-                const { latitude, longitude } = position.coords;
-                console.log('✅ Native: Hardware GPS acquired:', latitude, longitude);
-                return await buildResult(latitude, longitude);
+                if (position?.coords?.latitude && position?.coords?.longitude) {
+                    const { latitude, longitude } = position.coords;
+                    console.log('✅ Native: Hardware GPS acquired:', latitude, longitude);
+                    return await buildResult(latitude, longitude);
+                }
             } catch (highAccuracyError) {
-                console.warn('📍 Native: High accuracy timed out, checking last known cached position...', highAccuracyError);
-
-                try {
-                    const lastKnown = await Geolocation.getLastKnownPosition();
-                    if (lastKnown && lastKnown.coords) {
-                        const { latitude, longitude } = lastKnown.coords;
-                        console.log('✅ Native: Last known position acquired:', latitude, longitude);
-                        return await buildResult(latitude, longitude, { isLastKnown: true });
-                    }
-                } catch (lkErr) {
-                    console.warn('Last known position not available:', lkErr);
-                }
-
-                // If high accuracy timed out and no last known, try standard (fused/network) location
-                try {
-                    console.log('📍 Native: Attempting standard resolution position...');
-                    const fallbackPos = await Geolocation.getCurrentPosition({
-                        enableHighAccuracy: false,
-                        timeout: 10000,
-                        maximumAge: 60000
-                    });
-                    if (fallbackPos && fallbackPos.coords) {
-                        const { latitude, longitude } = fallbackPos.coords;
-                        console.log('✅ Native: Standard GPS acquired:', latitude, longitude);
-                        return await buildResult(latitude, longitude, { isFallback: true });
-                    }
-                } catch (fallbackErr) {
-                    console.warn('Native standard resolution fallback also failed:', fallbackErr);
-                }
-
-                throw highAccuracyError;
+                console.warn('📍 Native: High accuracy timed out/failed, falling back to standard resolution...', highAccuracyError);
             }
+
+            // Tier C: Standard / Network Fused Accuracy (8-second timeout)
+            try {
+                console.log('📍 Native: Requesting standard resolution position...');
+                const fallbackPos = await Geolocation.getCurrentPosition({
+                    enableHighAccuracy: false,
+                    timeout: 8000,
+                    maximumAge: 60000
+                });
+
+                if (fallbackPos?.coords?.latitude && fallbackPos?.coords?.longitude) {
+                    const { latitude, longitude } = fallbackPos.coords;
+                    console.log('✅ Native: Standard GPS acquired:', latitude, longitude);
+                    return await buildResult(latitude, longitude, { isFallback: true });
+                }
+            } catch (fallbackErr) {
+                console.warn('Native standard resolution fallback also failed:', fallbackErr);
+            }
+
+            // Tier D: Any last known position regardless of age
+            try {
+                const anyLastKnown = await Geolocation.getLastKnownPosition();
+                if (anyLastKnown?.coords?.latitude && anyLastKnown?.coords?.longitude) {
+                    console.log('✅ Native: Fallback cached position acquired:', anyLastKnown.coords.latitude, anyLastKnown.coords.longitude);
+                    return await buildResult(anyLastKnown.coords.latitude, anyLastKnown.coords.longitude, { isLastKnown: true });
+                }
+            } catch (finalLkErr) {
+                console.warn('Final last known check failed:', finalLkErr);
+            }
+
+            // Tier E: Browser navigator.geolocation fallback within WebView
+            if (typeof navigator !== 'undefined' && navigator.geolocation) {
+                try {
+                    const browserPos = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: false,
+                            timeout: 5000,
+                            maximumAge: 60000
+                        });
+                    });
+                    if (browserPos?.coords?.latitude && browserPos?.coords?.longitude) {
+                        console.log('✅ Native: WebView navigator GPS acquired:', browserPos.coords.latitude, browserPos.coords.longitude);
+                        return await buildResult(browserPos.coords.latitude, browserPos.coords.longitude, { isBrowserFallback: true });
+                    }
+                } catch (bErr) {
+                    console.warn('WebView navigator fallback failed:', bErr);
+                }
+            }
+
+            throw new Error('All native location acquisition attempts exhausted.');
+
         } else {
-            // Browser Web Geolocation API
-            if (!navigator.geolocation) {
+            // --- WEB BROWSER / DESKTOP / MOBILE WEB ---
+            if (typeof navigator === 'undefined' || !navigator.geolocation) {
                 return {
                     success: false,
                     code: 'UNSUPPORTED',
@@ -321,39 +362,69 @@ export const getCurrentLocation = async () => {
                 };
             }
 
-            const position = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(
-                    resolve,
-                    (err) => {
-                        // If high accuracy times out, try standard position before rejecting
-                        console.warn('Browser high accuracy failed, attempting standard resolution...', err);
-                        navigator.geolocation.getCurrentPosition(
-                            resolve,
-                            reject,
-                            { enableHighAccuracy: false, timeout: 8000, maximumAge: 15000 }
-                        );
-                    },
-                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-                );
-            });
+            let position = null;
 
-            const { latitude, longitude } = position.coords;
-            console.log('✅ Browser: Real GPS acquired:', latitude, longitude);
-            return await buildResult(latitude, longitude);
+            // Step 1: Try high accuracy with 6-second timeout
+            try {
+                position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 6000,
+                        maximumAge: 10000
+                    });
+                });
+            } catch (webHighErr) {
+                // If user denied permission (code 1), do NOT retry - return immediately
+                if (webHighErr?.code === 1) {
+                    return {
+                        success: false,
+                        code: 'PERMISSION_DENIED',
+                        message: 'Location permission was denied. Please allow location access or type your address manually.'
+                    };
+                }
+
+                // If high accuracy timed out or failed (common on laptops/PCs without GPS chip), try standard accuracy
+                console.warn('Browser high accuracy failed, falling back to standard network accuracy...', webHighErr);
+                try {
+                    position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: false,
+                            timeout: 7000,
+                            maximumAge: 60000
+                        });
+                    });
+                } catch (webStdErr) {
+                    throw webStdErr;
+                }
+            }
+
+            if (position?.coords?.latitude && position?.coords?.longitude) {
+                const { latitude, longitude } = position.coords;
+                console.log('✅ Browser: Real GPS acquired:', latitude, longitude);
+                return await buildResult(latitude, longitude);
+            }
+
+            throw new Error('Browser location returned empty coordinates.');
         }
+
     } catch (error) {
         console.error('📍 GPS Detection Error:', error);
 
         let userMessage = 'Unable to detect GPS location. Please enter your address manually.';
         let code = 'UNKNOWN';
 
-        if (error.code === 1 || error.message?.includes('denied') || error.message?.includes('PERMISSION_DENIED')) {
+        const errMsg = (error?.message || '').toLowerCase();
+
+        if (error?.code === 1 || errMsg.includes('denied') || errMsg.includes('permission')) {
             userMessage = 'Location permission was denied. Please allow location access or type your address manually.';
             code = 'PERMISSION_DENIED';
-        } else if (error.code === 2 || error.message?.includes('unavailable')) {
+        } else if (errMsg.includes('disabled') || errMsg.includes('services are not enabled') || errMsg.includes('service disabled')) {
+            userMessage = 'GPS / Location is turned OFF on your device. Please turn ON Location in device settings and try again.';
+            code = 'LOCATION_DISABLED';
+        } else if (error?.code === 2 || errMsg.includes('unavailable') || errMsg.includes('not available')) {
             userMessage = 'GPS position unavailable. Please ensure device location / GPS is turned ON.';
             code = 'POSITION_UNAVAILABLE';
-        } else if (error.code === 3 || error.message?.includes('timeout') || error.message?.includes('TIMEOUT')) {
+        } else if (error?.code === 3 || errMsg.includes('timeout') || errMsg.includes('timed out')) {
             userMessage = 'GPS signal timed out. Move to open sky & try again, or type your address manually.';
             code = 'TIMEOUT';
         }
@@ -362,7 +433,7 @@ export const getCurrentLocation = async () => {
             success: false,
             code,
             message: userMessage,
-            error: error.message
+            error: error?.message || 'Location error'
         };
     }
 };

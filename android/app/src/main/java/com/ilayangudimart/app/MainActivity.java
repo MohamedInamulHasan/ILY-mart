@@ -28,6 +28,12 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FloatingOverlayPlugin.class);
         super.onCreate(savedInstanceState);
 
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().getSettings().setGeolocationEnabled(true);
+            }
+        } catch (Exception ignored) {}
+
         // Enable edge-to-edge display
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             WindowCompat.setDecorFitsSystemWindows(getWindow(), false);

@@ -544,17 +544,23 @@ const EditAddress = () => {
 
                             {/* Title */}
                             <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1.5">
-                                {gpsError.code === 'PERMISSION_DENIED'
-                                    ? (language === 'ta' ? 'இட அனுமதி மறுக்கப்பட்டது' : 'Location Permission Denied')
+                                {gpsError.code === 'LOCATION_DISABLED'
+                                    ? (language === 'ta' ? 'GPS முடக்கப்பட்டுள்ளது' : 'Location is Turned OFF')
+                                    : gpsError.code === 'PERMISSION_DENIED'
+                                    ? (language === 'ta' ? 'இருப்பிட அனுமதி மறுக்கப்பட்டது' : 'Location Permission Denied')
                                     : gpsError.code === 'TIMEOUT'
                                     ? (language === 'ta' ? 'GPS சமிக்ஞை நேரம் முடிந்தது' : 'GPS Signal Timed Out')
-                                    : (language === 'ta' ? 'இட பிழை' : 'Location Error')
+                                    : (language === 'ta' ? 'இருப்பிட பிழை' : 'Location Error')
                                 }
                             </h3>
 
                             {/* Message */}
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">
-                                {gpsError.code === 'TIMEOUT'
+                                {gpsError.code === 'LOCATION_DISABLED'
+                                    ? (language === 'ta'
+                                        ? 'உங்கள் சாதனத்தில் GPS/இட சேவை முடக்கப்பட்டுள்ளது. தயவுசெய்து அதை இயக்கி மீண்டும் முயற்சிக்கவும்.'
+                                        : 'GPS / Location is turned OFF on your device. Please turn ON Location in settings and try again.')
+                                    : gpsError.code === 'TIMEOUT'
                                     ? (language === 'ta'
                                         ? 'திறந்த வெளியில் நின்று மீண்டும் முயற்சிக்கவும், அல்லது கைமுறையாக முகவரியை உள்ளிடவும்.'
                                         : 'Move to open sky & try again, or type your address manually.')
@@ -562,9 +568,9 @@ const EditAddress = () => {
                                     ? (language === 'ta'
                                         ? 'அமைப்புகளில் இட அணுகலை அனுமதிக்கவும் அல்லது கைமுறையாக முகவரியை உள்ளிடவும்.'
                                         : 'Allow location access in Settings or type your address manually.')
-                                    : (language === 'ta'
+                                    : (gpsError.text || (language === 'ta'
                                         ? 'GPS கண்டறிய இயலவில்லை. கைமுறையாக முகவரியை உள்ளிடவும்.'
-                                        : 'GPS could not be detected. Please enter your address manually.')
+                                        : 'GPS could not be detected. Please enter your address manually.'))
                                 }
                             </p>
 
