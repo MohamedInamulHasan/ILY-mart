@@ -552,9 +552,9 @@ const ProductDetails = () => {
                         ) : (
                             <div className="relative w-[82%] sm:w-[70%] max-w-sm flex justify-center">
                                 {showSizeWarning && (
-                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[11px] font-bold py-1 px-3.5 rounded-full shadow-lg whitespace-nowrap animate-bounce flex items-center gap-1 z-30 pointer-events-none">
+                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-gray-900 border border-gray-200/90 shadow-xl text-[11px] font-bold py-1 px-3.5 rounded-full whitespace-nowrap animate-bounce flex items-center gap-1 z-30 pointer-events-none">
                                         <span>{t('Please select a size')}</span>
-                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-red-600 rotate-45" />
+                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white border-r border-b border-gray-200/90 rotate-45" />
                                     </div>
                                 )}
                                 <button

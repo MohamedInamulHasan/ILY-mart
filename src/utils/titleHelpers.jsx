@@ -60,7 +60,7 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
             .trim();
 
         return (
-            <span className="flex flex-col w-full max-w-full">
+            <span className="flex flex-col w-full max-w-full min-w-0">
                 <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass}`}>
                     <span className="line-clamp-2 break-words whitespace-normal">{cleanTitle}</span>
                     {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
@@ -83,14 +83,14 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     const secondLineClass = subClassName.trim();
 
     return (
-        <span className="flex flex-col w-full max-w-full">
+        <span className="flex flex-col w-full max-w-full min-w-0">
             {/* First line: Product Name */}
-            <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${firstLineClass}`}>
-                <span className="truncate">{namePart}</span>
+            <span className={`inline-flex items-start gap-1 w-full max-w-full min-w-0 leading-tight ${firstLineClass}`}>
+                <span className="truncate min-w-0">{namePart}</span>
                 {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
             {/* Second line: Bracket - truncated to 1 line, no extra lines */}
-            <span className={`leading-tight truncate w-full block ${secondLineClass}`}>
+            <span className={`leading-tight truncate w-full block min-w-0 ${secondLineClass}`}>
                 {bracketPart}
             </span>
         </span>
