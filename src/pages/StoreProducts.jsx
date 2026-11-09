@@ -689,7 +689,7 @@ const StoreProducts = () => {
                                         setSelectedSubcategory(name);
                                         e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                                     }}
-                                    className={`pb-2.5 text-xs sm:text-sm transition-all relative whitespace-nowrap cursor-pointer select-none ${
+                                    className={`pb-2.5 text-[13.5px] sm:text-[15px] transition-all relative whitespace-nowrap cursor-pointer select-none ${
                                         isSelected 
                                             ? 'text-black dark:text-white font-bold' 
                                             : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white font-semibold'
@@ -697,7 +697,7 @@ const StoreProducts = () => {
                                 >
                                     <span>{getCategoryDisplayName(name)}</span>
                                     {isSelected && (
-                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[85%] bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
+                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
                                     )}
                                 </button>
                             );

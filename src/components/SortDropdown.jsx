@@ -54,12 +54,10 @@ const SortDropdown = ({ currentSort, onSortChange }) => {
                                         onSortChange(option.id);
                                         setIsOpen(false);
                                     }}
-                                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${currentSort === option.id
-                                        ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900'
-                                        : 'text-gray-600 dark:text-gray-300 hover:bg-[#2E5A2E]/5 dark:hover:bg-white/5 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2]'
+                                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${currentSort === option.id ? 'bg-black text-white font-bold shadow-xs dark:bg-black dark:text-white' : 'text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700/60 hover:text-black dark:hover:text-white'
                                         }`}
                                 >
-                                    <span className={`${currentSort === option.id ? 'text-white dark:text-gray-900' : 'text-gray-400'}`}>
+                                    <span className={`${currentSort === option.id ? 'text-white' : 'text-gray-400'}`}>
                                         {option.icon}
                                     </span>
                                     {t(option.label)}

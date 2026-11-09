@@ -396,7 +396,7 @@ const Shop = () => {
                         {viewType === 'store' && (
                             isCategoriesLoading ? (
                                 <div className="max-w-7xl mx-auto mb-4">
-                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                                    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
                                         {[1, 2, 3, 4, 5].map((i) => (
                                             <div key={i} className="flex-shrink-0 h-8 w-20 rounded-xl blinkit-shimmer"></div>
                                         ))}
@@ -404,7 +404,7 @@ const Shop = () => {
                                 </div>
                             ) : (
                                 <div className="max-w-7xl mx-auto mb-4">
-                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                                    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
                                         {categoryData.map((category) => {
                                             const isActive = normKey(category.name) === normKey(categoryFilter);
                                             return (
@@ -420,10 +420,10 @@ const Shop = () => {
                                                             inline: 'center'
                                                         });
                                                     }}
-                                                    className={`text-xs sm:text-[13px] transition-all whitespace-nowrap flex items-center justify-center px-3.5 py-1.5 rounded-xl border cursor-pointer select-none ${
+                                                    className={`text-[13.5px] sm:text-[14.5px] transition-all whitespace-nowrap flex items-center justify-center py-1.5 rounded-xl border cursor-pointer select-none ${
                                                         isActive
-                                                            ? 'bg-gray-800 text-white font-bold shadow-xs border-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-                                                            : 'bg-transparent border-transparent text-gray-500 dark:text-gray-400 font-medium hover:text-black dark:hover:text-white'
+                                                            ? 'px-3.5 bg-gray-800 text-white font-bold shadow-xs border-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
+                                                            : 'px-2 bg-transparent border-transparent text-gray-950 dark:text-white font-semibold hover:text-black dark:hover:text-white'
                                                     }`}
                                                 >
                                                     <span>{getCategoryDisplay(category)}</span>
