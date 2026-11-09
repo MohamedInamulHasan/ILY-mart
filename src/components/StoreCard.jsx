@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { motion } from 'framer-motion';
 import { getThumbnailUrl } from '../utils/imageOptimizer';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Clock } from 'lucide-react';
@@ -83,11 +84,22 @@ const StoreCard = ({ store }) => {
                         </div>
                     </div>
 
-                    {/* Right Action Arrow */}
+                    {/* Right Action Arrow with Small Shake Effect */}
                     <div className={`flex-shrink-0 transition-all duration-300 ${!isOpen ? 'opacity-0 scale-50' : ''}`}>
-                        <div className="w-6 h-6 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 flex items-center justify-center shadow-xs group-hover:scale-105 active:scale-95 transition-transform">
+                        <motion.div
+                            animate={{
+                                x: [0, 3, -2, 2.5, -1, 0]
+                            }}
+                            transition={{
+                                repeat: Infinity,
+                                repeatDelay: 1.8,
+                                duration: 0.65,
+                                ease: 'easeInOut'
+                            }}
+                            className="w-6 h-6 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 flex items-center justify-center shadow-xs group-hover:scale-110 active:scale-95 transition-transform"
+                        >
                             <ArrowRight size={13} />
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
             </div>

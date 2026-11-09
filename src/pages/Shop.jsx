@@ -12,6 +12,7 @@ import StoreCard from '../components/StoreCard';
 import { API_BASE_URL } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import HomeHeader from '../components/home/HomeHeader';
+import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
 const Shop = () => {
     const { cartCount } = useCart();
@@ -40,6 +41,31 @@ const Shop = () => {
     const services = [];
     const servicesLoading = false;
     const { t, language } = useLanguage();
+
+    // Zepto-style typewriter animated placeholder
+    const searchWords = useMemo(() => {
+        const storeNames = (stores || []).map(s => {
+            const raw = (language === 'ta' && s.name_ta) ? s.name_ta : s.name;
+            return cleanSearchTitle(raw, language);
+        }).filter(w => w && w.length > 1);
+
+        const categoryNames = (dbCategories || []).map(c => {
+            const raw = (language === 'ta' && c.name_ta) ? c.name_ta : c.name;
+            return cleanSearchTitle(raw, language);
+        }).filter(w => w && w.length > 1);
+
+        const fallbackEn = ['grocery stores', 'restaurants', 'supermarket', 'bakery', 'meat stall', 'pharmacy'];
+        const fallbackTa = ['மளிகைக் கடைகள்', 'உணவகங்கள்', 'சூப்பர் மார்க்கெட்', 'பேக்கரி', 'மருந்தகம்'];
+        const fallbacks = language === 'ta' ? fallbackTa : fallbackEn;
+
+        const combined = [...storeNames, ...categoryNames];
+        return combined.length > 0 ? Array.from(new Set(combined)) : fallbacks;
+    }, [stores, dbCategories, language]);
+
+    const searchPlaceholder = useTypewriterPlaceholder(
+        searchWords,
+        language === 'ta' ? 'தேடுக' : 'Search'
+    );
 
     const normKey = (s) => stripEmojis(String(s || '')).trim().toLowerCase();
 
@@ -203,7 +229,7 @@ const Shop = () => {
                         <div className="relative group mb-3.5 sm:mb-4">
                             <input
                                 type="text"
-                                placeholder={t('Search by store name or location...')}
+                                placeholder={searchPlaceholder}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-11 sm:pl-12 pr-11 py-3.5 sm:py-4 text-[14.5px] sm:text-[15.5px] font-medium rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none transition-colors duration-200"

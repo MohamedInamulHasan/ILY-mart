@@ -16,6 +16,7 @@ import HomeHeader from '../components/home/HomeHeader';
 import HeroBanner from '../components/home/HeroBanner';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { useCart } from '../context/CartContext';
+import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
 const Home = () => {
     const { cartItems, deliveryCharge } = useCart();
@@ -53,6 +54,26 @@ const Home = () => {
     // Data Fetching
     const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
     const { data: ads = [], isLoading: loadingAds } = useAds();
+
+    // Zepto-style typewriter animated placeholder
+    const searchWords = useMemo(() => {
+        const productTitles = (rawProducts || []).map(p => {
+            const raw = (language === 'ta' && p.title_ta) ? p.title_ta : (p.title || p.name || '');
+            return cleanSearchTitle(raw, language);
+        }).filter(w => w && w.length > 1);
+
+        const fallbackEn = ['milk', 'bread', 'eggs', 'biryani', 'apple', 'tea', 'atta', 'oil', 'biscuits', 'ice cream'];
+        const fallbackTa = ['பால்', 'ரொட்டி', 'முட்டை', 'பிரியாணி', 'ஆப்பிள்', 'தேநீர்', 'மாவு', 'எண்ணெய்', 'அரிசி'];
+        const fallbacks = language === 'ta' ? fallbackTa : fallbackEn;
+
+        const combined = productTitles.length > 0 ? productTitles.slice(0, 15) : fallbacks;
+        return Array.from(new Set(combined));
+    }, [rawProducts, language]);
+
+    const searchPlaceholder = useTypewriterPlaceholder(
+        searchWords,
+        language === 'ta' ? 'தேடுக' : 'Search'
+    );
 
     // Home page only shows non-mentioned banners (general platform ads that do not mention a specific store)
     const homeAds = useMemo(() => {
@@ -288,7 +309,7 @@ const Home = () => {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder={t('Search by fresh groceries...')}
+                                    placeholder={searchPlaceholder}
                                     className="w-full pl-11 sm:pl-12 pr-11 py-3.5 sm:py-4 text-[14.5px] sm:text-[15.5px] font-medium rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none transition-colors duration-200"
                                 />
                                 <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] stroke-[2.2] transition-colors" size={20} />

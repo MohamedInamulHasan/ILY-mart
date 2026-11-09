@@ -17,6 +17,7 @@ import { groupProducts } from '../utils/productGrouping';
 import ProductCard from '../components/ProductCard';
 import SimpleProductCard from '../components/SimpleProductCard';
 import SortDropdown from '../components/SortDropdown';
+import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
 const ProductSkeleton = ({ fastMode }) => (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700/60 flex flex-col justify-between space-y-2.5 h-full">
@@ -270,6 +271,21 @@ const StoreProducts = () => {
     const groupedStoreProducts = useMemo(() => {
         return groupProducts(availableStoreProducts, stores, { forcedStoreId: storeId });
     }, [availableStoreProducts, stores, storeId]);
+
+    // Zepto-style typewriter animated placeholder with store's actual products list
+    const searchWords = useMemo(() => {
+        if (!storeProducts || storeProducts.length === 0) return [];
+        const titles = storeProducts.map(p => {
+            const raw = (language === 'ta' && p.title_ta) ? p.title_ta : (p.title || p.name || '');
+            return cleanSearchTitle(raw, language);
+        }).filter(w => w && w.length > 1);
+        return Array.from(new Set(titles));
+    }, [storeProducts, language]);
+
+    const searchPlaceholder = useTypewriterPlaceholder(
+        searchWords,
+        language === 'ta' ? 'தேடுக' : 'Search'
+    );
 
     // Clean subcategory normalization without corrupting subcategory names or emoji surrogate pairs
     const normalizeSub = (s) => {
@@ -554,7 +570,7 @@ const StoreProducts = () => {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={`${t('Search in')} ${store?.name}...`}
+                                placeholder={searchPlaceholder}
                                 className="w-full pl-11 sm:pl-12 pr-11 py-3.5 sm:py-4 text-[14.5px] sm:text-[15.5px] font-medium rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none transition-colors duration-200"
                             />
                             <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] stroke-[2.2] transition-colors" size={20} />

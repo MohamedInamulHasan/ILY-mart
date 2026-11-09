@@ -12,6 +12,7 @@ import ProductCard from '../components/ProductCard';
 import SimpleProductCard from '../components/SimpleProductCard';
 import SortDropdown from '../components/SortDropdown';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
+import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { groupProducts } from '../utils/productGrouping';
@@ -46,6 +47,26 @@ const MainCategoryProducts = () => {
     const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
     const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
+
+    // Zepto-style typewriter animated placeholder
+    const searchWords = useMemo(() => {
+        const productTitles = (rawProducts || []).map(p => {
+            const raw = (language === 'ta' && p.title_ta) ? p.title_ta : (p.title || p.name || '');
+            return cleanSearchTitle(raw, language);
+        }).filter(w => w && w.length > 1);
+
+        const fallbackEn = ['fresh groceries', 'dairy', 'snacks', 'fruits', 'vegetables', 'beverages'];
+        const fallbackTa = ['மளிகை', 'பால் பொருட்கள்', 'தின்பண்டங்கள்', 'பழங்கள்', 'காய்கறிகள்'];
+        const fallbacks = language === 'ta' ? fallbackTa : fallbackEn;
+
+        const combined = productTitles.length > 0 ? productTitles.slice(0, 15) : fallbacks;
+        return Array.from(new Set(combined));
+    }, [rawProducts, language]);
+
+    const searchPlaceholder = useTypewriterPlaceholder(
+        searchWords,
+        language === 'ta' ? 'தேடுக' : 'Search'
+    );
 
     // Identify the active main category
     const currentMainCat = useMemo(() => {
@@ -251,7 +272,7 @@ const MainCategoryProducts = () => {
                                 <form onSubmit={(e) => e.preventDefault()}>
                                     <input
                                         type="text"
-                                        placeholder={t('Search "grocery, fresh items..."')}
+                                        placeholder={searchPlaceholder}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full pl-11 sm:pl-12 pr-11 py-3.5 sm:py-4 text-[14.5px] sm:text-[15.5px] font-medium rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:outline-none ring-0 shadow-none transition-colors duration-200"

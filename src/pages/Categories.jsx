@@ -7,6 +7,7 @@ import { ArrowLeft, ShoppingCart, Search } from 'lucide-react';
 import { API_BASE_URL } from '../utils/api';
 import { useCart } from '../context/CartContext';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
+import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
 const Categories = () => {
     const { categories, products, loading } = useData();
@@ -14,6 +15,25 @@ const Categories = () => {
     const { cartCount } = useCart();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Zepto-style typewriter animated placeholder
+    const searchWords = useMemo(() => {
+        const catNames = (categories || []).map(c => {
+            const raw = (language === 'ta' && c.name_ta) ? c.name_ta : c.name;
+            return cleanSearchTitle(raw, language);
+        }).filter(w => w && w.length > 1);
+
+        const fallbackEn = ['grocery', 'fruits', 'vegetables', 'dairy', 'snacks', 'beverages'];
+        const fallbackTa = ['மளிகை', 'பழங்கள்', 'காய்கறிகள்', 'பால் பொருட்கள்', 'தின்பண்டங்கள்'];
+        const fallbacks = language === 'ta' ? fallbackTa : fallbackEn;
+
+        return catNames.length > 0 ? Array.from(new Set(catNames)) : fallbacks;
+    }, [categories, language]);
+
+    const searchPlaceholder = useTypewriterPlaceholder(
+        searchWords,
+        language === 'ta' ? 'தேடுக' : 'Search'
+    );
 
     const featuredCategories = useMemo(() => {
         // First filter by visibility
@@ -75,7 +95,7 @@ const Categories = () => {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder={t('Search categories...')}
+                                    placeholder={searchPlaceholder}
                                     className="w-full pl-12 pr-6 py-3.5 sm:py-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-none transition-colors duration-200" style={{ outline: "none", WebkitTapHighlightColor: "transparent" }}
                                 />
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] transition-colors" size={20} />
