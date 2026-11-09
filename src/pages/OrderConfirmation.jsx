@@ -183,7 +183,7 @@ const OrderConfirmation = () => {
         // Format order details message
         const orderId = String(order._id || order.id).slice(-6).toUpperCase();
         const itemsList = items.map((item, index) => {
-            const unitStr = (item.unit || item.weight || item.product?.unit || '').trim();
+            const unitStr = getSelectedUnitDisplay(item);
             const unitTag = unitStr ? ` (${unitStr})` : '';
             return `${index + 1}. ${item.name || item.title || item.product?.title}${unitTag} x${item.quantity} - ₹${item.price}`;
         }).join('\n');

@@ -38,6 +38,54 @@ const ProductDetails = () => {
         };
     }, []);
 
+    // Look up store and preview status
+    const store = product && stores?.find(s => (s._id || s.id) === product.storeId);
+    const storeName = store?.name || 'Unknown Store';
+    const isPreview = isCategoryPreview(product?.category, categories) || product?.isPreview === true || product?.mode === 'preview';
+
+    const { blocks: descBlocks, mentions: descMentions } = useMemo(() => {
+        return parseProductDescription(product?.description);
+    }, [product?.description]);
+
+    const productMentions = useMemo(() => {
+        const list = [];
+
+        // 1. Check product.unit first (this is where admin form saves sizes like S, M, L, XL)
+        const rawUnit = product?.unit;
+        if (rawUnit && typeof rawUnit === 'string') {
+            const parts = rawUnit.split(/[,|]+/).map(s => s.trim()).filter(Boolean);
+            const isSizes = parts.length > 1 || (parts.length === 1 && ['s', 'm', 'l', 'xl', 'xxl', 'xxxl', '28', '30', '32', '34', '36', '38', '40', '42'].includes(parts[0].toLowerCase())) || isPreview;
+            if (isSizes && parts.length > 0) {
+                for (const p of parts) {
+                    if (!list.includes(p)) list.push(p);
+                }
+                if (list.length > 0) return list;
+            }
+        }
+
+        // 2. Check product.mention
+        const rawMention = product?.mention;
+        if (rawMention && typeof rawMention === 'string') {
+            const parts = rawMention.split(/[,|]+/).map(s => s.trim()).filter(Boolean);
+            if (parts.length > 0) {
+                for (const p of parts) {
+                    if (!list.includes(p)) list.push(p);
+                }
+                if (list.length > 0) return list;
+            }
+        }
+
+        // 3. Fallback to description mentions
+        if (descMentions && Array.isArray(descMentions)) {
+            for (const m of descMentions) {
+                if (m && typeof m === 'string' && !list.includes(m.trim())) {
+                    list.push(m.trim());
+                }
+            }
+        }
+        return list;
+    }, [product?.unit, product?.mention, descMentions, isPreview]);
+
     const checkSizeSelected = () => {
         if (productMentions && productMentions.length > 0 && !selectedMention) {
             setShowSizeWarning(true);
@@ -53,33 +101,6 @@ const ProductDetails = () => {
         return true;
     };
 
-    const { blocks: descBlocks, mentions: descMentions } = useMemo(() => {
-        return parseProductDescription(product?.description);
-    }, [product?.description]);
-
-    const productMentions = useMemo(() => {
-        const list = [];
-        if (descMentions && Array.isArray(descMentions)) {
-            list.push(...descMentions);
-        }
-        const rawMention = product?.mention;
-        if (rawMention && typeof rawMention === 'string' && rawMention !== product?.unit) {
-            // Split only on comma or pipe, NOT on slash (which can be fractions like 1/2 kg)
-            const parts = rawMention.split(/[,|]+/).map(s => s.trim()).filter(Boolean);
-            if (parts.length > 1 || (parts.length === 1 && ['s', 'm', 'l', 'xl', 'xxl', '28', '30', '32', '34', '36', '38', '40', '42'].includes(parts[0].toLowerCase()))) {
-                for (const p of parts) {
-                    if (!list.includes(p)) list.push(p);
-                }
-            }
-        }
-        return list;
-    }, [descMentions, product?.mention, product?.unit]);
-
-    // Look up store name from stores context
-    const store = product && stores?.find(s => (s._id || s.id) === product.storeId);
-    const storeName = store?.name || 'Unknown Store';
-    const isPreview = isCategoryPreview(product?.category, categories) || product?.isPreview === true || product?.mode === 'preview';
-
     const handleCallStore = () => {
         const rawPhone = product?.phone || product?.contactPhone || store?.phone || store?.mobile || settings?.contactPhone || '919500171980';
         const phone = String(rawPhone).replace(/\s+/g, '');
@@ -88,40 +109,41 @@ const ProductDetails = () => {
         }
     };
 
-    // Updated effect to handle individual product fetching
+    // Always fetch latest product details directly from API first to avoid stale context cache
     useEffect(() => {
+        let isMounted = true;
         const loadProduct = async () => {
             setLoading(true);
-            // 1. Try to find in context first (fastest)
-            if (products.length > 0) {
-                const foundProduct = products.find(p => (p._id || p.id) === id || (p._id || p.id) === parseInt(id));
-                if (foundProduct) {
-                    setProduct(foundProduct);
+            try {
+                const response = await import('../utils/api').then(m => m.apiService.getProduct(id));
+                if (isMounted && response?.success && response?.data) {
+                    setProduct(response.data);
                     setCurrentImageIndex(0);
                     setLoading(false);
                     return;
                 }
+            } catch (err) {
+                console.warn('Direct product fetch failed, falling back to context:', err);
             }
 
-            // 2. If not in context (e.g. direct link or paginated out), fetch from API
-            try {
-                const response = await import('../utils/api').then(m => m.apiService.getProduct(id));
-                if (response.success && response.data) {
-                    setProduct(response.data);
+            // Fallback to context if direct fetch was unsuccessful
+            if (isMounted && products.length > 0) {
+                const foundProduct = products.find(p => (p._id || p.id) === id || (p._id || p.id) === parseInt(id));
+                if (foundProduct) {
+                    setProduct(foundProduct);
                     setCurrentImageIndex(0);
                 } else {
                     setProduct(null);
                 }
-            } catch (err) {
-                console.error('Failed to fetch individual product:', err);
+            } else if (isMounted) {
                 setProduct(null);
-            } finally {
-                setLoading(false);
             }
+            if (isMounted) setLoading(false);
         };
 
         loadProduct();
-    }, [id, products]);
+        return () => { isMounted = false; };
+    }, [id]);
 
     const productId = product ? (product._id || product.id) : null;
     const cartItem = product ? cartItems.find(item => item.id === productId) : null;

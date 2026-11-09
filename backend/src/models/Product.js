@@ -41,6 +41,10 @@ const productSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    mention: {
+        type: String,
+        default: ''
+    },
     featured: {
         type: Boolean,
         default: false

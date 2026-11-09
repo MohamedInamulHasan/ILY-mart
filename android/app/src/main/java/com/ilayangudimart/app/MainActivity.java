@@ -44,7 +44,11 @@ public class MainActivity extends BridgeActivity {
         );
 
         checkAndRequestLocationPermissions();
-        startFloatingServiceIfPermitted();
+        try {
+            Intent stopIntent = new Intent(this, FloatingLogoService.class);
+            stopIntent.setAction("STOP_SERVICE");
+            stopService(stopIntent);
+        } catch (Exception ignored) {}
         handleIncomingOrderIntent(getIntent());
     }
 
@@ -63,6 +67,12 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        } else {
+            try {
+                Intent stopIntent = new Intent(this, FloatingLogoService.class);
+                stopIntent.setAction("STOP_SERVICE");
+                stopService(stopIntent);
+            } catch (Exception ignored) {}
         }
     }
 

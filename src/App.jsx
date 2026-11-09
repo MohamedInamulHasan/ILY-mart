@@ -46,7 +46,7 @@ import { useData } from './context/DataContext';
 import { useAuth } from './context/AuthContext';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import useBackButton from './utils/useBackButton';
-import { setOverlayAuthToken } from './utils/floatingOverlay';
+import { setOverlayAuthToken, hideFloatingOverlay, setOverlayDeliverySessionActive } from './utils/floatingOverlay';
 import PrivateRoute from './components/PrivateRoute';
 import OfflineScreen from './components/OfflineScreen';
 import ConnectionStatus from './components/ConnectionStatus';
@@ -140,7 +140,19 @@ const Layout = ({ children, onRefresh }) => {
         if (token) {
             setOverlayAuthToken(token);
         }
-    }, [user]);
+
+        const roles = getUserRoles(user);
+        const isDeliveryUser = roles.includes('delivery_boy');
+        const isDeliveryRoute = location.pathname.startsWith('/admin/delivery');
+        if (!isDeliveryUser || !isDeliveryRoute) {
+            localStorage.setItem('delivery_session_active', 'false');
+            localStorage.setItem('delivery_floating_overlay_enabled', 'false');
+            try {
+                hideFloatingOverlay();
+                setOverlayDeliverySessionActive(false);
+            } catch (e) {}
+        }
+    }, [user, location.pathname]);
     // Only hide footer on order confirmation and auth pages
     const isAuthPage = location.pathname === '/forgot-password' ||
         location.pathname.startsWith('/reset-password');

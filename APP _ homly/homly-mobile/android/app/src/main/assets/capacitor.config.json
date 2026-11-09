@@ -1,10 +1,8 @@
 {
 	"appId": "com.ilayangudimart.app",
 	"appName": "ILY mart",
-	"webDir": "public",
-	"bundledWebRuntime": false,
+	"webDir": "dist",
 	"server": {
-		"androidScheme": "https",
 		"cleartext": true,
 		"allowNavigation": [
 			"*.google.com",
@@ -26,8 +24,8 @@
 			"showSpinner": false,
 			"androidSpinnerStyle": "small",
 			"spinnerColor": "#2563eb",
-			"splashFullScreen": false,
-			"splashImmersive": false
+			"splashFullScreen": true,
+			"splashImmersive": true
 		},
 		"Geolocation": {
 			"permissions": [

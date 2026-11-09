@@ -1,4 +1,6 @@
 import RichDescriptionEditor from '../../components/RichDescriptionEditor';
+import { parseProductDescription, serializeProductDescription } from '../../utils/descriptionHelper';
+import { useData } from '../../context/DataContext';
 import { API_BASE_URL } from '../../utils/api';
 import { openExternalLink } from '../../utils/linkHelper';
 import { useState, useEffect } from 'react';
@@ -42,6 +44,7 @@ import { areCategoriesMatching, findCanonicalCategory, areSubcategoriesMatching,
 const StoreManagement = () => {
     const { user } = useAuth();
     const { t } = useLanguage();
+    const { refreshData } = useData();
     const navigate = useNavigate();
 
     // NEW HOOKS
@@ -374,6 +377,17 @@ const StoreManagement = () => {
         const rawSubs = Array.isArray(product.subcategory) ? product.subcategory : (product.subcategory ? [product.subcategory] : []);
         const cleanSubs = rawSubs.filter(s => s && typeof s === 'string' && s.trim() !== '');
 
+        // Extract any existing mentions/sizes if unit is empty
+        let initialUnit = product.unit || product.mention || '';
+        if (!initialUnit && product.description) {
+            try {
+                const parsed = parseProductDescription(product.description);
+                if (parsed.mentions && parsed.mentions.length > 0) {
+                    initialUnit = parsed.mentions.join(', ');
+                }
+            } catch (e) {}
+        }
+
         setProductForm({
             title: product.title,
             price: product.price,
@@ -383,7 +397,7 @@ const StoreManagement = () => {
             image: product.image,
             sliderImages: product.images || [],
             stock: product.stock || 0,
-            unit: product.unit || '',
+            unit: initialUnit,
             useTimeLimit: product.useTimeLimit || false,
             openingTime: product.openingTime || '00:00',
             closingTime: product.closingTime || '23:59'
@@ -480,9 +494,28 @@ const StoreManagement = () => {
 
         const canonicalCat = findCanonicalCategory(productForm.category, categories)?.name || productForm.category;
 
+        // Synchronize mentions inside structured description if present
+        let updatedDescription = productForm.description;
+        const unitSizes = (productForm.unit || '')
+            .split(/[,|]+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        if (updatedDescription) {
+            try {
+                const parsedDesc = parseProductDescription(updatedDescription);
+                updatedDescription = serializeProductDescription({
+                    blocks: parsedDesc.blocks && parsedDesc.blocks.length > 0 ? parsedDesc.blocks : [{ type: 'normal', content: '' }],
+                    mentions: unitSizes
+                });
+            } catch (e) {
+                console.warn('Could not sync mentions to description:', e);
+            }
+        }
+
         const productData = {
             title: productForm.title,
-            description: productForm.description,
+            description: updatedDescription || productForm.description,
             category: canonicalCat,
             subcategory: cleanSubcategories,
             price: parseFloat(productForm.price),
@@ -490,6 +523,7 @@ const StoreManagement = () => {
             image: productForm.image || imagesArray[0],
             images: imagesArray,
             unit: productForm.unit,
+            mention: productForm.unit,
             useTimeLimit: productForm.useTimeLimit,
             openingTime: productForm.openingTime,
             closingTime: productForm.closingTime
@@ -512,9 +546,15 @@ const StoreManagement = () => {
                 }
 
                 await updateProduct({ id: editingProduct._id || editingProduct.id, data: updateData });
+                try {
+                    if (refreshData) await refreshData();
+                } catch (e) {}
                 alert(t('Product updated successfully!'));
             } else {
                 await addProduct(productData);
+                try {
+                    if (refreshData) await refreshData();
+                } catch (e) {}
                 alert(t('Product added to store successfully!'));
             }
             setView('storeProducts');

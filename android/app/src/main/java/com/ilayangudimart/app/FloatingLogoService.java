@@ -105,16 +105,17 @@ public class FloatingLogoService extends Service {
         screenWidth = metrics.widthPixels;
         screenHeight = metrics.heightPixels;
 
-        startForegroundNotification();
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        if (enabled && sessionActive) {
-            createFloatingCircleView();
-            startOrderPolling();
-        } else {
+        if (!enabled || !sessionActive) {
             stopSelf();
+            return;
         }
+
+        startForegroundNotification();
+        createFloatingCircleView();
+        startOrderPolling();
     }
 
     @Override
@@ -312,7 +313,10 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        if (!enabled || !sessionActive) return;
+        if (!enabled || !sessionActive) {
+            stopServiceAndHide();
+            return;
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !android.provider.Settings.canDrawOverlays(this)) {
             return;
@@ -333,7 +337,10 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        if (!enabled || !sessionActive) return;
+        if (!enabled || !sessionActive) {
+            stopServiceAndHide();
+            return;
+        }
 
         // Wake screen up
         wakeUpScreen();
@@ -915,7 +922,10 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        if (!enabled || !sessionActive) return;
+        if (!enabled || !sessionActive) {
+            stopServiceAndHide();
+            return;
+        }
         if (prefs.getBoolean("has_accepted_order", false)) return;
         synchronized (pendingOrdersQueue) {
             if (pendingOrdersQueue.isEmpty()) return;
@@ -1096,7 +1106,10 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        if (!enabled || !sessionActive) return;
+        if (!enabled || !sessionActive) {
+            stopServiceAndHide();
+            return;
+        }
         String token = prefs.getString("authToken", null);
 
         HttpURLConnection conn = null;
@@ -1258,6 +1271,25 @@ public class FloatingLogoService extends Service {
         if (nm != null) {
             nm.notify(3002, notif);
         }
+    }
+
+    public synchronized void stopServiceAndHide() {
+        mainHandler.post(() -> {
+            try {
+                stopAlertEffects();
+                dismissPorterOrderCardInternal();
+                hideCircleBubble();
+                if (pollingExecutor != null && !pollingExecutor.isShutdown()) {
+                    pollingExecutor.shutdownNow();
+                }
+                try {
+                    stopForeground(true);
+                } catch (Exception ignored) {}
+                stopSelf();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     @Override

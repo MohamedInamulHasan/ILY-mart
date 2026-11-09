@@ -4,7 +4,7 @@ import { Package, Search, Truck, CheckCircle, Clock, RotateCcw, ShoppingCart, Tr
 import { useOrders, useDeleteOrder } from '../hooks/queries/useOrders';
 import { useStores } from '../hooks/queries/useStores';
 import { useData } from '../context/DataContext';
-import { renderBilingualTitle } from '../utils/titleHelpers';
+import { renderBilingualTitle, getSelectedUnitDisplay } from '../utils/titleHelpers';
 import { getStoreName } from '../utils/storeHelpers';
 import { useLanguage } from '../context/LanguageContext';
 import { formatOrderDateTime, formatDeliveryTime } from '../utils/dateUtils';
@@ -350,11 +350,15 @@ const Orders = () => {
                                                         <div className="flex items-center justify-between mt-0.5">
                                                             <div className="flex items-baseline gap-1.5">
                                                                 <span className="text-sm font-bold text-gray-900 dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</span>
-                                                                {(item.unit || item.product?.unit || item.mention || item.selectedMention) && (
-                                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                                        ({item.unit || item.product?.unit || item.mention || item.selectedMention})
-                                                                    </span>
-                                                                )}
+                                                                {(() => {
+    const unitDisplay = getSelectedUnitDisplay(item);
+    if (!unitDisplay) return null;
+    return (
+        <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+            ({unitDisplay})
+        </span>
+    );
+})()}
                                                             </div>
                                                             <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400">
                                                                 x{item.quantity}

@@ -1,4 +1,5 @@
 import RichDescriptionEditor from '../../components/RichDescriptionEditor';
+import { parseProductDescription, serializeProductDescription } from '../../utils/descriptionHelper';
 import { CartoonCoin } from '../../components/CartoonCoin';
 import { getUserRoles } from '../../utils/userHelpers';
 import { useState, useEffect } from 'react';
@@ -782,7 +783,7 @@ const SidebarItem = ({ icon, label, id, active, onClick, hidden = false }) => {
 // --- Sub-Components ---
 
 const ProductManagement = () => {
-    // const { products, stores, categories, addProduct, updateProduct, deleteProduct } = useData(); // OLD
+    const { refreshData } = useData();
 
     // NEW HOOKS
     const { data: rawProducts = [] } = useProducts();
@@ -882,6 +883,15 @@ const ProductManagement = () => {
 
     const handleEdit = (product) => {
         setEditingProduct(product);
+        let initialUnit = product.unit || product.mention || '';
+        if (!initialUnit && product.description) {
+            try {
+                const parsed = parseProductDescription(product.description);
+                if (parsed.mentions && parsed.mentions.length > 0) {
+                    initialUnit = parsed.mentions.join(', ');
+                }
+            } catch (e) {}
+        }
         setFormData({
             title: product.title,
             price: product.price,
@@ -892,7 +902,7 @@ const ProductManagement = () => {
             image: product.image || (product.images && product.images[0]) || '',
             sliderImages: product.images || [],
             stock: product.stock || 0,
-            unit: product.unit || '',
+            unit: initialUnit,
             useTimeLimit: product.useTimeLimit || false,
             openingTime: product.openingTime || '00:00',
             closingTime: product.closingTime || '23:59'
@@ -947,16 +957,36 @@ const ProductManagement = () => {
 
         const canonicalCat = findCanonicalCategory(formData.category, categories)?.name || formData.category;
 
+        // Synchronize mentions inside structured description if present
+        let updatedDescription = formData.description;
+        const unitSizes = (formData.unit || '')
+            .split(/[,|]+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        if (updatedDescription) {
+            try {
+                const parsedDesc = parseProductDescription(updatedDescription);
+                updatedDescription = serializeProductDescription({
+                    blocks: parsedDesc.blocks && parsedDesc.blocks.length > 0 ? parsedDesc.blocks : [{ type: 'normal', content: '' }],
+                    mentions: unitSizes
+                });
+            } catch (e) {
+                console.warn('Could not sync mentions to description:', e);
+            }
+        }
+
         const productData = {
             title: formData.title,
-            description: formData.description,
+            description: updatedDescription || formData.description,
             category: canonicalCat,
             subcategory: cleanSubcategories, // Added subcategory
             price: parseFloat(formData.price),
             image: formData.image || imagesArray[0], // Main image (required)
             images: imagesArray, // Array of images (optional)
             stock: parseInt(formData.stock) || 0,
-            unit: formData.unit // Send unit as is (empty string if not provided)
+            unit: formData.unit,
+            mention: formData.unit
         };
 
         // Add storeId only if it's not empty
@@ -983,26 +1013,18 @@ const ProductManagement = () => {
                     updateData.images = updateData.images.filter(img =>
                         !img.includes(API_BASE_URL) && !img.includes('/api/products')
                     );
-                    // If we filtered everything (no new images), we might need to handle logic differently
-                    // But usually sliderImages replaces the array. 
-                    // WAIT: If we remove existing images from the array, they will be DELETED from the product?
-                    // Usually yes. But here the problem is we are sending the LINK back.
-                    // If we send back `['http.../api/products/1/image', 'base64...']`
-                    // The backend saves that.
-                    // The issue is SPECIFICALLY when the backend serves that saved link, it redirects to itself.
-                    // For slider images, we PROBABLY want to keep the existing valid URLs if they are external (Cloudinary).
-                    // BUT if they are our own proxy links, we are stuck.
-                    // Actually, `product.images` should be the actual Cloudinary URLs if we use Cloudinary.
-                    // The proxy is used when we DON'T have a direct link (legacy or local).
-                    // If `product.images` contains proxy links, it means valid data is lost or text is "corrupted" to proxy link.
-                    // Let's assume for slider images we keep them AS IS for now unless we are sure.
-                    // Only main image is the primary offender usually.
                 }
 
                 await updateProduct({ id: editingProduct.id || editingProduct._id, data: updateData }); // Correct signature
+                try {
+                    if (refreshData) await refreshData();
+                } catch (e) {}
                 alert(t('Product updated successfully!'));
             } else {
                 await addProduct(productData);
+                try {
+                    if (refreshData) await refreshData();
+                } catch (e) {}
                 alert(t('Product uploaded successfully!'));
             }
             setFormData({ title: '', price: '', category: '', subcategory: [], storeId: '', description: '', image: '', sliderImages: [], stock: 0, unit: '', useTimeLimit: false, openingTime: '00:00', closingTime: '23:59' });

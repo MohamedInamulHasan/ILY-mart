@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { apiService } from '../utils/api';
+import { hideFloatingOverlay, setOverlayDeliverySessionActive } from '../utils/floatingOverlay';
 
 const AuthContext = createContext();
 
@@ -280,12 +281,18 @@ export const AuthProvider = ({ children }) => {
             const roles = Array.isArray(user?.role) ? user.role : [user?.role || ''];
             if (roles.includes('delivery_boy')) {
                 localStorage.setItem('delivery_boy_logged_out', 'true');
-                localStorage.setItem('delivery_floating_overlay_enabled', 'false');
             }
+            localStorage.setItem('delivery_session_active', 'false');
+            localStorage.setItem('delivery_floating_overlay_enabled', 'false');
+            try {
+                await hideFloatingOverlay();
+                await setOverlayDeliverySessionActive(false);
+            } catch (e) {}
             await apiService.logout();
         } catch (err) {
             console.error('Logout failed on server', err);
         }
+        localStorage.removeItem('delivery_session_active');
         localStorage.removeItem('userInfo');
         localStorage.removeItem('authToken'); // Cleanup legacy
         localStorage.removeItem('active_delivery_order_id');
