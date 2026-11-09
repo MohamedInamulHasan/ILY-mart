@@ -25,7 +25,7 @@ export const isCategoryPreview = (categoryRef, categories = []) => {
 
     if (!categoryRef || list.length === 0) return false;
 
-    const rawRef = stripCategoryBrackets(String(categoryRef)).trim().toLowerCase();
+    const rawRef = String(categoryRef).trim().toLowerCase();
     const cleanRef = rawRef.split('(')[0].replace(/[^a-z0-9]/g, '');
 
     const found = list.find(c => {
@@ -33,14 +33,14 @@ export const isCategoryPreview = (categoryRef, categories = []) => {
         const idMatch = (c._id && String(c._id) === rawRef) || (c.id && String(c.id) === rawRef);
         if (idMatch) return true;
 
-        const rawCatName = stripCategoryBrackets(String(c.name || '')).trim().toLowerCase();
+        const rawCatName = String(c.name || '').trim().toLowerCase();
         if (rawCatName === rawRef) return true;
 
         const cleanCatName = rawCatName.split('(')[0].replace(/[^a-z0-9]/g, '');
         if (cleanCatName && cleanRef && cleanCatName === cleanRef) return true;
 
         if (c.name_ta) {
-            const rawCatNameTa = stripCategoryBrackets(String(c.name_ta)).trim().toLowerCase();
+            const rawCatNameTa = String(c.name_ta).trim().toLowerCase();
             if (rawCatNameTa === rawRef) return true;
             const cleanCatNameTa = rawCatNameTa.split('(')[0].replace(/[^a-z0-9]/g, '');
             if (cleanCatNameTa && cleanRef && cleanCatNameTa === cleanRef) return true;
@@ -81,25 +81,6 @@ const staticCategoryTranslations = {
     'Snacks': { en: 'Snacks', ta: 'தின்பண்டங்கள்' },
     'Beverages': { en: 'Beverages', ta: 'பானங்கள்' },
     'All': { en: 'All', ta: 'அனைத்தும்' }
-};
-
-/**
- * Utility to strip square bracket tags e.g. "Food [shop]" -> "Food"
- * Also handles spaces inside brackets like "Food [ shop]", "food [stall]", "Food [store ]"
- */
-export const stripCategoryBrackets = (str) => {
-    if (!str || typeof str !== 'string') return '';
-    return str.replace(/\[[^\]]*\]/g, '').replace(/\s+/g, ' ').trim();
-};
-
-/**
- * Utility to extract square bracket tag content e.g. "Food [shop]" -> "shop"
- * Handles "Food [ shop]" -> "shop", "food [stall]" -> "stall", "food [store ]" -> "store"
- */
-export const extractCategoryBracketTag = (str) => {
-    if (!str || typeof str !== 'string') return '';
-    const match = str.match(/\[\s*([^\]]+?)\s*\]/);
-    return match ? match[1].trim() : '';
 };
 
 /**
@@ -160,9 +141,6 @@ export const getCleanCategoryName = (categoryOrName, language = 'en', t = null, 
     }
 
     if (!full) return '';
-
-    // Strip square bracket tags for all standard category displays: "Food [shop]" -> "Food"
-    full = stripCategoryBrackets(full);
 
     // Extract any embedded emoji from string
     const embeddedEmojis = extractEmojis(full);

@@ -5,7 +5,7 @@ import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCategories } from '../hooks/queries/useCategories';
 import { useStores } from '../hooks/queries/useStores';
-import { getCleanCategoryName, stripEmojis, extractEmojis, stripCategoryBrackets, extractCategoryBracketTag } from '../utils/categoryHelpers';
+import { getCleanCategoryName, stripEmojis, extractEmojis } from '../utils/categoryHelpers';
 import { isStoreOpen, formatTime12h } from '../utils/storeHelpers';
 import StoreCard from '../components/StoreCard';
 import { API_BASE_URL } from '../utils/api';
@@ -20,32 +20,25 @@ const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings 
 
     const dbCat = useMemo(() => {
         if (isAll) return null;
-        const nKey = stripEmojis(stripCategoryBrackets(String(category?.name || ''))).trim().toLowerCase();
+        const nKey = stripEmojis(String(category?.name || '')).trim().toLowerCase();
         return (dbCategories || []).find(c => {
-            const cName = stripEmojis(stripCategoryBrackets(String(c?.name || ''))).trim().toLowerCase();
-            const cNameTa = stripEmojis(stripCategoryBrackets(String(c?.name_ta || ''))).trim().toLowerCase();
+            const cName = stripEmojis(String(c?.name || '')).trim().toLowerCase();
+            const cNameTa = stripEmojis(String(c?.name_ta || '')).trim().toLowerCase();
             return cName === nKey || cNameTa === nKey || (c?._id && String(c._id) === String(category._id || category.id));
         });
     }, [category, dbCategories, isAll]);
 
     const targetCat = dbCat || category;
 
-    // Full English name without truncation or Tamil brackets, plus square bracket tag below
-    const { englishName, subLabel } = useMemo(() => {
+    // Full English name without truncation or Tamil brackets
+    const englishName = useMemo(() => {
         if (isAll) {
             const rawAll = settings?.allCategoryName || 'All';
-            const clean = stripEmojis(stripCategoryBrackets(rawAll)).split('(')[0].trim() || 'All';
-            const tag = extractCategoryBracketTag(rawAll);
-            return { englishName: clean, subLabel: tag };
+            return stripEmojis(rawAll).split('(')[0].trim() || 'All';
         }
         const raw = targetCat?.name || category?.name || '';
-        const tag = extractCategoryBracketTag(raw);
-        const nameWithoutTag = stripCategoryBrackets(raw);
-        const cleaned = stripEmojis(nameWithoutTag).split('(')[0].trim();
-        return { 
-            englishName: cleaned || nameWithoutTag || raw, 
-            subLabel: tag 
-        };
+        const cleaned = stripEmojis(raw).split('(')[0].trim();
+        return cleaned || raw;
     }, [targetCat, category, isAll, settings]);
 
     const emoji = useMemo(() => {
@@ -71,7 +64,7 @@ const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings 
             id={isActive ? "active-category-pill" : undefined}
             type="button"
             onClick={onClick}
-            className="flex flex-col items-center justify-start flex-shrink-0 relative pb-2 pt-0.5 px-1 cursor-pointer select-none min-w-[62px] sm:min-w-[70px] max-w-[84px] sm:max-w-[92px] transition-all group outline-none"
+            className="flex flex-col items-center justify-start flex-shrink-0 relative pb-2 pt-0.5 px-1 cursor-pointer select-none min-w-[62px] sm:min-w-[70px] max-w-[80px] sm:max-w-[88px] transition-all group outline-none"
         >
             {/* Image above - Clean transparent container without card background */}
             <div className="w-8 h-8 sm:w-9 sm:h-9 aspect-square flex items-center justify-center bg-transparent mb-2 transition-transform group-hover:scale-105 pointer-events-none">
@@ -90,7 +83,7 @@ const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings 
                 )}
             </div>
 
-            {/* Name above - Full English name in one single line */}
+            {/* Name below - Full English name in one single line */}
             <span 
                 className={`text-[12px] sm:text-[13px] text-center leading-tight whitespace-nowrap truncate block w-full px-0.5 transition-colors pointer-events-none ${
                     isActive 
@@ -101,20 +94,6 @@ const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings 
             >
                 {englishName}
             </span>
-
-            {/* Square bracket text below if present (e.g., 'shop', 'stall', 'store') */}
-            {subLabel && (
-                <span 
-                    className={`text-[10px] sm:text-[11px] text-center leading-tight whitespace-nowrap truncate block w-full px-0.5 mt-0.5 capitalize transition-colors pointer-events-none ${
-                        isActive 
-                            ? 'font-bold text-[#2E5A2E] dark:text-[#CBF9B2]' 
-                            : 'font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200'
-                    }`}
-                    title={subLabel}
-                >
-                    {subLabel}
-                </span>
-            )}
 
             {/* Line effect 50% */}
             {isActive && (
@@ -170,7 +149,7 @@ const Shop = () => {
         language === 'ta' ? 'தேடுக' : 'Search'
     );
 
-    const normKey = (s) => stripEmojis(stripCategoryBrackets(String(s || ''))).trim().toLowerCase();
+    const normKey = (s) => stripEmojis(String(s || '')).trim().toLowerCase();
 
     // Create a Set of valid category names for filtering store tags
     const validCategoryNames = useMemo(() => new Set((dbCategories || []).map(c => normKey(c.name))), [dbCategories]);
