@@ -54,7 +54,8 @@ import {
     showFloatingOverlay, 
     hideFloatingOverlay,
     setOverlayAuthToken,
-    setOverlayHasAcceptedOrder
+    setOverlayHasAcceptedOrder,
+    setOverlayDeliverySessionActive
 } from '../../utils/floatingOverlay';
 import { registerModalBackHandler } from '../../utils/useBackButton';
 
@@ -128,6 +129,13 @@ const DeliveryDashboard = () => {
         const saved = localStorage.getItem('delivery_floating_overlay_enabled');
         return saved !== null ? saved === 'true' : true;
     });
+
+    // Mark delivery session as active in localStorage and native Android SharedPreferences
+    useEffect(() => {
+        localStorage.setItem('delivery_session_active', 'true');
+        localStorage.removeItem('delivery_boy_logged_out');
+        setOverlayDeliverySessionActive(true);
+    }, []);
 
     // Android back button is strictly disabled on delivery panel and orders feed
     useEffect(() => {
@@ -486,6 +494,7 @@ const DeliveryDashboard = () => {
                     localStorage.removeItem('delivery_session_active');
                     localStorage.setItem('delivery_floating_overlay_enabled', 'false');
                     setIsFloatingEnabled(false);
+                    await setOverlayDeliverySessionActive(false);
                     await hideFloatingOverlay();
 
                     // Restore customer session if backup exists

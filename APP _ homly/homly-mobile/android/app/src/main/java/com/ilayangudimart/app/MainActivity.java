@@ -50,8 +50,9 @@ public class MainActivity extends BridgeActivity {
 
     private void startFloatingServiceIfPermitted() {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("floating_enabled", true);
-        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        if (enabled && sessionActive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
             try {
                 Intent serviceIntent = new Intent(this, FloatingLogoService.class);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -96,15 +96,45 @@ public class FloatingOverlayPlugin extends Plugin {
     @PluginMethod
     public void hide(PluginCall call) {
         try {
+            SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            prefs.edit().putBoolean("floating_enabled", false).apply();
+
             if (FloatingLogoService.instance != null) {
-                FloatingLogoService.instance.dismissPorterOrderCard();
+                FloatingLogoService.instance.stopServiceAndHide();
             }
+            try {
+                Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
+                stopIntent.setAction("STOP_SERVICE");
+                getContext().stopService(stopIntent);
+            } catch (Exception ignored) {}
+
             JSObject ret = new JSObject();
             ret.put("success", true);
             call.resolve(ret);
         } catch (Exception e) {
             call.reject("FAILED_TO_HIDE_OVERLAY", e.getMessage());
         }
+    }
+
+    @PluginMethod
+    public void setDeliverySessionActive(PluginCall call) {
+        boolean active = call.getBoolean("active", false);
+        SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("delivery_session_active", active).apply();
+        if (!active) {
+            prefs.edit().putBoolean("floating_enabled", false).apply();
+            if (FloatingLogoService.instance != null) {
+                FloatingLogoService.instance.stopServiceAndHide();
+            }
+            try {
+                Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
+                stopIntent.setAction("STOP_SERVICE");
+                getContext().stopService(stopIntent);
+            } catch (Exception ignored) {}
+        }
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
     }
 
     @PluginMethod

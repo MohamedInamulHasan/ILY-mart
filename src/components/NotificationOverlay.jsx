@@ -83,9 +83,11 @@ const NotificationOverlay = () => {
     }, [isDeliveryPage, incomingOrder]);
 
     // Only alert for NEW orders placed in real-time while in the app!
-    // Do NOT alert for existing/old processing orders when opening the panel.
+    // Do NOT alert if not in delivery panel or if overlay/alerts are disabled.
     useEffect(() => {
-        if (!isDeliveryBoy || !isDeliveryPage) return;
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+        const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+        if (!isDeliveryBoy || !isDeliveryPage || !isDeliverySessionActive || !isFloatingEnabled) return;
         if (allOrders.length === 0) return;
 
         // On first load of orders, record all existing order IDs as known so we never alert old past orders
@@ -187,7 +189,9 @@ const NotificationOverlay = () => {
         const handleOrdersRefresh = (e) => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             const newOrder = e.detail;
-            if (newOrder && isDeliveryBoy) {
+            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+            const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+            if (newOrder && isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled) {
                 const oId = String(newOrder._id || newOrder.id || '');
                 if (oId && !skippedOrderIds.has(oId) && !knownOrderIdsRef.current.has(oId) && isProcessingStatus(newOrder.status)) {
                     knownOrderIdsRef.current.add(oId);
@@ -203,12 +207,17 @@ const NotificationOverlay = () => {
 
         window.addEventListener('orders:refresh', handleOrdersRefresh);
         return () => window.removeEventListener('orders:refresh', handleOrdersRefresh);
-    }, [isDeliveryBoy, skippedOrderIds, queryClient]);
+    }, [isDeliveryBoy, isDeliveryPage, skippedOrderIds, queryClient]);
 
     // Listen for native intent/card clicks when app was closed/backgrounded
     useEffect(() => {
         const openOrderById = async (orderId) => {
             if (!orderId) return;
+            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+            if (!isDeliverySessionActive) {
+                // User did not go to delivery panel; strictly prevent auto-opening delivery order page
+                return;
+            }
             try {
                 // Navigate directly to the new DeliveryActiveOrder page
                 setIncomingOrder(null);

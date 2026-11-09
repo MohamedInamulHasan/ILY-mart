@@ -246,10 +246,15 @@ const DeliveryActiveOrder = () => {
         openExternalLink(targetUrl);
     };
 
-    // When Leave button is clicked: set stay to false and go to delivery dashboard
+    // When Leave button is clicked: set stay to false and go to delivery dashboard if active, or back to profile
     const handleLeave = () => {
         localStorage.setItem('active_delivery_stay', 'false');
-        navigate('/admin');
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+        if (isDeliverySessionActive) {
+            navigate('/admin');
+        } else {
+            navigate('/profile', { replace: true });
+        }
     };
 
     // 1. Accept order: saves to backend first, then updates card to Out for Delivery mode + celebratory popup
@@ -387,7 +392,12 @@ const DeliveryActiveOrder = () => {
         if (completedType === 'delivered' || completedType === 'cancelled') {
             localStorage.removeItem('active_delivery_order_id');
             localStorage.removeItem('active_delivery_stay');
-            navigate('/admin', { replace: true });
+            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+            if (isDeliverySessionActive) {
+                navigate('/admin', { replace: true });
+            } else {
+                navigate('/profile', { replace: true });
+            }
         }
     };
 

@@ -138,3 +138,16 @@ export const setOverlayHasAcceptedOrder = async (hasAcceptedOrder) => {
         console.warn('Error setting overlay accepted order state:', err);
     }
 };
+
+/**
+ * Notify the native service whether a delivery panel session is currently active.
+ * When false, the background service is completely stopped and will not poll or alert.
+ */
+export const setOverlayDeliverySessionActive = async (active) => {
+    if (!isNativeAndroid()) return;
+    try {
+        await FloatingOverlay.setDeliverySessionActive({ active: !!active });
+    } catch (err) {
+        console.warn('Error setting overlay delivery session active:', err);
+    }
+};

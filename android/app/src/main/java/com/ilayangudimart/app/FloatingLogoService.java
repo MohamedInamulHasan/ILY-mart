@@ -106,14 +106,33 @@ public class FloatingLogoService extends Service {
         screenHeight = metrics.heightPixels;
 
         startForegroundNotification();
-        createFloatingCircleView();
-        startOrderPolling();
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        if (enabled && sessionActive) {
+            createFloatingCircleView();
+            startOrderPolling();
+        } else {
+            stopSelf();
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        if (!enabled || !sessionActive) {
+            stopServiceAndHide();
+            return START_NOT_STICKY;
+        }
+
         if (intent != null) {
             String action = intent.getAction();
+            if ("STOP_SERVICE".equals(action)) {
+                stopServiceAndHide();
+                return START_NOT_STICKY;
+            }
             if ("SHOW_ORDER_CARD".equals(action)) {
                 String orderJsonStr = intent.getStringExtra("order_json");
                 if (orderJsonStr != null) {
@@ -268,10 +287,11 @@ public class FloatingLogoService extends Service {
 
         // Add to windowManager only if app is not in foreground, enabled, and permitted
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("floating_enabled", true);
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
         boolean canDraw = Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this);
 
-        if (!isAppInForeground && enabled && canDraw) {
+        if (!isAppInForeground && enabled && sessionActive && canDraw) {
             try {
                 windowManager.addView(floatingCircleView, circleParams);
             } catch (Exception e) {
@@ -290,8 +310,9 @@ public class FloatingLogoService extends Service {
 
     private void showCircleBubble() {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("floating_enabled", true);
-        if (!enabled) return;
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        if (!enabled || !sessionActive) return;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !android.provider.Settings.canDrawOverlays(this)) {
             return;
@@ -309,6 +330,10 @@ public class FloatingLogoService extends Service {
      */
     public synchronized void showPorterOrderCard(JSONObject order) {
         if (order == null || isAppInForeground) return;
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        if (!enabled || !sessionActive) return;
 
         // Wake screen up
         wakeUpScreen();
@@ -888,6 +913,9 @@ public class FloatingLogoService extends Service {
     public synchronized void showNextPendingOrderIfAny() {
         if (isAppInForeground || orderCardView != null || isGapWaiting) return;
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        if (!enabled || !sessionActive) return;
         if (prefs.getBoolean("has_accepted_order", false)) return;
         synchronized (pendingOrdersQueue) {
             if (pendingOrdersQueue.isEmpty()) return;
@@ -1066,6 +1094,9 @@ public class FloatingLogoService extends Service {
 
     private void pollForPendingOrders() {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        if (!enabled || !sessionActive) return;
         String token = prefs.getString("authToken", null);
 
         HttpURLConnection conn = null;

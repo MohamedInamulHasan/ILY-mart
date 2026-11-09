@@ -1,3 +1,4 @@
+export const stores = [
 {
     id: 1,
         name: 'ShopEase Downtown',
