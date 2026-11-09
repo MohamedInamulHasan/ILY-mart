@@ -494,12 +494,12 @@ const ProductDetails = () => {
                                     const rows = block.rows || [];
                                     if (!rows.length) return null;
                                     return (
-                                        <div key={bIdx} className="border border-black/10 dark:border-gray-700 rounded-xl overflow-hidden shadow-xs my-2">
+                                        <div key={bIdx} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm my-2 bg-white dark:bg-gray-800">
                                             <table className="w-full text-left border-collapse">
                                                 <tbody>
                                                     {rows.map((row, rIdx) => (
                                                         <tr key={rIdx} className="border-b border-black/10 dark:border-gray-700 last:border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                                                            <td className="w-1/3 py-2 px-3 bg-gray-50/50 dark:bg-gray-900/30 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest border-r border-black/10 dark:border-gray-700">
+                                                            <td className="w-1/3 py-2 px-3 bg-white dark:bg-gray-800 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest border-r border-gray-200 dark:border-gray-700">
                                                                 {row.key}
                                                             </td>
                                                             <td className="py-2 px-3 text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -515,7 +515,7 @@ const ProductDetails = () => {
 
                                 if (block.type === 'card') {
                                     return (
-                                        <div key={bIdx} className="p-3.5 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 text-sm leading-relaxed shadow-xs">
+                                        <div key={bIdx} className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 shadow-sm text-sm leading-relaxed">
                                             {block.content}
                                         </div>
                                     );

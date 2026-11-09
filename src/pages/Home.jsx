@@ -146,7 +146,7 @@ const Home = () => {
         const targetCategory = firstCatName || mainCat.name || 'All';
         const filterCatNames = matchedCats.length > 0 ? matchedCats.map(c => c.name || c) : (assigned.length > 0 ? assigned : [targetCategory]);
 
-        navigate(`/store?category=${encodeURIComponent(mainCat.name || targetCategory)}`, {
+        navigate(`/category/${encodeURIComponent(targetCategory)}`, {
             state: {
                 mainCategory: mainCat.name,
                 filterCategories: filterCatNames
