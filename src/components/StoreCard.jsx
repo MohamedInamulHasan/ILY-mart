@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Clock } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { isStoreOpen, getStoreTimeLabel } from '../utils/storeHelpers';
-import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { API_BASE_URL } from '../utils/api';
 
 const StoreCard = ({ store }) => {
@@ -43,19 +42,6 @@ const StoreCard = ({ store }) => {
                 {/* Bottom Vignette Gradient Only */}
                 <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none z-10" />
             </div>
-
-            {/* Category Tag Overlay (Top Left) */}
-            {(() => {
-                const storeCat = (Array.isArray(store.type) && store.type[0]) ? store.type[0] : (store.type || store.category);
-                if (!storeCat) return null;
-                return (
-                    <div className="absolute top-3 left-3 z-20">
-                        <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[9.5px] font-bold rounded-full uppercase tracking-wider shadow-sm truncate max-w-[120px] block">
-                            {getCleanCategoryName(storeCat, language)}
-                        </span>
-                    </div>
-                );
-            })()}
 
             {/* Rectangular Timing Badge (Top Right) - No pill */}
             {timeLabel && (
