@@ -1924,12 +1924,6 @@ const OrderManagement = () => {
         if (orders.length === 0) return;
 
         if (window.confirm(t('Are you sure you want to delete ALL orders? This action cannot be undone.'))) {
-            const confirmCount = window.prompt(t(`Type "${orders.length}" to confirm deletion of all ${orders.length} orders.`));
-            if (confirmCount !== String(orders.length)) {
-                alert(t('Deletion cancelled. Incorrect confirmation.'));
-                return;
-            }
-
             try {
                 // Delete all orders one by one
                 const deletePromises = orders.map(order => deleteOrder(order._id || order.id));
@@ -2130,14 +2124,14 @@ const OrderManagement = () => {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Manage Orders')}</h2>
                 <div className="flex gap-2">
-                    {orders.length > 0 && !isDeliveryBoy && (
+                    {orders.length > 0 && (
                         <button
                             onClick={handleDeleteAllOrders}
-                            className="p-2 sm:px-4 sm:py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors flex items-center gap-2 font-normal"
+                            className="px-3 py-2 sm:px-4 sm:py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors flex items-center gap-1.5 sm:gap-2 font-medium shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm"
                             title={t('Delete All Orders')}
                         >
-                            <Trash2 size={20} />
-                            <span className="hidden sm:inline">{t('Delete All')}</span>
+                            <Trash2 size={18} />
+                            <span>{t('Delete All Orders')}</span>
                         </button>
                     )}
                     <button

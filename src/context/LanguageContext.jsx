@@ -264,6 +264,8 @@ export const LanguageProvider = ({ children }) => {
         'Update Post': { en: 'Update Post', ta: 'இடுகையை புதுப்பிக்கவும்' },
         'Add Post': { en: 'Add Post', ta: 'இடுகை சேர்க்கவும்' },
         'Manage Orders': { en: 'Manage Orders', ta: 'ஆர்டர்களை நிர்வகிக்கவும்' },
+        'Delete All Orders': { en: 'Delete All Orders', ta: 'அனைத்து ஆர்டர்களையும் நீக்கு' },
+        'Delete All': { en: 'Delete All', ta: 'அனைத்தையும் நீக்கு' },
         'Customer': { en: 'Customer', ta: 'வாடிக்கையாளர்' },
         'Pending': { en: 'Pending', ta: 'நிலுவையில்' },
         'User Database': { en: 'User Database', ta: 'பயனர் தரவுத்தளம்' },
