@@ -67,7 +67,7 @@ const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings 
             className="flex flex-col items-center justify-start flex-shrink-0 relative pb-2 pt-0.5 px-1 cursor-pointer select-none min-w-[62px] sm:min-w-[70px] max-w-[80px] sm:max-w-[88px] transition-all group outline-none"
         >
             {/* Image above - Clean transparent container without card background */}
-            <div className="w-11 h-11 sm:w-12 sm:h-12 aspect-square flex items-center justify-center bg-transparent mb-1 transition-transform group-hover:scale-105 pointer-events-none">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 aspect-square flex items-center justify-center bg-transparent mb-2 transition-transform group-hover:scale-105 pointer-events-none">
                 {imageUrl && !imgError ? (
                     <img
                         src={imageUrl}
@@ -77,9 +77,9 @@ const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings 
                         onError={() => setImgError(true)}
                     />
                 ) : emoji ? (
-                    <span className="text-2xl sm:text-[26px] leading-none select-none pointer-events-none">{emoji}</span>
+                    <span className="text-xl sm:text-[22px] leading-none select-none pointer-events-none">{emoji}</span>
                 ) : (
-                    <Store size={22} className={isActive ? "text-[#2E5A2E] dark:text-[#CBF9B2]" : "text-gray-600 dark:text-gray-400"} />
+                    <Store size={18} className={isActive ? "text-[#2E5A2E] dark:text-[#CBF9B2]" : "text-gray-600 dark:text-gray-400"} />
                 )}
             </div>
 
@@ -495,8 +495,8 @@ const Shop = () => {
                                 <div className="max-w-7xl mx-auto mb-3 px-1 border-b border-gray-200/50 dark:border-gray-800/60 pb-1.5">
                                     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
-                                            <div key={i} className="flex flex-col items-center flex-shrink-0 min-w-[62px] gap-1.5 pb-2">
-                                                <div className="w-11 h-11 rounded-2xl blinkit-shimmer"></div>
+                                            <div key={i} className="flex flex-col items-center flex-shrink-0 min-w-[62px] sm:min-w-[70px] gap-2 pb-2">
+                                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl blinkit-shimmer"></div>
                                                 <div className="h-3 w-10 rounded-full blinkit-shimmer"></div>
                                             </div>
                                         ))}
