@@ -284,36 +284,48 @@ const DeliveryDashboard = () => {
         .filter(order => {
             const isSearching = Boolean(searchQuery && searchQuery.trim());
 
-            // If searching, show Accepted orders in addition to Out for Delivery / Shipped
-            const allowedStatuses = isSearching
-                ? ['Out for Delivery', 'Shipped', 'Accepted']
-                : ['Out for Delivery', 'Shipped'];
+            // If not searching, show active delivery cards (Out for Delivery / Shipped)
+            if (!isSearching) {
+                const allowedStatuses = ['Out for Delivery', 'Shipped'];
+                return allowedStatuses.includes(order.status);
+            }
 
-            if (!allowedStatuses.includes(order.status)) return false;
+            // When searching: allow ANY status so typing an ID or customer always reveals the card
+            const rawQ = searchQuery.toLowerCase().trim();
+            const cleanQ = rawQ.replace(/^#/, '').trim();
+            const orderId = String(order._id || order.id || '').toLowerCase();
+            const orderIdShort = orderId.slice(-6);
+            const customOrderNum = String(order.orderNumber || order.orderId || '').toLowerCase();
 
-            if (!isSearching) return true;
-            const q = searchQuery.toLowerCase().trim();
-            const orderId = String(order._id || order.id).toLowerCase();
             const customerName = (order.shippingAddress?.name || order.user || '').toLowerCase();
             const customerMobile = (order.shippingAddress?.mobile || '').toLowerCase();
             const status = (order.status || '').toLowerCase();
 
-            const matchesProcess = (q.includes('process') || q.includes('pend')) && ['processing', 'pending', 'order placed'].includes(status);
-            const matchesCancelled = (q.includes('cancel')) && status === 'cancelled';
-            const matchesDelivered = (q.includes('deliver') || q.includes('complete')) && ['delivered', 'completed'].includes(status);
-            const matchesAccepted = (q.includes('accept')) && status === 'accepted';
-            const matchesStatusDirect = status.includes(q);
+            const matchesId = Boolean(cleanQ && (
+                orderId.includes(cleanQ) ||
+                orderIdShort.includes(cleanQ) ||
+                customOrderNum.includes(cleanQ) ||
+                rawQ.includes(orderIdShort)
+            ));
+
+            const matchesCustomer = customerName.includes(rawQ) || customerMobile.includes(cleanQ);
+            const matchesItems = order.items?.some(item => (item.name || '').toLowerCase().includes(rawQ));
+
+            const matchesProcess = (rawQ.includes('process') || rawQ.includes('pend')) && ['processing', 'pending', 'order placed'].includes(status);
+            const matchesCancelled = (rawQ.includes('cancel')) && status === 'cancelled';
+            const matchesDelivered = (rawQ.includes('deliver') || rawQ.includes('complete')) && ['delivered', 'completed'].includes(status);
+            const matchesAccepted = (rawQ.includes('accept') || rawQ.includes('ship')) && ['accepted', 'shipped', 'out for delivery'].includes(status);
+            const matchesStatusDirect = status.includes(rawQ);
 
             return (
-                orderId.includes(q) ||
-                customerName.includes(q) ||
-                customerMobile.includes(q) ||
+                matchesId ||
+                matchesCustomer ||
+                matchesItems ||
                 matchesStatusDirect ||
                 matchesProcess ||
                 matchesCancelled ||
                 matchesDelivered ||
-                matchesAccepted ||
-                order.items?.some(item => (item.name || '').toLowerCase().includes(q))
+                matchesAccepted
             );
         })
         .slice()
@@ -797,6 +809,12 @@ const DeliveryDashboard = () => {
                                         </div>
                                     );
                                     })}
+                                </div>
+                            ) : searchQuery.trim() ? (
+                                <div className="py-16 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-750 shadow-xs p-6">
+                                    <Package size={40} className="mx-auto text-gray-400 mb-2.5 opacity-60" />
+                                    <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">{t('No order cards found')}</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('No order matching')} "{searchQuery}"</p>
                                 </div>
                             ) : (
                                 /* When there is no card in the delivery panel, only show the orders list page */

@@ -3,13 +3,16 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Wrench, Plus, Upload, Search, Edit2, Trash2, 
-    ArrowLeft, Save, ChevronRight, X, Clock, MapPin, Power, Phone
+    ArrowLeft, Save, ChevronRight, X, Clock, MapPin, Power, Phone, GripVertical
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import {
-    useServices, useCreateService, useUpdateService, useDeleteService,
+    useServices, useCreateService, useUpdateService, useDeleteService, useUpdateServiceOrder,
     useServiceItems, useCreateServiceItem, useUpdateServiceItem, useDeleteServiceItem
 } from '../../hooks/queries/useServices';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableServiceCard, DragHandle } from './AdminDashboard_Sortables';
 import useCloudinaryUpload from '../../hooks/useCloudinaryUpload';
 import { formatTime12h, isStoreOpen as isServiceOpen } from '../../utils/storeHelpers';
 
@@ -29,6 +32,38 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
     const { mutateAsync: addService } = useCreateService();
     const { mutateAsync: updateService } = useUpdateService();
     const { mutateAsync: deleteService } = useDeleteService();
+    const { mutateAsync: reorderServices } = useUpdateServiceOrder();
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = filteredServices.findIndex(s => (s.id || s._id) === active.id);
+        const newIndex = filteredServices.findIndex(s => (s.id || s._id) === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const newOrder = arrayMove(filteredServices, oldIndex, newIndex);
+            const orderedIds = newOrder.map(s => s.id || s._id);
+            await reorderServices(orderedIds);
+        }
+    };
 
     const { mutateAsync: addServiceItem } = useCreateServiceItem();
     const { mutateAsync: updateServiceItem } = useUpdateServiceItem();
@@ -238,87 +273,98 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                 />
                             </div>
                         )}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredServices.map(service => {
-                                const isOpen = isServiceOpen(service);
-                                return (
-                                    <div key={service._id || service.id} className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group flex flex-col h-full transition-all ${!isOpen ? '' : ''}`}>
-                                        <div className={`relative h-44 overflow-hidden cursor-pointer ${!isOpen ? 'opacity-60' : ''}`} onClick={() => handleManageItems(service)}>
-                                            <img 
-                                                src={service.image || 'https://placehold.co/400x300?text=Service'} 
-                                                alt={service.name} 
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            />
-                                            {/* Status Badge */}
-                                            <div className="absolute top-3 right-3 z-10">
-                                                <div className={`backdrop-blur-md px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 ${service.isManuallyClosed
-                                                    ? 'bg-gray-500/80 text-white'
-                                                    : !isOpen
-                                                        ? 'bg-gray-600/80 text-white'
-                                                        : 'bg-emerald-500/80 text-white'
-                                                    }`}>
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${isOpen && !service.isManuallyClosed ? 'bg-white animate-pulse' : 'bg-white/50'}`} />
-                                                    <span className="text-[9px] font-bold uppercase tracking-wider">
-                                                        {!isOpen && !service.isManuallyClosed ? t('Closed') : service.isManuallyClosed ? t('Closed') : t('Open')}
-                                                    </span>
-                                                </div>
-                                            </div>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={filteredServices.map(s => s.id || s._id)} strategy={rectSortingStrategy}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {filteredServices.map(service => {
+                                        const isOpen = isServiceOpen(service);
+                                        return (
+                                            <SortableServiceCard key={service._id || service.id} service={service}>
+                                                <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group flex flex-col h-full transition-all ${!isOpen ? '' : ''}`}>
+                                                    <div className={`relative h-44 overflow-hidden cursor-pointer ${!isOpen ? 'opacity-60' : ''}`} onClick={() => handleManageItems(service)}>
+                                                        {!serviceAdminMode && (
+                                                            <DragHandle className="absolute top-3 left-3 z-30 p-2 bg-black/50 hover:bg-black/70 text-white rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg">
+                                                                <GripVertical size={18} />
+                                                            </DragHandle>
+                                                        )}
+                                                        <img 
+                                                            src={service.image || 'https://placehold.co/400x300?text=Service'} 
+                                                            alt={service.name} 
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                        />
+                                                        {/* Status Badge */}
+                                                        <div className="absolute top-3 right-3 z-10">
+                                                            <div className={`backdrop-blur-md px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 ${service.isManuallyClosed
+                                                                ? 'bg-gray-500/80 text-white'
+                                                                : !isOpen
+                                                                    ? 'bg-gray-600/80 text-white'
+                                                                    : 'bg-emerald-500/80 text-white'
+                                                                }`}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${isOpen && !service.isManuallyClosed ? 'bg-white animate-pulse' : 'bg-white/50'}`} />
+                                                                <span className="text-[9px] font-bold uppercase tracking-wider">
+                                                                    {!isOpen && !service.isManuallyClosed ? t('Closed') : service.isManuallyClosed ? t('Closed') : t('Open')}
+                                                                </span>
+                                                            </div>
+                                                        </div>
 
-                                            {/* Large Closed Overlay */}
-                                            {(!isOpen || service.isManuallyClosed) && (
-                                                <div className="absolute inset-0 z-10 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
-                                                    <span className="bg-gray-800 text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg animate-in fade-in zoom-in-95 duration-500">
-                                                        {t('Closed')}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="p-4 flex flex-col flex-grow">
-                                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 truncate">{service.name}</h3>
-                                            <div className="space-y-1 mb-4 opacity-70">
-                                                <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                                                    <MapPin size={12} className="text-[#2E5A2E]" />
-                                                    <span className="truncate">{service.address}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                                                    <Clock size={12} className="text-orange-500" />
-                                                    <span>{service.timingType === 'permanent' ? t('Always Open') : `${formatTime12h(service.openingTime)} - ${formatTime12h(service.closingTime)}`}</span>
-                                                </div>
-                                            </div>
+                                                        {/* Large Closed Overlay */}
+                                                        {(!isOpen || service.isManuallyClosed) && (
+                                                            <div className="absolute inset-0 z-10 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
+                                                                <span className="bg-gray-800 text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg animate-in fade-in zoom-in-95 duration-500">
+                                                                    {t('Closed')}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="p-4 flex flex-col flex-grow">
+                                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 truncate">{service.name}</h3>
+                                                        <div className="space-y-1 mb-4 opacity-70">
+                                                            <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                                                                <MapPin size={12} className="text-[#2E5A2E]" />
+                                                                <span className="truncate">{service.address}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                                                                <Clock size={12} className="text-orange-500" />
+                                                                <span>{service.timingType === 'permanent' ? t('Always Open') : `${formatTime12h(service.openingTime)} - ${formatTime12h(service.closingTime)}`}</span>
+                                                            </div>
+                                                        </div>
 
-                                            <div className="mt-auto grid grid-cols-2 gap-2 pt-4 border-t border-gray-50 dark:border-gray-700/50">
-                                                <button onClick={() => handleManageItems(service)} className="py-2 bg-[#2E5A2E] text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-[#1a3d1a]">
-                                                    {t('Items')}
-                                                </button>
-                                                <div className="flex justify-end gap-1 items-center">
-                                                    <button 
-                                                        onClick={() => handleToggleStatus(service)}
-                                                        disabled={!isOpen && !service.isManuallyClosed}
-                                                        title={!isOpen && !service.isManuallyClosed ? t('Already closed by schedule') : service.isManuallyClosed ? t('Open Service') : t('Close Service')}
-                                                        className={`p-2 rounded-xl transition-all active:scale-90 ${service.isManuallyClosed 
-                                                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' 
-                                                            : !isOpen ? 'bg-gray-50 dark:bg-gray-800 text-gray-300 cursor-not-allowed' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'}`}
-                                                    >
-                                                        <Power size={16} />
-                                                    </button>
-                                                    <button onClick={() => handleEditService(service)} className="p-2 text-[#2E5A2E] hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors">
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                    {!serviceAdminMode && (
-                                                        <button 
-                                                            onClick={async () => { if(window.confirm(t('Delete service?'))) await deleteService(service._id || service.id); }}
-                                                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    )}
+                                                        <div className="mt-auto grid grid-cols-2 gap-2 pt-4 border-t border-gray-50 dark:border-gray-700/50">
+                                                            <button onClick={() => handleManageItems(service)} className="py-2 bg-[#2E5A2E] text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-[#1a3d1a]">
+                                                                {t('Items')}
+                                                            </button>
+                                                            <div className="flex justify-end gap-1 items-center">
+                                                                <button 
+                                                                    onClick={() => handleToggleStatus(service)}
+                                                                    disabled={!isOpen && !service.isManuallyClosed}
+                                                                    title={!isOpen && !service.isManuallyClosed ? t('Already closed by schedule') : service.isManuallyClosed ? t('Open Service') : t('Close Service')}
+                                                                    className={`p-2 rounded-xl transition-all active:scale-90 ${service.isManuallyClosed 
+                                                                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' 
+                                                                        : !isOpen ? 'bg-gray-50 dark:bg-gray-800 text-gray-300 cursor-not-allowed' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'}`}
+                                                                >
+                                                                    <Power size={16} />
+                                                                </button>
+                                                                <button onClick={() => handleEditService(service)} className="p-2 text-[#2E5A2E] hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors">
+                                                                    <Edit2 size={16} />
+                                                                </button>
+                                                                {!serviceAdminMode && (
+                                                                    <button 
+                                                                        onClick={async () => { if(window.confirm(t('Delete service?'))) await deleteService(service._id || service.id); }}
+                                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                            </SortableServiceCard>
+                                        );
+                                    })}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
                     </motion.div>
                 )}
 

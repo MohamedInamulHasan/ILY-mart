@@ -1,12 +1,11 @@
 import React from 'react';
-import { ShoppingCart, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import CartHeaderButton from '../CartHeaderButton';
 
 const HomeHeader = () => {
-    const { cartCount } = useCart();
     const { user } = useAuth();
     const { t } = useLanguage();
 
@@ -58,18 +57,7 @@ const HomeHeader = () => {
 
             {/* Cart Icon */}
             <div className="flex items-center gap-2.5">
-                <Link 
-                    to="/cart"
-                    className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 relative hover:bg-gray-50 dark:hover:bg-white/70 shadow-sm transition-all active:scale-95 flex-shrink-0"
-                    aria-label="View cart"
-                >
-                    <ShoppingCart size={19} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
-                    {cartCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-[18px] w-[18px] rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
-                            {cartCount}
-                        </span>
-                    )}
-                </Link>
+                <CartHeaderButton className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 relative hover:bg-gray-50 dark:hover:bg-white/70 shadow-sm transition-all active:scale-95 flex-shrink-0" />
             </div>
         </header>
     );

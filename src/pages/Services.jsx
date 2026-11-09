@@ -12,11 +12,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useServices, useServiceItems } from '../hooks/queries/useServices';
 import { API_BASE_URL } from '../utils/api';
 import { isStoreOpen as isServiceOpen } from '../utils/storeHelpers';
+import CartHeaderButton from '../components/CartHeaderButton';
+import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
 const Services = () => {
     const navigate = useNavigate();
-    const { t } = useLanguage();
-    const { cartCount } = useCart();
+    const { t, language } = useLanguage();
     const { requestService, setIsFooterHidden } = useData();
     const { user } = useAuth(); // Get user for default address
     const [selectedService, setSelectedService] = useState(null);
@@ -31,6 +32,25 @@ const Services = () => {
 
     // Dynamic Data Hooks
     const { data: services = [], isLoading: servicesLoading } = useServices();
+
+    // Zepto-style typewriter animated placeholder (Services)
+    const searchWords = useMemo(() => {
+        const titles = (services || []).map(s => {
+            const raw = (language === 'ta' && s.name_ta) ? s.name_ta : s.name;
+            return cleanSearchTitle(raw, language);
+        }).filter(w => w && w.length > 1);
+
+        const fallbackEn = ['AC Repair', 'Plumbing', 'Electrician', 'Carpentry', 'Home Cleaning', 'Painting'];
+        const fallbackTa = ['ஏசி பழுதுபார்த்தல்', 'பிளம்பிங்', 'எலக்ட்ரீசியன்', 'தச்சு வேலை', 'வீடு சுத்தம்'];
+        const fallbacks = language === 'ta' ? fallbackTa : fallbackEn;
+
+        return titles.length > 0 ? Array.from(new Set(titles)) : fallbacks;
+    }, [services, language]);
+
+    const searchPlaceholder = useTypewriterPlaceholder(
+        searchWords,
+        language === 'ta' ? 'தேடுக' : 'Search'
+    );
 
     // Sub-services state
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'details'
@@ -185,7 +205,9 @@ const Services = () => {
                                 </p>
                             </div>
 
-                            
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                <CartHeaderButton className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -193,13 +215,13 @@ const Services = () => {
                 <div className={`max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-[88px] ${viewMode === 'details' ? 'pb-36 sm:pb-32' : 'pb-20'}`}>
 
                     {viewMode === 'list' && (
-                        <div className="mb-3.5 sm:mb-4 flex justify-center md:justify-start sticky top-[88px] z-30">
+                        <div className="mb-4 sm:mb-5 flex justify-center md:justify-start">
                             <div className="relative w-full max-w-lg group">
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder={t('Search services...')}
+                                    placeholder={searchPlaceholder}
                                     className="w-full pl-11 sm:pl-12 pr-11 py-3.5 sm:py-4 text-[14.5px] sm:text-[15.5px] font-medium rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none transition-colors duration-200"
                                 />
                                 <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2E5A2E] dark:group-focus-within:text-[#CBF9B2] stroke-[2.2] transition-colors" size={20} />
@@ -213,83 +235,82 @@ const Services = () => {
                                         <X size={18} className="stroke-[2.5]" />
                                     </button>
                                 )}
-                            </div>
 
-                            {/* Search Results Dropdown */}
-                            {searchQuery.trim() && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto z-50 w-full overflow-x-hidden">
-                                    {(() => {
-                                        const q = searchQuery.toLowerCase();
-                                        const results = services.filter(service =>
-                                            service.name?.toLowerCase().includes(q) ||
-                                            service.category?.toLowerCase().includes(q)
-                                        ).sort((a, b) => {
-                                            const aName = t(a, 'name').toLowerCase();
-                                            const bName = t(b, 'name').toLowerCase();
-                                            const aStarts = aName.startsWith(q);
-                                            const bStarts = bName.startsWith(q);
-                                            if (aStarts && !bStarts) return -1;
-                                            if (!aStarts && bStarts) return 1;
-                                            return 0;
-                                        }).slice(0, 5);
+                                {/* Search Results Dropdown (Cleanly inside search container) */}
+                                {searchQuery.trim() && (
+                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto z-50 w-full overflow-x-hidden">
+                                        {(() => {
+                                            const q = searchQuery.toLowerCase();
+                                            const results = services.filter(service =>
+                                                service.name?.toLowerCase().includes(q) ||
+                                                service.category?.toLowerCase().includes(q)
+                                            ).sort((a, b) => {
+                                                const aName = t(a, 'name').toLowerCase();
+                                                const bName = t(b, 'name').toLowerCase();
+                                                const aStarts = aName.startsWith(q);
+                                                const bStarts = bName.startsWith(q);
+                                                if (aStarts && !bStarts) return -1;
+                                                if (!aStarts && bStarts) return 1;
+                                                return 0;
+                                            }).slice(0, 5);
 
-                                        if (results.length === 0) {
-                                            return (
-                                                <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                    {t('No services found')}
-                                                </div>
-                                            );
-                                        }
-
-                                        return results.map((service) => {
-                                            const serviceId = service._id || service.id;
-
-                                            return (
-                                                <div
-                                                    key={serviceId}
-                                                    onClick={() => {
-                                                        handleViewServices(service);
-                                                        setSearchQuery('');
-                                                    }}
-                                                    className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 text-left"
-                                                >
-                                                    <div className="relative flex-shrink-0">
-                                                        <img
-                                                            src={service.image || `${API_BASE_URL}/services/${serviceId}/image`}
-                                                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=Service'; }}
-                                                            alt={service.name}
-                                                            className="w-10 h-10 rounded-lg object-cover border border-gray-100 dark:border-gray-700"
-                                                        />
+                                            if (results.length === 0) {
+                                                return (
+                                                    <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                        {t('No services found')}
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                                            {(() => {
-                                                                const fullTitle = t(service, 'name');
-                                                                const bracketIndex = fullTitle.indexOf('(');
-                                                                if (bracketIndex !== -1) {
-                                                                    const mainPart = fullTitle.substring(0, bracketIndex);
-                                                                    const bracketPart = fullTitle.substring(bracketIndex);
-                                                                    return (
-                                                                        <>
-                                                                            <span>{mainPart}</span>
-                                                                            <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">{bracketPart}</span>
-                                                                        </>
-                                                                    );
-                                                                }
-                                                                return fullTitle;
-                                                            })()}
+                                                );
+                                            }
+
+                                            return results.map((service) => {
+                                                const serviceId = service._id || service.id;
+
+                                                return (
+                                                    <div
+                                                        key={serviceId}
+                                                        onClick={() => {
+                                                            handleViewServices(service);
+                                                            setSearchQuery('');
+                                                        }}
+                                                        className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 text-left"
+                                                    >
+                                                        <div className="relative flex-shrink-0">
+                                                            <img
+                                                                src={service.image || `${API_BASE_URL}/services/${serviceId}/image`}
+                                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=Service'; }}
+                                                                alt={service.name}
+                                                                className="w-10 h-10 rounded-lg object-cover border border-gray-100 dark:border-gray-700"
+                                                            />
                                                         </div>
-                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-                                                            {service.address || t('Service')}
-                                                        </p>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                                                {(() => {
+                                                                    const fullTitle = t(service, 'name');
+                                                                    const bracketIndex = fullTitle.indexOf('(');
+                                                                    if (bracketIndex !== -1) {
+                                                                        const mainPart = fullTitle.substring(0, bracketIndex);
+                                                                        const bracketPart = fullTitle.substring(bracketIndex);
+                                                                        return (
+                                                                            <>
+                                                                                <span>{mainPart}</span>
+                                                                                <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">{bracketPart}</span>
+                                                                            </>
+                                                                        );
+                                                                    }
+                                                                    return fullTitle;
+                                                                })()}
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                                                {service.address || t('Service')}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        });
-                                    })()}
-                                </div>
-                            )}
-
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -381,11 +402,22 @@ const Services = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* Right Action Arrow */}
+                                                    {/* Right Action Arrow with Small Shake Effect */}
                                                     <div className={`flex-shrink-0 transition-all duration-300 ${!isOpen ? 'opacity-0 scale-50' : ''}`}>
-                                                        <div className="w-6 h-6 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 flex items-center justify-center shadow-xs group-hover:scale-105 active:scale-95 transition-transform">
-                                                            <ArrowRight size={13} />
-                                                        </div>
+                                                        <motion.div
+                                                            animate={{
+                                                                x: [0, 3, -2, 2.5, -1, 0]
+                                                            }}
+                                                            transition={{
+                                                                repeat: Infinity,
+                                                                repeatDelay: 1.8,
+                                                                duration: 0.65,
+                                                                ease: 'easeInOut'
+                                                            }}
+                                                            className="w-6 h-6 rounded-full bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 flex items-center justify-center shadow-xs group-hover:scale-110 active:scale-95 transition-transform"
+                                                        >
+                                                            <ArrowRight size={13} className="stroke-[2.5]" />
+                                                        </motion.div>
                                                     </div>
                                                 </div>
                                             </div>

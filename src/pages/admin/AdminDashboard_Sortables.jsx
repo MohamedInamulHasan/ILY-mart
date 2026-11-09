@@ -80,6 +80,33 @@ export const SortableStoreCard = ({ store, children }) => {
     );
 };
 
+// Sortable Service Card Component
+export const SortableServiceCard = ({ service, children }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        setActivatorNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: service.id || service._id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <SortableItemContext.Provider value={{ attributes, listeners, ref: setActivatorNodeRef }}>
+            <div ref={setNodeRef} style={style} className="h-full relative group">
+                {children}
+            </div>
+        </SortableItemContext.Provider>
+    );
+};
+
 // Sortable Product Row Component
 export const SortableProductRow = ({ product, children }) => {
     const {

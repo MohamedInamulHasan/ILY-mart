@@ -54,21 +54,25 @@ const Home = () => {
     // Data Fetching
     const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
     const { data: ads = [], isLoading: loadingAds } = useAds();
+    const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
+    const { data: rawStores = [], isLoading: loadingStores } = useStores();
+    const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
 
-    // Zepto-style typewriter animated placeholder
+    // Zepto-style typewriter animated placeholder (cycles through Main Categories)
     const searchWords = useMemo(() => {
-        const productTitles = (rawProducts || []).map(p => {
-            const raw = (language === 'ta' && p.title_ta) ? p.title_ta : (p.title || p.name || '');
+        const catList = Array.isArray(mainCategories) ? mainCategories : [];
+        const titles = catList.map(mc => {
+            const raw = (language === 'ta' && mc.name_ta) ? mc.name_ta : (mc.name || '');
             return cleanSearchTitle(raw, language);
         }).filter(w => w && w.length > 1);
 
-        const fallbackEn = ['milk', 'bread', 'eggs', 'biryani', 'apple', 'tea', 'atta', 'oil', 'biscuits', 'ice cream'];
-        const fallbackTa = ['பால்', 'ரொட்டி', 'முட்டை', 'பிரியாணி', 'ஆப்பிள்', 'தேநீர்', 'மாவு', 'எண்ணெய்', 'அரிசி'];
+        const fallbackEn = ['Groceries & Kitchen', 'Fresh Fruits & Vegetables', 'Meat & Fish', 'Bakery & Snacks', 'Dairy & Eggs'];
+        const fallbackTa = ['மளிகை பொருட்கள்', 'பழங்கள் & காய்கறிகள்', 'இறைச்சி & மீன்', 'தின்பண்டங்கள்', 'பால் & முட்டை'];
         const fallbacks = language === 'ta' ? fallbackTa : fallbackEn;
 
-        const combined = productTitles.length > 0 ? productTitles.slice(0, 15) : fallbacks;
+        const combined = titles.length > 0 ? titles : fallbacks;
         return Array.from(new Set(combined));
-    }, [rawProducts, language]);
+    }, [mainCategories, language]);
 
     const searchPlaceholder = useTypewriterPlaceholder(
         searchWords,
@@ -104,11 +108,8 @@ const Home = () => {
             } catch {}
         }
     }, [loadingAds, homeAds.length]);
-    const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
-    const { data: rawStores = [], isLoading: loadingStores } = useStores();
-    const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
 
-        const handleMainCategoryClick = (mainCat) => {
+    const handleMainCategoryClick = (mainCat) => {
         if (!mainCat) return;
         const catList = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
         const nonHidden = catList.filter(c => !c.isHidden);

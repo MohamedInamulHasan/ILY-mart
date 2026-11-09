@@ -48,7 +48,16 @@ const Orders = () => {
     const filteredOrders = orders.filter(order => {
         if (!searchQuery.trim()) return true;
         const query = searchQuery.toLowerCase().trim();
+        const cleanQ = query.replace(/^#/, '').trim();
+        const orderId = String(order._id || order.id || '').toLowerCase();
+        const orderIdShort = orderId.slice(-6);
         const status = (order.status || '').toLowerCase();
+
+        const matchesId = Boolean(cleanQ && (
+            orderId.includes(cleanQ) ||
+            orderIdShort.includes(cleanQ) ||
+            query.includes(orderIdShort)
+        ));
 
         const matchesProcess = (query.includes('process') || query.includes('pend')) && ['processing', 'pending', 'order placed'].includes(status);
         const matchesCancelled = (query.includes('cancel')) && status === 'cancelled';
@@ -57,7 +66,7 @@ const Orders = () => {
         const matchesStatusDirect = status.includes(query);
 
         return (
-            String(order._id || order.id).toLowerCase().includes(query) ||
+            matchesId ||
             matchesStatusDirect ||
             matchesProcess ||
             matchesCancelled ||

@@ -12,6 +12,7 @@ import ProductCard from '../components/ProductCard';
 import SimpleProductCard from '../components/SimpleProductCard';
 import SortDropdown from '../components/SortDropdown';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
+import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import { getCleanCategoryName } from '../utils/categoryHelpers';
@@ -248,18 +249,7 @@ const MainCategoryProducts = () => {
                             <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <Link 
-                                to="/cart"
-                                className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 relative hover:bg-gray-50 dark:hover:bg-white/70 shadow-sm transition-all active:scale-95 flex-shrink-0"
-                                aria-label="View cart"
-                            >
-                                <ShoppingCart size={19} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-[18px] w-[18px] rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </Link>
+                            <CartHeaderButton className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 relative hover:bg-gray-50 dark:hover:bg-white/70 shadow-sm transition-all active:scale-95 flex-shrink-0" />
                         </div>
                     </div>
                 </div>

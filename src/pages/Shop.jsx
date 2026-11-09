@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { MapPin, Search, Star, Clock, Phone, Store, Wrench, ArrowRight, X, ArrowLeft, ShoppingCart } from 'lucide-react';
+import { MapPin, Search, Star, Clock, Phone, Store, Wrench, ArrowRight, X, ArrowLeft } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useCart } from '../context/CartContext';
 import { useCategories } from '../hooks/queries/useCategories';
 import { useStores } from '../hooks/queries/useStores';
 import { getCleanCategoryName, stripEmojis } from '../utils/categoryHelpers';
@@ -12,10 +11,10 @@ import StoreCard from '../components/StoreCard';
 import { API_BASE_URL } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import HomeHeader from '../components/home/HomeHeader';
+import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
 const Shop = () => {
-    const { cartCount } = useCart();
     const [searchQuery, setSearchQuery] = useState('');
     const [viewType, setViewType] = useState('store'); // 'store' or 'service'
     const [searchParams, setSearchParams] = useSearchParams();
@@ -42,25 +41,19 @@ const Shop = () => {
     const servicesLoading = false;
     const { t, language } = useLanguage();
 
-    // Zepto-style typewriter animated placeholder
+    // Zepto-style typewriter animated placeholder (Store names only)
     const searchWords = useMemo(() => {
         const storeNames = (stores || []).map(s => {
             const raw = (language === 'ta' && s.name_ta) ? s.name_ta : s.name;
             return cleanSearchTitle(raw, language);
         }).filter(w => w && w.length > 1);
 
-        const categoryNames = (dbCategories || []).map(c => {
-            const raw = (language === 'ta' && c.name_ta) ? c.name_ta : c.name;
-            return cleanSearchTitle(raw, language);
-        }).filter(w => w && w.length > 1);
-
-        const fallbackEn = ['grocery stores', 'restaurants', 'supermarket', 'bakery', 'meat stall', 'pharmacy'];
-        const fallbackTa = ['மளிகைக் கடைகள்', 'உணவகங்கள்', 'சூப்பர் மார்க்கெட்', 'பேக்கரி', 'மருந்தகம்'];
+        const fallbackEn = ['Aman Foods', 'Star Supermarket', 'City Bakers', 'Fresh Meat Stall'];
+        const fallbackTa = ['அமான் உணவகம்', 'ஸ்டார் சூப்பர் மார்க்கெட்', 'சிட்டி பேக்கர்ஸ்'];
         const fallbacks = language === 'ta' ? fallbackTa : fallbackEn;
 
-        const combined = [...storeNames, ...categoryNames];
-        return combined.length > 0 ? Array.from(new Set(combined)) : fallbacks;
-    }, [stores, dbCategories, language]);
+        return storeNames.length > 0 ? Array.from(new Set(storeNames)) : fallbacks;
+    }, [stores, language]);
 
     const searchPlaceholder = useTypewriterPlaceholder(
         searchWords,
@@ -204,18 +197,7 @@ const Shop = () => {
                             <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <Link 
-                                to="/cart"
-                                className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative"
-                                aria-label="View cart"
-                            >
-                                <ShoppingCart size={19} className="text-[#2E5A2E] dark:text-[#2E5A2E]" />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-[18px] w-[18px] rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-gray-800">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </Link>
+                            <CartHeaderButton className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-black/5 dark:border-gray-200/50 relative" />
                         </div>
                     </div>
                 </div>
