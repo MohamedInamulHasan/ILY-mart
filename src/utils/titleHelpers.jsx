@@ -80,10 +80,7 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     }
 
     const firstLineClass = mainClassName.trim();
-    const secondLineClass = subClassName
-        .replace(/\btruncate\b/g, '')
-        .replace(/\bwhitespace-nowrap\b/g, '')
-        .trim();
+    const secondLineClass = subClassName.trim();
 
     return (
         <span className="flex flex-col w-full max-w-full">
@@ -92,9 +89,9 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
                 <span className="truncate">{namePart}</span>
                 {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
-            {/* Second line: Bracket */}
-            <span className={`leading-tight ${secondLineClass}`}>
-                <span className="line-clamp-2 break-words whitespace-normal">{bracketPart}</span>
+            {/* Second line: Bracket - truncated to 1 line, no extra lines */}
+            <span className={`leading-tight truncate w-full block ${secondLineClass}`}>
+                {bracketPart}
             </span>
         </span>
     );
