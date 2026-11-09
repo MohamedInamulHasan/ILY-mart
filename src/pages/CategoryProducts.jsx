@@ -464,81 +464,83 @@ const CategoryProducts = () => {
                     </div>
                 </section>
 
-                {/* Categories Bar (4 per row on mobile, scrollable, box effect) */}
-                {isLoading ? (
-                    <div className="w-full px-4 mb-4 sm:mb-5">
-                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                            {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] p-2 rounded-xl flex flex-col items-center gap-1.5 flex-shrink-0">
-                                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl blinkit-shimmer" />
-                                    <div className="h-3 w-12 rounded-md blinkit-shimmer" />
-                                </div>
-                            ))}
+                {/* Categories Bar (4 per row on mobile, scrollable, box effect) - hidden if only 1 category */}
+                {categories.length > 1 ? (
+                    isLoading ? (
+                        <div className="w-full px-4 mb-4 sm:mb-5">
+                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] p-2 rounded-xl flex flex-col items-center gap-1.5 flex-shrink-0">
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl blinkit-shimmer" />
+                                        <div className="h-3 w-12 rounded-md blinkit-shimmer" />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                ) : categories.length > 0 ? (
-                <div className="w-full px-4 mb-4 sm:mb-5">
-                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                        {categories.map((category) => {
-                            const catNorm = String(category.name || '').toLowerCase().trim();
-                            const actNorm = String(activeCategory || '').toLowerCase().trim();
-                            const catBase = catNorm.split('(')[0].replace(/[^a-z0-9]/g, '');
-                            const actBase = actNorm.split('(')[0].replace(/[^a-z0-9]/g, '');
-                            const isSelected = actNorm === catNorm || (actBase && catBase && actBase === catBase);
-                            const cleanTitle = getCleanCategoryName(category, language);
+                    ) : (
+                        <div className="w-full px-4 mb-4 sm:mb-5">
+                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                                {categories.map((category) => {
+                                    const catNorm = String(category.name || '').toLowerCase().trim();
+                                    const actNorm = String(activeCategory || '').toLowerCase().trim();
+                                    const catBase = catNorm.split('(')[0].replace(/[^a-z0-9]/g, '');
+                                    const actBase = actNorm.split('(')[0].replace(/[^a-z0-9]/g, '');
+                                    const isSelected = actNorm === catNorm || (actBase && catBase && actBase === catBase);
+                                    const cleanTitle = getCleanCategoryName(category, language);
 
-                            return (
-                                <button
-                                    type="button"
-                                    key={category._id || category.id}
-                                    id={isSelected ? "active-category-pill" : undefined}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setActiveCategory(category.name);
-                                        try {
-                                            navigate(`/category/${encodeURIComponent(category.name)}`, { replace: true, state: location.state });
-                                        } catch {
-                                            try {
-                                                window.history.replaceState(location.state, '', `/category/${encodeURIComponent(category.name)}`);
-                                            } catch {}
-                                        }
-                                    }}
-                                    className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl flex flex-col items-center justify-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
-                                        isSelected
-                                            ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
-                                            : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
-                                    }`}
-                                >
-                                    {/* Uniform Category Image - larger and clear */}
-                                    <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent pointer-events-none">
-                                        <img
-                                            src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
-                                            alt={category.name}
-                                            draggable={false}
-                                            className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none"
-                                            onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
-                                        />
-                                    </div>
-
-                                    {/* Text */}
-                                    <div className="flex flex-col items-center justify-center text-center mt-1 w-full px-0.5 pointer-events-none">
-                                        <span 
-                                            className={`leading-tight truncate block text-center w-full transition-colors text-[11.5px] sm:text-[12.5px] ${
-                                                isSelected 
-                                                    ? 'font-bold text-gray-900 dark:text-white' 
-                                                    : 'font-semibold text-gray-700 dark:text-gray-300'
-                                            }`} 
-                                            title={cleanTitle}
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={category._id || category.id}
+                                            id={isSelected ? "active-category-pill" : undefined}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setActiveCategory(category.name);
+                                                try {
+                                                    navigate(`/category/${encodeURIComponent(category.name)}`, { replace: true, state: location.state });
+                                                } catch {
+                                                    try {
+                                                        window.history.replaceState(location.state, '', `/category/${encodeURIComponent(category.name)}`);
+                                                    } catch {}
+                                                }
+                                            }}
+                                            className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl flex flex-col items-center justify-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
+                                                isSelected
+                                                    ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
+                                                    : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
+                                            }`}
                                         >
-                                            {cleanTitle}
-                                        </span>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
+                                            {/* Uniform Category Image - larger and clear */}
+                                            <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent pointer-events-none">
+                                                <img
+                                                    src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
+                                                    alt={category.name}
+                                                    draggable={false}
+                                                    className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none"
+                                                    onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
+                                                />
+                                            </div>
+
+                                            {/* Text */}
+                                            <div className="flex flex-col items-center justify-center text-center mt-1 w-full px-0.5 pointer-events-none">
+                                                <span 
+                                                    className={`leading-tight truncate block text-center w-full transition-colors text-[11.5px] sm:text-[12.5px] ${
+                                                        isSelected 
+                                                            ? 'font-bold text-gray-900 dark:text-white' 
+                                                            : 'font-semibold text-gray-700 dark:text-gray-300'
+                                                    }`} 
+                                                    title={cleanTitle}
+                                                >
+                                                    {cleanTitle}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )
                 ) : null}
 
                 {/* Related Products:
