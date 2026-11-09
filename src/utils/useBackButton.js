@@ -87,6 +87,25 @@ export const useBackButton = () => {
     useEffect(() => {
         // Core back button handler logic
         const handleBack = () => {
+            const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
+
+            // DELIVERY FLOW STRICT LOCK:
+            // When in delivery panel, order list, accept page, or delivery page:
+            // The Android back button / back icon is completely disabled ("dont make work in android").
+            const roles = getUserRoles(userRef.current);
+            const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
+            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+
+            const isDeliveryFlow = 
+                currentPath.startsWith('/admin/delivery-order') ||
+                (isDeliveryBoy && isDeliverySessionActive) ||
+                (isDeliverySessionActive && currentPath.startsWith('/admin'));
+
+            if (isDeliveryFlow) {
+                // Return true so Capacitor and native Android treat this as handled, preventing any navigation or app exit
+                return true;
+            }
+
             // 1. If any modal / popup / feed is open, close the top modal first
             if (modalBackStack.length > 0) {
                 const closeTopModal = modalBackStack.pop();
@@ -100,28 +119,6 @@ export const useBackButton = () => {
                 }
             }
 
-            const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
-
-            // DELIVERY BOY STRICT NAVIGATION: Never go to customer pages on back click (even on double click)
-            const roles = getUserRoles(userRef.current);
-            const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
-            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-
-            if ((isDeliveryBoy && isDeliverySessionActive) || (isDeliverySessionActive && currentPath.startsWith('/admin'))) {
-                // If viewing an active order, back button returns to the delivery panel (/admin)
-                if (currentPath.startsWith('/admin/delivery-order')) {
-                    localStorage.setItem('active_delivery_stay', 'false');
-                    navigate('/admin', { replace: true });
-                    return true;
-                }
-                // If on delivery panel root, stay locked to /admin. Minimize native app on back, never navigate to customer pages
-                if (currentPath === '/admin' || currentPath === '/admin/') {
-                    return false;
-                }
-                // If on any other page while delivery session is active, strictly lock back to /admin
-                navigate('/admin', { replace: true });
-                return true;
-            }
             const orderJustPlaced = (() => {
                 try {
                     return sessionStorage.getItem('orderJustPlaced') === 'true';

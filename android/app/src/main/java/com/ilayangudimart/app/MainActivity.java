@@ -118,6 +118,8 @@ public class MainActivity extends BridgeActivity {
             getBridge().getWebView().evaluateJavascript(
                 "(function() {" +
                 "  try {" +
+                "    var isDel = (localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true') || window.location.pathname.indexOf('/admin/delivery-order') !== -1;" +
+                "    if (isDel) { return 'handled'; }" +
                 "    if (window.__handleBackButton && window.__handleBackButton()) { return 'handled'; }" +
                 "    if (window.history.state && window.history.state.idx > 0) { window.history.back(); return 'navigated'; }" +
                 "    if (window.location.pathname !== '/' && window.location.pathname !== '/home' && window.location.pathname !== '/admin') {" +

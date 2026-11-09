@@ -6,7 +6,6 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import LogoutModal from './LogoutModal';
 import DeliveryOrdersListFeed from './DeliveryOrdersListFeed';
-import { registerModalBackHandler } from '../utils/useBackButton';
 
 const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }) => {
     const { t } = useLanguage();
@@ -18,11 +17,8 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
     useEffect(() => {
         if (!isOpen) {
             setSearchQuery('');
-            return;
         }
-        if (!onClose) return;
-        return registerModalBackHandler(onClose);
-    }, [isOpen, onClose]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 

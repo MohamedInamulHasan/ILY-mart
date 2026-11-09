@@ -129,11 +129,7 @@ const DeliveryDashboard = () => {
         return saved !== null ? saved === 'true' : true;
     });
 
-    useEffect(() => {
-        if (!showOrdersFeed) return;
-        return registerModalBackHandler(() => setShowOrdersFeed(false));
-    }, [showOrdersFeed]);
-
+    // Android back button is strictly disabled on delivery panel and orders feed
     useEffect(() => {
         if (!showLogoutModal) return;
         return registerModalBackHandler(() => setShowLogoutModal(false));
