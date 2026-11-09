@@ -23,7 +23,9 @@ const NotificationOverlay = () => {
     const [incomingOrder, setIncomingOrder] = useState(null);
     const [startWithAcceptView, setStartWithAcceptView] = useState(false);
     const [skippedOrderIds, setSkippedOrderIds] = useState(() => new Set());
-    const shownOrderIdsRef = useRef(new Set());
+    const sessionStartRef = useRef(Date.now());
+    const initialOrdersLoadedRef = useRef(false);
+    const knownOrderIdsRef = useRef(new Set());
     const navigate = useNavigate();
 
     const roles = useMemo(() => getUserRoles(user), [user]);
@@ -36,6 +38,15 @@ const NotificationOverlay = () => {
     const allOrders = useMemo(() => {
         return Array.isArray(rawOrders) ? rawOrders : (rawOrders?.data || []);
     }, [rawOrders]);
+
+    // Reset session and known orders when user changes or logs in/out
+    useEffect(() => {
+        sessionStartRef.current = Date.now();
+        initialOrdersLoadedRef.current = false;
+        knownOrderIdsRef.current.clear();
+        setSkippedOrderIds(new Set());
+        setIncomingOrder(null);
+    }, [user?.id || user?._id]);
 
     // Check if delivery boy has an active accepted order currently in progress
     const hasActiveAcceptedOrder = useMemo(() => {
@@ -58,9 +69,23 @@ const NotificationOverlay = () => {
         return allOrders.filter(o => isProcessingStatus(o.status));
     }, [allOrders, isDeliveryBoy]);
 
-    // Check processing orders continuously and pop up card alert modal on ANY page (including Delivery Panel) until accepted or skipped
+    // Only alert for NEW orders placed in real-time while in the app!
+    // Do NOT alert for existing/old processing orders when opening the panel.
     useEffect(() => {
         if (!isDeliveryBoy) return;
+        if (allOrders.length === 0) return;
+
+        // On first load of orders, record all existing order IDs as known so we never alert old past orders
+        if (!initialOrdersLoadedRef.current) {
+            allOrders.forEach(o => {
+                const oId = String(o._id || o.id || '');
+                if (oId) knownOrderIdsRef.current.add(oId);
+            });
+            initialOrdersLoadedRef.current = true;
+            return;
+        }
+
+        // If an incoming order modal is currently showing, wait until user explicitly accepts or skips
         if (incomingOrder) return;
 
         // Do not popup modal on top of active order details screen
@@ -68,31 +93,33 @@ const NotificationOverlay = () => {
             return;
         }
 
-        const unskippedOrders = processingOrders
-            .filter(o => {
-                const oId = o._id || o.id;
-                return oId && !skippedOrderIds.has(oId);
-            })
-            .sort((a, b) => {
-                const timeA = new Date(a.createdAt || a.date || 0).getTime();
-                const timeB = new Date(b.createdAt || b.date || 0).getTime();
-                return timeB - timeA;
-            });
+        // Check if any brand new processing order was placed during this active session
+        const newRealtimeOrder = allOrders.find(o => {
+            const oId = String(o._id || o.id || '');
+            if (!oId) return false;
+            if (knownOrderIdsRef.current.has(oId)) return false;
+            if (skippedOrderIds.has(oId)) return false;
+            if (!isProcessingStatus(o.status)) return false;
 
-        const pendingOrder = unskippedOrders[0];
+            const orderTime = new Date(o.createdAt || o.date || o.timestamp || 0).getTime();
+            // Must have been created around or after this session mounted (not an old order)
+            return orderTime >= (sessionStartRef.current - 30000);
+        });
 
-        if (pendingOrder) {
+        if (newRealtimeOrder) {
+            const oId = String(newRealtimeOrder._id || newRealtimeOrder.id || '');
+            knownOrderIdsRef.current.add(oId);
             setStartWithAcceptView(false);
-            setIncomingOrder(pendingOrder);
+            setIncomingOrder(newRealtimeOrder);
             triggerIncomingOrderAlert();
         }
-    }, [isDeliveryBoy, incomingOrder, processingOrders, skippedOrderIds]);
+    }, [isDeliveryBoy, incomingOrder, allOrders, skippedOrderIds]);
 
     // Auto-dismiss popup if the current order is accepted or cancelled
     useEffect(() => {
         if (incomingOrder) {
-            const id = incomingOrder._id || incomingOrder.id;
-            const currentInDb = allOrders.find(o => (o._id || o.id) === id);
+            const id = String(incomingOrder._id || incomingOrder.id || '');
+            const currentInDb = allOrders.find(o => String(o._id || o.id || '') === id);
             if (currentInDb && !isProcessingStatus(currentInDb.status)) {
                 setIncomingOrder(null);
             }
@@ -100,18 +127,29 @@ const NotificationOverlay = () => {
     }, [allOrders, incomingOrder]);
 
     const handleOrderSkip = (orderToSkip) => {
-        const currentId = (orderToSkip?._id || orderToSkip?.id) || (incomingOrder ? (incomingOrder._id || incomingOrder.id) : null);
+        const currentId = String((orderToSkip?._id || orderToSkip?.id) || (incomingOrder ? (incomingOrder._id || incomingOrder.id) : ''));
         if (currentId) {
             setSkippedOrderIds(prev => new Set([...prev, currentId]));
+            knownOrderIdsRef.current.add(currentId);
         }
+        // Mark all currently present orders as known so skipping NEVER cascades to older orders
+        allOrders.forEach(o => {
+            const oId = String(o._id || o.id || '');
+            if (oId) knownOrderIdsRef.current.add(oId);
+        });
         setIncomingOrder(null);
     };
 
     const handleModalClose = () => {
-        const currentId = incomingOrder ? (incomingOrder._id || incomingOrder.id) : null;
+        const currentId = incomingOrder ? String(incomingOrder._id || incomingOrder.id || '') : '';
         if (currentId) {
             setSkippedOrderIds(prev => new Set([...prev, currentId]));
+            knownOrderIdsRef.current.add(currentId);
         }
+        allOrders.forEach(o => {
+            const oId = String(o._id || o.id || '');
+            if (oId) knownOrderIdsRef.current.add(oId);
+        });
         setIncomingOrder(null);
     };
 
@@ -142,8 +180,9 @@ const NotificationOverlay = () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             const newOrder = e.detail;
             if (newOrder && isDeliveryBoy) {
-                const oId = newOrder._id || newOrder.id;
-                if (oId && !skippedOrderIds.has(oId) && isProcessingStatus(newOrder.status)) {
+                const oId = String(newOrder._id || newOrder.id || '');
+                if (oId && !skippedOrderIds.has(oId) && !knownOrderIdsRef.current.has(oId) && isProcessingStatus(newOrder.status)) {
+                    knownOrderIdsRef.current.add(oId);
                     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/delivery-order')) {
                         return;
                     }
@@ -307,8 +346,9 @@ const NotificationOverlay = () => {
         const handleOrderCreated = (order) => {
             // Strictly only for Delivery Boys, NOT for customers or other roles
             if (!isDeliveryBoy) return;
-            const oId = order?._id || order?.id;
-            if (oId && skippedOrderIds.has(oId)) return;
+            const oId = String(order?._id || order?.id || '');
+            if (!oId || skippedOrderIds.has(oId) || knownOrderIdsRef.current.has(oId)) return;
+            knownOrderIdsRef.current.add(oId);
 
             // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
             queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -375,6 +415,14 @@ const NotificationOverlay = () => {
                     order={incomingOrder}
                     startWithViewCard={!startWithAcceptView}
                     onAccepted={(acceptedOrder) => {
+                        const currentId = String((acceptedOrder?._id || acceptedOrder?.id) || '');
+                        if (currentId) {
+                            knownOrderIdsRef.current.add(currentId);
+                        }
+                        allOrders.forEach(o => {
+                            const oId = String(o._id || o.id || '');
+                            if (oId) knownOrderIdsRef.current.add(oId);
+                        });
                         setStartWithAcceptView(false);
                         setIncomingOrder(null);
                         queryClient.invalidateQueries({ queryKey: ['orders'] });
