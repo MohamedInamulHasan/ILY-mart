@@ -19,7 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useOrders, useUpdateOrderStatus } from '../../hooks/queries/useOrders';
 import { useStores } from '../../hooks/queries/useStores';
 import { apiService, API_BASE_URL } from '../../utils/api';
-import { renderBilingualTitle } from '../../utils/titleHelpers';
+import { renderBilingualTitle, getSelectedUnitDisplay } from '../../utils/titleHelpers';
 import { getStoreName } from '../../utils/storeHelpers';
 import { formatOrderBannerTime, formatOrderDateTime } from '../../utils/dateUtils';
 import { CartoonCoin } from '../../components/CartoonCoin';
@@ -670,11 +670,15 @@ const DeliveryActiveOrder = () => {
                                             <p className="text-[15px] font-bold text-gray-900 dark:text-white leading-none">
                                                 ₹{Number(item.price * item.quantity).toFixed(0)}
                                             </p>
-                                            {(item.unit || item.product?.unit) && (
-                                                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-1">
-                                                    {item.unit || item.product?.unit}
-                                                </p>
-                                            )}
+                                            {(() => {
+                                                const unitDisplay = getSelectedUnitDisplay(item);
+                                                if (!unitDisplay) return null;
+                                                return (
+                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-1">
+                                                        {unitDisplay}
+                                                    </p>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
                                             x{item.quantity}

@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
 import { useLanguage } from '../context/LanguageContext';
-import { renderBilingualTitle } from '../utils/titleHelpers';
+import { renderBilingualTitle, getSelectedUnitDisplay } from '../utils/titleHelpers';
 import { useData } from '../context/DataContext';
 import { calculateDeliveryCharge, getStoreName } from '../utils/storeHelpers';
 import { API_BASE_URL } from '../utils/api';
@@ -149,11 +149,15 @@ const Cart = () => {
                                              <span className="text-[14px] sm:text-[15px] font-extrabold text-gray-900 dark:text-white leading-tight">
                                                  ₹ {(item.price * item.quantity).toFixed(0)}
                                              </span>
-                                             {(item.unit || item.mention || item.selectedMention || item.product?.unit) && (
-                                                 <span className="text-xs text-gray-400 dark:text-gray-500 font-medium leading-tight">
-                                                     ({item.unit || item.mention || item.selectedMention || item.product?.unit})
-                                                 </span>
-                                             )}
+                                             {(() => {
+                                                 const unitDisplay = getSelectedUnitDisplay(item);
+                                                 if (!unitDisplay) return null;
+                                                 return (
+                                                     <span className="text-xs text-gray-400 dark:text-gray-500 font-medium leading-tight">
+                                                         ({unitDisplay})
+                                                     </span>
+                                                 );
+                                             })()}
                                         </div>
 
                                        <div className="flex items-center gap-2 sm:gap-2.5">

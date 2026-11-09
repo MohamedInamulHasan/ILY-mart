@@ -1,6 +1,25 @@
 import React from 'react';
 
 /**
+ * Utility to extract and display only the chosen unit/size near product price.
+ * Filters out raw unselected comma/pipe-separated multi-variant strings (e.g. "s, l, m" -> "").
+ */
+export const getSelectedUnitDisplay = (item) => {
+    if (!item) return '';
+    const sel = item.selectedMention || item.selectedUnit;
+    if (sel && typeof sel === 'string') {
+        const trimmed = sel.trim();
+        if (trimmed && !/[,|]/.test(trimmed)) return trimmed;
+    }
+    const raw = item.unit || item.mention || item.weight || item.product?.unit || '';
+    if (!raw || typeof raw !== 'string') return '';
+    const trimmedRaw = raw.trim();
+    // Multi-option strings should not be rendered as a single unit
+    if (/[,|]/.test(trimmedRaw)) return '';
+    return trimmedRaw;
+};
+
+/**
  * Utility to parse and render bilingual product titles with superscript bracket tags.
  * Example input: "Parotta ( பரோட்டா ) [1]" or "பரோட்டா ( Parotta ) [1]"
  *
@@ -8,6 +27,8 @@ import React from 'react';
  * 1. If [1] (or any [tag]) is mentioned, it displays near the primary word as an upper superscript tag.
  * 2. If Tamil word is first ("பரோட்டா ( Parotta ) [1]"), tag [1] attaches upper near Tamil word.
  * 3. If English word is first ("Parotta ( பரோட்டா ) [1]"), tag [1] attaches upper near English word.
+ * 4. If bracket text is present, it displays in the second line.
+ * 5. If title is long (without brackets), it wraps cleanly to the second line.
  */
 export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     if (!fullTitle || typeof fullTitle !== 'string') return fullTitle || '';
@@ -28,6 +49,11 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
     // Remove [tag] from title string for parsing
     const cleanTitle = fullTitle.replace(/\[[^\]]+\]/g, '').trim();
+
+    const multilineMainClass = mainClassName
+        .replace(/\btruncate\b/g, '')
+        .replace(/\bwhitespace-nowrap\b/g, '')
+        .trim();
 
     const bracketIndex = cleanTitle.indexOf('(');
 
@@ -64,11 +90,11 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
             return (
                 <span className="flex flex-col w-full max-w-full">
-                    <span className={`inline-flex items-center gap-1 max-w-full leading-tight ${mainClassName}`}>
-                        <span className="truncate">{mainText}</span>
+                    <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass}`}>
+                        <span className="line-clamp-2 break-words whitespace-normal">{mainText}</span>
                         {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
                     </span>
-                    <span className={`truncate leading-tight ${subClassName}`}>
+                    <span className={`line-clamp-2 break-words whitespace-normal leading-tight ${subClassName}`}>
                         ({subText})
                     </span>
                 </span>
@@ -77,11 +103,6 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
         // Single language title with no brackets:
         // Allow the product name to wrap into the second line (line-clamp-2 break-words) instead of single-line truncate
-        const multilineMainClass = mainClassName
-            .replace(/\btruncate\b/g, '')
-            .replace(/\bwhitespace-nowrap\b/g, '')
-            .trim();
-
         return (
             <span className="flex flex-col w-full max-w-full">
                 <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass} line-clamp-2 break-words whitespace-normal`}>
@@ -128,12 +149,12 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
     return (
         <span className="flex flex-col w-full max-w-full">
-            <span className={`inline-flex items-center gap-1 max-w-full leading-tight ${mainClassName}`}>
-                <span className="truncate">{mainText}</span>
+            <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass}`}>
+                <span className="line-clamp-2 break-words whitespace-normal">{mainText}</span>
                 {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
             {subText && (
-                <span className={`truncate leading-tight ${subClassName}`}>
+                <span className={`line-clamp-2 break-words whitespace-normal leading-tight ${subClassName}`}>
                     ({subText})
                 </span>
             )}

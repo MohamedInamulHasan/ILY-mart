@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
-import { renderBilingualTitle } from '../utils/titleHelpers';
+import { renderBilingualTitle, getSelectedUnitDisplay } from '../utils/titleHelpers';
 import { getStoreName, calculateDeliveryCharge, formatDeliveryRange, getAvailableDeliverySlots } from '../utils/storeHelpers';
 import { isCategoryPreview } from '../utils/categoryHelpers';
 import { useCategories } from '../hooks/queries/useCategories';
@@ -865,11 +865,15 @@ const Checkout = () => {
                                                 <div className="flex items-center justify-between mt-1">
                                                     <div className="flex items-baseline gap-1.5">
                                                         <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
-                                                        {(item.selectedMention || item.mention || item.unit || item.weight || item.product?.unit) && (
-                                                            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                                ({item.selectedMention || item.mention || item.unit || item.weight || item.product?.unit})
-                                                            </span>
-                                                        )}
+                                                        {(() => {
+                                                            const unitDisplay = getSelectedUnitDisplay(item);
+                                                            if (!unitDisplay) return null;
+                                                            return (
+                                                                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                                    ({unitDisplay})
+                                                                </span>
+                                                            );
+                                                        })()}
                                                     </div>
                                                     <div className="flex items-center gap-3">
                                                         <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">

@@ -33,15 +33,19 @@ export const useMainCategories = () => {
             try {
                 const response = await apiService.settings.get('main_categories');
                 const list = response?.data?.value || (Array.isArray(response?.data) ? response.data : []);
-                setCachedMainCategories(list);
-                return Array.isArray(list) ? list : [];
+                const resolved = Array.isArray(list) ? list : [];
+                setCachedMainCategories(resolved);
+                return resolved;
             } catch (err) {
                 console.warn('Could not fetch main_categories setting:', err);
                 return getCachedMainCategories() || [];
             }
         },
         initialData: getCachedMainCategories,
-        staleTime: 1000 * 60 * 2, // 2 minutes
+        initialDataUpdatedAt: () => 0,
+        staleTime: 1000 * 10, // 10 seconds
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
     });
 };
 

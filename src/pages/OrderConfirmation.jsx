@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useData } from '../context/DataContext';
-import { renderBilingualTitle } from '../utils/titleHelpers';
+import { renderBilingualTitle, getSelectedUnitDisplay } from '../utils/titleHelpers';
 import { getStoreName, formatDeliveryRange, formatDeliveryRangeFromDate, calculateDeliveryCharge } from '../utils/storeHelpers';
 import { useLanguage } from '../context/LanguageContext';
 import { API_BASE_URL } from '../utils/api';
@@ -320,11 +320,15 @@ const OrderConfirmation = () => {
                                         <div className="flex items-center justify-between mt-1">
                                             <div className="flex items-baseline gap-1.5">
                                                 <p className="text-sm font-medium text-black dark:text-white">₹{((item.price * item.quantity) || 0).toFixed(0)}</p>
-                                                {(item.selectedMention || item.mention || item.unit || item.product?.unit) && (
-                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                        ({item.selectedMention || item.mention || item.unit || item.product?.unit})
-                                                    </span>
-                                                )}
+                                                {(() => {
+                                                    const unitDisplay = getSelectedUnitDisplay(item);
+                                                    if (!unitDisplay) return null;
+                                                    return (
+                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                            ({unitDisplay})
+                                                        </span>
+                                                    );
+                                                })()}
                                             </div>
                                             <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
                                                 x{item.quantity}

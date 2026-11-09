@@ -134,6 +134,8 @@ export const LanguageProvider = ({ children }) => {
         'Items Ordered': { en: 'Items Ordered', ta: 'ஆர்டர் செய்யப்பட்ட பொருட்கள்' },
         'Delivery To': { en: 'Delivery To', ta: 'டெலிவரி முகவரி' },
         'Payment Summary': { en: 'Payment Summary', ta: 'கட்டண சுருக்கம்' },
+        'Size': { en: 'Size', ta: 'அளவு' },
+        'Please select a size': { en: 'Please select a size', ta: 'அளவைத் தேர்ந்தெடுக்கவும்' },
         'Item Total': { en: 'Item Total', ta: 'பொருட்களின் மொத்தம்' },
         'Delivery Fee': { en: 'Delivery Fee', ta: 'டெலிவரி கட்டணம்' },
         'Grand Total': { en: 'Grand Total', ta: 'மொத்த தொகை' },

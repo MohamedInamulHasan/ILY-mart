@@ -1,5 +1,5 @@
 import { getMediumImageUrl, getThumbnailUrl } from '../utils/imageOptimizer';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { parseProductDescription } from '../utils/descriptionHelper';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -28,6 +28,30 @@ const ProductDetails = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [selectedMention, setSelectedMention] = useState('');
+    const [showSizeWarning, setShowSizeWarning] = useState(false);
+    const sizeWarningTimeoutRef = useRef(null);
+    const sizeSectionRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (sizeWarningTimeoutRef.current) clearTimeout(sizeWarningTimeoutRef.current);
+        };
+    }, []);
+
+    const checkSizeSelected = () => {
+        if (productMentions && productMentions.length > 0 && !selectedMention) {
+            setShowSizeWarning(true);
+            if (sizeWarningTimeoutRef.current) clearTimeout(sizeWarningTimeoutRef.current);
+            sizeWarningTimeoutRef.current = setTimeout(() => {
+                setShowSizeWarning(false);
+            }, 3000);
+            if (sizeSectionRef.current) {
+                sizeSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+        return true;
+    };
 
     const { blocks: descBlocks, mentions: descMentions } = useMemo(() => {
         return parseProductDescription(product?.description);
@@ -118,14 +142,18 @@ const ProductDetails = () => {
             return {
                 ...product,
                 selectedMention,
-                title: `${product.title} (${selectedMention})`,
-                mention: selectedMention
+                selectedUnit: selectedMention,
+                unit: selectedMention,
+                mention: selectedMention,
+                // Clean title without appending `(${selectedMention})`
+                title: product.title || product.name
             };
         }
         return product;
     };
 
     const handleAddToCart = () => {
+        if (!checkSizeSelected()) return;
         if (!user) {
             navigate('/login');
             return;
@@ -134,6 +162,7 @@ const ProductDetails = () => {
     };
 
     const handleCheckout = () => {
+        if (!checkSizeSelected()) return;
         if (!user) {
             navigate('/login');
             return;
@@ -380,7 +409,10 @@ const ProductDetails = () => {
 
                     {/* Mentions (Sizes / Variants, e.g. S, M, L, XL - Uniform white cards, selected black with white text) */}
                     {productMentions && productMentions.length > 0 && (
-                        <div className="mb-6">
+                        <div ref={sizeSectionRef} className="mb-6">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                                {t('Size')}
+                            </h3>
                             <div className="flex flex-wrap gap-2">
                                 {productMentions.map((m, idx) => {
                                     const isSel = selectedMention === m;
@@ -388,7 +420,10 @@ const ProductDetails = () => {
                                         <button
                                             key={idx}
                                             type="button"
-                                            onClick={() => setSelectedMention(isSel ? '' : m)}
+                                            onClick={() => {
+                                                setSelectedMention(isSel ? '' : m);
+                                                if (showSizeWarning) setShowSizeWarning(false);
+                                            }}
                                             className={`min-w-[48px] h-10 px-3.5 flex items-center justify-center rounded-xl text-sm font-semibold transition-all select-none cursor-pointer shadow-xs ${
                                                 isSel
                                                     ? 'bg-black text-white border-2 border-black dark:bg-white dark:text-black dark:border-white font-bold'
@@ -493,12 +528,20 @@ const ProductDetails = () => {
                                 </p>
                             </div>
                         ) : (
-                            <button
-                                onClick={handleCheckout}
-                                className="w-[82%] sm:w-[70%] max-w-sm min-h-[46px] bg-black text-white py-3.5 sm:py-4 px-6 rounded-full font-bold text-sm sm:text-base active:scale-[0.98] transition-transform flex items-center justify-center shadow-md hover:bg-gray-900 cursor-pointer"
-                            >
-                                <span>{t('Add product')}</span>
-                            </button>
+                            <div className="relative w-[82%] sm:w-[70%] max-w-sm flex justify-center">
+                                {showSizeWarning && (
+                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[11px] font-bold py-1 px-3.5 rounded-full shadow-lg whitespace-nowrap animate-bounce flex items-center gap-1 z-30 pointer-events-none">
+                                        <span>{t('Please select a size')}</span>
+                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-red-600 rotate-45" />
+                                    </div>
+                                )}
+                                <button
+                                    onClick={handleCheckout}
+                                    className="w-full min-h-[46px] bg-black text-white py-3.5 sm:py-4 px-6 rounded-full font-bold text-sm sm:text-base active:scale-[0.98] transition-transform flex items-center justify-center shadow-md hover:bg-gray-900 cursor-pointer"
+                                >
+                                    <span>{t('Add product')}</span>
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>

@@ -7,7 +7,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { apiService, API_BASE_URL } from '../utils/api';
-import { renderBilingualTitle } from '../utils/titleHelpers';
+import { renderBilingualTitle, getSelectedUnitDisplay } from '../utils/titleHelpers';
 import { getStoreName, formatDeliveryRangeFromDate } from '../utils/storeHelpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CancelOrderModal from '../components/CancelOrderModal';
@@ -414,11 +414,15 @@ const OrderDetails = () => {
                                     <div className="flex items-center justify-between mt-1">
                                         <div className="flex items-baseline gap-1.5">
                                             <p className="text-[15px] font-bold text-gray-900 dark:text-white leading-none">₹{Number(item.price * item.quantity).toFixed(0)}</p>
-                                            {(item.unit || item.product?.unit || item.mention || item.selectedMention) && (
-                                                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                                    ({item.unit || item.product?.unit || item.mention || item.selectedMention})
-                                                </span>
-                                            )}
+                                            {(() => {
+                                                const unitDisplay = getSelectedUnitDisplay(item);
+                                                if (!unitDisplay) return null;
+                                                return (
+                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                        ({unitDisplay})
+                                                    </span>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-md text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
                                             x{item.quantity}
