@@ -137,6 +137,18 @@ const DeliveryDashboard = () => {
         setOverlayDeliverySessionActive(true);
     }, []);
 
+    // Popstate lock: prevent browser back from escaping to user screens
+    useEffect(() => {
+        window.history.pushState({ panel: 'delivery-dashboard' }, '', window.location.href);
+
+        const handlePopState = () => {
+            window.history.pushState({ panel: 'delivery-dashboard' }, '', window.location.href);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     // Android back button is strictly disabled on delivery panel and orders feed
     useEffect(() => {
         if (!showLogoutModal) return;
@@ -511,11 +523,15 @@ const DeliveryDashboard = () => {
                         }
                         localStorage.removeItem('customer_backup_token');
                         localStorage.removeItem('customer_backup_user');
+                        setShowLogoutModal(false);
+                        setIsLoggingOut(false);
+                        navigate('/profile', { replace: true });
+                    } else {
+                        setShowLogoutModal(false);
+                        setIsLoggingOut(false);
+                        if (logout) await logout();
+                        navigate('/login', { replace: true });
                     }
-
-                    setShowLogoutModal(false);
-                    setIsLoggingOut(false);
-                    navigate('/profile', { replace: true });
                 }}
             />
 

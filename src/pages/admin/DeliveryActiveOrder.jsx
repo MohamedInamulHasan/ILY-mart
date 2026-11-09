@@ -246,15 +246,10 @@ const DeliveryActiveOrder = () => {
         openExternalLink(targetUrl);
     };
 
-    // When Leave button is clicked: set stay to false and go to delivery dashboard if active, or back to profile
+    // When Leave button is clicked: set stay to false and return to delivery dashboard (/admin), NEVER to user screens
     const handleLeave = () => {
         localStorage.setItem('active_delivery_stay', 'false');
-        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-        if (isDeliverySessionActive) {
-            navigate('/admin');
-        } else {
-            navigate('/profile', { replace: true });
-        }
+        navigate('/admin', { replace: true });
     };
 
     // 1. Accept order: saves to backend first, then updates card to Out for Delivery mode + celebratory popup
@@ -327,7 +322,7 @@ const DeliveryActiveOrder = () => {
 
             // Clean active order from storage immediately
             localStorage.removeItem('active_delivery_order_id');
-            localStorage.removeItem('active_delivery_stay');
+            localStorage.setItem('active_delivery_stay', 'false');
 
             // Trigger real green flower popup
             setPopupState({
@@ -389,15 +384,12 @@ const DeliveryActiveOrder = () => {
     const handlePopupComplete = () => {
         const completedType = popupState.type;
         setPopupState(prev => ({ ...prev, isOpen: false }));
-        if (completedType === 'delivered' || completedType === 'cancelled') {
-            localStorage.removeItem('active_delivery_order_id');
-            localStorage.removeItem('active_delivery_stay');
-            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-            if (isDeliverySessionActive) {
-                navigate('/admin', { replace: true });
-            } else {
-                navigate('/profile', { replace: true });
-            }
+        if (completedType === 'delivered') {
+            // Stay on delivered details page! Do not navigate away, do not push to user screen!
+            return;
+        }
+        if (completedType === 'cancelled') {
+            navigate('/admin', { replace: true });
         }
     };
 
@@ -528,14 +520,25 @@ const DeliveryActiveOrder = () => {
                         </span>
                     </div>
 
-                    {/* Right: Red LEAVE button without shine */}
+                    {/* Right: Leave / Back to Panel button */}
                     <button
                         type="button"
                         onClick={handleLeave}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none border border-red-700 shrink-0"
+                        className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-transform shadow-md select-none shrink-0 ${
+                            isDelivered ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90 border border-black/80' : 'bg-red-600 hover:bg-red-700 text-white border border-red-700'
+                        }`}
                     >
-                        <LogOut size={14} className="stroke-[2.5] text-white" />
-                        <span>{t('Leave')}</span>
+                        {isDelivered ? (
+                            <>
+                                <ArrowLeft size={14} className="stroke-[2.5]" />
+                                <span>{t('Panel')}</span>
+                            </>
+                        ) : (
+                            <>
+                                <LogOut size={14} className="stroke-[2.5] text-white" />
+                                <span>{t('Leave')}</span>
+                            </>
+                        )}
                     </button>
                 </div>
             </header>
@@ -775,19 +778,29 @@ const DeliveryActiveOrder = () => {
                             />
                         </div>
                     ) : isDelivered ? (
-                        <div className="relative overflow-hidden w-full py-4 rounded-full bg-[#00C988] text-white font-black text-sm flex items-center justify-center gap-2 shadow-md select-none">
-                            <motion.div
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"
-                                animate={{ x: ['-100%', '200%'] }}
-                                transition={{
-                                    repeat: Infinity,
-                                    duration: 2,
-                                    ease: 'easeInOut',
-                                    repeatDelay: 0.5
-                                }}
-                            />
-                            <CheckCircle size={20} className="text-white stroke-[2.8] relative z-10" />
-                            <span className="relative z-10">{t('Delivered Successfully')}</span>
+                        <div className="space-y-2.5 w-full">
+                            <div className="relative overflow-hidden w-full py-3.5 rounded-2xl bg-[#00C988] text-white font-black text-sm flex items-center justify-center gap-2 shadow-md select-none">
+                                <motion.div
+                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"
+                                    animate={{ x: ['-100%', '200%'] }}
+                                    transition={{
+                                        repeat: Infinity,
+                                        duration: 2,
+                                        ease: 'easeInOut',
+                                        repeatDelay: 0.5
+                                    }}
+                                />
+                                <CheckCircle size={20} className="text-white stroke-[2.8] relative z-10" />
+                                <span className="relative z-10">{t('Delivered Successfully')}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/admin', { replace: true })}
+                                className="w-full py-3.5 rounded-2xl bg-black dark:bg-white text-white dark:text-black font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-transform cursor-pointer"
+                            >
+                                <ArrowLeft size={16} className="stroke-[2.5]" />
+                                <span>{t('Back to Delivery Panel')}</span>
+                            </button>
                         </div>
                     ) : (
                         <div className="w-full py-3.5 rounded-full text-center text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">

@@ -11,10 +11,16 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
     // Admin-only routes: require a real admin/staff account
     const roles = getUserRoles(user);
     const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
-    const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+    const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+    const isDeliveryMode = isDeliveryBoy && !isDeliveryBoyLoggedOut;
 
-    // Only redirect away if delivery boy is in an active delivery panel session and not on profile/address
-    if (isDeliveryBoy && !adminOnly && isDeliverySessionActive && !['/profile', '/edit-address'].includes(location.pathname)) {
+    // Strict lock: delivery boys cannot access user routes
+    if (isDeliveryMode && !adminOnly) {
+        const activeOrderId = localStorage.getItem('active_delivery_order_id');
+        const activeStay = localStorage.getItem('active_delivery_stay');
+        if (activeOrderId && activeStay !== 'false') {
+            return <Navigate to={`/admin/delivery-order/${activeOrderId}`} replace />;
+        }
         return <Navigate to="/admin" replace />;
     }
 

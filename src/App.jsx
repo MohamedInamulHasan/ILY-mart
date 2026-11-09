@@ -62,14 +62,18 @@ const HomeWithRedirect = () => {
     const { user, loading } = useAuth();
     if (loading) return null;
 
-    // Guests are auto-created on app launch, so !user is only a rare fallback.
-    // Don't redirect to /login — just show Home for all users (including guests).
     const roles = getUserRoles(user);
     const isAdmin = roles.includes('admin');
     const isDeliveryBoy = roles.includes('delivery_boy');
-    const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+    const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+    const isDeliveryMode = isDeliveryBoy && !isAdmin && !isDeliveryBoyLoggedOut;
 
-    if (isDeliveryBoy && !isAdmin && isDeliverySessionActive) {
+    if (isDeliveryMode) {
+        const activeOrderId = localStorage.getItem('active_delivery_order_id');
+        const activeStay = localStorage.getItem('active_delivery_stay');
+        if (activeOrderId && activeStay !== 'false') {
+            return <Navigate to={`/admin/delivery-order/${activeOrderId}`} replace />;
+        }
         return <Navigate to="/admin" replace />;
     }
     return <Home />;
@@ -82,13 +86,14 @@ const AdminOrDeliveryDashboard = () => {
     const roles = getUserRoles(user);
     const isDeliveryBoy = roles.includes('delivery_boy');
     const isAdmin = roles.includes('admin');
+    const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+    const isDeliveryMode = isDeliveryBoy && !isAdmin && !isDeliveryBoyLoggedOut;
 
-    if (isDeliveryBoy && !isAdmin) {
-        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-        if (!isDeliverySessionActive) {
-            return <Navigate to="/profile" replace />;
-        }
+    if (isDeliveryMode) {
         return <DeliveryDashboard />;
+    }
+    if (isDeliveryBoy && !isAdmin && isDeliveryBoyLoggedOut) {
+        return <Navigate to="/profile" replace />;
     }
     return <AdminDashboard />;
 };
@@ -99,19 +104,28 @@ const RoleRedirectHandler = () => {
     const location = useLocation();
 
     useEffect(() => {
-        // Wait for auth to finish loading unless already authenticated
         if (loading && !hasAdminAccess(user)) return;
 
         const roles = getUserRoles(user);
         const isAdmin = roles.includes('admin');
         const isDeliveryBoy = roles.includes('delivery_boy');
-        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+        const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+        const isDeliveryMode = isDeliveryBoy && !isAdmin && !isDeliveryBoyLoggedOut;
 
-        // ONLY enforce delivery panel lock if the delivery boy is in an active delivery panel session
-        if (isDeliveryBoy && !isAdmin && isDeliverySessionActive) {
-            const isAllowed = location.pathname.startsWith('/admin');
-            if (!isAllowed) {
-                navigate('/admin', { replace: true });
+        if (isDeliveryMode) {
+            // Strict delivery boy mode lock: can ONLY access delivery dashboard and delivery order pages
+            const isDeliveryRoute = 
+                location.pathname === '/admin' || 
+                location.pathname.startsWith('/admin/delivery-order');
+
+            if (!isDeliveryRoute) {
+                const activeOrderId = localStorage.getItem('active_delivery_order_id');
+                const activeStay = localStorage.getItem('active_delivery_stay');
+                if (activeOrderId && activeStay !== 'false') {
+                    navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
+                } else {
+                    navigate('/admin', { replace: true });
+                }
                 return;
             }
 
@@ -127,8 +141,6 @@ const RoleRedirectHandler = () => {
     return null;
 };
 
-
-
 const Layout = ({ children, onRefresh }) => {
     const location = useLocation();
     const { user } = useAuth();
@@ -143,8 +155,15 @@ const Layout = ({ children, onRefresh }) => {
 
         const roles = getUserRoles(user);
         const isDeliveryUser = roles.includes('delivery_boy');
-        const isDeliveryRoute = location.pathname.startsWith('/admin/delivery');
-        if (!isDeliveryUser || !isDeliveryRoute) {
+        const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+        const isDeliveryMode = isDeliveryUser && !isDeliveryBoyLoggedOut;
+
+        if (isDeliveryMode) {
+            localStorage.setItem('delivery_session_active', 'true');
+            try {
+                setOverlayDeliverySessionActive(true);
+            } catch (e) {}
+        } else {
             localStorage.setItem('delivery_session_active', 'false');
             localStorage.setItem('delivery_floating_overlay_enabled', 'false');
             try {
@@ -182,7 +201,10 @@ const Layout = ({ children, onRefresh }) => {
         const allowed = ['/', '/store', '/orders', '/profile', '/categories'];
         return allowed.includes(pathname) || pathname.startsWith('/category/');
     };
-    const showMobileFooter = isAllowedFooterRoute(location.pathname) && !isFooterHidden;
+    const isDeliveryUser = roles.includes('delivery_boy') && !isAdmin;
+    const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+    const isDeliveryMode = isDeliveryUser && !isDeliveryBoyLoggedOut;
+    const showMobileFooter = isAllowedFooterRoute(location.pathname) && !isFooterHidden && !isDeliveryMode;
 
     const { cartItems, deliveryCharge } = useCart();
     const { t } = useLanguage();

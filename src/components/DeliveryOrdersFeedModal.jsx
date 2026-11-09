@@ -57,11 +57,15 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                             }
                             localStorage.removeItem('customer_backup_token');
                             localStorage.removeItem('customer_backup_user');
+                            setShowLogoutModal(false);
+                            if (onClose) onClose();
+                            navigate('/profile', { replace: true });
+                        } else {
+                            setShowLogoutModal(false);
+                            if (onClose) onClose();
+                            if (logout) await logout();
+                            navigate('/login', { replace: true });
                         }
-
-                        setShowLogoutModal(false);
-                        if (onClose) onClose();
-                        navigate('/profile', { replace: true });
                     }}
                 />
 

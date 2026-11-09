@@ -78,6 +78,15 @@ export const useBackButton = () => {
             } catch (e) {}
         }
 
+        const roles = getUserRoles(userRef.current);
+        const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
+        const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+        const isDeliveryMode = isDeliveryBoy && !isDeliveryBoyLoggedOut;
+
+        if (isDeliveryMode && !path.startsWith('/admin')) {
+            return;
+        }
+
         const last = navHistory[navHistory.length - 1];
         if (path !== last) {
             navHistory.push(path);
@@ -91,17 +100,30 @@ export const useBackButton = () => {
 
             // DELIVERY FLOW STRICT LOCK:
             // When in delivery panel, order list, accept page, or delivery page:
-            // The Android back button / back icon is completely disabled ("dont make work in android").
+            // The Android back button / gesture is completely disabled ("make the nav back couldn't work in the delivery boys screens").
             const roles = getUserRoles(userRef.current);
             const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
-            const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+            const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+            const isDeliveryMode = isDeliveryBoy && !isDeliveryBoyLoggedOut;
 
             const isDeliveryFlow = 
-                currentPath.startsWith('/admin/delivery-order') ||
-                (isDeliveryBoy && isDeliverySessionActive) ||
-                (isDeliverySessionActive && currentPath.startsWith('/admin'));
+                currentPath.startsWith('/admin/delivery') ||
+                currentPath === '/admin' ||
+                isDeliveryMode;
 
             if (isDeliveryFlow) {
+                // If a modal is open in delivery panel (like Orders Feed modal or Logout modal), close it
+                if (modalBackStack.length > 0) {
+                    const closeTopModal = modalBackStack.pop();
+                    if (typeof closeTopModal === 'function') {
+                        try {
+                            closeTopModal();
+                            return true;
+                        } catch (e) {
+                            console.warn('Error closing modal on back:', e);
+                        }
+                    }
+                }
                 // Return true so Capacitor and native Android treat this as handled, preventing any navigation or app exit
                 return true;
             }

@@ -68,12 +68,15 @@ const Login = () => {
                 sessionStorage.removeItem('redirectAfterLogin');
                 navigate(savedRedirect);
             } else {
-                const roles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
-                const isDeliveryBoy = roles.some(r => {
-                    const normalized = String(r || '').toLowerCase().trim();
-                    return normalized === 'delivery_boy' || normalized === 'deliveryboy';
-                });
-                navigate(isDeliveryBoy ? '/admin' : '/');
+                const roles = getUserRoles(user);
+                const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
+                if (isDeliveryBoy) {
+                    localStorage.removeItem('delivery_boy_logged_out');
+                    localStorage.setItem('delivery_session_active', 'true');
+                    navigate('/admin', { replace: true });
+                } else {
+                    navigate('/');
+                }
             }
         }
     }, [navigate, user]);
