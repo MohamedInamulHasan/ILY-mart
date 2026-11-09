@@ -448,6 +448,7 @@ const DeliveryDashboard = () => {
                 onConfirm={async () => {
                     setIsLoggingOut(true);
                     localStorage.setItem('delivery_boy_logged_out', 'true');
+                    localStorage.removeItem('delivery_session_active');
                     localStorage.setItem('delivery_floating_overlay_enabled', 'false');
                     setIsFloatingEnabled(false);
                     await hideFloatingOverlay();

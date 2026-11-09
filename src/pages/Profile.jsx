@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import AuthContext, { useAuth } from '../context/AuthContext';
 import { useUserProfile, useUpdateProfile } from '../hooks/queries/useUsers';
+import { useOrders } from '../hooks/queries/useOrders';
 import { useData } from '../context/DataContext';
 import LogoutModal from '../components/LogoutModal';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
@@ -19,7 +20,7 @@ import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
 import api, { apiService } from '../utils/api';
 import { getUserRoles } from '../utils/userHelpers';
 
-const MenuLink = ({ icon, title, to, onClick, isRed = false, disabled = false }) => {
+const MenuLink = ({ icon, title, to, onClick, isRed = false, disabled = false, badge = null }) => {
     const Wrapper = to && !disabled ? Link : 'button';
     return (
         <Wrapper 
@@ -40,13 +41,16 @@ const MenuLink = ({ icon, title, to, onClick, isRed = false, disabled = false })
                     {title}
                 </span>
             </div>
-            {!disabled ? (
-                <ChevronRight size={17} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
-            ) : (
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                    Disabled
-                </span>
-            )}
+            <div className="flex items-center gap-2">
+                {badge}
+                {!disabled ? (
+                    <ChevronRight size={17} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                ) : (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                        Disabled
+                    </span>
+                )}
+            </div>
         </Wrapper>
     );
 };
@@ -136,6 +140,7 @@ const Profile = () => {
             const userData = data?.user || data?.data || data;
             if (token) {
                 localStorage.removeItem('delivery_boy_logged_out');
+                localStorage.setItem('delivery_session_active', 'true');
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('userInfo', JSON.stringify(userData));
                 setAuthUser(userData);
@@ -210,6 +215,13 @@ const Profile = () => {
             hasDeliveryRole(authUser)
         );
     }, [userProfile, user, authUser]);
+
+    const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy) });
+    const pendingOrdersCount = useMemo(() => {
+        if (!isDeliveryBoy) return 0;
+        const list = Array.isArray(allOrders) ? allOrders : (allOrders?.data || []);
+        return list.filter(o => ['Processing', 'Pending', 'Order Placed'].includes(o.status)).length;
+    }, [isDeliveryBoy, allOrders]);
 
     // Robust extraction of all roles from every available source
     const roles = useMemo(() => {
@@ -342,9 +354,7 @@ const Profile = () => {
                             )}
                             {isDeliveryBoy && !isAdmin && (
                                 <MenuLink 
-                                    disabled={localStorage.getItem('delivery_boy_logged_out') === 'true'}
                                     onClick={() => {
-                                        if (localStorage.getItem('delivery_boy_logged_out') === 'true') return;
                                         setDeliveryAuthId(authUser?.deliveryId || user?.deliveryId || '');
                                         setDeliveryAuthPassword('');
                                         setDeliveryAuthError('');
@@ -353,6 +363,18 @@ const Profile = () => {
                                     }}
                                     icon={<Truck size={17} strokeWidth={2} />} 
                                     title={t('Delivery Boy')} 
+                                    badge={
+                                        pendingOrdersCount > 0 ? (
+                                            <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white flex items-center gap-1 shadow-xs animate-pulse">
+                                                <span>{pendingOrdersCount}</span>
+                                                <span className="text-[10px] font-semibold uppercase">{t('Pending')}</span>
+                                            </span>
+                                        ) : (
+                                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                                                0 {t('Pending')}
+                                            </span>
+                                        )
+                                    }
                                 />
                             )}
                             {isStoreAdmin && (

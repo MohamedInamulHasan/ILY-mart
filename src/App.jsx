@@ -67,8 +67,9 @@ const HomeWithRedirect = () => {
     const roles = getUserRoles(user);
     const isAdmin = roles.includes('admin');
     const isDeliveryBoy = roles.includes('delivery_boy');
+    const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
 
-    if (isDeliveryBoy && !isAdmin) {
+    if (isDeliveryBoy && !isAdmin && isDeliverySessionActive) {
         return <Navigate to="/admin" replace />;
     }
     return <Home />;
@@ -83,6 +84,10 @@ const AdminOrDeliveryDashboard = () => {
     const isAdmin = roles.includes('admin');
 
     if (isDeliveryBoy && !isAdmin) {
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+        if (!isDeliverySessionActive) {
+            return <Navigate to="/profile" replace />;
+        }
         return <DeliveryDashboard />;
     }
     return <AdminDashboard />;
@@ -100,10 +105,11 @@ const RoleRedirectHandler = () => {
         const roles = getUserRoles(user);
         const isAdmin = roles.includes('admin');
         const isDeliveryBoy = roles.includes('delivery_boy');
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
 
-        // STRICT ACCESS CONTROL: Delivery boy has NO access to other pages except delivery panel and orders list
-        if (isDeliveryBoy && !isAdmin) {
-            const allowedPrefixes = ['/admin', '/login', '/forgot-password', '/reset-password'];
+        // ONLY enforce delivery panel lock if the delivery boy is in an active delivery panel session
+        if (isDeliveryBoy && !isAdmin && isDeliverySessionActive) {
+            const allowedPrefixes = ['/admin', '/login', '/forgot-password', '/reset-password', '/profile', '/edit-address'];
             const isAllowed = allowedPrefixes.some(p => location.pathname === p || location.pathname.startsWith(p));
             if (!isAllowed) {
                 navigate('/admin', { replace: true });

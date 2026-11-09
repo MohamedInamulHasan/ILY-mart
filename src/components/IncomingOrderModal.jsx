@@ -397,19 +397,20 @@ const IncomingOrderModal = ({
                         </div>
                     </div>
 
-                    {/* Bottom: Swipe to ACCEPT with SKIP button below */}
+                    {/* Bottom: View Order button with SKIP below */}
                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
-                        <SwipeActionButton
-                            variant="yellow"
-                            label={t('SWIPE TO ACCEPT')}
-                            loadingLabel={t('Accepting...')}
-                            isLoading={isActionLoading}
-                            autoReset={true}
-                            heightClass="h-[50px] sm:h-[52px]"
-                            knobSizeClass="w-[38px] h-[38px]"
-                            iconSize={18}
-                            onSuccess={handleMainSwipeAction}
-                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                stopIncomingOrderAlertSound();
+                                setViewMode('details');
+                                if (onAcceptViewOpened) onAcceptViewOpened(order);
+                            }}
+                            className="w-full py-3.5 px-4 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white font-black text-sm uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer select-none"
+                        >
+                            <span>{t('VIEW ORDER')}</span>
+                            <ChevronsRight size={18} className="stroke-[2.5]" />
+                        </button>
 
                         {/* Skip Button like Porter App */}
                         <button
@@ -422,7 +423,7 @@ const IncomingOrderModal = ({
                                     handleDismissView();
                                 }
                             }}
-                            className="w-full mt-1.5 py-1 text-center text-xs sm:text-[13px] font-bold text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 tracking-widest uppercase active:scale-95 transition-all cursor-pointer select-none"
+                            className="w-full mt-2 py-1 text-center text-xs sm:text-[13px] font-bold text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 tracking-widest uppercase active:scale-95 transition-all cursor-pointer select-none"
                         >
                             {t('SKIP')}
                         </button>

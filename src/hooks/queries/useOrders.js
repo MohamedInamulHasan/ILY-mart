@@ -9,7 +9,7 @@ export const orderKeys = {
     detail: (id) => [...orderKeys.details(), id]
 };
 
-export const useOrders = (params = {}) => {
+export const useOrders = (params = {}, options = {}) => {
     const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('authToken');
     let userPhone = '';
     if (typeof window !== 'undefined') {
@@ -22,6 +22,8 @@ export const useOrders = (params = {}) => {
         } catch (_) {}
     }
 
+    const isEnabled = options.enabled !== undefined ? (hasToken && options.enabled) : hasToken;
+
     return useQuery({
         // Include userPhone in key so changing phone number isolates order cache instantly
         queryKey: [...orderKeys.list(params), userPhone],
@@ -29,9 +31,10 @@ export const useOrders = (params = {}) => {
             const response = await apiService.getOrders(params);
             return response?.data || response || [];
         },
-        enabled: hasToken,
+        enabled: isEnabled,
         staleTime: 5 * 1000,
         refetchInterval: hasToken ? 3000 : false,
+        ...options
     });
 };
 

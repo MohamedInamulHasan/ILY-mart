@@ -132,8 +132,9 @@ const MobileFooter = () => {
 
     const roles = getUserRoles(user);
     const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
-    if (isDeliveryBoy) {
-        return null; // Delivery boy has no access to customer navigation footer
+    const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+    if (isDeliveryBoy && isDeliverySessionActive && location.pathname.startsWith('/admin')) {
+        return null; // Delivery boy has no access to customer navigation footer while in active delivery session
     }
 
     const allowedFooterRoutes = ['/', '/store', '/orders', '/profile', '/categories'];

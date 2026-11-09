@@ -9,10 +9,12 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
     const location = useLocation();
 
     // Admin-only routes: require a real admin/staff account
-    // If delivery boy tries to access non-admin customer routes, redirect to delivery panel
     const roles = getUserRoles(user);
     const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
-    if (isDeliveryBoy && !adminOnly) {
+    const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+
+    // Only redirect away if delivery boy is in an active delivery panel session and not on profile/address
+    if (isDeliveryBoy && !adminOnly && isDeliverySessionActive && !['/profile', '/edit-address'].includes(location.pathname)) {
         return <Navigate to="/admin" replace />;
     }
 
