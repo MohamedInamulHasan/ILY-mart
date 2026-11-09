@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
 import { useLanguage } from '../context/LanguageContext';
+import { safeNavigateBack } from '../utils/useBackButton';
 import { renderBilingualTitle, getSelectedUnitDisplay } from '../utils/titleHelpers';
 import { useData } from '../context/DataContext';
 import { calculateDeliveryCharge, getStoreName } from '../utils/storeHelpers';
@@ -30,11 +31,7 @@ const Cart = () => {
     const finalTotal = cartTotal + deliveryCharge;
 
     const handleBackNav = () => {
-        if (cartItems.length === 0 || !window.history.state || window.history.state.idx <= 0) {
-            navigate('/');
-        } else {
-            navigate(-1);
-        }
+        safeNavigateBack(navigate, '/');
     };
 
     if (cartItems.length === 0) {

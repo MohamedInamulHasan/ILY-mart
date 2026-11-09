@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
+import { safeNavigateBack } from '../utils/useBackButton';
 import { ArrowLeft, Bookmark } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
@@ -34,7 +35,7 @@ const SavedProducts = () => {
                     <div className="max-w-7xl mx-auto px-2 relative min-h-[38px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
                             <button 
-                                onClick={() => navigate(-1)} 
+                                onClick={() => safeNavigateBack(navigate, '/')} 
                                 className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
                             >
                                 <ArrowLeft size={19} />

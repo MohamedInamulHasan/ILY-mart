@@ -34,7 +34,7 @@ const DeleteAccount = () => {
                     <div className="max-w-7xl mx-auto px-2 relative min-h-[42px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
                             <button
-                                onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/profile')}
+                                onClick={() => safeNavigateBack(navigate, '/profile')}
                                 className="w-[42px] h-[42px] flex items-center justify-center bg-white rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50"
                             >
                                 <ArrowLeft size={22} />

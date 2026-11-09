@@ -12,6 +12,7 @@ import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import { isCategoryPreview } from '../utils/categoryHelpers';
 import { useCategories } from '../hooks/queries/useCategories';
 import SwipeActionButton from '../components/SwipeActionButton';
+import { safeNavigateBack } from '../utils/useBackButton';
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -312,7 +313,7 @@ const ProductDetails = () => {
                     {/* Floating Navigation Buttons */}
                     <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-30">
                         <button
-                            onClick={() => navigate(-1)}
+                            onClick={() => safeNavigateBack(navigate)}
                             className="w-10 h-10 flex items-center justify-center text-gray-900 dark:text-gray-900 transition-transform active:scale-90"
                         >
                             <ArrowLeft size={24} />

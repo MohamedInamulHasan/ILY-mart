@@ -21,6 +21,65 @@ const isOrderFlowRoute = (p) => {
 };
 
 /**
+ * Universal safe back navigation for UI back arrow buttons and headers.
+ * Navigates back through history, closes open modals first, or falls back safely to Home/specified route.
+ */
+export const safeNavigateBack = (navigate, fallback = '/') => {
+    if (typeof navigate !== 'function') return;
+
+    // 1. If any modal / popup is open, close the top modal first
+    if (modalBackStack.length > 0) {
+        const closeTopModal = modalBackStack.pop();
+        if (typeof closeTopModal === 'function') {
+            try {
+                closeTopModal();
+                return;
+            } catch (e) {
+                console.warn('Error closing modal on safeNavigateBack:', e);
+            }
+        }
+    }
+
+    // 2. If order was just placed, go to Home
+    const orderJustPlaced = (() => {
+        try {
+            return sessionStorage.getItem('orderJustPlaced') === 'true';
+        } catch (e) {
+            return false;
+        }
+    })();
+    if (orderJustPlaced) {
+        markOrderPlaced();
+        navigate('/', { replace: true });
+        return;
+    }
+
+    const currentPath = window.location.pathname || '/';
+
+    // 3. Navigate back through tracked history stack
+    while (navHistory.length > 1) {
+        navHistory.pop(); // remove current page
+        const previous = navHistory[navHistory.length - 1];
+        if (orderJustPlaced && isOrderFlowRoute(previous)) {
+            continue;
+        }
+        if (previous && previous !== currentPath) {
+            navigate(previous);
+            return;
+        }
+    }
+
+    // 4. Try browser history if idx > 0
+    if (window.history.state && window.history.state.idx > 0) {
+        navigate(-1);
+        return;
+    }
+
+    // 5. Fallback safely to specified fallback route (default Home '/')
+    navigate(fallback);
+};
+
+/**
  * Call this when an order is submitted/confirmed so back navigation
  * purges the cart, checkout, order-confirmation, and product details from history
  * and routes directly to the Home page.
@@ -83,7 +142,8 @@ export const useBackButton = () => {
         const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
         const isDeliveryMode = isDeliveryBoy && !isDeliveryBoyLoggedOut;
 
-        if (isDeliveryMode && !path.startsWith('/admin')) {
+        // Only skip tracking when actually on delivery boy specific screens
+        if (isDeliveryMode && (path === '/admin' || path.startsWith('/admin/delivery'))) {
             return;
         }
 
@@ -99,19 +159,17 @@ export const useBackButton = () => {
             const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
 
             // DELIVERY FLOW STRICT LOCK:
-            // When in delivery panel, order list, accept page, or delivery page:
-            // The Android back button / gesture is completely disabled ("make the nav back couldn't work in the delivery boys screens").
+            // ONLY disable back button on actual delivery boy screens:
+            // 1. Delivery panel: /admin (when active delivery boy)
+            // 2. Active delivery order / delivery details: /admin/delivery-order/*
             const roles = getUserRoles(userRef.current);
             const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
             const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
             const isDeliveryMode = isDeliveryBoy && !isDeliveryBoyLoggedOut;
 
-            const isDeliveryFlow = 
-                currentPath.startsWith('/admin/delivery') ||
-                currentPath === '/admin' ||
-                isDeliveryMode;
+            const isDeliveryScreen = currentPath === '/admin' || currentPath.startsWith('/admin/delivery');
 
-            if (isDeliveryFlow) {
+            if (isDeliveryMode && isDeliveryScreen) {
                 // If a modal is open in delivery panel (like Orders Feed modal or Logout modal), close it
                 if (modalBackStack.length > 0) {
                     const closeTopModal = modalBackStack.pop();
@@ -124,10 +182,11 @@ export const useBackButton = () => {
                         }
                     }
                 }
-                // Return true so Capacitor and native Android treat this as handled, preventing any navigation or app exit
+                // Return true to prevent any back navigation from escaping delivery screens
                 return true;
             }
 
+            // --- REGULAR USER BACK NAVIGATION (Always works on all customer/user pages!) ---
             // 1. If any modal / popup / feed is open, close the top modal first
             if (modalBackStack.length > 0) {
                 const closeTopModal = modalBackStack.pop();
@@ -156,8 +215,8 @@ export const useBackButton = () => {
                 return true;
             }
 
-            // 3. Already at root — minimize the app
-            if (currentPath === '/' || currentPath === '/home' || currentPath === '/admin') {
+            // 3. Already at root — return false so Android minimizes the app
+            if (currentPath === '/' || currentPath === '/home') {
                 return false;
             }
 
@@ -180,8 +239,10 @@ export const useBackButton = () => {
                 if (orderJustPlaced && isOrderFlowRoute(previous)) {
                     continue;
                 }
-                navigate(previous, { replace: true });
-                return true;
+                if (previous && previous !== currentPath) {
+                    navigate(previous);
+                    return true;
+                }
             }
 
             // 5. Fallback: only use browser history if order was not just placed
@@ -191,7 +252,7 @@ export const useBackButton = () => {
             }
 
             // 6. Last resort: go Home rather than close the app
-            navigate('/', { replace: true });
+            navigate('/');
             return true;
         };
 

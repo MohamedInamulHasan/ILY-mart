@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useLanguage } from '../context/LanguageContext';
+import { safeNavigateBack } from '../utils/useBackButton';
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import SimpleProductCard from '../components/SimpleProductCard';
@@ -122,7 +123,7 @@ const ProductGroupProducts = () => {
                             {/* Back button */}
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button
-                                    onClick={() => navigate(-1)}
+                                    onClick={() => safeNavigateBack(navigate, '/')}
                                     className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50"
                                 >
                                     <ArrowLeft size={19} />

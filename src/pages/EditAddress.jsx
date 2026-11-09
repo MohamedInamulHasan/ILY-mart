@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { safeNavigateBack } from '../utils/useBackButton';
 import { ArrowLeft, MapPin, Check, Navigation, AlertCircle } from 'lucide-react';
 import { API_BASE_URL, apiService } from '../utils/api';
 import { getCurrentLocation } from '../utils/locationHelpers';
@@ -291,7 +292,7 @@ const EditAddress = () => {
                     <div className="max-w-7xl mx-auto px-2 relative min-h-[38px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
                             <button
-                                onClick={() => navigate(-1)}
+                                onClick={() => safeNavigateBack(navigate, '/checkout')}
                                 className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-900 dark:text-white transition-transform active:scale-95 border border-gray-100/50 dark:border-gray-700/50"
                             >
                                 <ArrowLeft size={19} />

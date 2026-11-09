@@ -10,6 +10,7 @@ import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { safeNavigateBack } from '../utils/useBackButton';
 import AuthContext, { useAuth } from '../context/AuthContext';
 import { useUserProfile, useUpdateProfile } from '../hooks/queries/useUsers';
 import { useOrders } from '../hooks/queries/useOrders';
@@ -271,7 +272,7 @@ const Profile = () => {
                 <div className="relative z-10">
                     <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                            <button onClick={() => navigate(-1)} className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50">
+                            <button onClick={() => safeNavigateBack(navigate, '/')} className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50">
                                 <ArrowLeft size={19} />
                             </button>
                         </div>

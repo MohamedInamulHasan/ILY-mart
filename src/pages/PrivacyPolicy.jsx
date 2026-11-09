@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, Lock, Eye, FileText, Database, Trash2, Mail } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { safeNavigateBack } from '../utils/useBackButton';
 
 const PrivacyPolicy = () => {
     const navigate = useNavigate();
@@ -16,7 +17,7 @@ const PrivacyPolicy = () => {
                     <div className="max-w-7xl mx-auto px-2 relative min-h-[42px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
                             <button 
-                                onClick={() => navigate(-1)} 
+                                onClick={() => safeNavigateBack(navigate, '/')} 
                                 className="w-[42px] h-[42px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
                             >
                                 <ArrowLeft size={22} />

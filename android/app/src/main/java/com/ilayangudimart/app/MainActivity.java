@@ -202,11 +202,17 @@ public class MainActivity extends BridgeActivity {
             getBridge().getWebView().evaluateJavascript(
                 "(function() {" +
                 "  try {" +
-                "    var isDel = (localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true') || window.location.pathname.indexOf('/admin/delivery-order') !== -1;" +
-                "    if (isDel) { return 'handled'; }" +
-                "    if (window.__handleBackButton && window.__handleBackButton()) { return 'handled'; }" +
+                "    var path = window.location.pathname || '';" +
+                "    var isDeliveryScreen = (path === '/admin' || path.indexOf('/admin/delivery') !== -1);" +
+                "    var isDeliveryBoy = (localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true');" +
+                "    if (window.__handleBackButton) {" +
+                "      var res = window.__handleBackButton();" +
+                "      if (res === true) { return 'handled'; }" +
+                "      if (res === false) { return 'exit'; }" +
+                "    }" +
+                "    if (isDeliveryScreen && isDeliveryBoy) { return 'handled'; }" +
                 "    if (window.history.state && window.history.state.idx > 0) { window.history.back(); return 'navigated'; }" +
-                "    if (window.location.pathname !== '/' && window.location.pathname !== '/home' && window.location.pathname !== '/admin') {" +
+                "    if (path !== '/' && path !== '/home' && path !== '/admin') {" +
                 "      window.location.href = '/';" +
                 "      return 'navigated';" +
                 "    }" +
