@@ -6,6 +6,7 @@ import {
     updateCategory,
     deleteCategory,
     getCategoryImage,
+    getCategoryStoreImage,
     updateCategoriesOrder
 } from '../controllers/categoryController.js';
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
@@ -25,5 +26,6 @@ router.route('/:id')
 
 
 router.get('/:id/image', getCategoryImage);
+router.get('/:id/store-image', getCategoryStoreImage);
 
 export default router;

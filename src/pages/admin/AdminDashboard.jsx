@@ -2279,6 +2279,7 @@ const CategoryManagement = () => {
     const [formData, setFormData] = useState({
         name: '',
         image: '',
+        storeImage: '',
         subcategories: [], // Array of subcategory names
         subcategoryImages: {}, // Map of subcategory name -> image URL
         isPreview: false
@@ -2354,6 +2355,19 @@ const CategoryManagement = () => {
             } catch (error) {
                 console.error('Error uploading category image:', error);
                 alert(t('Failed to upload image. Please try another image.'));
+            }
+        }
+    };
+
+    const handleStoreImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            try {
+                const imageUrl = await uploadImage(file, { isCategory: true });
+                setFormData(prev => ({ ...prev, storeImage: imageUrl }));
+            } catch (error) {
+                console.error('Error uploading store category image:', error);
+                alert(t('Failed to upload store category image. Please try another image.'));
             }
         }
     };
@@ -2434,10 +2448,12 @@ const CategoryManagement = () => {
     const handleEdit = (category) => {
         setEditingCategory(category);
         // Use API fallback for image if not directly stored
-        const imageUrl = category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`;
+        const imageUrl = category.image || (category._id ? `${API_BASE_URL}/categories/${category._id}/image` : '');
+        const storeImageUrl = category.storeImage || (category._id ? `${API_BASE_URL}/categories/${category._id}/store-image` : '');
         setFormData({
             name: category.name || '',
             image: imageUrl,
+            storeImage: category.storeImage ? storeImageUrl : '',
             subcategories: Array.isArray(category.subcategories) ? category.subcategories : [],
             subcategoryImages: category.subcategoryImages || {},
             isPreview: Boolean(category.isPreview === true || category.mode === 'preview')
@@ -2493,6 +2509,9 @@ const CategoryManagement = () => {
                 if (updateData.image && (updateData.image.includes(API_BASE_URL) || updateData.image.includes('/api/categories'))) {
                     delete updateData.image;
                 }
+                if (updateData.storeImage && (updateData.storeImage.includes(API_BASE_URL) || updateData.storeImage.includes('/api/categories'))) {
+                    delete updateData.storeImage;
+                }
 
                 await updateCategory({ id: editingCategory._id || editingCategory.id, data: updateData });
                 alert(t('Category updated successfully!'));
@@ -2504,7 +2523,7 @@ const CategoryManagement = () => {
                 });
                 alert(t('Category added successfully!'));
             }
-            setFormData({ name: '', image: '', subcategories: [], subcategoryImages: {}, isPreview: false });
+            setFormData({ name: '', image: '', storeImage: '', subcategories: [], subcategoryImages: {}, isPreview: false });
             setNewSubcategory('');
             setEditingCategory(null);
             setView('list');
@@ -2838,7 +2857,7 @@ const CategoryManagement = () => {
                             onClick={() => {
                                 if (view === 'list') {
                                     setEditingCategory(null);
-                                    setFormData({ name: '', image: '', subcategories: [], isPreview: false });
+                                    setFormData({ name: '', image: '', storeImage: '', subcategories: [], isPreview: false });
                                     setNewSubcategory('');
                                     setView('form');
                                 } else {
@@ -3240,14 +3259,17 @@ const CategoryManagement = () => {
                             </div>
                         </div>}
 
+                        {/* 1. Home Page Category Image (1:1 Square) */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Category Image')}</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {t('Home Page Category Image')} (1:1 Square)
+                            </label>
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                                 {formData.image && (
-                                    <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-gray-200 dark:ring-gray-700">
+                                    <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-gray-200 dark:ring-gray-700 aspect-square flex-shrink-0 bg-gray-50 dark:bg-gray-700 shadow-xs">
                                         <img
                                             src={formData.image}
-                                            alt="Preview"
+                                            alt="Home Category Preview"
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 e.target.onerror = null;
@@ -3256,21 +3278,56 @@ const CategoryManagement = () => {
                                         />
                                     </div>
                                 )}
-                                <label className="flex-1 cursor-pointer">
-                                    <div className="w-full px-4 py-2 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
-                                        <Upload size={20} />
-                                        <span>{uploadingCategory ? t('Uploading...') : (formData.image ? t('Change Image') : t('Upload Image'))}</span>
+                                <label className="flex-1 cursor-pointer w-full">
+                                    <div className="w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
+                                        <Upload size={18} />
+                                        <span>{uploadingCategory ? t('Uploading...') : (formData.image ? t('Change Home Category Image') : t('Upload Home Category Image'))}</span>
                                     </div>
                                     <input
                                         type="file"
                                         accept="image/*"
                                         onChange={handleImageUpload}
                                         className="hidden"
-                                        required={!formData.image}
                                     />
                                 </label>
                             </div>
                         </div>
+
+                        {/* 2. Store Page Category Image (1:1 Square) */}
+                        {!editingCategory?.isAll && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {t('Store Page Category Image')} (1:1 Square)
+                                </label>
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    {formData.storeImage && (
+                                        <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-gray-200 dark:ring-gray-700 aspect-square flex-shrink-0 bg-gray-50 dark:bg-gray-700 shadow-xs">
+                                            <img
+                                                src={formData.storeImage}
+                                                alt="Store Category Preview"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = "https://via.placeholder.com/80?text=No+Image";
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                    <label className="flex-1 cursor-pointer w-full">
+                                        <div className="w-full px-4 py-2.5 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
+                                            <Upload size={18} />
+                                            <span>{uploadingCategory ? t('Uploading...') : (formData.storeImage ? t('Change Store Category Image') : t('Upload Store Category Image'))}</span>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleStoreImageUpload}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex justify-end">
                             <button

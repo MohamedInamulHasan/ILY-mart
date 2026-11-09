@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Bell, CheckCircle, Truck, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useOrders } from '../hooks/queries/useOrders';
 import IncomingOrderModal from './IncomingOrderModal';
@@ -27,6 +27,11 @@ const NotificationOverlay = () => {
     const initialOrdersLoadedRef = useRef(false);
     const knownOrderIdsRef = useRef(new Set());
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const isDeliveryPage = useMemo(() => {
+        return location.pathname.startsWith('/admin');
+    }, [location.pathname]);
 
     const roles = useMemo(() => getUserRoles(user), [user]);
     const isDeliveryBoy = useMemo(() => {
@@ -69,10 +74,18 @@ const NotificationOverlay = () => {
         return allOrders.filter(o => isProcessingStatus(o.status));
     }, [allOrders, isDeliveryBoy]);
 
+    // Dismiss incoming order popup immediately if user leaves delivery routes (e.g. goes to home or orders)
+    useEffect(() => {
+        if (!isDeliveryPage && incomingOrder) {
+            setIncomingOrder(null);
+            setStartWithAcceptView(false);
+        }
+    }, [isDeliveryPage, incomingOrder]);
+
     // Only alert for NEW orders placed in real-time while in the app!
     // Do NOT alert for existing/old processing orders when opening the panel.
     useEffect(() => {
-        if (!isDeliveryBoy) return;
+        if (!isDeliveryBoy || !isDeliveryPage) return;
         if (allOrders.length === 0) return;
 
         // On first load of orders, record all existing order IDs as known so we never alert old past orders
@@ -87,11 +100,6 @@ const NotificationOverlay = () => {
 
         // If an incoming order modal is currently showing, wait until user explicitly accepts or skips
         if (incomingOrder) return;
-
-        // Do not popup modal on top of active order details screen
-        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/delivery-order')) {
-            return;
-        }
 
         // Check if any brand new processing order was placed during this active session
         const newRealtimeOrder = allOrders.find(o => {
@@ -113,7 +121,7 @@ const NotificationOverlay = () => {
             setIncomingOrder(newRealtimeOrder);
             triggerIncomingOrderAlert();
         }
-    }, [isDeliveryBoy, incomingOrder, allOrders, skippedOrderIds]);
+    }, [isDeliveryBoy, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds]);
 
     // Auto-dismiss popup if the current order is accepted or cancelled
     useEffect(() => {
@@ -353,7 +361,9 @@ const NotificationOverlay = () => {
             // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
             queryClient.invalidateQueries({ queryKey: ['orders'] });
 
-            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/delivery-order')) {
+            // Strictly ONLY show popup in delivery panel, orders list, and accept / delivery order page
+            // Do NOT show in home, orders, profile, or other customer pages
+            if (!isDeliveryPage) {
                 return;
             }
 
@@ -394,7 +404,7 @@ const NotificationOverlay = () => {
             socket.off('order:updated', handleOrderUpdated);
             socket.off('order:created', handleOrderCreated);
         };
-    }, [socket, user, isDeliveryBoy, hasActiveAcceptedOrder, skippedOrderIds, t, navigate, queryClient]);
+    }, [socket, user, isDeliveryBoy, isDeliveryPage, hasActiveAcceptedOrder, skippedOrderIds, t, navigate, queryClient]);
 
     const addNotification = (notif) => {
         setNotifications(prev => [...prev, notif]);
@@ -409,7 +419,7 @@ const NotificationOverlay = () => {
 
     return (
         <>
-            {isDeliveryBoy && incomingOrder && (
+            {isDeliveryBoy && isDeliveryPage && incomingOrder && (
                 <IncomingOrderModal
                     key={incomingOrder._id || incomingOrder.id}
                     order={incomingOrder}

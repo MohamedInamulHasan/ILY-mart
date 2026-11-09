@@ -683,8 +683,8 @@ const StoreProducts = () => {
             </section>
 
             {subcategoryData.length >= 2 && (
-                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5 border-b border-gray-200/80 dark:border-gray-800">
-                    <div className="flex items-center gap-6 sm:gap-7 overflow-x-auto scrollbar-hide">
+                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
+                    <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
                         {subcategoryData.map(({ name }) => {
                             const isSelected = normKey(effectiveSubcategory) === normKey(name);
                             return (
@@ -696,16 +696,13 @@ const StoreProducts = () => {
                                         setSelectedSubcategory(name);
                                         e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                                     }}
-                                    className={`pb-2.5 text-[13.5px] sm:text-[15px] transition-all relative whitespace-nowrap cursor-pointer select-none ${
+                                    className={`text-[13px] sm:text-[14px] transition-all whitespace-nowrap flex items-center justify-center py-1.5 rounded-xl border cursor-pointer select-none ${
                                         isSelected 
-                                            ? 'text-black dark:text-white font-bold' 
-                                            : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white font-semibold'
+                                            ? 'px-3.5 bg-gray-800 text-white font-bold shadow-xs border-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white' 
+                                            : 'px-2.5 bg-transparent border-transparent text-gray-950 dark:text-white font-semibold hover:text-black dark:hover:text-white'
                                     }`}
                                 >
                                     <span>{getCategoryDisplayName(name)}</span>
-                                    {isSelected && (
-                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200"></div>
-                                    )}
                                 </button>
                             );
                         })}

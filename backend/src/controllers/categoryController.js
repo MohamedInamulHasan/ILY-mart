@@ -28,6 +28,9 @@ export const getCategories = async (req, res, next) => {
             if (catObj.image && catObj.image.startsWith('data:image')) {
                 catObj.image = null;
             }
+            if (catObj.storeImage && catObj.storeImage.startsWith('data:image')) {
+                catObj.storeImage = null;
+            }
             return catObj;
         });
 
@@ -70,7 +73,7 @@ export const getCategoryById = async (req, res, next) => {
 // @access  Private/Admin
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, name_ta, description, icon, image, subcategories, subcategoryImages, isPreview, mode, mainCategory } = req.body;
+        const { name, name_ta, description, icon, image, storeImage, subcategories, subcategoryImages, isPreview, mode, mainCategory } = req.body;
 
         // Check if category already exists
         const categoryExists = await Category.findOne({ name });
@@ -86,6 +89,7 @@ export const createCategory = async (req, res, next) => {
             description,
             icon,
             image,
+            storeImage: storeImage || '',
             subcategories: subcategories || [],
             subcategoryImages: subcategoryImages || {},
             isPreview: Boolean(isPreview === true || mode === 'preview'),
@@ -309,6 +313,9 @@ export const deleteCategory = async (req, res, next) => {
         if (category.image) {
             await deleteFromCloudinary(category.image);
         }
+        if (category.storeImage) {
+            await deleteFromCloudinary(category.storeImage);
+        }
 
         invalidateCategoryCache();
         await Category.findByIdAndDelete(req.params.id);
@@ -350,6 +357,39 @@ export const getCategoryImage = async (req, res, next) => {
             res.end(buffer);
         } else {
             res.redirect(category.image);
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get category store image
+// @route   GET /api/categories/:id/store-image
+// @access  Public
+export const getCategoryStoreImage = async (req, res, next) => {
+    try {
+        const category = await Category.findById(req.params.id).lean().select('storeImage image');
+
+        const targetImg = category?.storeImage || category?.image;
+        if (!category || !targetImg) {
+            return res.status(404).send('Image not found');
+        }
+
+        if (targetImg.startsWith('data:image')) {
+            const matches = targetImg.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+            if (matches.length !== 3) {
+                return res.status(404).send('Invalid image data');
+            }
+            const type = matches[1];
+            const buffer = Buffer.from(matches[2], 'base64');
+
+            res.writeHead(200, {
+                'Content-Type': type,
+                'Content-Length': buffer.length
+            });
+            res.end(buffer);
+        } else {
+            res.redirect(targetImg);
         }
     } catch (error) {
         next(error);
