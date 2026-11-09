@@ -9,7 +9,7 @@ import { useAds } from '../hooks/queries/useAds';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useStores } from '../hooks/queries/useStores';
 import { useCategories } from '../hooks/queries/useCategories';
-import { getCleanCategoryName, stripEmojis } from '../utils/categoryHelpers';
+import { getCleanCategoryName, stripEmojis, normCategoryKey, areCategoriesMatching, findCanonicalCategory, normSubcategoryKey, areSubcategoriesMatching } from '../utils/categoryHelpers';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { API_BASE_URL } from '../utils/api';
@@ -299,117 +299,127 @@ const StoreProducts = () => {
     // Resolves category display name with uploaded emoji for the store page
     const getCategoryDisplayName = (name) => {
         if (!name) return '';
-        if (normKey(name) === 'all') {
+        if (normSubcategoryKey(name) === 'all') {
             return getCleanCategoryName('All', language, null, { keepEmoji: true });
         }
-        const nKey = normKey(name);
-        const foundCat = categories.find(c => {
-            return normKey(c?.name) === nKey ||
-                   normKey(c?.name_ta) === nKey ||
-                   (c?._id && String(c._id) === String(name));
-        });
+        // Check if matching official subcategory in categories
+        for (const cat of categories) {
+            if (Array.isArray(cat?.subcategories)) {
+                const foundSub = cat.subcategories.find(s => areSubcategoriesMatching(s, name));
+                if (foundSub) {
+                    return getCleanCategoryName(foundSub, language, null, { keepEmoji: true });
+                }
+            }
+        }
+        // Or if matching category
+        const foundCat = findCanonicalCategory(name, categories);
         if (foundCat) {
             return getCleanCategoryName(foundCat, language, null, { keepEmoji: true });
         }
         return getCleanCategoryName(name, language, null, { keepEmoji: true });
     };
 
+    const getSubcategoryImage = (subName) => {
+        if (!subName || normSubcategoryKey(subName) === 'all') return null;
+        for (const cat of categories) {
+            if (cat?.subcategoryImages && typeof cat.subcategoryImages === 'object') {
+                for (const [key, url] of Object.entries(cat.subcategoryImages)) {
+                    if (url && areSubcategoriesMatching(key, subName)) {
+                        return url;
+                    }
+                }
+            }
+        }
+        // If it's a category fallback
+        const matchedCat = findCanonicalCategory(subName, categories);
+        if (matchedCat) {
+            return matchedCat.storeImage || matchedCat.image || null;
+        }
+        return null;
+    };
+
     // Extract unique categories and subcategories for the store page category scroller
     const subcategoryData = useMemo(() => {
         const itemMap = new Map();
 
-        // 1. Valid category and subcategory names from database categories
-        const validCategoryNorms = new Set();
-        const normToOfficialName = new Map();
+        // 1. Store's categories
+        const storeTypes = Array.isArray(store?.type) ? store.type : (store?.type ? [store.type] : []);
+        const storeCats = categories.filter(cat => storeTypes.some(t => areCategoriesMatching(t, cat)));
 
-        categories.forEach(cat => {
-            if (!cat) return;
-            const cNorm = normKey(cat.name);
-            if (cNorm) {
-                validCategoryNorms.add(cNorm);
-                normToOfficialName.set(cNorm, cat.name);
-            }
-            if (cat.name_ta) {
-                const taNorm = normKey(cat.name_ta);
-                if (taNorm) {
-                    validCategoryNorms.add(taNorm);
-                    normToOfficialName.set(taNorm, cat.name);
-                }
-            }
-            if (Array.isArray(cat.subcategories)) {
+        // Flatten official subcategories from store's categories
+        const officialSubcategories = [];
+        storeCats.forEach(cat => {
+            if (Array.isArray(cat?.subcategories)) {
                 cat.subcategories.forEach(sub => {
-                    const sNorm = normKey(sub);
-                    if (sNorm) {
-                        validCategoryNorms.add(sNorm);
-                        normToOfficialName.set(sNorm, sub);
+                    if (sub && !officialSubcategories.some(os => areSubcategoriesMatching(os, sub))) {
+                        officialSubcategories.push(sub);
                     }
                 });
             }
         });
 
-        // 2. Count matching products and merge identical categories
+        // 2. Count matching products and merge identical categories/subcategories
         groupedStoreProducts.forEach(p => {
-            const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-            let items = subs.filter(Boolean);
-            
-            // If product has no subcategory, extract its category
-            if (items.length === 0 && p.category) {
-                items = [p.category];
+            const rawSubs = (Array.isArray(p.subcategory) ? p.subcategory : [p.subcategory])
+                .filter(s => s && typeof s === 'string' && s.trim() !== '');
+
+            if (rawSubs.length > 0) {
+                const seenForThisProduct = new Set();
+                rawSubs.forEach(s => {
+                    const officialSub = officialSubcategories.find(os => areSubcategoriesMatching(os, s)) || s;
+                    const nKey = normSubcategoryKey(officialSub);
+                    if (!nKey || seenForThisProduct.has(nKey)) return;
+                    seenForThisProduct.add(nKey);
+
+                    if (!itemMap.has(nKey)) {
+                        itemMap.set(nKey, { name: officialSub, count: 1 });
+                    } else {
+                        itemMap.get(nKey).count += 1;
+                    }
+                });
+            } else if (p.category) {
+                const canonicalCat = findCanonicalCategory(p.category, categories)?.name || p.category;
+                const nKey = normCategoryKey(canonicalCat);
+                if (nKey) {
+                    if (!itemMap.has(nKey)) {
+                        itemMap.set(nKey, { name: canonicalCat, count: 1 });
+                    } else {
+                        itemMap.get(nKey).count += 1;
+                    }
+                }
             }
-
-            const seenForThisProduct = new Set();
-            items.forEach(rawItem => {
-                const nKey = normKey(rawItem);
-                if (!nKey || seenForThisProduct.has(nKey)) return;
-                seenForThisProduct.add(nKey);
-
-                // If categories are loaded, filter out deleted categories that are no longer in categories list
-                if (validCategoryNorms.size > 0 && !validCategoryNorms.has(nKey)) {
-                    const storeTypes = Array.isArray(store?.type) ? store.type : (store?.type ? [store.type] : []);
-                    const matchesStoreType = storeTypes.some(t => normKey(t) === nKey);
-                    if (!matchesStoreType) return;
-                }
-
-                const officialName = normToOfficialName.get(nKey) || String(rawItem).trim();
-
-                if (!itemMap.has(nKey)) {
-                    itemMap.set(nKey, { name: officialName, count: 1 });
-                } else {
-                    itemMap.get(nKey).count += 1;
-                }
-            });
         });
 
         // Fallback: If itemMap is empty and store has types
         if (itemMap.size === 0 && store?.type) {
             const types = Array.isArray(store.type) ? store.type : [store.type];
             types.filter(Boolean).forEach(t => {
-                const nKey = normKey(t);
+                const canonicalCat = findCanonicalCategory(t, categories)?.name || String(t).trim();
+                const nKey = normCategoryKey(canonicalCat);
                 if (nKey && !itemMap.has(nKey)) {
-                    const officialName = normToOfficialName.get(nKey) || String(t).trim();
-                    itemMap.set(nKey, { name: officialName, count: 1 });
+                    itemMap.set(nKey, { name: canonicalCat, count: 1 });
                 }
             });
         }
 
         const result = Array.from(itemMap.values());
 
-        // Sort based on category order in database
-        const subOrder = [];
-        categories.forEach(cat => {
-            if (Array.isArray(cat.subcategories)) {
+        // Sort based on category and subcategory order in database
+        const sortOrder = [];
+        storeCats.forEach(cat => {
+            if (Array.isArray(cat?.subcategories)) {
                 cat.subcategories.forEach(s => {
-                    const n = normKey(s);
-                    if (!subOrder.includes(n)) subOrder.push(n);
+                    const n = normSubcategoryKey(s);
+                    if (!sortOrder.includes(n)) sortOrder.push(n);
                 });
             }
-            const catNorm = normKey(cat.name);
-            if (!subOrder.includes(catNorm)) subOrder.push(catNorm);
+            const catNorm = normCategoryKey(cat.name);
+            if (!sortOrder.includes(catNorm)) sortOrder.push(catNorm);
         });
 
         const sorted = result.sort((a, b) => {
-            const indexA = subOrder.indexOf(normKey(a.name));
-            const indexB = subOrder.indexOf(normKey(b.name));
+            const indexA = sortOrder.indexOf(normSubcategoryKey(a.name));
+            const indexB = sortOrder.indexOf(normSubcategoryKey(b.name));
 
             if (indexA !== -1 && indexB !== -1) {
                 return indexA - indexB;
@@ -433,7 +443,7 @@ const StoreProducts = () => {
 
     const effectiveSubcategory = useMemo(() => {
         if (subcategoryData.length >= 2) {
-            if (selectedSubcategory && subcategoryData.some(s => normKey(s.name) === normKey(selectedSubcategory))) {
+            if (selectedSubcategory && subcategoryData.some(s => areSubcategoriesMatching(s.name, selectedSubcategory) || areCategoriesMatching(s.name, selectedSubcategory))) {
                 return selectedSubcategory;
             }
             return subcategoryData[0]?.name || null;
@@ -451,7 +461,7 @@ const StoreProducts = () => {
             )
             : groupedStoreProducts;
 
-        if (!effectiveSubcategory || normKey(effectiveSubcategory) === 'all') {
+        if (!effectiveSubcategory || normSubcategoryKey(effectiveSubcategory) === 'all') {
             const allItems = [...filteredList];
             if (allItems.length === 0) return [];
 
@@ -465,12 +475,12 @@ const StoreProducts = () => {
             return [['_all_', allItems]];
         }
 
-        const normalizedSelected = normKey(effectiveSubcategory);
         const filteredProducts = filteredList
             .filter(p => {
-                const rawSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-                const matchSub = rawSubs.some(s => normKey(s) === normalizedSelected);
-                const matchCat = normKey(p.category) === normalizedSelected;
+                const rawSubs = (Array.isArray(p.subcategory) ? p.subcategory : [p.subcategory])
+                    .filter(s => s && typeof s === 'string' && s.trim() !== '');
+                const matchSub = rawSubs.some(s => areSubcategoriesMatching(s, effectiveSubcategory));
+                const matchCat = areCategoriesMatching(p.category, effectiveSubcategory);
                 return matchSub || (rawSubs.length === 0 && matchCat);
             })
             .sort((a, b) => {
@@ -686,7 +696,8 @@ const StoreProducts = () => {
                 <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
                     <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
                         {subcategoryData.map(({ name }) => {
-                            const isSelected = normKey(effectiveSubcategory) === normKey(name);
+                            const isSelected = normSubcategoryKey(effectiveSubcategory) === normSubcategoryKey(name) || areCategoriesMatching(effectiveSubcategory, name);
+                            const subImg = getSubcategoryImage(name);
                             return (
                                 <button
                                     key={name}
@@ -702,6 +713,14 @@ const StoreProducts = () => {
                                             : 'px-2.5 bg-transparent border-transparent text-gray-950 dark:text-white font-semibold hover:text-black dark:hover:text-white'
                                     }`}
                                 >
+                                    {subImg && (
+                                        <img
+                                            src={subImg}
+                                            alt={name}
+                                            className="w-4 h-4 sm:w-5 sm:h-5 rounded-md object-cover flex-shrink-0 mr-1.5 -ml-0.5"
+                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                        />
+                                    )}
                                     <span>{getCategoryDisplayName(name)}</span>
                                 </button>
                             );

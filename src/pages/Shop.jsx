@@ -5,7 +5,7 @@ import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCategories } from '../hooks/queries/useCategories';
 import { useStores } from '../hooks/queries/useStores';
-import { getCleanCategoryName, stripEmojis, extractEmojis } from '../utils/categoryHelpers';
+import { getCleanCategoryName, stripEmojis, extractEmojis, normCategoryKey, areCategoriesMatching, findCanonicalCategory } from '../utils/categoryHelpers';
 import { isStoreOpen, formatTime12h } from '../utils/storeHelpers';
 import StoreCard from '../components/StoreCard';
 import { API_BASE_URL } from '../utils/api';
@@ -20,12 +20,7 @@ const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings 
 
     const dbCat = useMemo(() => {
         if (isAll) return null;
-        const nKey = stripEmojis(String(category?.name || '')).trim().toLowerCase();
-        return (dbCategories || []).find(c => {
-            const cName = stripEmojis(String(c?.name || '')).trim().toLowerCase();
-            const cNameTa = stripEmojis(String(c?.name_ta || '')).trim().toLowerCase();
-            return cName === nKey || cNameTa === nKey || (c?._id && String(c._id) === String(category._id || category.id));
-        });
+        return findCanonicalCategory(category, dbCategories);
     }, [category, dbCategories, isAll]);
 
     const targetCat = dbCat || category;
@@ -152,7 +147,7 @@ const Shop = () => {
     const normKey = (s) => stripEmojis(String(s || '')).trim().toLowerCase();
 
     // Create a Set of valid category names for filtering store tags
-    const validCategoryNames = useMemo(() => new Set((dbCategories || []).map(c => normKey(c.name))), [dbCategories]);
+    const validCategoryNames = useMemo(() => new Set((dbCategories || []).map(c => normCategoryKey(c.name))), [dbCategories]);
     const navigate = useNavigate();
 
     const categoryFilter = searchParams.get('category') || 'All';
@@ -166,16 +161,20 @@ const Shop = () => {
         safeStores.forEach(store => {
             const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
             types.forEach(t => {
-                const nKey = normKey(t);
-                if (nKey) {
-                    counts[nKey] = (counts[nKey] || 0) + 1;
+                if (!t) return;
+                const matchedDbCat = (dbCategories || []).find(cat => areCategoriesMatching(t, cat));
+                if (matchedDbCat) {
+                    const key = matchedDbCat.name;
+                    counts[key] = (counts[key] || 0) + 1;
+                } else {
+                    counts[t] = (counts[t] || 0) + 1;
                 }
             });
         });
 
         const isGeneral = (name) => {
             if (!name) return false;
-            const clean = normKey(name).replace(/[\s_-]+/g, '');
+            const clean = normCategoryKey(name).replace(/[\s_-]+/g, '');
             return clean === 'generalstore' || clean === 'generalstores' || clean.includes('generalstore');
         };
 
@@ -185,8 +184,7 @@ const Shop = () => {
         (dbCategories || []).forEach(cat => {
             if (!cat || !cat.name) return;
             if (isGeneral(cat.name) || isGeneral(cat.name_ta)) return;
-            const nKey = normKey(cat.name);
-            const count = counts[nKey] || 0;
+            const count = counts[cat.name] || 0;
             if (count > 0) {
                 result.push({
                     ...cat,
@@ -197,18 +195,10 @@ const Shop = () => {
         });
 
         // Also check if any store type is not in dbCategories but has stores
-        Object.entries(counts).forEach(([nKey, count]) => {
-            if (isGeneral(nKey)) return;
-            if (count > 0 && !result.some(r => normKey(r.name) === nKey)) {
-                let originalName = '';
-                for (const store of safeStores) {
-                    const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
-                    const found = types.find(t => normKey(t) === nKey);
-                    if (found) { originalName = found; break; }
-                }
-                if (originalName && !isGeneral(originalName)) {
-                    result.push({ name: originalName, count });
-                }
+        Object.entries(counts).forEach(([tKey, count]) => {
+            if (isGeneral(tKey)) return;
+            if (count > 0 && !result.some(r => areCategoriesMatching(r.name, tKey))) {
+                result.push({ name: tKey, count });
             }
         });
 
@@ -217,15 +207,10 @@ const Shop = () => {
 
     const getCategoryDisplay = (category) => {
         if (!category) return '';
-        if (normKey(category.name) === 'all') {
+        if (normCategoryKey(category.name) === 'all') {
             return getCleanCategoryName('All', language, null, { keepEmoji: true });
         }
-        const nKey = normKey(category.name);
-        const found = (dbCategories || []).find(c => {
-            return normKey(c?.name) === nKey ||
-                   normKey(c?.name_ta) === nKey ||
-                   (c?._id && String(c._id) === String(category._id || category.id));
-        });
+        const found = findCanonicalCategory(category, dbCategories);
         const target = found || category;
         return getCleanCategoryName(target, language, null, { keepEmoji: true });
     };
@@ -234,11 +219,11 @@ const Shop = () => {
         const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (store.address && store.address.toLowerCase().includes(searchQuery.toLowerCase()));
         
-        const normFilter = normKey(categoryFilter);
+        const normFilter = normCategoryKey(categoryFilter);
         const matchesCategory = normFilter === 'all' ||
             (Array.isArray(store.type)
-                ? store.type.some(t => normKey(t) === normFilter)
-                : store.type && normKey(store.type) === normFilter);
+                ? store.type.some(t => areCategoriesMatching(t, categoryFilter))
+                : areCategoriesMatching(store.type, categoryFilter));
 
         return matchesSearch && matchesCategory;
     }).sort((a, b) => {

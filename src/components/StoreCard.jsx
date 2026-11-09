@@ -5,10 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Clock } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { isStoreOpen, getStoreTimeLabel } from '../utils/storeHelpers';
+import { getCleanCategoryName } from '../utils/categoryHelpers';
 import { API_BASE_URL } from '../utils/api';
 
 const StoreCard = ({ store }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const navigate = useNavigate();
     const isOpen = isStoreOpen(store);
     const timeLabel = getStoreTimeLabel(store) || store.timings;
@@ -44,13 +45,17 @@ const StoreCard = ({ store }) => {
             </div>
 
             {/* Category Tag Overlay (Top Left) */}
-            {store.category && (
-                <div className="absolute top-3 left-3 z-20">
-                    <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[9.5px] font-bold rounded-full uppercase tracking-wider shadow-sm truncate max-w-[120px] block">
-                        {store.category}
-                    </span>
-                </div>
-            )}
+            {(() => {
+                const storeCat = (Array.isArray(store.type) && store.type[0]) ? store.type[0] : (store.type || store.category);
+                if (!storeCat) return null;
+                return (
+                    <div className="absolute top-3 left-3 z-20">
+                        <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[9.5px] font-bold rounded-full uppercase tracking-wider shadow-sm truncate max-w-[120px] block">
+                            {getCleanCategoryName(storeCat, language)}
+                        </span>
+                    </div>
+                );
+            })()}
 
             {/* Rectangular Timing Badge (Top Right) - No pill */}
             {timeLabel && (

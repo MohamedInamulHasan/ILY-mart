@@ -37,6 +37,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, 
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { SortableStoreCard, SortableProductRow, DragHandle } from './AdminDashboard_Sortables';
+import { areCategoriesMatching, findCanonicalCategory, areSubcategoriesMatching, normCategoryKey } from '../../utils/categoryHelpers';
 
 const StoreManagement = () => {
     const { user } = useAuth();
@@ -77,6 +78,29 @@ const StoreManagement = () => {
         })
     );
 
+    const { uploadImage, uploading: uploadingImage } = useCloudinaryUpload();
+    const queryClient = useQueryClient();
+
+    const userRoles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
+    const isStoreAdmin = userRoles.includes('store_admin');
+    const myStoreId = user?.storeId?._id || user?.storeId;
+    const myStore = isStoreAdmin ? stores.find(s => (s._id || s.id) === myStoreId || s._id === myStoreId) : null;
+
+    const [view, setView] = useState('list'); // Default to list view for everyone
+    const [selectedStore, setSelectedStore] = useState(myStore);
+    const [editingStore, setEditingStore] = useState(myStore);
+
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Determine stores to display
+    const displayedStores = isStoreAdmin
+        ? (myStore ? [myStore] : [])
+        : stores.filter(s =>
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.address && s.address.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+
     // DnD Handler
     const handleDragEnd = async (event) => {
         const { active, over } = event;
@@ -89,12 +113,6 @@ const StoreManagement = () => {
 
                 if (oldIndex !== -1 && newIndex !== -1) {
                     const newOrder = arrayMove(displayedStores, oldIndex, newIndex);
-                    // Optimistic update if possible, but for now we rely on query invalidation
-                    // To make it smooth, we might want to update local state if we had one for the list
-                    // But 'displayedStores' is derived.
-                    // We will just fire the mutation. The UI might jump a bit until refetch.
-                    // For better UX, we'd need local state for the list.
-
                     const orderedIds = newOrder.map(s => s.id || s._id);
                     await reorderStores(orderedIds);
                 }
@@ -120,22 +138,6 @@ const StoreManagement = () => {
         }
     };
 
-    const { uploadImage, uploading: uploadingImage } = useCloudinaryUpload();
-    const queryClient = useQueryClient();
-
-    const userRoles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
-    const isStoreAdmin = userRoles.includes('store_admin');
-    const myStoreId = user?.storeId?._id || user?.storeId;
-    const myStore = isStoreAdmin ? stores.find(s => (s._id || s.id) === myStoreId || s._id === myStoreId) : null;
-
-    const [view, setView] = useState('list'); // Default to list view for everyone
-    const [selectedStore, setSelectedStore] = useState(myStore);
-    const [editingStore, setEditingStore] = useState(myStore);
-
-
-    const [editingProduct, setEditingProduct] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-
 
     // Initial load for Store Admin
     useEffect(() => {
@@ -145,7 +147,10 @@ const StoreManagement = () => {
             setSelectedStore(myStore);
 
             const storeCategories = Array.isArray(myStore.type) ? myStore.type : (myStore.type ? [myStore.type] : []);
-            const validCategories = storeCategories.filter(c => categories.some(cat => cat.name === c));
+            const matchedOfficialCats = categories
+                .filter(cat => storeCategories.some(c => areCategoriesMatching(c, cat)))
+                .map(cat => cat.name);
+            const resolvedCats = matchedOfficialCats.length > 0 ? matchedOfficialCats : storeCategories;
 
             setStoreForm({
                 name: myStore.name,
@@ -155,7 +160,7 @@ const StoreManagement = () => {
                 openingTime: myStore.openingTime || '09:00',
                 closingTime: myStore.closingTime || '21:00',
                 mobile: myStore.mobile || '',
-                category: validCategories,
+                category: resolvedCats,
                 location: myStore.location || ''
             });
         }
@@ -238,7 +243,10 @@ const StoreManagement = () => {
         setEditingStore(store);
 
         const storeCategories = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
-        const validCategories = storeCategories.filter(c => categories.some(cat => cat.name === c));
+        const matchedOfficialCats = categories
+            .filter(cat => storeCategories.some(c => areCategoriesMatching(c, cat)))
+            .map(cat => cat.name);
+        const resolvedCats = matchedOfficialCats.length > 0 ? matchedOfficialCats : storeCategories;
 
         setStoreForm({
             name: store.name,
@@ -249,7 +257,7 @@ const StoreManagement = () => {
             closingTime: store.closingTime || '21:00',
             mobile: store.mobile || '',
             timingType: store.timingType || 'daily',
-            category: validCategories,
+            category: resolvedCats,
             location: store.location || ''
         });
         setView('form');
@@ -281,9 +289,14 @@ const StoreManagement = () => {
 
         const timingString = `${formatTime(storeForm.openingTime)} - ${formatTime(storeForm.closingTime)}`;
 
+        const currentTypes = Array.isArray(editingStore?.type) ? editingStore.type : (editingStore?.type ? [editingStore.type] : []);
+        const resolvedTypes = storeForm.category.length > 0
+            ? storeForm.category
+            : (currentTypes.length > 0 ? currentTypes : ['General Store']);
+
         const storeData = {
             name: storeForm.name,
-            type: storeForm.category.length > 0 ? storeForm.category : ['General Store'], // Use selected categories
+            type: resolvedTypes, // Use selected categories
             address: storeForm.address,
             mobile: storeForm.mobile,
             timing: timingString,
@@ -332,18 +345,40 @@ const StoreManagement = () => {
     };
 
     const handleAddProductToStore = () => {
-        setProductForm({ title: '', price: '', category: '', subcategory: [], description: '', image: '', sliderImages: [], stock: 0, unit: '', useTimeLimit: false, openingTime: '00:00', closingTime: '23:59' });
+        const storeTypes = Array.isArray(selectedStore?.type) ? selectedStore.type : (selectedStore?.type ? [selectedStore.type] : []);
+        const defaultCat = (storeTypes.length > 0 && categories.length > 0)
+            ? (findCanonicalCategory(storeTypes[0], categories)?.name || storeTypes[0])
+            : (categories[0]?.name || '');
+
+        setProductForm({
+            title: '',
+            price: '',
+            category: defaultCat,
+            subcategory: [],
+            description: '',
+            image: '',
+            sliderImages: [],
+            stock: 0,
+            unit: '',
+            useTimeLimit: false,
+            openingTime: '00:00',
+            closingTime: '23:59'
+        });
         setEditingProduct(null);
         setView('addProductToStore');
     };
 
     const handleEditProduct = (product) => {
         setEditingProduct(product);
+        const canonicalCat = findCanonicalCategory(product.category, categories)?.name || product.category || '';
+        const rawSubs = Array.isArray(product.subcategory) ? product.subcategory : (product.subcategory ? [product.subcategory] : []);
+        const cleanSubs = rawSubs.filter(s => s && typeof s === 'string' && s.trim() !== '');
+
         setProductForm({
             title: product.title,
             price: product.price,
-            category: product.category,
-            subcategory: Array.isArray(product.subcategory) ? product.subcategory : (product.subcategory ? [product.subcategory] : []),
+            category: canonicalCat,
+            subcategory: cleanSubs,
             description: product.description,
             image: product.image,
             sliderImages: product.images || [],
@@ -353,7 +388,7 @@ const StoreManagement = () => {
             openingTime: product.openingTime || '00:00',
             closingTime: product.closingTime || '23:59'
         });
-        setView('addProductToStore'); // Reusing the add form for editing
+        setView('addProductToStore');
     };
 
     const handleDeleteProduct = async (productId) => {
@@ -438,11 +473,18 @@ const StoreManagement = () => {
             ? productForm.sliderImages
             : (productForm.image ? [productForm.image] : []);
 
+        const cleanSubcategories = Array.from(new Set(
+            (Array.isArray(productForm.subcategory) ? productForm.subcategory : [productForm.subcategory])
+                .filter(s => s && typeof s === 'string' && s.trim() !== '')
+        ));
+
+        const canonicalCat = findCanonicalCategory(productForm.category, categories)?.name || productForm.category;
+
         const productData = {
             title: productForm.title,
             description: productForm.description,
-            category: productForm.category,
-            subcategory: productForm.subcategory,
+            category: canonicalCat,
+            subcategory: cleanSubcategories,
             price: parseFloat(productForm.price),
             storeId: (selectedStore?.id === 'none' || !selectedStore) ? null : (selectedStore._id || selectedStore.id),
             image: productForm.image || imagesArray[0],
@@ -482,14 +524,6 @@ const StoreManagement = () => {
             alert(`${t('Error')}: ${errorMessage}`);
         }
     };
-
-    // Determine stores to display
-    const displayedStores = isStoreAdmin
-        ? (myStore ? [myStore] : [])
-        : stores.filter(s =>
-            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (s.address && s.address.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
 
     return (
         <div className="max-w-6xl">
@@ -923,14 +957,14 @@ const StoreManagement = () => {
                                                 <input
                                                     type="checkbox"
                                                     value={cat.name}
-                                                    checked={storeForm.category.includes(cat.name)}
+                                                    checked={storeForm.category.some(c => areCategoriesMatching(c, cat))}
                                                     onChange={(e) => {
-                                                        const { checked, value } = e.target;
+                                                        const { checked } = e.target;
                                                         setStoreForm(prev => ({
                                                             ...prev,
                                                             category: checked
-                                                                ? [...prev.category, value]
-                                                                : prev.category.filter(c => c !== value)
+                                                                ? [...prev.category.filter(c => !areCategoriesMatching(c, cat)), cat.name]
+                                                                : prev.category.filter(c => !areCategoriesMatching(c, cat))
                                                         }));
                                                     }}
                                                     className="w-4 h-4 mt-0.5 text-[#2E5A2E] rounded border-gray-300 focus:ring-[#2E5A2E] flex-shrink-0"
@@ -1321,8 +1355,27 @@ const StoreManagement = () => {
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Category')}</label>
+                                <select
+                                    value={productForm.category}
+                                    onChange={(e) => {
+                                        setProductForm({ ...productForm, category: e.target.value, subcategory: [] });
+                                    }}
+                                    className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none"
+                                    required
+                                >
+                                    <option value="">{t('Select Category')}</option>
+                                    {categories && categories.length > 0 && categories.map((cat) => (
+                                        <option key={cat._id || cat.id} value={cat.name}>
+                                            {t(cat.name)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             {(() => {
-                                const selectedCat = categories.find(c => c.name === productForm.category);
+                                const selectedCat = findCanonicalCategory(productForm.category, categories);
                                 const isPreviewCat = Boolean(selectedCat?.isPreview === true || selectedCat?.mode === 'preview');
                                 return isPreviewCat ? (
                                     <div>
@@ -1414,29 +1467,46 @@ const StoreManagement = () => {
                                 </label>
                                 <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 min-h-[100px] max-h-48 overflow-y-auto">
                                     {(() => {
-                                        const selectedCategoryData = categories.find(cat => cat.name === productForm.category);
+                                        const selectedCategoryData = findCanonicalCategory(productForm.category, categories);
                                         if (selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0) {
                                             return (
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                                    {selectedCategoryData.subcategories.map((sub, index) => (
-                                                        <label key={index} className="flex items-start gap-2.5 cursor-pointer p-2.5 hover:bg-white dark:hover:bg-gray-600/50 rounded-xl transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-500 min-w-0">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={productForm.subcategory.includes(sub)}
-                                                                onChange={(e) => {
-                                                                    const checked = e.target.checked;
-                                                                    setProductForm(prev => ({
-                                                                        ...prev,
-                                                                        subcategory: checked
-                                                                            ? [...prev.subcategory, sub]
-                                                                            : prev.subcategory.filter(s => s !== sub)
-                                                                    }));
-                                                                }}
-                                                                className="w-4 h-4 mt-0.5 text-[#2E5A2E] rounded border-gray-300 focus:ring-[#2E5A2E] flex-shrink-0"
-                                                            />
-                                                            <span className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-medium leading-snug break-words flex-1 min-w-0">{t(sub)}</span>
-                                                        </label>
-                                                    ))}
+                                                    {selectedCategoryData.subcategories.map((sub, index) => {
+                                                        const isChecked = (productForm.subcategory || []).some(s => areSubcategoriesMatching(s, sub));
+                                                        const subImg = selectedCategoryData.subcategoryImages?.[sub] || (
+                                                            Object.entries(selectedCategoryData.subcategoryImages || {}).find(([k]) => areSubcategoriesMatching(k, sub))?.[1]
+                                                        );
+                                                        return (
+                                                            <label key={index} className="flex items-start gap-2.5 cursor-pointer p-2.5 hover:bg-white dark:hover:bg-gray-600/50 rounded-xl transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-500 min-w-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    onChange={(e) => {
+                                                                        const checked = e.target.checked;
+                                                                        setProductForm(prev => {
+                                                                            const currentSubs = Array.isArray(prev.subcategory) ? prev.subcategory : [];
+                                                                            return {
+                                                                                ...prev,
+                                                                                subcategory: checked
+                                                                                    ? [...currentSubs.filter(s => !areSubcategoriesMatching(s, sub)), sub]
+                                                                                    : currentSubs.filter(s => !areSubcategoriesMatching(s, sub))
+                                                                            };
+                                                                        });
+                                                                    }}
+                                                                    className="w-4 h-4 mt-0.5 text-[#2E5A2E] rounded border-gray-300 focus:ring-[#2E5A2E] flex-shrink-0"
+                                                                />
+                                                                {subImg && (
+                                                                    <img
+                                                                        src={subImg}
+                                                                        alt={sub}
+                                                                        className="w-5 h-5 rounded-md object-cover flex-shrink-0 mt-0.5 border border-gray-200 dark:border-gray-600"
+                                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                                    />
+                                                                )}
+                                                                <span className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-medium leading-snug break-words flex-1 min-w-0">{t(sub)}</span>
+                                                            </label>
+                                                        );
+                                                    })}
                                                 </div>
                                             );
                                         }
@@ -1548,7 +1618,7 @@ const StoreManagement = () => {
                             </div>
                         </div>
                         {(() => {
-                            const selectedCat = categories.find(c => c.name === productForm.category);
+                            const selectedCat = findCanonicalCategory(productForm.category, categories);
                             const isPreviewCat = Boolean(selectedCat?.isPreview === true || selectedCat?.mode === 'preview');
                             return isPreviewCat ? (
                                 <div>

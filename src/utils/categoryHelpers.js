@@ -213,3 +213,110 @@ export const getCleanCategoryName = (categoryOrName, language = 'en', t = null, 
     // Strictly text only everywhere else
     return cleanFinalText;
 };
+
+/**
+ * Universal category normalization:
+ * Strips emojis, collapses whitespace, normalizes parentheses and casing.
+ * Ensures '🍔Foods(உணவு)', 'Foods (உணவு)', and 'foods(உணவு)' all produce 'foods(உணவு)'.
+ */
+export const normCategoryKey = (str) => {
+    if (!str || typeof str !== 'string') return '';
+    return stripEmojis(str)
+        .toLowerCase()
+        .replace(/\s*\(\s*/g, '(')
+        .replace(/\s*\)\s*/g, ')')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+/**
+ * Checks if two category references (string or object) represent the same category.
+ * Tolerates emoji presence/absence, whitespace variations, and bilingual bracket differences.
+ */
+export const areCategoriesMatching = (catA, catB) => {
+    if (!catA || !catB) return false;
+
+    // Check ID match if both are objects
+    if (typeof catA === 'object' && typeof catB === 'object') {
+        const idA = catA._id || catA.id;
+        const idB = catB._id || catB.id;
+        if (idA && idB && String(idA) === String(idB)) return true;
+    }
+
+    const strA = typeof catA === 'object' ? (catA.name || catA.name_ta || '') : String(catA);
+    const strB = typeof catB === 'object' ? (catB.name || catB.name_ta || '') : String(catB);
+
+    const normA = normCategoryKey(strA);
+    const normB = normCategoryKey(strB);
+
+    if (!normA || !normB) return false;
+    if (normA === normB) return true;
+
+    // Compare base English names (portion before '(')
+    const baseA = normA.split('(')[0].replace(/[^a-z0-9]/g, '');
+    const baseB = normB.split('(')[0].replace(/[^a-z0-9]/g, '');
+    if (baseA && baseB && baseA === baseB) return true;
+
+    // Compare Tamil portion inside '(' and ')'
+    const taA = normA.match(/\(([^)]+)\)/)?.[1]?.trim();
+    const taB = normB.match(/\(([^)]+)\)/)?.[1]?.trim();
+    if (taA && taB && taA === taB) return true;
+
+    // Also check name_ta if objects
+    if (typeof catA === 'object' && catA.name_ta && normCategoryKey(catA.name_ta) === normB) return true;
+    if (typeof catB === 'object' && catB.name_ta && normCategoryKey(catB.name_ta) === normA) return true;
+
+    return false;
+};
+
+/**
+ * Finds the canonical category object from a categories array.
+ */
+export const findCanonicalCategory = (categoryRef, categories = []) => {
+    if (!categoryRef || !Array.isArray(categories)) return null;
+    return categories.find(cat => areCategoriesMatching(categoryRef, cat)) || null;
+};
+
+/**
+ * Universal subcategory normalization:
+ * Strips emojis, trims whitespace, lowercases, and normalizes brackets.
+ */
+export const normSubcategoryKey = (str) => {
+    if (!str || typeof str !== 'string') return '';
+    return stripEmojis(str)
+        .toLowerCase()
+        .replace(/\s*\(\s*/g, '(')
+        .replace(/\s*\)\s*/g, ')')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+/**
+ * Checks if two subcategory strings represent the same subcategory.
+ * Tolerates emojis, plural 's' differences (biscuit vs biscuits, wafer vs wafers),
+ * casing, and bracket whitespace.
+ */
+export const areSubcategoriesMatching = (subA, subB) => {
+    if (!subA || !subB) return false;
+    const a = normSubcategoryKey(subA);
+    const b = normSubcategoryKey(subB);
+    if (!a || !b) return false;
+    if (a === b) return true;
+
+    // Plural tolerance for singular/plural differences
+    const singularA = a.endsWith('s') && !a.endsWith('ss') ? a.slice(0, -1) : a;
+    const singularB = b.endsWith('s') && !b.endsWith('ss') ? b.slice(0, -1) : b;
+    if (singularA === singularB) return true;
+
+    // Compare portion before '('
+    const baseA = a.split('(')[0].trim();
+    const baseB = b.split('(')[0].trim();
+    if (baseA && baseB) {
+        const sBaseA = baseA.endsWith('s') && !baseA.endsWith('ss') ? baseA.slice(0, -1) : baseA;
+        const sBaseB = baseB.endsWith('s') && !baseB.endsWith('ss') ? baseB.slice(0, -1) : baseB;
+        if (sBaseA === sBaseB) return true;
+    }
+
+    return false;
+};
+

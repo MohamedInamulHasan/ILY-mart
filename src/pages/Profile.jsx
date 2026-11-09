@@ -222,13 +222,6 @@ const Profile = () => {
         );
     }, [userProfile, user, authUser]);
 
-    const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy || isAdmin) });
-    const pendingOrdersCount = useMemo(() => {
-        if (!isDeliveryBoy) return 0;
-        const list = Array.isArray(allOrders) ? allOrders : (allOrders?.data || []);
-        return list.filter(o => ['Processing', 'Pending', 'Order Placed'].includes(o.status)).length;
-    }, [isDeliveryBoy, allOrders]);
-
     // Robust extraction of all roles from every available source
     const roles = useMemo(() => {
         return getUserRoles(userProfile?.data || userProfile || user || authUser);
@@ -238,6 +231,14 @@ const Profile = () => {
     const isStoreAdmin = roles.includes('store_admin');
     const isServiceAdmin = roles.includes('service_admin');
     const isAdminView = isAdmin || isStoreAdmin || isServiceAdmin || isDeliveryBoy;
+
+    const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy || isAdmin) });
+    const pendingOrdersCount = useMemo(() => {
+        if (!isDeliveryBoy) return 0;
+        const list = Array.isArray(allOrders) ? allOrders : (allOrders?.data || []);
+        return list.filter(o => ['Processing', 'Pending', 'Order Placed'].includes(o.status)).length;
+    }, [isDeliveryBoy, allOrders]);
+
     const addressObj = user?.address || {};
     const isAddressObject = typeof user?.address === 'object' && user?.address !== null;
     const hasAddress = isAddressObject 

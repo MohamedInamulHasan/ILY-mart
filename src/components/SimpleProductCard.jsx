@@ -37,6 +37,9 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
     // Check if store is open
     const isStoreOpenCheck = store ? isStoreOpen(store) : true;
     const isPreview = isCategoryPreview(product.category, categories) || product?.isPreview === true || product?.mode === 'preview';
+    const isAvailable = product.isAvailable !== false;
+    const isScheduled = isProductScheduled(product);
+    const timeLabel = !isScheduled ? getProductTimeLabel(product) : null;
 
     const handleClick = (e) => {
         if (!isPreview && !isStoreOpenCheck) {
@@ -256,10 +259,6 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
             </Link >
         );
     }
-
-    const isAvailable = product.isAvailable !== false;
-    const isScheduled = isProductScheduled(product);
-    const timeLabel = !isScheduled ? getProductTimeLabel(product) : null;
 
     return (
         <Link

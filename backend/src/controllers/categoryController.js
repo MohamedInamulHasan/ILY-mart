@@ -230,8 +230,8 @@ export const updateCategory = async (req, res, next) => {
                 // Update Stores
                 const Store = (await import('../models/Store.js')).default;
                 const storeResult = await Store.updateMany(
-                    { category: oldName },
-                    { $set: { "category.$": updateFields.name } }
+                    { type: oldName },
+                    { $set: { "type.$": updateFields.name } }
                 );
                 console.log(`🏪 Updated ${storeResult.modifiedCount} stores from category "${oldName}" → "${updateFields.name}"`);
 
