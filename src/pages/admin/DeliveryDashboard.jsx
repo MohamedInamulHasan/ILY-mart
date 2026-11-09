@@ -159,34 +159,36 @@ const DeliveryDashboard = () => {
         const nextState = !isFloatingEnabled;
         setIsFloatingEnabled(nextState);
         localStorage.setItem('delivery_floating_overlay_enabled', String(nextState));
+        window.dispatchEvent(new Event('delivery:floating-toggle'));
+
         if (!nextState) {
             await hideFloatingOverlay();
         } else {
+            // When swipe to enable: DO NOT push user out of the app!
             const granted = await checkOverlayPermission();
             setHasOverlayPermission(granted);
-            if (!granted) {
-                await requestOverlayPermission();
-            } else {
+            if (!hasAcceptedCard && granted) {
                 await showFloatingOverlay();
             }
         }
     };
 
     // Check if there is an accepted delivery card in the panel (Out for Delivery, Shipped, Accepted)
-    // Active delivery cards include Processing/Pending/Accepted/Out for Delivery
-    // Show alert on mobile screen when app is closed as long as any processing or delivery card is present
+    // Only 'Accepted', 'Out for Delivery', and 'Shipped' are accepted cards
     const hasAcceptedCard = useMemo(() => {
-        return orders.some(o => ['Processing', 'Pending', 'Order Placed', 'Accepted', 'Out for Delivery', 'Shipped'].includes(o.status));
+        return orders.some(o => ['Accepted', 'Out for Delivery', 'Shipped'].includes(o.status));
     }, [orders]);
 
-    // Keep native overlay accepted order state synced whenever orders change
+    // Keep native overlay synced: show floating icon when enabled AND no accepted card
     useEffect(() => {
         if (!isNativeAndroid()) return;
         setOverlayHasAcceptedOrder(hasAcceptedCard);
-        if (!hasAcceptedCard) {
+        if (isFloatingEnabled && !hasAcceptedCard) {
+            showFloatingOverlay();
+        } else {
             hideFloatingOverlay();
         }
-    }, [hasAcceptedCard]);
+    }, [hasAcceptedCard, isFloatingEnabled]);
 
     // Porter Partner Style Floating Logo: check permission & listen to app state change
     useEffect(() => {
@@ -207,24 +209,21 @@ const DeliveryDashboard = () => {
                 setOverlayAuthToken(currentToken);
             }
 
-            // Keep background delivery service active to alert on incoming/processing orders
-            if (isFloatingEnabled && granted) {
+            // When enabled and NO accepted card, show floating icon
+            if (isFloatingEnabled && !hasAcceptedCard && granted) {
                 showFloatingOverlay();
+            } else {
+                hideFloatingOverlay();
             }
 
             try {
                 const { App } = await import('@capacitor/app');
                 appStateListener = await App.addListener('appStateChange', ({ isActive }) => {
                     const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-                    if (!isActive) {
-                        // When app is closed/minimized -> show floating logo ONLY if enabled AND there is an accepted card
-                        if (enabled && hasAcceptedCard) {
-                            showFloatingOverlay();
-                        } else {
-                            hideFloatingOverlay();
-                        }
+                    // Show floating icon when enabled AND no accepted card
+                    if (enabled && !hasAcceptedCard) {
+                        showFloatingOverlay();
                     } else {
-                        // When app is reopened -> hide floating logo
                         hideFloatingOverlay();
                     }
                 });

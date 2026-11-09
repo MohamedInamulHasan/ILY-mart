@@ -21,14 +21,14 @@ export const getSelectedUnitDisplay = (item) => {
 
 /**
  * Utility to parse and render bilingual product titles with superscript bracket tags.
- * Example input: "Parotta ( பரோட்டா ) [1]" or "பரோட்டா ( Parotta ) [1]"
+ * Example input: "Chicken Kothu Parotta (சிக்கன் கொத்து பரோட்டா)" or "Parotta [1] (பரோட்டா)"
  *
  * Rules:
- * 1. If [1] (or any [tag]) is mentioned, it displays near the primary word as an upper superscript tag.
- * 2. If Tamil word is first ("பரோட்டா ( Parotta ) [1]"), tag [1] attaches upper near Tamil word.
- * 3. If English word is first ("Parotta ( பரோட்டா ) [1]"), tag [1] attaches upper near English word.
- * 4. If bracket text is present, it displays in the second line.
- * 5. If title is long (without brackets), it wraps cleanly to the second line.
+ * 1. Put the product name in the first line.
+ * 2. Put the bracket in the second line.
+ * 3. If there is no bracket, the name can occupy and wrap into the second line.
+ * 4. Tag (e.g. [1], [2], [1/2]) attaches near the primary name as a badge.
+ * 5. Do not alter or swap the name logic.
  */
 export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     if (!fullTitle || typeof fullTitle !== 'string') return fullTitle || '';
@@ -50,62 +50,18 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     // Remove [tag] from title string for parsing
     const cleanTitle = fullTitle.replace(/\[[^\]]+\]/g, '').trim();
 
-    const multilineMainClass = mainClassName
-        .replace(/\btruncate\b/g, '')
-        .replace(/\bwhitespace-nowrap\b/g, '')
-        .trim();
-
     const bracketIndex = cleanTitle.indexOf('(');
 
+    // If NO bracket: name in first line, and can wrap into second line (line-clamp-2)
     if (bracketIndex === -1) {
-        // Check if there is an unbracketed bilingual separator or mixed English/Tamil
-        let part1 = cleanTitle;
-        let part2 = '';
+        const multilineMainClass = mainClassName
+            .replace(/\btruncate\b/g, '')
+            .replace(/\bwhitespace-nowrap\b/g, '')
+            .trim();
 
-        const separatorMatch = cleanTitle.match(/\s+[-–—\/]\s+/);
-        if (separatorMatch) {
-            part1 = cleanTitle.substring(0, separatorMatch.index).trim();
-            part2 = cleanTitle.substring(separatorMatch.index + separatorMatch[0].length).trim();
-        } else {
-            // Check if there is an English portion and a Tamil portion without brackets, e.g. "kaadai kari காடை கறி"
-            const firstTamilMatch = cleanTitle.search(/[\u0B80-\u0BFF]/);
-            if (firstTamilMatch > 0) {
-                part1 = cleanTitle.substring(0, firstTamilMatch).trim();
-                part2 = cleanTitle.substring(firstTamilMatch).trim();
-            }
-        }
-
-        if (part2) {
-            const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-            const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-            let mainText = part1;
-            let subText = part2;
-            if (isPart1Tamil && !isPart2Tamil) {
-                if (language === 'ta') { mainText = part1; subText = part2; }
-                else { mainText = part2; subText = part1; }
-            } else if (isPart2Tamil && !isPart1Tamil) {
-                if (language === 'ta') { mainText = part2; subText = part1; }
-                else { mainText = part1; subText = part2; }
-            }
-
-            return (
-                <span className="flex flex-col w-full max-w-full">
-                    <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass}`}>
-                        <span className="line-clamp-2 break-words whitespace-normal">{mainText}</span>
-                        {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
-                    </span>
-                    <span className={`line-clamp-2 break-words whitespace-normal leading-tight ${subClassName}`}>
-                        ({subText})
-                    </span>
-                </span>
-            );
-        }
-
-        // Single language title with no brackets:
-        // Allow the product name to wrap into the second line (line-clamp-2 break-words) instead of single-line truncate
         return (
             <span className="flex flex-col w-full max-w-full">
-                <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass} line-clamp-2 break-words whitespace-normal`}>
+                <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass}`}>
                     <span className="line-clamp-2 break-words whitespace-normal">{cleanTitle}</span>
                     {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
                 </span>
@@ -113,51 +69,33 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
         );
     }
 
-    const part1 = cleanTitle.substring(0, bracketIndex).trim();
-    let part2 = cleanTitle.substring(bracketIndex + 1).trim();
-    if (part2.endsWith(')')) {
-        part2 = part2.substring(0, part2.length - 1).trim();
+    // Has bracket: put name in first line, bracket in second line
+    const namePart = cleanTitle.substring(0, bracketIndex).trim();
+    let bracketPart = cleanTitle.substring(bracketIndex).trim();
+    if (!bracketPart.startsWith('(')) {
+        bracketPart = `(${bracketPart}`;
+    }
+    if (!bracketPart.endsWith(')')) {
+        bracketPart = `${bracketPart})`;
     }
 
-    const isPart1Tamil = /[\u0B80-\u0BFF]/.test(part1);
-    const isPart2Tamil = /[\u0B80-\u0BFF]/.test(part2);
-
-    let mainText = '';
-    let subText = '';
-
-    if (isPart1Tamil && !isPart2Tamil) {
-        if (language === 'ta') {
-            mainText = part1;
-            subText = part2;
-        } else {
-            mainText = part2;
-            subText = part1;
-        }
-    } else if (isPart2Tamil && !isPart1Tamil) {
-        if (language === 'ta') {
-            mainText = part2;
-            subText = part1;
-        } else {
-            mainText = part1;
-            subText = part2;
-        }
-    } else {
-        // Neither or both have Tamil: keep part1 as main, part2 as bracketed subtext below
-        mainText = part1;
-        subText = part2;
-    }
+    const firstLineClass = mainClassName.trim();
+    const secondLineClass = subClassName
+        .replace(/\btruncate\b/g, '')
+        .replace(/\bwhitespace-nowrap\b/g, '')
+        .trim();
 
     return (
         <span className="flex flex-col w-full max-w-full">
-            <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${multilineMainClass}`}>
-                <span className="line-clamp-2 break-words whitespace-normal">{mainText}</span>
+            {/* First line: Product Name */}
+            <span className={`inline-flex items-start gap-1 max-w-full leading-tight ${firstLineClass}`}>
+                <span className="truncate">{namePart}</span>
                 {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
-            {subText && (
-                <span className={`line-clamp-2 break-words whitespace-normal leading-tight ${subClassName}`}>
-                    ({subText})
-                </span>
-            )}
+            {/* Second line: Bracket */}
+            <span className={`leading-tight ${secondLineClass}`}>
+                <span className="line-clamp-2 break-words whitespace-normal">{bracketPart}</span>
+            </span>
         </span>
     );
 };
