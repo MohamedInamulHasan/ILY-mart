@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { MapPin, Navigation, Sparkles } from 'lucide-react';
 import { optimizeDeliveryRoute } from '../utils/deliveryRouteHelper';
+import { openExternalLink } from '../utils/linkHelper';
 
 /**
  * Porter-style Delivery Route Timeline Component
@@ -82,16 +83,18 @@ const DeliveryRouteTimeline = ({
 
                                 {/* Map Link for Store */}
                                 {showMapButtons && store.location && (
-                                    <a
-                                        href={store.location}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="shrink-0 p-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 active:scale-95 transition-transform"
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openExternalLink(store.location);
+                                        }}
+                                        className="shrink-0 p-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 active:scale-95 transition-transform cursor-pointer"
                                         title={t('Open Store in Google Maps')}
                                     >
                                         <MapPin size={13} />
-                                    </a>
+                                    </button>
                                 )}
                             </div>
                         </div>
@@ -130,20 +133,21 @@ const DeliveryRouteTimeline = ({
 
                         {/* Map Link for Customer */}
                         {showMapButtons && customer?.location && (
-                            <a
-                                href={
-                                    customer.location.startsWith('http')
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const target = customer.location.startsWith('http')
                                         ? customer.location
-                                        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customer.location)}`
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="shrink-0 p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 active:scale-95 transition-transform"
+                                        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customer.location)}`;
+                                    openExternalLink(target);
+                                }}
+                                className="shrink-0 p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 active:scale-95 transition-transform cursor-pointer"
                                 title={t('Open Customer in Google Maps')}
                             >
                                 <MapPin size={13} />
-                            </a>
+                            </button>
                         )}
                     </div>
                 </div>

@@ -1184,7 +1184,7 @@ public class FloatingLogoService extends Service {
                                     || "Order Placed".equalsIgnoreCase(status)
                                     || "Confirmed".equalsIgnoreCase(status)) {
                                 pendingOrdersQueue.add(order);
-                            }
+                            } 
                         }
                     }
                     final boolean hasAccepted = foundAccepted;

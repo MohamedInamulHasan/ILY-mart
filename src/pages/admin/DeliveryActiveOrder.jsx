@@ -586,11 +586,14 @@ const DeliveryActiveOrder = () => {
                             {/* 4. Pin / View on Map - Shining Card with Map SVG */}
                             {dropMapsUrl && (
                                 <div className="pt-2">
-                                    <a
-                                        href={dropMapsUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="relative overflow-hidden inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#2E5A2E] hover:bg-[#234623] text-white text-[12px] font-bold active:scale-95 transition-transform shadow-sm select-none border border-[#234623]"
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openExternalLink(dropMapsUrl);
+                                        }}
+                                        className="relative overflow-hidden inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#2E5A2E] hover:bg-[#234623] text-white text-[12px] font-bold active:scale-95 transition-transform shadow-sm select-none border border-[#234623] cursor-pointer"
                                     >
                                         <motion.div
                                             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
@@ -607,7 +610,7 @@ const DeliveryActiveOrder = () => {
                                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                                         </svg>
                                         <span className="relative z-10 font-bold">{t('View on Map')}</span>
-                                    </a>
+                                    </button>
                                 </div>
                             )}
                         </div>

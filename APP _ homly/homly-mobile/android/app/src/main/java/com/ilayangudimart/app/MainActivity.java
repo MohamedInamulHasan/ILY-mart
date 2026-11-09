@@ -5,10 +5,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.WindowManager;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -16,10 +19,54 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebViewClient;
 
 import java.util.Map;
 
 public class MainActivity extends BridgeActivity {
+
+    private boolean handleCustomExternalUrl(String urlStr) {
+        if (urlStr == null || urlStr.isEmpty()) return false;
+
+        // 1. Handle intent:// URLs (e.g. Google Maps redirect)
+        if (urlStr.startsWith("intent://")) {
+            try {
+                Intent intent = Intent.parseUri(urlStr, Intent.URI_INTENT_SCHEME);
+                if (intent != null) {
+                    PackageManager pm = getPackageManager();
+                    if (intent.resolveActivity(pm) != null || intent.getPackage() != null) {
+                        startActivity(intent);
+                        return true;
+                    }
+                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                    if (fallbackUrl != null) {
+                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
+                        startActivity(browserIntent);
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return true; // Return true so WebView never crashes with net::ERR_UNKNOWN_URL_SCHEME
+        }
+
+        // 2. Handle maps, geo, tel, mailto, whatsapp schemes/domains
+        if (urlStr.startsWith("geo:") || urlStr.startsWith("tel:") || urlStr.startsWith("mailto:") || urlStr.startsWith("whatsapp:") ||
+            urlStr.contains("maps.google.com") || urlStr.contains("google.com/maps") || urlStr.contains("maps.app.goo.gl")) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(urlStr));
+                startActivity(intent);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+
+        return false;
+    }
+
 
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
@@ -31,6 +78,26 @@ public class MainActivity extends BridgeActivity {
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().getSettings().setGeolocationEnabled(true);
+                getBridge().setWebViewClient(new BridgeWebViewClient(getBridge()) {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                        if (request != null && request.getUrl() != null) {
+                            String urlStr = request.getUrl().toString();
+                            if (handleCustomExternalUrl(urlStr)) {
+                                return true;
+                            }
+                        }
+                        return super.shouldOverrideUrlLoading(view, request);
+                    }
+
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                        if (url != null && handleCustomExternalUrl(url)) {
+                            return true;
+                        }
+                        return super.shouldOverrideUrlLoading(view, url);
+                    }
+                });
             }
         } catch (Exception ignored) {}
 

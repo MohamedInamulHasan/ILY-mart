@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
 /**
@@ -20,7 +21,7 @@ export const openExternalLink = async (url) => {
         }
     }
     
-        // If short maps link, unshorten to direct coordinates so it never times out
+    // If short maps link, unshorten to direct coordinates so it never times out
     if (finalUrl.includes('goo.gl') || finalUrl.includes('maps.app')) {
         try {
             const res = await fetch(`https://homly-backend-aash.onrender.com/api/stores/resolve-map-link?url=${encodeURIComponent(finalUrl)}`);
@@ -34,24 +35,19 @@ export const openExternalLink = async (url) => {
     }
 
     try {
-        // Native Capacitor (Android & iOS): Browser.open reliably launches system Chrome Custom Tabs
-        // which automatically forwards maps.app.goo.gl / google maps links into the native Google Maps app!
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            await Browser.open({ url: finalUrl });
+        if (Capacitor.isNativePlatform()) {
+            await Browser.open({ url: finalUrl, windowName: '_system' });
             return;
         }
 
         // Web / PWA browser environment:
-        // Use a dynamic <a> element click to avoid popup blocker interruptions
-        const link = document.createElement('a');
-        link.href = finalUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        window.open(finalUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
         console.error('Error opening external link:', error);
-        window.location.href = finalUrl;
+        try {
+            window.open(finalUrl, '_blank', 'noopener,noreferrer');
+        } catch (e) {
+            console.error('Fallback window.open failed:', e);
+        }
     }
 };
