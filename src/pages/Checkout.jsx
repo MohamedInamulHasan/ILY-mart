@@ -100,6 +100,7 @@ const Checkout = () => {
     const mobileRef = useRef(null);
     const cityRef = useRef(null);
     const deliveryTimeRef = useRef(null);
+    const lastInitializedUserIdRef = useRef(null);
 
     // PRE-FETCH LOCATION DISABLED - Causes crashes when permission dialog appears
     // User must manually click "Use Current Location" button
@@ -189,10 +190,17 @@ const Checkout = () => {
 
     // Autofill form with user's saved address data
     // Priority: fullName > name (to use updated profile name instead of signup username)
-    // Initialize address state once user data is ready
+    // Initialize address state ONCE per user session (prevents wiping user-filled input when location is fetched)
     useEffect(() => {
         if (!authLoading) {
             if (user) {
+                const currentUserId = user._id || user.id || 'current_user';
+                if (lastInitializedUserIdRef.current === currentUserId) {
+                    // Already initialized form for this user; strictly keep user's active form edits!
+                    return;
+                }
+                lastInitializedUserIdRef.current = currentUserId;
+
                 const addressObj = user.address || {};
                 const isAddressObject = typeof user.address === 'object' && user.address !== null;
 
@@ -205,32 +213,29 @@ const Checkout = () => {
                 const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
 
                 setFormData(prev => {
-                    let initAddress = (isAddressObject ? addressObj.street : user.address) || prev.address || '';
-                    let initCity = (isAddressObject ? addressObj.city : user.city) || prev.city || '';
+                    let initAddress = (isAddressObject ? addressObj.street : user.address) || '';
+                    let initCity = (isAddressObject ? addressObj.city : user.city) || '';
                     if (initAddress && initCity && initAddress.trim().toLowerCase() === initCity.trim().toLowerCase()) {
                         initAddress = '';
                     }
                     return {
                         ...prev,
-                        fullName: isGuestName ? '' : userDisplayName,
-                        mobile: user.mobile || user.phone || prev.mobile,
-                        address: initAddress,
-                        city: initCity,
-                        zip: '630702',
-                        location: user.location || prev.location
+                        fullName: prev.fullName || (isGuestName ? '' : userDisplayName),
+                        mobile: prev.mobile || user.mobile || user.phone || '',
+                        address: prev.address || initAddress,
+                        city: prev.city || initCity,
+                        zip: prev.zip || '630702',
+                        location: prev.location || user.location || ''
                     };
                 });
 
-                // Auto-switch to card view if address exists
+                // Auto-switch to card view only if address exists initially
                 if (hasValidAddress) {
                     setIsEditingAddress(false);
                 } else {
                     // No valid address, show form
                     setIsEditingAddress(true);
                 }
-
-                // Always start in edit mode to allow user to review/edit -- REMOVED forced true
-                // setIsEditingAddress(true);
             } else {
                 // No user, defaults to true (though we redirect)
                 setIsEditingAddress(true);

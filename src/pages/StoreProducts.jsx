@@ -9,7 +9,7 @@ import { useAds } from '../hooks/queries/useAds';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useStores } from '../hooks/queries/useStores';
 import { useCategories } from '../hooks/queries/useCategories';
-import { getCleanCategoryName, stripEmojis } from '../utils/categoryHelpers';
+import { getCleanCategoryName, stripEmojis, stripCategoryBrackets } from '../utils/categoryHelpers';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { API_BASE_URL } from '../utils/api';
@@ -294,7 +294,7 @@ const StoreProducts = () => {
         return String(s).trim();
     };
 
-    const normKey = (s) => stripEmojis(String(s || '')).trim().toLowerCase();
+    const normKey = (s) => stripEmojis(stripCategoryBrackets(String(s || ''))).trim().toLowerCase();
 
     // Resolves category display name with uploaded emoji for the store page
     const getCategoryDisplayName = (name) => {

@@ -6,6 +6,7 @@ import { MapPin, ArrowRight, Clock } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { isStoreOpen, getStoreTimeLabel } from '../utils/storeHelpers';
 import { API_BASE_URL } from '../utils/api';
+import { stripCategoryBrackets } from '../utils/categoryHelpers';
 
 const StoreCard = ({ store }) => {
     const { t } = useLanguage();
@@ -47,7 +48,7 @@ const StoreCard = ({ store }) => {
             {store.category && (
                 <div className="absolute top-3 left-3 z-20">
                     <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[9.5px] font-bold rounded-full uppercase tracking-wider shadow-sm truncate max-w-[120px] block">
-                        {store.category}
+                        {stripCategoryBrackets(store.category)}
                     </span>
                 </div>
             )}
