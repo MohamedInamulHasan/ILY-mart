@@ -208,6 +208,9 @@ public class FloatingLogoService extends Service {
                     }
                 } else {
                     // Out of the app with active or pending orders: show floating icon
+                    if (hasActive && instance.orderCardView != null) {
+                        instance.dismissPorterOrderCard();
+                    }
                     if (instance.orderCardView == null) {
                         instance.showCircleBubble();
                     }
@@ -391,7 +394,8 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        if (!enabled || !sessionActive) {
+        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        if (!enabled || !sessionActive || hasActive) {
             return;
         }
 
@@ -958,18 +962,21 @@ public class FloatingLogoService extends Service {
         stopAlertEffects();
         dismissPorterOrderCardInternal();
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        if (!prefs.getBoolean("has_accepted_order", false) && !isAppInForeground) {
+        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        if (!isAppInForeground) {
             showCircleBubble();
         }
-        // 5s gap before showing the next pending processing order
-        isGapWaiting = true;
-        mainHandler.postDelayed(() -> {
-            isGapWaiting = false;
-            currentPendingOrderIndex++;
-            if (!isAppInForeground) {
-                showNextPendingOrderIfAny();
-            }
-        }, 5000);
+        // 5s gap before showing the next pending processing order (only if no accepted order in progress)
+        if (!hasActive) {
+            isGapWaiting = true;
+            mainHandler.postDelayed(() -> {
+                isGapWaiting = false;
+                currentPendingOrderIndex++;
+                if (!isAppInForeground) {
+                    showNextPendingOrderIfAny();
+                }
+            }, 5000);
+        }
     }
 
     public synchronized void showNextPendingOrderIfAny() {
@@ -977,8 +984,11 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        if (!enabled || !sessionActive) {
-            stopServiceAndHide();
+        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        if (!enabled || !sessionActive || hasActive) {
+            if (!enabled || !sessionActive) {
+                stopServiceAndHide();
+            }
             return;
         }
         synchronized (pendingOrdersQueue) {
@@ -1156,6 +1166,10 @@ public class FloatingLogoService extends Service {
                     dismissPorterOrderCard();
                 }
             } else {
+                // If there is an accepted order, dismiss any repeating pending order card immediately
+                if (hasActive && orderCardView != null) {
+                    dismissPorterOrderCard();
+                }
                 if (orderCardView == null) {
                     showCircleBubble();
                 }
@@ -1250,8 +1264,8 @@ public class FloatingLogoService extends Service {
                 final boolean finalPending = foundPending;
                 mainHandler.post(() -> updateOrdersState(finalActive, finalPending));
 
-                // Alert pending/processing orders if any outside the app
-                if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
+                // Alert pending/processing orders if any outside the app (only when NO accepted order in progress)
+                if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty() && !foundAccepted) {
                     mainHandler.post(() -> showNextPendingOrderIfAny());
                 }
             }
