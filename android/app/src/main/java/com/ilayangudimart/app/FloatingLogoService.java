@@ -151,6 +151,34 @@ public class FloatingLogoService extends Service {
         return START_STICKY;
     }
 
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        if (enabled && sessionActive) {
+            isAppInForeground = false;
+            mainHandler.post(() -> {
+                boolean hasAccepted = prefs.getBoolean("has_accepted_order", false);
+                if (!hasAccepted && orderCardView == null) {
+                    showCircleBubble();
+                }
+            });
+            try {
+                Intent restartServiceIntent = new Intent(getApplicationContext(), this.getClass());
+                restartServiceIntent.setPackage(getPackageName());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(restartServiceIntent);
+                } else {
+                    startService(restartServiceIntent);
+                }
+            } catch (Exception ignored) {}
+        } else {
+            stopServiceAndHide();
+        }
+        super.onTaskRemoved(rootIntent);
+    }
+
     public static void setAppForegroundState(boolean inForeground) {
         isAppInForeground = inForeground;
         if (instance != null) {

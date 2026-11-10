@@ -33,16 +33,30 @@ public class MainActivity extends BridgeActivity {
             try {
                 Intent intent = Intent.parseUri(urlStr, Intent.URI_INTENT_SCHEME);
                 if (intent != null) {
-                    PackageManager pm = getPackageManager();
-                    if (intent.resolveActivity(pm) != null || intent.getPackage() != null) {
+                    try {
                         startActivity(intent);
                         return true;
-                    }
-                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
-                    if (fallbackUrl != null) {
-                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
-                        startActivity(browserIntent);
-                        return true;
+                    } catch (Exception notFound) {
+                        // Package in intent may be invalid/uninstalled (e.g. ardl-wv-aht_2026)
+                        try {
+                            intent.setPackage(null);
+                            intent.setComponent(null);
+                            startActivity(intent);
+                            return true;
+                        } catch (Exception e2) {
+                            String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                            if (fallbackUrl != null) {
+                                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
+                                startActivity(browserIntent);
+                                return true;
+                            }
+                            String parsedData = intent.getDataString();
+                            if (parsedData != null && (parsedData.startsWith("http://") || parsedData.startsWith("https://"))) {
+                                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(parsedData));
+                                startActivity(browserIntent);
+                                return true;
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -117,12 +131,16 @@ public class MainActivity extends BridgeActivity {
         );
 
         checkAndRequestLocationPermissions();
-        try {
-            Intent stopIntent = new Intent(this, FloatingLogoService.class);
-            stopIntent.setAction("STOP_SERVICE");
-            stopService(stopIntent);
-        } catch (Exception ignored) {}
+        startFloatingServiceIfPermitted();
+        FloatingLogoService.setAppForegroundState(true);
         handleIncomingOrderIntent(getIntent());
+    }
+
+    @Override
+    public void onDestroy() {
+        startFloatingServiceIfPermitted();
+        FloatingLogoService.setAppForegroundState(false);
+        super.onDestroy();
     }
 
     private void startFloatingServiceIfPermitted() {

@@ -163,11 +163,9 @@ const Layout = ({ children, onRefresh }) => {
             try {
                 setOverlayDeliverySessionActive(true);
             } catch (e) {}
-        } else {
+        } else if (isDeliveryBoyLoggedOut) {
             localStorage.setItem('delivery_session_active', 'false');
-            localStorage.setItem('delivery_floating_overlay_enabled', 'false');
             try {
-                hideFloatingOverlay();
                 setOverlayDeliverySessionActive(false);
             } catch (e) {}
         }

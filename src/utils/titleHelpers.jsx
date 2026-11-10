@@ -89,8 +89,8 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
                 <span className="truncate min-w-0">{namePart}</span>
                 {(!hideTag && tagContent) && <span className={resolvedTagClass}>{tagContent}</span>}
             </span>
-            {/* Second line: Bracket - truncated to 1 line, no extra lines */}
-            <span className={`leading-tight truncate w-full block min-w-0 ${secondLineClass}`}>
+            {/* Second line: Bracket - strictly truncated to 1 line with ellipsis, no extra lines */}
+            <span className={`leading-tight truncate whitespace-nowrap overflow-hidden text-ellipsis w-full block min-w-0 ${secondLineClass}`}>
                 {bracketPart}
             </span>
         </span>
