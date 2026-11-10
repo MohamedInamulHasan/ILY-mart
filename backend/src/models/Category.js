@@ -36,6 +36,10 @@ const categorySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed,
         default: {}
     },
+    subcategoryStoreImages: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     isActive: {
         type: Boolean,
         default: true

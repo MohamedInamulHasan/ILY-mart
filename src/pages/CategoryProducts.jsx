@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useCategories } from '../hooks/queries/useCategories';
-import { useMainCategories } from '../hooks/queries/useMainCategories';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Search, ChevronDown, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -15,7 +14,7 @@ import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
-import { getCleanCategoryName } from '../utils/categoryHelpers';
+import { getCleanCategoryName, areCategoriesMatching, areSubcategoriesMatching } from '../utils/categoryHelpers';
 import { groupProducts } from '../utils/productGrouping';
 import { API_BASE_URL } from '../utils/api';
 
@@ -27,7 +26,7 @@ const CategoryProducts = () => {
     const { t, language } = useLanguage();
     const { user } = useAuth();
 
-    const [activeCategory, setActiveCategory] = useState(decodeURIComponent(categoryName || ''));
+    const decodedCategoryName = useMemo(() => decodeURIComponent(categoryName || ''), [categoryName]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isInitialMount, setIsInitialMount] = useState(true);
 
@@ -36,16 +35,43 @@ const CategoryProducts = () => {
         return () => clearTimeout(timer);
     }, []);
 
-        useEffect(() => {
-        if (categoryName) {
-            setActiveCategory(decodeURIComponent(categoryName));
+    // Fetch categories and products
+    const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
+    const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
+
+    // Find current category object in admin categories list
+    const currentCategory = useMemo(() => {
+        const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
+        return list.find(c => areCategoriesMatching(c, decodedCategoryName)) || null;
+    }, [rawCategories, decodedCategoryName]);
+
+    // Subcategories belonging to this category from admin panel
+    const subcategoriesList = useMemo(() => {
+        if (!currentCategory) return [];
+        const subs = Array.isArray(currentCategory.subcategories) ? currentCategory.subcategories : [];
+        return subs.filter(Boolean);
+    }, [currentCategory]);
+
+    const [selectedSubcategory, setSelectedSubcategory] = useState('');
+
+    // Default to the first subcategory when category changes or subcategories load
+    useEffect(() => {
+        if (subcategoriesList.length > 0) {
+            setSelectedSubcategory(prev => {
+                if (prev && subcategoriesList.some(s => areSubcategoriesMatching(s, prev))) {
+                    return prev;
+                }
+                return subcategoriesList[0];
+            });
+        } else {
+            setSelectedSubcategory('');
         }
-    }, [categoryName]);
+    }, [decodedCategoryName, subcategoriesList]);
 
     useEffect(() => {
-        if (activeCategory) {
+        if (selectedSubcategory) {
             const timer = setTimeout(() => {
-                document.getElementById("active-category-pill")?.scrollIntoView({
+                document.getElementById("active-subcategory-pill")?.scrollIntoView({
                     behavior: 'smooth',
                     block: 'nearest',
                     inline: 'center'
@@ -53,119 +79,48 @@ const CategoryProducts = () => {
             }, 100);
             return () => clearTimeout(timer);
         }
-    }, [activeCategory]);
+    }, [selectedSubcategory]);
 
-    // Fetch categories and products
-    const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
-    const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
-    const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
-
-    const categories = useMemo(() => {
-        const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
-        let nonHidden = list.filter(c => !c.isHidden);
-
-        const mainCatName = location.state?.mainCategory;
-        if (mainCatName) {
-            const normMain = String(mainCatName).toLowerCase().trim();
-            const matchedMainCat = mainCategories.find(mc => String(mc.name || '').toLowerCase().trim() === normMain);
-            const assigned = Array.isArray(matchedMainCat?.categories) && matchedMainCat.categories.length > 0
-                ? matchedMainCat.categories
-                : (Array.isArray(location.state?.filterCategories) ? location.state.filterCategories : []);
-
-            if (assigned.length > 0) {
-                const subset = nonHidden.filter(c => {
-                    const cName = String(c.name || '').toLowerCase().trim();
-                    const cId = String(c._id || c.id || '').toLowerCase().trim();
-                    const cBase = cName.split('(')[0].replace(/[^a-z0-9]/g, '');
-                    return assigned.some(a => {
-                        const aStr = String(a || '').toLowerCase().trim();
-                        const aBase = aStr.split('(')[0].replace(/[^a-z0-9]/g, '');
-                        return aStr === cName || aStr === cId || (aBase && cBase && aBase === cBase);
-                    });
-                });
-                if (subset.length > 0) return subset;
-            }
-
-            const byField = nonHidden.filter(c => c.mainCategory && String(c.mainCategory).toLowerCase().trim() === normMain);
-            if (byField.length > 0) return byField;
+    // Category name for the header
+    const categoryDisplayName = useMemo(() => {
+        if (currentCategory) {
+            return getCleanCategoryName(currentCategory, language);
         }
-
-        // Parent main category fallback if activeCategory belongs to any
-        const normActive = String(activeCategory || '').toLowerCase().trim();
-        const parentMainCat = mainCategories.find(mc =>
-            Array.isArray(mc.categories) && mc.categories.some(c => String(c).toLowerCase().trim() === normActive)
-        );
-        if (parentMainCat && Array.isArray(parentMainCat.categories) && parentMainCat.categories.length > 0) {
-            const subset = nonHidden.filter(c => {
-                const cName = String(c.name || '').toLowerCase().trim();
-                const cId = String(c._id || c.id || '').toLowerCase().trim();
-                const cBase = cName.split('(')[0].replace(/[^a-z0-9]/g, '');
-                return parentMainCat.categories.some(a => {
-                    const aStr = String(a || '').toLowerCase().trim();
-                    const aBase = aStr.split('(')[0].replace(/[^a-z0-9]/g, '');
-                    return aStr === cName || aStr === cId || (aBase && cBase && aBase === cBase);
-                });
-            });
-            if (subset.length > 0) return subset;
-        }
-
-        return nonHidden;
-    }, [rawCategories, location.state, activeCategory, mainCategories]);
-
-    // Main category name for the header
-    const mainCategoryDisplayName = useMemo(() => {
-        if (location.state?.mainCategory) {
-            return getCleanCategoryName(location.state.mainCategory, language);
-        }
-        const normActive = String(activeCategory || '').toLowerCase().trim();
-        const parentMainCat = mainCategories.find(mc => 
-            Array.isArray(mc.categories) && mc.categories.some(c => String(c).toLowerCase().trim() === normActive)
-        );
-        if (parentMainCat?.name) {
-            return getCleanCategoryName(parentMainCat.name, language);
-        }
-        if (activeCategory && activeCategory !== 'All') {
-            return getCleanCategoryName(activeCategory, language);
-        }
-        const paramCat = categoryName ? decodeURIComponent(categoryName) : '';
-        if (paramCat && paramCat !== 'All') {
-            return getCleanCategoryName(paramCat, language);
+        if (decodedCategoryName && decodedCategoryName !== 'All') {
+            return getCleanCategoryName(decodedCategoryName, language);
         }
         return t('Products');
-    }, [location.state, activeCategory, mainCategories, language, categoryName, t]);
+    }, [currentCategory, decodedCategoryName, language, t]);
 
     const allProducts = useMemo(() => {
         return Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
     }, [rawProducts]);
 
-    // Filter products by selected category
-        useEffect(() => {
-        if (categories.length > 0) {
-            const activeExists = categories.some(
-                c => String(c.name || '').toLowerCase().trim() === String(activeCategory || '').toLowerCase().trim()
-            );
-            if (!activeExists && categories[0]?.name) {
-                setActiveCategory(categories[0].name);
-            }
-        }
-    }, [categories, activeCategory]);
-
+    // Filter products:
+    // 1. Must match current category
+    // 2. If subcategory selected (not 'All'), must match selected subcategory
     const categoryProducts = useMemo(() => {
-        const norm = (str) => String(str || '').toLowerCase().trim();
-        const base = (str) => norm(str).split('(')[0].replace(/[^a-z0-9]/g, '');
-        const activeNorm = norm(activeCategory);
-        const activeBase = base(activeCategory);
+        const targetCategory = currentCategory?.name || decodedCategoryName;
 
         return allProducts.filter(p => {
             if (p.isAvailable === false) return false;
-            if (activeNorm && activeNorm !== 'all') {
-                const prodNorm = norm(p.category);
-                const prodBase = base(p.category);
-                return prodNorm === activeNorm || (prodBase && activeBase && prodBase === activeBase);
+
+            // Category match
+            if (targetCategory && targetCategory.toLowerCase() !== 'all') {
+                const catMatches = areCategoriesMatching(p.category, targetCategory);
+                if (!catMatches) return false;
             }
+
+            // Subcategory match (if subcategory selected)
+            if (selectedSubcategory) {
+                const pSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+                const subMatches = pSubs.some(s => areSubcategoriesMatching(s, selectedSubcategory));
+                if (!subMatches) return false;
+            }
+
             return true;
         });
-    }, [allProducts, activeCategory]);
+    }, [allProducts, currentCategory, decodedCategoryName, selectedSubcategory]);
 
     // Zepto-style typewriter animated placeholder (cycles through this section's products)
     const searchWords = useMemo(() => {
@@ -268,7 +223,7 @@ const CategoryProducts = () => {
             sections.push({
                 store: {
                     _id: 'general',
-                    name: activeCategory || t('All Products'),
+                    name: currentCategory?.name || t('All Products'),
                     isGeneral: true
                 },
                 products: generalProducts
@@ -276,15 +231,7 @@ const CategoryProducts = () => {
         }
 
         return sections;
-    }, [groupedCategoryProducts, stores, isSingleStore, activeCategory, t]);
-
-    // Auto-scroll selected category into view in the horizontal categories bar
-    useEffect(() => {
-        const activePill = document.getElementById('active-category-pill');
-        if (activePill) {
-            activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        }
-    }, [activeCategory]);
+    }, [groupedCategoryProducts, stores, isSingleStore, currentCategory, t]);
 
     // Header location display (matching HomeHeader exactly)
     const displayAddress = (() => {
@@ -304,7 +251,7 @@ const CategoryProducts = () => {
         return t('Add Location');
     })();
 
-    const isLoading = loadingCategories || loadingProducts || loadingMainCats || rawProducts.length === 0 || isInitialMount;
+    const isLoading = loadingCategories || loadingProducts || rawProducts.length === 0 || isInitialMount;
 
     return (
         <PullToRefreshLayout>
@@ -327,7 +274,7 @@ const CategoryProducts = () => {
                         </div>
                         <div className="flex flex-col text-center px-10">
                             <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate">
-                                {mainCategoryDisplayName}
+                                {categoryDisplayName}
                             </h1>
                             <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
                         </div>
@@ -483,83 +430,66 @@ const CategoryProducts = () => {
                     </div>
                 </section>
 
-                {/* Categories Bar (4 per row on mobile, scrollable, box effect) - hidden if only 1 category */}
-                {categories.length > 1 ? (
-                    isLoading ? (
-                        <div className="w-full px-4 mb-4 sm:mb-5">
-                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <div key={i} className="w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] p-2 rounded-xl flex flex-col items-center gap-1.5 flex-shrink-0">
-                                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl blinkit-shimmer" />
-                                        <div className="h-3 w-12 rounded-md blinkit-shimmer" />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="w-full px-4 mb-4 sm:mb-5">
-                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                                {categories.map((category) => {
-                                    const catNorm = String(category.name || '').toLowerCase().trim();
-                                    const actNorm = String(activeCategory || '').toLowerCase().trim();
-                                    const catBase = catNorm.split('(')[0].replace(/[^a-z0-9]/g, '');
-                                    const actBase = actNorm.split('(')[0].replace(/[^a-z0-9]/g, '');
-                                    const isSelected = actNorm === catNorm || (actBase && catBase && actBase === catBase);
-                                    const cleanTitle = getCleanCategoryName(category, language);
+                {/* Subcategories Bar (Scrollable horizontal bar with box effect) - shown if category has subcategories */}
+                {subcategoriesList && subcategoriesList.length > 0 ? (
+                    <div className="w-full px-4 mb-4 sm:mb-5">
+                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                            {/* Individual Subcategories */}
+                            {subcategoriesList.map((sub) => {
+                                const isSelected = selectedSubcategory && areSubcategoriesMatching(selectedSubcategory, sub);
+                                const cleanTitle = getCleanCategoryName(sub, language);
 
-                                    return (
-                                        <button
-                                            type="button"
-                                            key={category._id || category.id}
-                                            id={isSelected ? "active-category-pill" : undefined}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setActiveCategory(category.name);
-                                                try {
-                                                    navigate(`/category/${encodeURIComponent(category.name)}`, { replace: true, state: location.state });
-                                                } catch {
-                                                    try {
-                                                        window.history.replaceState(location.state, '', `/category/${encodeURIComponent(category.name)}`);
-                                                    } catch {}
-                                                }
-                                            }}
-                                            className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl flex flex-col items-center justify-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
-                                                isSelected
-                                                    ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
-                                                    : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
-                                            }`}
-                                        >
-                                            {/* Uniform Category Image - larger and clear */}
-                                            <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent pointer-events-none">
-                                                <img
-                                                    src={`${category.image || `${API_BASE_URL}/categories/${category._id || category.id}/image`}?t=${Math.floor((category.updatedAt ? new Date(category.updatedAt).getTime() : Date.now()) / 60000)}`}
-                                                    alt={category.name}
-                                                    draggable={false}
-                                                    className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none"
-                                                    onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
-                                                />
-                                            </div>
+                                let subImg = currentCategory?.subcategoryImages?.[sub];
+                                if (!subImg && currentCategory?.subcategoryImages) {
+                                    const matchEntry = Object.entries(currentCategory.subcategoryImages).find(([k]) => areSubcategoriesMatching(k, sub));
+                                    if (matchEntry) subImg = matchEntry[1];
+                                }
+                                if (!subImg) {
+                                    subImg = currentCategory?.image || (currentCategory?._id ? `${API_BASE_URL}/categories/${currentCategory._id}/image` : '');
+                                }
 
-                                            {/* Text */}
-                                            <div className="flex flex-col items-center justify-center text-center mt-1 w-full px-0.5 pointer-events-none">
-                                                <span 
-                                                    className={`leading-tight truncate block text-center w-full transition-colors text-[11.5px] sm:text-[12.5px] ${
-                                                        isSelected 
-                                                            ? 'font-bold text-gray-900 dark:text-white' 
-                                                            : 'font-semibold text-gray-700 dark:text-gray-300'
-                                                    }`} 
-                                                    title={cleanTitle}
-                                                >
-                                                    {cleanTitle}
-                                                </span>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                return (
+                                    <button
+                                        type="button"
+                                        key={sub}
+                                        id={isSelected ? "active-subcategory-pill" : undefined}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setSelectedSubcategory(sub);
+                                        }}
+                                        className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl flex flex-col items-center justify-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
+                                            isSelected
+                                                ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
+                                                : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
+                                        }`}
+                                    >
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent pointer-events-none">
+                                            <img
+                                                src={subImg}
+                                                alt={cleanTitle}
+                                                draggable={false}
+                                                className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none"
+                                                onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col items-center justify-center text-center mt-1 w-full px-0.5 pointer-events-none">
+                                            <span 
+                                                className={`leading-tight truncate block text-center w-full transition-colors text-[11.5px] sm:text-[12.5px] ${
+                                                    isSelected 
+                                                        ? 'font-bold text-gray-900 dark:text-white' 
+                                                        : 'font-semibold text-gray-700 dark:text-gray-300'
+                                                }`} 
+                                                title={cleanTitle}
+                                            >
+                                                {cleanTitle}
+                                            </span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
-                    )
+                    </div>
                 ) : null}
 
                 {/* Related Products:

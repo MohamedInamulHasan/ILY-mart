@@ -2290,10 +2290,26 @@ const CategoryManagement = () => {
 
             await saveMainCategories(updatedList);
 
-            // Assign particular categories to this main category
+            // 1. Clear mainCategory on categories that were unselected from this main category
+            for (const cat of categories) {
+                const isNowSelected = mainCatForm.categories.some(c => areCategoriesMatching(c, cat));
+                const wasAssigned = areCategoriesMatching(cat.mainCategory, trimmedName) || (editingMainCat && areCategoriesMatching(cat.mainCategory, editingMainCat.name));
+                if (!isNowSelected && wasAssigned) {
+                    try {
+                        await updateCategory({
+                            id: cat._id || cat.id,
+                            data: { ...cat, mainCategory: '' }
+                        });
+                    } catch (err) {
+                        console.warn('Failed to clear category mainCategory field:', err);
+                    }
+                }
+            }
+
+            // 2. Assign selected categories to this main category
             for (const catName of mainCatForm.categories) {
-                const catObj = categories.find(c => c.name === catName || (c._id || c.id) === catName);
-                if (catObj && catObj.mainCategory !== trimmedName) {
+                const catObj = categories.find(c => areCategoriesMatching(c, catName));
+                if (catObj && !areCategoriesMatching(catObj.mainCategory, trimmedName)) {
                     try {
                         await updateCategory({
                             id: catObj._id || catObj.id,
@@ -2321,13 +2337,16 @@ const CategoryManagement = () => {
         image: '',
         storeImage: '',
         subcategories: [], // Array of subcategory names
-        subcategoryImages: {}, // Map of subcategory name -> image URL
+        subcategoryImages: {}, // Map of subcategory name -> product category page image URL
+        subcategoryStoreImages: {}, // Map of subcategory name -> store sub category image URL
         isPreview: false
     });
     const [newSubcategory, setNewSubcategory] = useState(''); // For adding new subcategories
     const [newSubcategoryImage, setNewSubcategoryImage] = useState('');
+    const [newSubcategoryStoreImage, setNewSubcategoryStoreImage] = useState('');
     const [uploadingNewSubImg, setUploadingNewSubImg] = useState(false);
-    const [uploadingSubIndex, setUploadingSubIndex] = useState(null);
+    const [uploadingNewSubStoreImg, setUploadingNewSubStoreImg] = useState(false);
+    const [uploadingSubInfo, setUploadingSubInfo] = useState(null); // { index, type: 'product' | 'store' }
     const [editingSubcategoryIndex, setEditingSubcategoryIndex] = useState(null);
     const [editingSubcategoryValue, setEditingSubcategoryValue] = useState('');
 
@@ -2431,6 +2450,14 @@ const CategoryManagement = () => {
                     }
                 }
 
+                const updatedStoreImages = { ...(prev.subcategoryStoreImages || {}) };
+                if (oldSub && updatedStoreImages[oldSub] !== undefined) {
+                    updatedStoreImages[trimmed] = updatedStoreImages[oldSub];
+                    if (oldSub !== trimmed) {
+                        delete updatedStoreImages[oldSub];
+                    }
+                }
+
                 const updatedRenames = { ...(prev.subcategoryRenames || {}) };
                 if (oldSub && oldSub !== trimmed) {
                     updatedRenames[oldSub] = trimmed;
@@ -2440,6 +2467,7 @@ const CategoryManagement = () => {
                     ...prev,
                     subcategories: updated,
                     subcategoryImages: updatedImages,
+                    subcategoryStoreImages: updatedStoreImages,
                     subcategoryRenames: updatedRenames
                 };
             });
@@ -2457,35 +2485,59 @@ const CategoryManagement = () => {
                 subcategoryImages: newSubcategoryImage ? {
                     ...(prev.subcategoryImages || {}),
                     [trimmed]: newSubcategoryImage
-                } : (prev.subcategoryImages || {})
+                } : (prev.subcategoryImages || {}),
+                subcategoryStoreImages: newSubcategoryStoreImage ? {
+                    ...(prev.subcategoryStoreImages || {}),
+                    [trimmed]: newSubcategoryStoreImage
+                } : (prev.subcategoryStoreImages || {})
             }));
             setNewSubcategory('');
             setNewSubcategoryImage('');
+            setNewSubcategoryStoreImage('');
         }
     };
 
-    const handleSubcategoryImageUpload = async (subName, file, subIndex) => {
+    const handleSubcategoryImageUpload = async (subName, file, subIndex, type = 'product') => {
         if (!file || !subName) return;
         try {
-            setUploadingSubIndex(subIndex);
+            setUploadingSubInfo({ index: subIndex, type });
             const imageUrl = await uploadImage(file, { isCategory: true });
-            setFormData(prev => ({
-                ...prev,
-                subcategoryImages: {
-                    ...(prev.subcategoryImages || {}),
-                    [subName]: imageUrl
+            setFormData(prev => {
+                if (type === 'store') {
+                    return {
+                        ...prev,
+                        subcategoryStoreImages: {
+                            ...(prev.subcategoryStoreImages || {}),
+                            [subName]: imageUrl
+                        }
+                    };
                 }
-            }));
+                return {
+                    ...prev,
+                    subcategoryImages: {
+                        ...(prev.subcategoryImages || {}),
+                        [subName]: imageUrl
+                    }
+                };
+            });
         } catch (error) {
-            console.error('Error uploading subcategory image:', error);
+            console.error(`Error uploading subcategory ${type} image:`, error);
             alert(t('Failed to upload subcategory image. Please try another image.'));
         } finally {
-            setUploadingSubIndex(null);
+            setUploadingSubInfo(null);
         }
     };
 
-    const handleRemoveSubcategoryImage = (subName) => {
+    const handleRemoveSubcategoryImage = (subName, type = 'product') => {
         setFormData(prev => {
+            if (type === 'store') {
+                const updated = { ...(prev.subcategoryStoreImages || {}) };
+                delete updated[subName];
+                return {
+                    ...prev,
+                    subcategoryStoreImages: updated
+                };
+            }
             const updated = { ...(prev.subcategoryImages || {}) };
             delete updated[subName];
             return {
@@ -2513,13 +2565,16 @@ const CategoryManagement = () => {
         setFormData(prev => {
             const subToRemove = prev.subcategories[index];
             const updatedImages = { ...(prev.subcategoryImages || {}) };
+            const updatedStoreImages = { ...(prev.subcategoryStoreImages || {}) };
             if (subToRemove) {
                 delete updatedImages[subToRemove];
+                delete updatedStoreImages[subToRemove];
             }
             return {
                 ...prev,
                 subcategories: prev.subcategories.filter((_, i) => i !== index),
-                subcategoryImages: updatedImages
+                subcategoryImages: updatedImages,
+                subcategoryStoreImages: updatedStoreImages
             };
         });
     };
@@ -2535,6 +2590,7 @@ const CategoryManagement = () => {
             storeImage: category.storeImage ? storeImageUrl : '',
             subcategories: Array.isArray(category.subcategories) ? category.subcategories : [],
             subcategoryImages: category.subcategoryImages || {},
+            subcategoryStoreImages: category.subcategoryStoreImages || {},
             isPreview: Boolean(category.isPreview === true || category.mode === 'preview')
         });
         setNewSubcategory('');
@@ -2602,8 +2658,10 @@ const CategoryManagement = () => {
                 });
                 alert(t('Category added successfully!'));
             }
-            setFormData({ name: '', image: '', storeImage: '', subcategories: [], subcategoryImages: {}, isPreview: false });
+            setFormData({ name: '', image: '', storeImage: '', subcategories: [], subcategoryImages: {}, subcategoryStoreImages: {}, isPreview: false });
             setNewSubcategory('');
+            setNewSubcategoryImage('');
+            setNewSubcategoryStoreImage('');
             setEditingCategory(null);
             setView('list');
         } catch (error) {
@@ -2858,7 +2916,7 @@ const CategoryManagement = () => {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             {categories.map((cat) => {
-                                                const isSelected = mainCatForm.categories.includes(cat.name);
+                                                const isSelected = mainCatForm.categories.some(c => areCategoriesMatching(c, cat));
                                                 return (
                                                     <label 
                                                         key={cat._id || cat.id}
@@ -2873,9 +2931,15 @@ const CategoryManagement = () => {
                                                             checked={isSelected}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    setMainCatForm(prev => ({ ...prev, categories: [...prev.categories, cat.name] }));
+                                                                    setMainCatForm(prev => ({
+                                                                        ...prev,
+                                                                        categories: [...prev.categories.filter(c => !areCategoriesMatching(c, cat)), cat.name]
+                                                                    }));
                                                                 } else {
-                                                                    setMainCatForm(prev => ({ ...prev, categories: prev.categories.filter(c => c !== cat.name) }));
+                                                                    setMainCatForm(prev => ({
+                                                                        ...prev,
+                                                                        categories: prev.categories.filter(c => !areCategoriesMatching(c, cat))
+                                                                    }));
                                                                 }
                                                             }}
                                                             className="rounded text-[#2E5A2E] focus:ring-[#2E5A2E] w-4 h-4 cursor-pointer"
@@ -2936,8 +3000,10 @@ const CategoryManagement = () => {
                             onClick={() => {
                                 if (view === 'list') {
                                     setEditingCategory(null);
-                                    setFormData({ name: '', image: '', storeImage: '', subcategories: [], isPreview: false });
+                                    setFormData({ name: '', image: '', storeImage: '', subcategories: [], subcategoryImages: {}, subcategoryStoreImages: {}, isPreview: false });
                                     setNewSubcategory('');
+                                    setNewSubcategoryImage('');
+                                    setNewSubcategoryStoreImage('');
                                     setView('form');
                                 } else {
                                     setView('list');
@@ -3211,74 +3277,130 @@ const CategoryManagement = () => {
                         {!editingCategory?.isAll && <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Subcategories')} ({t('Optional')})</label>
                             <div className="space-y-3">
-                                {/* Input field with add button & optional image upload */}
-                                <div className="flex flex-col sm:flex-row items-center gap-2">
-                                    <div className="flex items-center gap-2 w-full flex-1">
-                                        {/* Optional Image for new subcategory */}
-                                        <div className="relative flex-shrink-0">
-                                            {newSubcategoryImage ? (
-                                                <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 shadow-xs">
-                                                    <img src={newSubcategoryImage} alt="Preview" className="w-full h-full object-cover" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setNewSubcategoryImage('')}
-                                                        className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center text-white transition-opacity"
-                                                        title={t('Remove Image')}
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <label className="w-10 h-10 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 hover:border-[#2E5A2E] dark:hover:border-[#CBF9B2] bg-gray-50 dark:bg-gray-700/50 flex flex-col items-center justify-center cursor-pointer text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors" title={t('Upload subcategory image')}>
-                                                    {uploadingNewSubImg ? (
-                                                        <span className="w-4 h-4 border-2 border-[#2E5A2E] border-t-transparent rounded-full animate-spin"></span>
-                                                    ) : (
-                                                        <ImageIcon size={18} />
-                                                    )}
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        className="hidden"
-                                                        onChange={async (e) => {
-                                                            const file = e.target.files[0];
-                                                            if (file) {
-                                                                try {
-                                                                    setUploadingNewSubImg(true);
-                                                                    const url = await uploadImage(file, { isCategory: true });
-                                                                    setNewSubcategoryImage(url);
-                                                                } catch (err) {
-                                                                    alert(t('Failed to upload image'));
-                                                                } finally {
-                                                                    setUploadingNewSubImg(false);
+                                {/* Input field with add button & two image uploaders: Product Category & Store Subcategory */}
+                                <div className="space-y-1.5">
+                                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                                        <div className="flex items-center gap-2 w-full flex-1">
+                                            {/* Product Category Page Image for new subcategory */}
+                                            <div className="relative flex-shrink-0" title={t('Product category page image')}>
+                                                {newSubcategoryImage ? (
+                                                    <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 shadow-xs">
+                                                        <img src={newSubcategoryImage} alt="Cat Preview" className="w-full h-full object-cover" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setNewSubcategoryImage('')}
+                                                            className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                                                            title={t('Remove Cat Image')}
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <label className="w-10 h-10 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 hover:border-[#2E5A2E] dark:hover:border-[#CBF9B2] bg-gray-50 dark:bg-gray-700/50 flex flex-col items-center justify-center cursor-pointer text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors" title={t('Upload product category page image')}>
+                                                        {uploadingNewSubImg ? (
+                                                            <span className="w-4 h-4 border-2 border-[#2E5A2E] border-t-transparent rounded-full animate-spin"></span>
+                                                        ) : (
+                                                            <>
+                                                                <ImageIcon size={14} />
+                                                                <span className="text-[8px] font-bold leading-none mt-0.5">Cat</span>
+                                                            </>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files[0];
+                                                                if (file) {
+                                                                    try {
+                                                                        setUploadingNewSubImg(true);
+                                                                        const url = await uploadImage(file, { isCategory: true });
+                                                                        setNewSubcategoryImage(url);
+                                                                    } catch (err) {
+                                                                        alert(t('Failed to upload image'));
+                                                                    } finally {
+                                                                        setUploadingNewSubImg(false);
+                                                                    }
                                                                 }
-                                                            }
-                                                        }}
-                                                    />
-                                                </label>
-                                            )}
+                                                            }}
+                                                        />
+                                                    </label>
+                                                )}
+                                            </div>
+
+                                            {/* Store Subcategory Image for new subcategory */}
+                                            <div className="relative flex-shrink-0" title={t('Store subcategory image')}>
+                                                {newSubcategoryStoreImage ? (
+                                                    <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-blue-200 dark:border-blue-900 bg-gray-100 dark:bg-gray-700 shadow-xs">
+                                                        <img src={newSubcategoryStoreImage} alt="Store Preview" className="w-full h-full object-cover" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setNewSubcategoryStoreImage('')}
+                                                            className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                                                            title={t('Remove Store Image')}
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <label className="w-10 h-10 rounded-xl border border-dashed border-blue-300 dark:border-blue-700 hover:border-blue-500 bg-blue-50/40 dark:bg-gray-700/50 flex flex-col items-center justify-center cursor-pointer text-blue-500 hover:text-blue-700 transition-colors" title={t('Upload store subcategory image')}>
+                                                        {uploadingNewSubStoreImg ? (
+                                                            <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                                                        ) : (
+                                                            <>
+                                                                <Store size={14} />
+                                                                <span className="text-[8px] font-bold leading-none mt-0.5">Store</span>
+                                                            </>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files[0];
+                                                                if (file) {
+                                                                    try {
+                                                                        setUploadingNewSubStoreImg(true);
+                                                                        const url = await uploadImage(file, { isCategory: true });
+                                                                        setNewSubcategoryStoreImage(url);
+                                                                    } catch (err) {
+                                                                        alert(t('Failed to upload store image'));
+                                                                    } finally {
+                                                                        setUploadingNewSubStoreImg(false);
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                    </label>
+                                                )}
+                                            </div>
+
+                                            <input
+                                                type="text"
+                                                value={newSubcategory}
+                                                onChange={(e) => setNewSubcategory(e.target.value)}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleAddSubcategory();
+                                                    }
+                                                }}
+                                                className="flex-1 w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none text-sm"
+                                                placeholder={t('e.g., Spices, Snacks, Beverages')}
+                                            />
                                         </div>
-                                        <input
-                                            type="text"
-                                            value={newSubcategory}
-                                            onChange={(e) => setNewSubcategory(e.target.value)}
-                                            onKeyPress={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    handleAddSubcategory();
-                                                }
-                                            }}
-                                            className="flex-1 w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none text-sm"
-                                            placeholder={t('e.g., Spices, Snacks, Beverages')}
-                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAddSubcategory}
+                                            className="w-full sm:w-auto px-4 py-2.5 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center justify-center gap-2 font-medium text-sm shadow-xs flex-shrink-0"
+                                        >
+                                            <Plus size={18} />
+                                            {t('Add')}
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleAddSubcategory}
-                                        className="w-full sm:w-auto px-4 py-2.5 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center justify-center gap-2 font-medium text-sm shadow-xs"
-                                    >
-                                        <Plus size={18} />
-                                        {t('Add')}
-                                    </button>
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                        {t('Optional images: [Cat] = Product Category Page, [Store] = Store List Horizontal Scroller')}
+                                    </p>
                                 </div>
 
                                 {formData.subcategories.length > 0 && (
@@ -3304,46 +3426,97 @@ const CategoryManagement = () => {
                                                                             <GripVertical size={18} />
                                                                         </DragHandle>
 
-                                                                        {/* Subcategory Image Upload / Thumbnail - shown BEFORE name */}
-                                                                        <div className="relative group/subimg flex-shrink-0" onPointerDown={(e) => e.stopPropagation()}>
-                                                                            {formData.subcategoryImages?.[sub] ? (
-                                                                                <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 shadow-2xs">
-                                                                                    <img
-                                                                                        src={formData.subcategoryImages[sub]}
-                                                                                        alt={sub}
-                                                                                        className="w-full h-full object-cover"
-                                                                                    />
-                                                                                    <label className="absolute inset-0 bg-black/50 opacity-0 group-hover/subimg:opacity-100 flex items-center justify-center cursor-pointer transition-opacity" title={t('Change Image')}>
-                                                                                        <Upload size={12} className="text-white" />
+                                                                        {/* Two Images: 1. Cat Image, 2. Store Image */}
+                                                                        <div className="flex items-center gap-1.5 flex-shrink-0" onPointerDown={(e) => e.stopPropagation()}>
+                                                                            {/* Product Category Page Image */}
+                                                                            <div className="relative group/catimg flex-shrink-0" title={t('Product category page image [Cat]')}>
+                                                                                {formData.subcategoryImages?.[sub] ? (
+                                                                                    <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 shadow-2xs">
+                                                                                        <img
+                                                                                            src={formData.subcategoryImages[sub]}
+                                                                                            alt={`${sub} Cat`}
+                                                                                            className="w-full h-full object-cover"
+                                                                                        />
+                                                                                        <label className="absolute inset-0 bg-black/50 opacity-0 group-hover/catimg:opacity-100 flex items-center justify-center cursor-pointer transition-opacity" title={t('Change Cat Image')}>
+                                                                                            <Upload size={12} className="text-white" />
+                                                                                            <input
+                                                                                                type="file"
+                                                                                                accept="image/*"
+                                                                                                className="hidden"
+                                                                                                onChange={(e) => {
+                                                                                                    const file = e.target.files[0];
+                                                                                                    if (file) handleSubcategoryImageUpload(sub, file, index, 'product');
+                                                                                                }}
+                                                                                            />
+                                                                                        </label>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <label className="w-8 h-8 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 hover:border-[#2E5A2E] dark:hover:border-[#CBF9B2] bg-gray-50 dark:bg-gray-700/50 flex flex-col items-center justify-center cursor-pointer text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors shadow-2xs" title={t('Upload product category page image')}>
+                                                                                        {uploadingSubInfo?.index === index && uploadingSubInfo?.type === 'product' ? (
+                                                                                            <span className="w-3.5 h-3.5 border-2 border-[#2E5A2E] border-t-transparent rounded-full animate-spin"></span>
+                                                                                        ) : (
+                                                                                            <>
+                                                                                                <ImageIcon size={11} />
+                                                                                                <span className="text-[7.5px] font-bold leading-none mt-0.5">Cat</span>
+                                                             </>
+                                                                                        )}
                                                                                         <input
                                                                                             type="file"
                                                                                             accept="image/*"
                                                                                             className="hidden"
                                                                                             onChange={(e) => {
                                                                                                 const file = e.target.files[0];
-                                                                                                if (file) handleSubcategoryImageUpload(sub, file, index);
+                                                                                                if (file) handleSubcategoryImageUpload(sub, file, index, 'product');
                                                                                             }}
                                                                                         />
                                                                                     </label>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <label className="w-8 h-8 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 hover:border-[#2E5A2E] dark:hover:border-[#CBF9B2] bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center cursor-pointer text-gray-400 hover:text-[#2E5A2E] dark:hover:text-[#CBF9B2] transition-colors shadow-2xs" title={t('Upload subcategory image')}>
-                                                                                    {uploadingSubIndex === index ? (
-                                                                                        <span className="w-3.5 h-3.5 border-2 border-[#2E5A2E] border-t-transparent rounded-full animate-spin"></span>
-                                                                                    ) : (
-                                                                                        <ImageIcon size={14} />
-                                                                                    )}
-                                                                                    <input
-                                                                                        type="file"
-                                                                                        accept="image/*"
-                                                                                        className="hidden"
-                                                                                        onChange={(e) => {
-                                                                                            const file = e.target.files[0];
-                                                                                            if (file) handleSubcategoryImageUpload(sub, file, index);
-                                                                                        }}
-                                                                                    />
-                                                                                </label>
-                                                                            )}
+                                                                                )}
+                                                                            </div>
+
+                                                                            {/* Store Subcategory Image */}
+                                                                            <div className="relative group/storeimg flex-shrink-0" title={t('Store subcategory image [Store]')}>
+                                                                                {formData.subcategoryStoreImages?.[sub] ? (
+                                                                                    <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-blue-200 dark:border-blue-900 bg-gray-100 dark:bg-gray-700 shadow-2xs">
+                                                                                        <img
+                                                                                            src={formData.subcategoryStoreImages[sub]}
+                                                                                            alt={`${sub} Store`}
+                                                                                            className="w-full h-full object-cover"
+                                                                                        />
+                                                                                        <label className="absolute inset-0 bg-black/50 opacity-0 group-hover/storeimg:opacity-100 flex items-center justify-center cursor-pointer transition-opacity" title={t('Change Store Image')}>
+                                                                                            <Upload size={12} className="text-white" />
+                                                                                            <input
+                                                                                                type="file"
+                                                                                                accept="image/*"
+                                                                                                className="hidden"
+                                                                                                onChange={(e) => {
+                                                                                                    const file = e.target.files[0];
+                                                                                                    if (file) handleSubcategoryImageUpload(sub, file, index, 'store');
+                                                                                                }}
+                                                                                            />
+                                                                                        </label>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <label className="w-8 h-8 rounded-lg border border-dashed border-blue-300 dark:border-blue-700 hover:border-blue-500 bg-blue-50/40 dark:bg-gray-700/50 flex flex-col items-center justify-center cursor-pointer text-blue-500 hover:text-blue-700 transition-colors shadow-2xs" title={t('Upload store subcategory image')}>
+                                                                                        {uploadingSubInfo?.index === index && uploadingSubInfo?.type === 'store' ? (
+                                                                                            <span className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                                                                                        ) : (
+                                                                                            <>
+                                                                                                <Store size={11} />
+                                                                                                <span className="text-[7.5px] font-bold leading-none mt-0.5">Store</span>
+                                                                                            </>
+                                                                                        )}
+                                                                                        <input
+                                                                                            type="file"
+                                                                                            accept="image/*"
+                                                                                            className="hidden"
+                                                                                            onChange={(e) => {
+                                                                                                const file = e.target.files[0];
+                                                                                                if (file) handleSubcategoryImageUpload(sub, file, index, 'store');
+                                                                                            }}
+                                                                                        />
+                                                                                    </label>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
 
                                                                         {isEditingThis ? (
@@ -3392,12 +3565,28 @@ const CategoryManagement = () => {
                                                                                     onPointerDown={(e) => e.stopPropagation()}
                                                                                     onClick={(e) => {
                                                                                         e.stopPropagation();
-                                                                                        handleRemoveSubcategoryImage(sub);
+                                                                                        handleRemoveSubcategoryImage(sub, 'product');
                                                                                     }}
-                                                                                    className="text-gray-400 hover:text-amber-500 p-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                                                                    title={t('Remove Image')}
+                                                                                    className="text-gray-400 hover:text-amber-500 p-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-[10px] flex items-center gap-0.5"
+                                                                                    title={t('Remove Cat Image')}
                                                                                 >
-                                                                                    <X size={15} />
+                                                                                    <X size={13} />
+                                                                                    <span className="text-[9px]">Cat</span>
+                                                                                </button>
+                                                                            )}
+                                                                            {formData.subcategoryStoreImages?.[sub] && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onPointerDown={(e) => e.stopPropagation()}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleRemoveSubcategoryImage(sub, 'store');
+                                                                                    }}
+                                                                                    className="text-gray-400 hover:text-amber-500 p-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-[10px] flex items-center gap-0.5"
+                                                                                    title={t('Remove Store Image')}
+                                                                                >
+                                                                                    <X size={13} />
+                                                                                    <span className="text-[9px]">Store</span>
                                                                                 </button>
                                                                             )}
                                                                             <button

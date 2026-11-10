@@ -6,7 +6,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { safeNavigateBack } from '../utils/useBackButton';
 import { useCategories } from '../hooks/queries/useCategories';
 import { useStores } from '../hooks/queries/useStores';
-import { getCleanCategoryName, stripEmojis, extractEmojis, normCategoryKey, areCategoriesMatching, findCanonicalCategory } from '../utils/categoryHelpers';
+import { useProducts } from '../hooks/queries/useProducts';
+import { getCleanCategoryName, stripEmojis, extractEmojis, normCategoryKey, areCategoriesMatching, findCanonicalCategory, areSubcategoriesMatching, normSubcategoryKey } from '../utils/categoryHelpers';
 import { isStoreOpen, formatTime12h } from '../utils/storeHelpers';
 import StoreCard from '../components/StoreCard';
 import { API_BASE_URL } from '../utils/api';
@@ -15,59 +16,71 @@ import HomeHeader from '../components/home/HomeHeader';
 import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
-const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings }) => {
+const ShopCategoryItem = ({ item, isActive, onClick, dbCategories, settings, language }) => {
     const [imgError, setImgError] = useState(false);
-    const isAll = (category?.name || '').toLowerCase() === 'all';
+    const isAll = (item?.name || '').toLowerCase() === 'all';
 
-    const dbCat = useMemo(() => {
+    const parentCat = useMemo(() => {
         if (isAll) return null;
-        return findCanonicalCategory(category, dbCategories);
-    }, [category, dbCategories, isAll]);
+        if (item?.parentCat) return item.parentCat;
+        return (dbCategories || []).find(cat => {
+            const subs = Array.isArray(cat?.subcategories) ? cat.subcategories : [];
+            return subs.some(s => areSubcategoriesMatching(s, item?.name));
+        }) || findCanonicalCategory(item?.name, dbCategories);
+    }, [item, dbCategories, isAll]);
 
-    const targetCat = dbCat || category;
-
-    // Full English name without truncation or Tamil brackets
-    const englishName = useMemo(() => {
+    // Clean name without truncation or Tamil brackets
+    const displayName = useMemo(() => {
         if (isAll) {
             const rawAll = settings?.allCategoryName || 'All';
             return stripEmojis(rawAll).split('(')[0].trim() || 'All';
         }
-        const raw = targetCat?.name || category?.name || '';
-        const cleaned = stripEmojis(raw).split('(')[0].trim();
-        return cleaned || raw;
-    }, [targetCat, category, isAll, settings]);
+        return getCleanCategoryName(item?.name || '', language);
+    }, [item, isAll, settings, language]);
 
     const emoji = useMemo(() => {
         if (isAll) return '';
-        return targetCat?.emoji || targetCat?.icon || extractEmojis(targetCat?.name) || extractEmojis(category?.name) || '';
-    }, [targetCat, category, isAll]);
+        return parentCat?.emoji || parentCat?.icon || extractEmojis(parentCat?.name) || extractEmojis(item?.name) || '';
+    }, [parentCat, item, isAll]);
 
     const imageUrl = useMemo(() => {
         if (isAll) {
             return settings?.allStoreCategoryImage || settings?.allCategoryImage || null;
         }
-        if (targetCat?.storeImage) return targetCat.storeImage;
-        if (targetCat?.image) return targetCat.image;
-        const catId = targetCat?._id || targetCat?.id;
+        // 1. Store subcategory image from parent category
+        if (parentCat?.subcategoryStoreImages && typeof parentCat.subcategoryStoreImages === 'object') {
+            const match = Object.entries(parentCat.subcategoryStoreImages).find(([k]) => areSubcategoriesMatching(k, item?.name));
+            if (match && match[1]) return match[1];
+        }
+        // 2. Product subcategory image from parent category
+        if (parentCat?.subcategoryImages && typeof parentCat.subcategoryImages === 'object') {
+            const match = Object.entries(parentCat.subcategoryImages).find(([k]) => areSubcategoriesMatching(k, item?.name));
+            if (match && match[1]) return match[1];
+        }
+        // 3. Parent category storeImage
+        if (parentCat?.storeImage) return parentCat.storeImage;
+        // 4. Parent category image
+        if (parentCat?.image) return parentCat.image;
+        const catId = parentCat?._id || parentCat?.id;
         if (catId) {
-            return `${API_BASE_URL}/categories/${catId}/store-image?t=${Math.floor((targetCat.updatedAt ? new Date(targetCat.updatedAt).getTime() : Date.now()) / 60000)}`;
+            return `${API_BASE_URL}/categories/${catId}/store-image?t=${Math.floor((parentCat.updatedAt ? new Date(parentCat.updatedAt).getTime() : Date.now()) / 60000)}`;
         }
         return null;
-    }, [targetCat, isAll, settings]);
+    }, [parentCat, item, isAll, settings]);
 
     return (
         <button
             id={isActive ? "active-category-pill" : undefined}
             type="button"
             onClick={onClick}
-            className="flex flex-col items-center justify-start flex-shrink-0 relative pb-2 pt-0.5 px-1 cursor-pointer select-none min-w-[62px] sm:min-w-[70px] max-w-[80px] sm:max-w-[88px] transition-all group outline-none"
+            className="flex flex-col items-center justify-start flex-shrink-0 relative pb-2 pt-0.5 px-1 cursor-pointer select-none min-w-[62px] sm:min-w-[70px] max-w-[84px] sm:max-w-[92px] transition-all group outline-none"
         >
             {/* Image above - Clean transparent container without card background */}
             <div className="w-8 h-8 sm:w-9 sm:h-9 aspect-square flex items-center justify-center bg-transparent mb-2 transition-transform group-hover:scale-105 pointer-events-none">
                 {imageUrl && !imgError ? (
                     <img
                         src={imageUrl}
-                        alt={englishName}
+                        alt={displayName}
                         draggable={false}
                         className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none transition-transform"
                         onError={() => setImgError(true)}
@@ -79,16 +92,16 @@ const ShopCategoryItem = ({ category, isActive, onClick, dbCategories, settings 
                 )}
             </div>
 
-            {/* Name below - Full English name in one single line */}
+            {/* Name below */}
             <span 
                 className={`text-[12px] sm:text-[13px] text-center leading-tight whitespace-nowrap truncate block w-full px-0.5 transition-colors pointer-events-none ${
                     isActive 
                         ? 'font-bold text-gray-950 dark:text-white' 
                         : 'font-semibold text-gray-700 dark:text-gray-300 group-hover:text-gray-950 dark:group-hover:text-white'
                 }`}
-                title={englishName}
+                title={displayName}
             >
-                {englishName}
+                {displayName}
             </span>
 
             {/* Line effect 50% */}
@@ -106,6 +119,7 @@ const Shop = () => {
     const { stores: dataStores, categories: dataCategories, loading, initialLoading, settings } = useData();
     const { data: rawCategories = [], refetch: refetchCategories } = useCategories();
     const { data: rawStores = [], refetch: refetchStores } = useStores();
+    const { data: rawProducts = [], refetch: refetchProducts } = useProducts();
 
     const dbCategories = useMemo(() => {
         if (Array.isArray(rawCategories) && rawCategories.length > 0) return rawCategories;
@@ -117,9 +131,14 @@ const Shop = () => {
         return Array.isArray(dataStores) ? dataStores : [];
     }, [rawStores, dataStores]);
 
+    const allProducts = useMemo(() => {
+        return Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
+    }, [rawProducts]);
+
     useEffect(() => {
         refetchCategories?.();
         refetchStores?.();
+        refetchProducts?.();
     }, []);
 
     const services = [];
@@ -156,84 +175,105 @@ const Shop = () => {
     // Safety check for stores array to prevent crash if undefined & filter active only
     const safeStores = useMemo(() => (stores || []).filter(s => s.isActive !== false), [stores]);
 
-    // Calculate store counts per category using normalized key matching
-    const categoryData = useMemo(() => {
-        const counts = {};
-        safeStores.forEach(store => {
-            const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
-            types.forEach(t => {
-                if (!t) return;
-                const matchedDbCat = (dbCategories || []).find(cat => areCategoriesMatching(t, cat));
-                if (matchedDbCat) {
-                    const key = matchedDbCat.name;
-                    counts[key] = (counts[key] || 0) + 1;
-                } else {
-                    counts[t] = (counts[t] || 0) + 1;
+    // Calculate store counts per subcategory using normalized key matching
+    const subcategoryData = useMemo(() => {
+        const itemMap = new Map();
+
+        // 1. All stores option
+        const result = [{ name: 'All', count: safeStores.length, isAll: true }];
+
+        // 2. Collect subcategories from dbCategories
+        (dbCategories || []).forEach(cat => {
+            if (!cat || cat.isHidden) return;
+            const subs = Array.isArray(cat.subcategories) ? cat.subcategories : [];
+            subs.filter(Boolean).forEach(sub => {
+                const nKey = normSubcategoryKey(sub);
+                if (nKey && !itemMap.has(nKey)) {
+                    itemMap.set(nKey, {
+                        name: sub,
+                        parentCat: cat
+                    });
                 }
             });
         });
 
-        const isGeneral = (name) => {
-            if (!name) return false;
-            const clean = normCategoryKey(name).replace(/[\s_-]+/g, '');
-            return clean === 'generalstore' || clean === 'generalstores' || clean.includes('generalstore');
-        };
-
-        const result = [{ name: 'All', count: safeStores.length }];
-
-        // Map categories from database with uploaded emojis (filter out General Stores)
-        (dbCategories || []).forEach(cat => {
-            if (!cat || !cat.name) return;
-            if (isGeneral(cat.name) || isGeneral(cat.name_ta)) return;
-            const count = counts[cat.name] || 0;
-            if (count > 0) {
-                result.push({
-                    ...cat,
-                    name: cat.name,
-                    count
-                });
-            }
+        // 3. Also check if products have subcategories
+        allProducts.forEach(p => {
+            const subs = (Array.isArray(p.subcategory) ? p.subcategory : [p.subcategory]).filter(Boolean);
+            subs.forEach(sub => {
+                const nKey = normSubcategoryKey(sub);
+                if (nKey && !itemMap.has(nKey)) {
+                    const matchedCat = (dbCategories || []).find(c => areCategoriesMatching(c, p.category));
+                    itemMap.set(nKey, {
+                        name: sub,
+                        parentCat: matchedCat || null
+                    });
+                }
+            });
         });
 
-        // Also check if any store type is not in dbCategories but has stores
-        Object.entries(counts).forEach(([tKey, count]) => {
-            if (isGeneral(tKey)) return;
-            if (count > 0 && !result.some(r => areCategoriesMatching(r.name, tKey))) {
-                result.push({ name: tKey, count });
-            }
+        // 4. Calculate store count for each subcategory
+        itemMap.forEach((entry) => {
+            const subName = entry.name;
+            const storeCount = safeStores.filter(store => {
+                const storeIdStr = String(store._id || store.id || '');
+                const storeProducts = allProducts.filter(p => String(p.storeId?._id || p.storeId || '') === storeIdStr);
+                const hasProduct = storeProducts.some(p => {
+                    const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+                    return subs.some(s => areSubcategoriesMatching(s, subName));
+                });
+                if (hasProduct) return true;
+
+                const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
+                return types.some(t => {
+                    const cat = (dbCategories || []).find(c => areCategoriesMatching(c, t));
+                    return cat?.subcategories?.some(s => areSubcategoriesMatching(s, subName));
+                });
+            }).length;
+
+            result.push({
+                ...entry,
+                count: storeCount
+            });
         });
 
         return result;
-    }, [safeStores, dbCategories]);
+    }, [safeStores, dbCategories, allProducts]);
 
-    const getCategoryDisplay = (category) => {
-        if (!category) return '';
-        if (normCategoryKey(category.name) === 'all') {
-            return getCleanCategoryName('All', language, null, { keepEmoji: true });
-        }
-        const found = findCanonicalCategory(category, dbCategories);
-        const target = found || category;
-        return getCleanCategoryName(target, language, null, { keepEmoji: true });
-    };
+    const filteredStores = useMemo(() => {
+        return safeStores.filter(store => {
+            const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (store.address && store.address.toLowerCase().includes(searchQuery.toLowerCase()));
+            
+            const normFilter = normKey(categoryFilter);
+            if (normFilter === 'all') {
+                return matchesSearch;
+            }
 
-    const filteredStores = safeStores.filter(store => {
-        const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (store.address && store.address.toLowerCase().includes(searchQuery.toLowerCase()));
-        
-        const normFilter = normCategoryKey(categoryFilter);
-        const matchesCategory = normFilter === 'all' ||
-            (Array.isArray(store.type)
-                ? store.type.some(t => areCategoriesMatching(t, categoryFilter))
-                : areCategoriesMatching(store.type, categoryFilter));
+            // Direct match on products belonging to this store
+            const storeIdStr = String(store._id || store.id || '');
+            const storeProducts = allProducts.filter(p => String(p.storeId?._id || p.storeId || '') === storeIdStr);
+            const hasMatchingProduct = storeProducts.some(p => {
+                const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+                return subs.some(s => areSubcategoriesMatching(s, categoryFilter));
+            });
 
-        return matchesSearch && matchesCategory;
-    }).sort((a, b) => {
-        const isOpenA = isStoreOpen(a);
-        const isOpenB = isStoreOpen(b);
-        // Open stores (true) come first (-1), Closed (false) come last (1)
-        if (isOpenA === isOpenB) return 0;
-        return isOpenA ? -1 : 1;
-    });
+            // Match on store category type having this subcategory
+            const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
+            const hasMatchingCatType = types.some(t => {
+                const cat = (dbCategories || []).find(c => areCategoriesMatching(c, t));
+                return cat?.subcategories?.some(s => areSubcategoriesMatching(s, categoryFilter));
+            });
+
+            return matchesSearch && (hasMatchingProduct || hasMatchingCatType);
+        }).sort((a, b) => {
+            const isOpenA = isStoreOpen(a);
+            const isOpenB = isStoreOpen(b);
+            // Open stores (true) come first (-1), Closed (false) come last (1)
+            if (isOpenA === isOpenB) return 0;
+            return isOpenA ? -1 : 1;
+        });
+    }, [safeStores, searchQuery, categoryFilter, allProducts, dbCategories]);
 
     const handleCategoryClick = (categoryName) => {
         setSearchParams({ category: normKey(categoryName) === 'all' ? 'All' : categoryName });
@@ -491,18 +531,18 @@ const Shop = () => {
                             ) : (
                                 <div className="max-w-7xl mx-auto mb-3 px-1 border-b border-gray-200/50 dark:border-gray-800/60 pb-1.5">
                                     <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
-                                        {categoryData.map((category) => {
-                                            const isActive = normKey(category.name) === normKey(categoryFilter);
+                                        {subcategoryData.map((item) => {
+                                            const isActive = normKey(item.name) === normKey(categoryFilter);
                                             return (
                                                 <ShopCategoryItem
-                                                    key={category.name}
-                                                    category={category}
+                                                    key={item.name}
+                                                    item={item}
                                                     isActive={isActive}
                                                     dbCategories={dbCategories}
                                                     settings={settings}
                                                     language={language}
                                                     onClick={(e) => {
-                                                        handleCategoryClick(category.name);
+                                                        handleCategoryClick(item.name);
                                                         e.currentTarget.scrollIntoView({
                                                             behavior: 'smooth',
                                                             block: 'nearest',

@@ -73,7 +73,7 @@ export const getCategoryById = async (req, res, next) => {
 // @access  Private/Admin
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, name_ta, description, icon, image, storeImage, subcategories, subcategoryImages, isPreview, mode, mainCategory } = req.body;
+        const { name, name_ta, description, icon, image, storeImage, subcategories, subcategoryImages, subcategoryStoreImages, isPreview, mode, mainCategory } = req.body;
 
         // Check if category already exists
         const categoryExists = await Category.findOne({ name });
@@ -92,6 +92,7 @@ export const createCategory = async (req, res, next) => {
             storeImage: storeImage || '',
             subcategories: subcategories || [],
             subcategoryImages: subcategoryImages || {},
+            subcategoryStoreImages: subcategoryStoreImages || {},
             isPreview: Boolean(isPreview === true || mode === 'preview'),
             mode: mode || (isPreview ? 'preview' : 'normal'),
             mainCategory: mainCategory || ''
@@ -196,6 +197,12 @@ export const updateCategory = async (req, res, next) => {
                         if (updateFields.subcategoryImages && updateFields.subcategoryImages[fromSub]) {
                             updateFields.subcategoryImages[toSub] = updateFields.subcategoryImages[fromSub];
                             delete updateFields.subcategoryImages[fromSub];
+                        }
+
+                        // 4. Update subcategoryStoreImages in updateFields if present
+                        if (updateFields.subcategoryStoreImages && updateFields.subcategoryStoreImages[fromSub]) {
+                            updateFields.subcategoryStoreImages[toSub] = updateFields.subcategoryStoreImages[fromSub];
+                            delete updateFields.subcategoryStoreImages[fromSub];
                         }
                     }
 

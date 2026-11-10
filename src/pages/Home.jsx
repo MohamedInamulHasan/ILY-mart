@@ -8,6 +8,7 @@ import { useCategories } from '../hooks/queries/useCategories';
 import { useStores } from '../hooks/queries/useStores';
 import { useMainCategories } from '../hooks/queries/useMainCategories';
 import { getCleanCategoryName } from '../utils/categoryHelpers';
+import { API_BASE_URL } from '../utils/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useSocket } from '../context/SocketContext';
 import { useData } from '../context/DataContext';
@@ -58,11 +59,17 @@ const Home = () => {
     const { data: rawStores = [], isLoading: loadingStores } = useStores();
     const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
 
-    // Zepto-style typewriter animated placeholder (cycles through Main Categories)
+    // Admin Categories visible on Home (active / non-hidden)
+    const homeCategories = useMemo(() => {
+        const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
+        return list.filter(c => !c.isHidden);
+    }, [rawCategories]);
+
+    // Zepto-style typewriter animated placeholder (cycles through Admin Categories)
     const searchWords = useMemo(() => {
-        const catList = Array.isArray(mainCategories) ? mainCategories : [];
-        const titles = catList.map(mc => {
-            const raw = (language === 'ta' && mc.name_ta) ? mc.name_ta : (mc.name || '');
+        const catList = homeCategories;
+        const titles = catList.map(c => {
+            const raw = (language === 'ta' && c.name_ta) ? c.name_ta : (c.name || '');
             return cleanSearchTitle(raw, language);
         }).filter(w => w && w.length > 1);
 
@@ -72,7 +79,7 @@ const Home = () => {
 
         const combined = titles.length > 0 ? titles : fallbacks;
         return Array.from(new Set(combined));
-    }, [mainCategories, language]);
+    }, [homeCategories, language]);
 
     const searchPlaceholder = useTypewriterPlaceholder(
         searchWords,
@@ -109,49 +116,11 @@ const Home = () => {
         }
     }, [loadingAds, homeAds.length]);
 
-    const handleMainCategoryClick = (mainCat) => {
-        if (!mainCat) return;
-        const catList = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
-        const nonHidden = catList.filter(c => !c.isHidden);
-        const assigned = Array.isArray(mainCat.categories) ? mainCat.categories : [];
-
-        // Flexible matching for assigned categories (by id, name, or clean base name)
-        let matchedCats = [];
-        if (assigned.length > 0) {
-            matchedCats = nonHidden.filter(c => {
-                const cName = String(c.name || '').toLowerCase().trim();
-                const cId = String(c._id || c.id || '').toLowerCase().trim();
-                const cBase = cName.split('(')[0].replace(/[^a-z0-9]/g, '');
-                return assigned.some(a => {
-                    const aStr = String(a || '').toLowerCase().trim();
-                    const aBase = aStr.split('(')[0].replace(/[^a-z0-9]/g, '');
-                    return aStr === cName || aStr === cId || (aBase && cBase && aBase === cBase);
-                });
-            });
-        }
-
-        if (matchedCats.length === 0) {
-            const normMain = String(mainCat.name || '').toLowerCase().trim();
-            matchedCats = nonHidden.filter(c => c.mainCategory && String(c.mainCategory).toLowerCase().trim() === normMain);
-        }
-
-        if (matchedCats.length === 0) {
-            const normMain = String(mainCat.name || '').toLowerCase().trim();
-            const direct = nonHidden.find(c => String(c.name || '').toLowerCase().trim() === normMain);
-            if (direct) matchedCats = [direct];
-        }
-
-        const firstCat = matchedCats[0] || assigned[0];
-        const firstCatName = typeof firstCat === 'object' ? (firstCat?.name || '') : String(firstCat || '');
-        const targetCategory = firstCatName || mainCat.name || 'All';
-        const filterCatNames = matchedCats.length > 0 ? matchedCats.map(c => c.name || c) : (assigned.length > 0 ? assigned : [targetCategory]);
-
-        navigate(`/category/${encodeURIComponent(targetCategory)}`, {
-            state: {
-                mainCategory: mainCat.name,
-                filterCategories: filterCatNames
-            }
-        });
+    const handleCategoryClick = (category) => {
+        if (!category) return;
+        const catName = typeof category === 'string' ? category : (category.name || '');
+        if (!catName) return;
+        navigate(`/category/${encodeURIComponent(catName)}`);
     };
 
     const products = useMemo(() => {
@@ -457,7 +426,7 @@ const Home = () => {
                             {t('Shop By Categories')}
                         </h2>
                     </div>
-                    {loadingMainCats && (!Array.isArray(mainCategories) || mainCategories.length === 0) ? (
+                    {loadingCategories && homeCategories.length === 0 ? (
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             {[1, 2, 3, 4].map((i) => (
                                 <div key={i} className="flex flex-col rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 pb-1 sm:pb-1.5 bg-white dark:bg-gray-800 shadow-sm">
@@ -468,20 +437,21 @@ const Home = () => {
                                 </div>
                             ))}
                         </div>
-                    ) : Array.isArray(mainCategories) && mainCategories.length > 0 ? (
+                    ) : homeCategories.length > 0 ? (
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                            {mainCategories.map((mainCat) => {
-                                const cleanName = getCleanCategoryName(mainCat.name, language);
+                            {homeCategories.map((category) => {
+                                const cleanName = getCleanCategoryName(category, language);
+                                const imageSrc = category.image || (category._id ? `${API_BASE_URL}/categories/${category._id}/image` : '');
                                 return (
                                     <div 
-                                        key={mainCat.id || mainCat._id || mainCat.name}
-                                        onClick={() => handleMainCategoryClick(mainCat)}
+                                        key={category._id || category.id || category.name}
+                                        onClick={() => handleCategoryClick(category)}
                                         className="flex flex-col cursor-pointer group select-none active:scale-[0.98] transition-transform rounded-2xl overflow-hidden shadow-sm border border-[#2E5A2E]/15 dark:border-gray-700/80 bg-gradient-to-b from-white via-[#F7FCF5] to-[#E3F9DC] dark:from-gray-800 dark:via-gray-800 dark:to-[#2E5A2E]/25 pb-1 sm:pb-1.5"
                                     >
                                         {/* 16:9 Rectangular Card (Edge-to-Edge Image with scaled graphics to eliminate dead space) */}
                                         <div className="w-full aspect-[16/9] overflow-hidden relative flex items-center justify-center">
                                             <img 
-                                                src={mainCat.image} 
+                                                src={imageSrc} 
                                                 alt={cleanName} 
                                                 className="w-full h-full object-contain pointer-events-none select-none"
                                                 loading="lazy"
