@@ -29,7 +29,7 @@ import { useDriverLocation, optimizeDeliveryRoute } from '../../utils/deliveryRo
 import DeliveryRouteTimeline from '../../components/DeliveryRouteTimeline';
 import { playSuccessSound } from '../../utils/soundHelper';
 import { openExternalLink } from '../../utils/linkHelper';
-import { isNativeAndroid, setOverlayHasAcceptedOrder, hideFloatingOverlay } from '../../utils/floatingOverlay';
+import { isNativeAndroid, setOverlayOrdersState, setOverlayHasAcceptedOrder, hideFloatingOverlay } from '../../utils/floatingOverlay';
 
 
 const DeliveryActiveOrder = () => {
@@ -61,10 +61,15 @@ const DeliveryActiveOrder = () => {
         return ['Accepted', 'Out for Delivery', 'Shipped'].includes(curStatus);
     }, [localStatus, singleOrder?.status]);
 
+    const hasPendingOrders = useMemo(() => {
+        return orders.some(o => ['Pending', 'Processing', 'Order Placed', 'Confirmed'].includes(o.status));
+    }, [orders]);
+
     useEffect(() => {
         if (!isNativeAndroid()) return;
+        setOverlayOrdersState({ hasActive: isAcceptedOrder, hasPending: hasPendingOrders });
         setOverlayHasAcceptedOrder(isAcceptedOrder);
-    }, [isAcceptedOrder]);
+    }, [isAcceptedOrder, hasPendingOrders]);
 
     const [popupState, setPopupState] = useState({
         isOpen: false,

@@ -205,12 +205,30 @@ public class FloatingOverlayPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void setOrdersState(PluginCall call) {
+        boolean hasActive = call.getBoolean("hasActive", false);
+        boolean hasPending = call.getBoolean("hasPending", false);
+        SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        prefs.edit()
+                .putBoolean("has_active_orders", hasActive)
+                .putBoolean("has_pending_orders", hasPending)
+                .apply();
+        if (FloatingLogoService.instance != null) {
+            FloatingLogoService.instance.updateOrdersState(hasActive, hasPending);
+        }
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
     public void setHasAcceptedOrder(PluginCall call) {
         boolean hasAcceptedOrder = call.getBoolean("hasAcceptedOrder", false);
         SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        prefs.edit().putBoolean("has_accepted_order", hasAcceptedOrder).apply();
+        prefs.edit().putBoolean("has_active_orders", hasAcceptedOrder).apply();
         if (FloatingLogoService.instance != null) {
-            FloatingLogoService.instance.updateAcceptedOrderState(hasAcceptedOrder);
+            boolean hasPending = prefs.getBoolean("has_pending_orders", false);
+            FloatingLogoService.instance.updateOrdersState(hasAcceptedOrder, hasPending);
         }
         JSObject ret = new JSObject();
         ret.put("success", true);

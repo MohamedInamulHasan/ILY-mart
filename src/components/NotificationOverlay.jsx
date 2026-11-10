@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useOrders } from '../hooks/queries/useOrders';
 import IncomingOrderModal from './IncomingOrderModal';
 import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound } from '../utils/soundHelper';
-import { triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
+import { isNativeAndroid, setOverlayOrdersState, triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
 import { apiService } from '../utils/api';
 import { registerModalBackHandler } from '../utils/useBackButton';
 import { getUserRoles } from '../utils/userHelpers';
@@ -73,6 +73,14 @@ const NotificationOverlay = () => {
         if (!isDeliveryBoy) return [];
         return allOrders.filter(o => isProcessingStatus(o.status));
     }, [allOrders, isDeliveryBoy]);
+
+    // Sync order state (active/pending) with native floating overlay
+    useEffect(() => {
+        if (!isNativeAndroid() || !isDeliveryBoy) return;
+        const hasActive = hasActiveAcceptedOrder;
+        const hasPending = processingOrders.length > 0;
+        setOverlayOrdersState({ hasActive, hasPending });
+    }, [hasActiveAcceptedOrder, processingOrders.length, isDeliveryBoy]);
 
     const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
         return localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';

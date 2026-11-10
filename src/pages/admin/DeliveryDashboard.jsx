@@ -54,6 +54,7 @@ import {
     showFloatingOverlay, 
     hideFloatingOverlay,
     setOverlayAuthToken,
+    setOverlayOrdersState,
     setOverlayHasAcceptedOrder,
     setOverlayDeliverySessionActive
 } from '../../utils/floatingOverlay';
@@ -172,6 +173,7 @@ const DeliveryDashboard = () => {
                 if (currentToken) {
                     await setOverlayAuthToken(currentToken);
                 }
+                await setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
                 await setOverlayHasAcceptedOrder(hasAcceptedCard);
                 await showFloatingOverlay();
             }
@@ -184,11 +186,17 @@ const DeliveryDashboard = () => {
         return orders.some(o => ['Accepted', 'Out for Delivery', 'Shipped'].includes(o.status));
     }, [orders]);
 
-    // Keep native overlay synced: hide floating icon when there's an accepted card, show when no accepted cards
+    // Check if there are pending/processing orders waiting
+    const hasPendingOrders = useMemo(() => {
+        return orders.some(o => ['Pending', 'Processing', 'Order Placed', 'Confirmed'].includes(o.status));
+    }, [orders]);
+
+    // Keep native overlay synced: hide floating icon when no active and no pending orders
     useEffect(() => {
         if (!isNativeAndroid()) return;
+        setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
         setOverlayHasAcceptedOrder(hasAcceptedCard);
-    }, [hasAcceptedCard]);
+    }, [hasAcceptedCard, hasPendingOrders]);
 
     // Porter Partner Style Floating Logo: check permission & sync initial auth token on mount
     useEffect(() => {
@@ -208,6 +216,7 @@ const DeliveryDashboard = () => {
                 setOverlayAuthToken(currentToken);
             }
 
+            setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
             setOverlayHasAcceptedOrder(hasAcceptedCard);
 
             const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';

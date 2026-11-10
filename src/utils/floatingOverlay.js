@@ -127,8 +127,24 @@ export const dismissPorterOrderCard = async () => {
 };
 
 /**
+ * Notify the native service whether there are active or pending delivery orders.
+ * The floating logo will ONLY display when hasActive || hasPending is true.
+ */
+export const setOverlayOrdersState = async ({ hasActive, hasPending }) => {
+    if (!isNativeAndroid()) return;
+    try {
+        await FloatingOverlay.setOrdersState({
+            hasActive: !!hasActive,
+            hasPending: !!hasPending
+        });
+    } catch (err) {
+        console.warn('Error setting overlay orders state:', err);
+    }
+};
+
+/**
  * Notify the native service whether there is an active accepted delivery order.
- * The floating logo will ONLY display when this is true.
+ * Kept for backward compatibility.
  */
 export const setOverlayHasAcceptedOrder = async (hasAcceptedOrder) => {
     if (!isNativeAndroid()) return;
