@@ -4,12 +4,7 @@
 	"webDir": "dist",
 	"server": {
 		"cleartext": true,
-		"allowNavigation": [
-			"*.google.com",
-			"*.googleapis.com",
-			"*.gstatic.com",
-			"*.googleusercontent.com"
-		]
+		"allowNavigation": []
 	},
 	"plugins": {
 		"StatusBar": {

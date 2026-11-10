@@ -1,5 +1,6 @@
-import androidx.annotation.NonNull;
 package com.ilayangudimart.app;
+
+import androidx.annotation.NonNull;
 
 import android.Manifest;
 import android.content.Context;
@@ -19,6 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 
+import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
@@ -28,14 +30,105 @@ public class MainActivity extends BridgeActivity {
 
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
+    public static class SafeBridgeWebViewClient extends BridgeWebViewClient {
+        public SafeBridgeWebViewClient(Bridge bridge) {
+            super(bridge);
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            if (request != null && request.getUrl() != null) {
+                if (handleExternalUrl(view.getContext(), request.getUrl().toString())) {
+                    return true;
+                }
+            }
+            return super.shouldOverrideUrlLoading(view, request);
+        }
+
+        @SuppressWarnings("deprecation")
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            if (url != null) {
+                if (handleExternalUrl(view.getContext(), url)) {
+                    return true;
+                }
+            }
+            return super.shouldOverrideUrlLoading(view, url);
+        }
+
+        private boolean handleExternalUrl(Context context, String urlStr) {
+            if (urlStr == null) return false;
+            String trimmed = urlStr.trim();
+            if (trimmed.startsWith("intent://") || trimmed.startsWith("geo:") ||
+                trimmed.startsWith("tel:") || trimmed.startsWith("mailto:") ||
+                trimmed.startsWith("sms:") || trimmed.startsWith("whatsapp:") ||
+                trimmed.startsWith("market:") ||
+                trimmed.contains("maps.google.com") || trimmed.contains("google.com/maps") ||
+                trimmed.contains("maps.app.goo.gl") || trimmed.contains("goo.gl/maps")) {
+
+                try {
+                    if (trimmed.startsWith("intent://")) {
+                        Intent intent = Intent.parseUri(trimmed, Intent.URI_INTENT_SCHEME);
+                        if (intent != null) {
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            try {
+                                context.startActivity(intent);
+                                return true;
+                            } catch (Exception e1) {
+                                try {
+                                    Intent genericIntent = new Intent(intent);
+                                    genericIntent.setPackage(null);
+                                    genericIntent.setComponent(null);
+                                    genericIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    context.startActivity(genericIntent);
+                                    return true;
+                                } catch (Exception e2) {
+                                    String fallback = intent.getStringExtra("browser_fallback_url");
+                                    if (fallback != null && !fallback.isEmpty()) {
+                                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallback));
+                                        browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        context.startActivity(browserIntent);
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    } else if (trimmed.contains("maps.google.com") || trimmed.contains("google.com/maps") ||
+                               trimmed.contains("maps.app.goo.gl") || trimmed.contains("goo.gl/maps")) {
+                        try {
+                            Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(trimmed));
+                            mapIntent.setPackage("com.google.android.apps.maps");
+                            mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(mapIntent);
+                            return true;
+                        } catch (Exception mapEx) {
+                            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(trimmed));
+                            browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(browserIntent);
+                            return true;
+                        }
+                    } else {
+                        Intent genericIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(trimmed));
+                        genericIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(genericIntent);
+                        return true;
+                    }
+                } catch (Exception ignored) {}
+                return true; // ALWAYS return true so WebView never throws net::ERR_UNKNOWN_URL_SCHEME
+            }
+            return false;
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(FloatingOverlayPlugin.class);
         super.onCreate(savedInstanceState);
 
-                try {
+        try {
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().getSettings().setGeolocationEnabled(true);
+                getBridge().getWebView().setWebViewClient(new SafeBridgeWebViewClient(getBridge()));
             }
         } catch (Throwable ignored) {}
 

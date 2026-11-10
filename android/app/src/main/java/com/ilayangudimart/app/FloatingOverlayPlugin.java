@@ -310,7 +310,24 @@ public class FloatingOverlayPlugin extends Plugin {
             return;
         }
         try {
-            Uri uri = Uri.parse(urlStr.trim());
+            String trimmed = urlStr.trim();
+            Uri uri = Uri.parse(trimmed);
+
+            if (trimmed.contains("maps.google.com") || trimmed.contains("google.com/maps") ||
+                trimmed.contains("maps.app.goo.gl") || trimmed.contains("goo.gl/maps") ||
+                trimmed.startsWith("geo:")) {
+                try {
+                    Intent mapIntent = new Intent(Intent.ACTION_VIEW, uri);
+                    mapIntent.setPackage("com.google.android.apps.maps");
+                    mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    getContext().startActivity(mapIntent);
+                    JSObject ret = new JSObject();
+                    ret.put("success", true);
+                    call.resolve(ret);
+                    return;
+                } catch (Exception ignored) {}
+            }
+
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(intent);
