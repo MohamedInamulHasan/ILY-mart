@@ -64,9 +64,6 @@ const DeliveryActiveOrder = () => {
     useEffect(() => {
         if (!isNativeAndroid()) return;
         setOverlayHasAcceptedOrder(isAcceptedOrder);
-        if (!isAcceptedOrder) {
-            hideFloatingOverlay();
-        }
     }, [isAcceptedOrder]);
 
     const [popupState, setPopupState] = useState({

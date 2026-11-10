@@ -99,56 +99,17 @@ const NotificationOverlay = () => {
         }
     }, [isDeliveryPage, incomingOrder]);
 
-    // Dismiss popup immediately if an order is accepted (hasActiveAcceptedOrder is true)
-    useEffect(() => {
-        if (hasActiveAcceptedOrder && incomingOrder) {
-            setIncomingOrder(null);
-            setStartWithAcceptView(false);
-        }
-    }, [hasActiveAcceptedOrder, incomingOrder]);
-
-    // When floating overlay is disabled, immediately dismiss any incoming order popup
-    useEffect(() => {
-        const handleFloatingToggle = () => {
-            const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-            setIsFloatingEnabled(enabled);
-            if (!enabled) {
-                setIncomingOrder(null);
-                setStartWithAcceptView(false);
-            }
-        };
-        window.addEventListener('delivery:floating-toggle', handleFloatingToggle);
-        return () => window.removeEventListener('delivery:floating-toggle', handleFloatingToggle);
-    }, []);
-
-    // Dismiss incoming order popup immediately if user leaves delivery routes
-    useEffect(() => {
-        if (!isDeliveryPage && incomingOrder) {
-            setIncomingOrder(null);
-            setStartWithAcceptView(false);
-        }
-    }, [isDeliveryPage, incomingOrder]);
-
-    // Dismiss popup immediately if an order is accepted (hasActiveAcceptedOrder is true)
-    useEffect(() => {
-        if (hasActiveAcceptedOrder && incomingOrder) {
-            setIncomingOrder(null);
-            setStartWithAcceptView(false);
-        }
-    }, [hasActiveAcceptedOrder, incomingOrder]);
-
     const incomingOrderRef = useRef(incomingOrder);
     useEffect(() => {
         incomingOrderRef.current = incomingOrder;
     }, [incomingOrder]);
 
     // Only alert for NEW orders placed in real-time while in the app!
-    // Do NOT alert if not in delivery panel or if overlay/alerts are disabled.
-    // Inside the app: NO repeated 5s alert loops (orders are already visible in dashboard cards)
+    // Shows in delivery panel, orders list, and accept & delivery order page
     useEffect(() => {
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
         const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        if (!isDeliveryBoy || !isDeliveryPage || !isDeliverySessionActive || !isFloatingEnabled || hasActiveAcceptedOrder) return;
+        if (!isDeliveryBoy || !isDeliveryPage || !isDeliverySessionActive || !isFloatingEnabled) return;
         if (allOrders.length === 0) return;
 
         // On first load of orders, record all existing order IDs as known so we never alert old past orders
@@ -164,10 +125,15 @@ const NotificationOverlay = () => {
         // If an incoming order modal is currently showing, wait until user explicitly accepts or skips
         if (incomingOrder) return;
 
+        const activePageOrderId = location.pathname.startsWith('/admin/delivery-order/')
+            ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
+            : null;
+
         // Check if any brand new processing order was placed during this active session
         const newRealtimeOrder = allOrders.find(o => {
             const oId = String(o._id || o.id || '');
             if (!oId) return false;
+            if (activePageOrderId && oId === activePageOrderId) return false;
             if (knownOrderIdsRef.current.has(oId)) return false;
             if (skippedOrderIds.has(oId)) return false;
             if (!isProcessingStatus(o.status)) return false;
@@ -186,7 +152,7 @@ const NotificationOverlay = () => {
                 playSuccessSound();
             } catch (_) {}
         }
-    }, [isDeliveryBoy, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds, hasActiveAcceptedOrder]);
+    }, [isDeliveryBoy, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds, location.pathname]);
 
     // Auto-dismiss popup if the current order is accepted or cancelled
     useEffect(() => {
@@ -430,6 +396,12 @@ const NotificationOverlay = () => {
             if (!isDeliveryBoy) return;
             const oId = String(order?._id || order?.id || '');
             if (!oId || skippedOrderIds.has(oId) || knownOrderIdsRef.current.has(oId)) return;
+
+            const activePageOrderId = location.pathname.startsWith('/admin/delivery-order/')
+                ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
+                : null;
+            if (activePageOrderId && oId === activePageOrderId) return;
+
             knownOrderIdsRef.current.add(oId);
 
             // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
@@ -478,7 +450,7 @@ const NotificationOverlay = () => {
             socket.off('order:updated', handleOrderUpdated);
             socket.off('order:created', handleOrderCreated);
         };
-    }, [socket, user, isDeliveryBoy, isDeliveryPage, hasActiveAcceptedOrder, skippedOrderIds, t, navigate, queryClient]);
+    }, [socket, user, isDeliveryBoy, isDeliveryPage, skippedOrderIds, t, navigate, queryClient, location.pathname]);
 
     const addNotification = (notif) => {
         setNotifications(prev => [...prev, notif]);
