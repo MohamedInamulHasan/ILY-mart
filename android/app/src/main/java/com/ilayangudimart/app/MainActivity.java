@@ -25,63 +25,6 @@ import java.util.Map;
 
 public class MainActivity extends BridgeActivity {
 
-    private boolean handleCustomExternalUrl(String urlStr) {
-        if (urlStr == null || urlStr.isEmpty()) return false;
-
-        // 1. Handle intent:// URLs (e.g. Google Maps redirect)
-        if (urlStr.startsWith("intent://")) {
-            try {
-                Intent intent = Intent.parseUri(urlStr, Intent.URI_INTENT_SCHEME);
-                if (intent != null) {
-                    try {
-                        startActivity(intent);
-                        return true;
-                    } catch (Exception notFound) {
-                        // Package in intent may be invalid/uninstalled (e.g. ardl-wv-aht_2026)
-                        try {
-                            intent.setPackage(null);
-                            intent.setComponent(null);
-                            startActivity(intent);
-                            return true;
-                        } catch (Exception e2) {
-                            String fallbackUrl = intent.getStringExtra("browser_fallback_url");
-                            if (fallbackUrl != null) {
-                                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
-                                startActivity(browserIntent);
-                                return true;
-                            }
-                            String parsedData = intent.getDataString();
-                            if (parsedData != null && (parsedData.startsWith("http://") || parsedData.startsWith("https://"))) {
-                                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(parsedData));
-                                startActivity(browserIntent);
-                                return true;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return true; // Return true so WebView never crashes with net::ERR_UNKNOWN_URL_SCHEME
-        }
-
-        // 2. Handle maps, geo, tel, mailto, whatsapp schemes/domains
-        if (urlStr.startsWith("geo:") || urlStr.startsWith("tel:") || urlStr.startsWith("mailto:") || urlStr.startsWith("whatsapp:") ||
-            urlStr.contains("maps.google.com") || urlStr.contains("google.com/maps") || urlStr.contains("maps.app.goo.gl")) {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(urlStr));
-                startActivity(intent);
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return true;
-        }
-
-        return false;
-    }
-
-
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
     @Override
@@ -89,31 +32,11 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FloatingOverlayPlugin.class);
         super.onCreate(savedInstanceState);
 
-        try {
+                try {
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().getSettings().setGeolocationEnabled(true);
-                getBridge().setWebViewClient(new BridgeWebViewClient(getBridge()) {
-                    @Override
-                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                        if (request != null && request.getUrl() != null) {
-                            String urlStr = request.getUrl().toString();
-                            if (handleCustomExternalUrl(urlStr)) {
-                                return true;
-                            }
-                        }
-                        return super.shouldOverrideUrlLoading(view, request);
-                    }
-
-                    @Override
-                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        if (url != null && handleCustomExternalUrl(url)) {
-                            return true;
-                        }
-                        return super.shouldOverrideUrlLoading(view, url);
-                    }
-                });
             }
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
 
         // Enable edge-to-edge display
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

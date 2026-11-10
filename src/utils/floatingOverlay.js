@@ -167,3 +167,40 @@ export const setOverlayDeliverySessionActive = async (active) => {
         console.warn('Error setting overlay delivery session active:', err);
     }
 };
+
+/**
+ * Safely open external URLs (like Google Maps) using native Android Intent.ACTION_VIEW.
+ * This guarantees the URL opens in Google Maps or default browser and NEVER crashes WebView.
+ */
+export const openExternalUrlNative = async (url) => {
+    if (!isNativeAndroid() || !url) return false;
+    try {
+        await FloatingOverlay.openExternalUrl({ url: String(url).trim() });
+        return true;
+    } catch (err) {
+        console.warn('Native openExternalUrl failed:', err);
+        return false;
+    }
+};
+
+/**
+ * Directly fetch device hardware GPS / Network location via Android LocationManager.
+ * Instant response using cached location if available, or direct single update.
+ */
+export const getNativeDeviceLocation = async () => {
+    if (!isNativeAndroid()) return null;
+    try {
+        const res = await FloatingOverlay.getNativeLocation();
+        if (res && typeof res.latitude === 'number' && typeof res.longitude === 'number') {
+            return {
+                latitude: res.latitude,
+                longitude: res.longitude,
+                accuracy: res.accuracy || 10,
+                provider: res.provider || 'native_android'
+            };
+        }
+    } catch (err) {
+        console.warn('Native getNativeLocation error:', err);
+    }
+    return null;
+};

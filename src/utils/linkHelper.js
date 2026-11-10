@@ -1,9 +1,10 @@
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { openExternalUrlNative, isNativeAndroid } from './floatingOverlay';
 
 /**
  * Opens a URL in the system's external browser or native app.
- * Works for both web and native platforms via Capacitor Browser plugin.
+ * Works for both web and native platforms via Capacitor Browser plugin & Android Native Intent.
  * Seamlessly resolves Google Maps short links (maps.app.goo.gl, goo.gl).
  * @param {string} url - The URL or query to open.
  */
@@ -34,20 +35,31 @@ export const openExternalLink = async (url) => {
         }
     }
 
-    try {
-        if (Capacitor.isNativePlatform()) {
-            await Browser.open({ url: finalUrl, windowName: '_system' });
-            return;
+    // 1. Native Android: Launch native Intent.ACTION_VIEW (opens Google Maps app directly)
+    if (isNativeAndroid()) {
+        try {
+            const ok = await openExternalUrlNative(finalUrl);
+            if (ok) return;
+        } catch (nativeErr) {
+            console.warn('Native openExternalUrl failed, falling back:', nativeErr);
         }
+    }
 
-        // Web / PWA browser environment:
+    // 2. Capacitor on iOS / Other native:
+    if (Capacitor.isNativePlatform()) {
+        try {
+            await Browser.open({ url: finalUrl });
+            return;
+        } catch (bErr) {
+            console.warn('Browser.open failed:', bErr);
+        }
+        return; // NEVER navigate the main WebView to external maps!
+    }
+
+    // 3. Web / PWA browser environment:
+    try {
         window.open(finalUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
-        console.error('Error opening external link:', error);
-        try {
-            window.open(finalUrl, '_blank', 'noopener,noreferrer');
-        } catch (e) {
-            console.error('Fallback window.open failed:', e);
-        }
+        console.error('Error opening external link in web browser:', error);
     }
 };

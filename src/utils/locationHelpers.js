@@ -11,6 +11,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { getNativeDeviceLocation } from './floatingOverlay';
 
 export const checkLocationPermission = async () => {
     const isNative = Capacitor.isNativePlatform();
@@ -245,6 +246,18 @@ export const getCurrentLocation = async () => {
     try {
         if (isNative) {
             console.log('📍 Native: Checking location permissions...');
+
+            // Tier 0: Direct Native Android LocationManager (Instant hardware/cached GPS, bypasses WebView bugs)
+            try {
+                const nativeLoc = await getNativeDeviceLocation();
+                if (nativeLoc && typeof nativeLoc.latitude === 'number' && typeof nativeLoc.longitude === 'number') {
+                    console.log('✅ Native: Android LocationManager GPS acquired:', nativeLoc.latitude, nativeLoc.longitude);
+                    return await buildResult(nativeLoc.latitude, nativeLoc.longitude, { provider: nativeLoc.provider });
+                }
+            } catch (nativeLocErr) {
+                console.warn('Native LocationManager notice:', nativeLocErr);
+            }
+
             // 1. Permission check & request via Capacitor Geolocation
             let check;
             try {
