@@ -219,7 +219,8 @@ export const updateCategory = async (req, res, next) => {
             { $set: updateFields },
             {
                 new: true,
-                runValidators: true
+                runValidators: true,
+                strict: false
             }
         );
 

@@ -272,8 +272,8 @@ const CategoryProducts = () => {
                                 <ArrowLeft size={19} className="text-gray-900 dark:text-gray-900" />
                             </button>
                         </div>
-                        <div className="flex flex-col text-center px-10">
-                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight truncate">
+                        <div className="flex flex-col text-center px-10 max-w-[260px] sm:max-w-md mx-auto">
+                            <h1 className="text-[13.5px] sm:text-[14.5px] font-bold text-gray-900 tracking-tight leading-snug line-clamp-2" title={categoryDisplayName}>
                                 {categoryDisplayName}
                             </h1>
                             <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Explore products')}</p>
@@ -433,7 +433,7 @@ const CategoryProducts = () => {
                 {/* Subcategories Bar (Scrollable horizontal bar with box effect) - shown if category has subcategories */}
                 {subcategoriesList && subcategoriesList.length > 0 ? (
                     <div className="w-full px-4 mb-4 sm:mb-5">
-                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                        <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide py-1">
                             {/* Individual Subcategories */}
                             {subcategoriesList.map((sub) => {
                                 const isSelected = selectedSubcategory && areSubcategoriesMatching(selectedSubcategory, sub);
@@ -458,13 +458,13 @@ const CategoryProducts = () => {
                                             e.stopPropagation();
                                             setSelectedSubcategory(sub);
                                         }}
-                                        className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl flex flex-col items-center justify-center flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
+                                        className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] h-[106px] sm:h-[116px] px-1.5 pt-2 pb-1.5 sm:px-3 sm:pt-2.5 sm:pb-2 rounded-xl flex flex-col items-center justify-start flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
                                             isSelected
                                                 ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
                                                 : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
                                         }`}
                                     >
-                                        <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent pointer-events-none">
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent pointer-events-none flex-shrink-0">
                                             <img
                                                 src={subImg}
                                                 alt={cleanTitle}
@@ -473,13 +473,23 @@ const CategoryProducts = () => {
                                                 onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
                                             />
                                         </div>
-                                        <div className="flex flex-col items-center justify-center text-center mt-1 w-full px-0.5 pointer-events-none">
+                                        <div className="flex items-start justify-center text-center mt-1 w-full px-0.5 pointer-events-none h-[28px] sm:h-[32px] overflow-hidden">
                                             <span 
-                                                className={`leading-tight truncate block text-center w-full transition-colors text-[11.5px] sm:text-[12.5px] ${
+                                                className={`leading-[14px] sm:leading-[15px] text-center w-full transition-colors text-[11px] sm:text-[12px] ${
                                                     isSelected 
                                                         ? 'font-bold text-gray-900 dark:text-white' 
                                                         : 'font-semibold text-gray-700 dark:text-gray-300'
                                                 }`} 
+                                                style={{
+                                                    display: '-webkit-box',
+                                                    WebkitLineClamp: 2,
+                                                    WebkitBoxOrient: 'vertical',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    wordBreak: 'break-word',
+                                                    maxHeight: '28px',
+                                                    lineHeight: '14px'
+                                                }}
                                                 title={cleanTitle}
                                             >
                                                 {cleanTitle}

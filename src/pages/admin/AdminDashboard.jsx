@@ -2584,16 +2584,33 @@ const CategoryManagement = () => {
         // Use API fallback for image if not directly stored
         const imageUrl = category.image || (category._id ? `${API_BASE_URL}/categories/${category._id}/image` : '');
         const storeImageUrl = category.storeImage || (category._id ? `${API_BASE_URL}/categories/${category._id}/store-image` : '');
+
+        const subStoreImages = { ...(category.subcategoryStoreImages || {}) };
+        const rawSubImages = category.subcategoryImages && typeof category.subcategoryImages === 'object' ? category.subcategoryImages : {};
+        const cleanSubImages = {};
+        Object.entries(rawSubImages).forEach(([k, v]) => {
+            if (k.startsWith('__store__') && v) {
+                const subName = k.replace('__store__', '');
+                if (!subStoreImages[subName]) {
+                    subStoreImages[subName] = v;
+                }
+            } else if (!k.startsWith('__store__')) {
+                cleanSubImages[k] = v;
+            }
+        });
+
         setFormData({
             name: category.name || '',
             image: imageUrl,
             storeImage: category.storeImage ? storeImageUrl : '',
             subcategories: Array.isArray(category.subcategories) ? category.subcategories : [],
-            subcategoryImages: category.subcategoryImages || {},
-            subcategoryStoreImages: category.subcategoryStoreImages || {},
+            subcategoryImages: cleanSubImages,
+            subcategoryStoreImages: subStoreImages,
             isPreview: Boolean(category.isPreview === true || category.mode === 'preview')
         });
         setNewSubcategory('');
+        setNewSubcategoryImage('');
+        setNewSubcategoryStoreImage('');
         setView('form');
     };
 
@@ -2624,6 +2641,15 @@ const CategoryManagement = () => {
         e.preventDefault();
 
         try {
+            // Prepare subcategoryImages and dual-save store images under '__store__' prefix as well
+            const combinedSubImages = { ...(formData.subcategoryImages || {}) };
+            const subStoreImgs = { ...(formData.subcategoryStoreImages || {}) };
+            Object.entries(subStoreImgs).forEach(([sub, url]) => {
+                if (url) {
+                    combinedSubImages['__store__' + sub] = url;
+                }
+            });
+
             if (editingCategory?.isAll) {
                 // Save the "All" category name and image to settings
                 if (formData.name && formData.name !== (allCategoryName || t('All'))) {
@@ -2636,6 +2662,8 @@ const CategoryManagement = () => {
             } else if (editingCategory) {
                 const updateData = {
                     ...formData,
+                    subcategoryImages: combinedSubImages,
+                    subcategoryStoreImages: subStoreImgs,
                     isPreview: Boolean(formData.isPreview),
                     mode: formData.isPreview ? 'preview' : 'normal'
                 };
@@ -2653,6 +2681,8 @@ const CategoryManagement = () => {
             } else {
                 await addCategory({
                     ...formData,
+                    subcategoryImages: combinedSubImages,
+                    subcategoryStoreImages: subStoreImgs,
                     isPreview: Boolean(formData.isPreview),
                     mode: formData.isPreview ? 'preview' : 'normal'
                 });
@@ -3445,7 +3475,7 @@ const CategoryManagement = () => {
                                                                                                 className="hidden"
                                                                                                 onChange={(e) => {
                                                                                                     const file = e.target.files[0];
-                                                                                                    if (file) handleSubcategoryImageUpload(sub, file, index, 'product');
+                                                                                                    if (file) handleSubcategoryImageUpload(sub, file, index, 'product'); e.target.value = '';
                                                                                                 }}
                                                                                             />
                                                                                         </label>
@@ -3466,7 +3496,7 @@ const CategoryManagement = () => {
                                                                                             className="hidden"
                                                                                             onChange={(e) => {
                                                                                                 const file = e.target.files[0];
-                                                                                                if (file) handleSubcategoryImageUpload(sub, file, index, 'product');
+                                                                                                if (file) handleSubcategoryImageUpload(sub, file, index, 'product'); e.target.value = '';
                                                                                             }}
                                                                                         />
                                                                                     </label>
@@ -3490,7 +3520,7 @@ const CategoryManagement = () => {
                                                                                                 className="hidden"
                                                                                                 onChange={(e) => {
                                                                                                     const file = e.target.files[0];
-                                                                                                    if (file) handleSubcategoryImageUpload(sub, file, index, 'store');
+                                                                                                    if (file) handleSubcategoryImageUpload(sub, file, index, 'store'); e.target.value = '';
                                                                                                 }}
                                                                                             />
                                                                                         </label>
@@ -3511,7 +3541,7 @@ const CategoryManagement = () => {
                                                                                             className="hidden"
                                                                                             onChange={(e) => {
                                                                                                 const file = e.target.files[0];
-                                                                                                if (file) handleSubcategoryImageUpload(sub, file, index, 'store');
+                                                                                                if (file) handleSubcategoryImageUpload(sub, file, index, 'store'); e.target.value = '';
                                                                                             }}
                                                                                         />
                                                                                     </label>

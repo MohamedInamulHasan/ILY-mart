@@ -322,20 +322,61 @@ const StoreProducts = () => {
 
     const getSubcategoryImage = (subName) => {
         if (!subName || normSubcategoryKey(subName) === 'all') return null;
+
+        // 1. If subName is a category (or matches one), return its storeImage (falling back to image)
+        const directCat = findCanonicalCategory(subName, categories);
+        if (directCat && (directCat.storeImage || directCat.image)) {
+            return directCat.storeImage || directCat.image;
+        }
+
+        // 2. Check if subName matches any subcategory and has a store-specific image:
+        // 2a. Direct subcategoryStoreImages
         for (const cat of categories) {
-            if (cat?.subcategoryImages && typeof cat.subcategoryImages === 'object') {
-                for (const [key, url] of Object.entries(cat.subcategoryImages)) {
+            if (cat?.subcategoryStoreImages && typeof cat.subcategoryStoreImages === 'object') {
+                for (const [key, url] of Object.entries(cat.subcategoryStoreImages)) {
                     if (url && areSubcategoriesMatching(key, subName)) {
                         return url;
                     }
                 }
             }
+            // 2b. Dual-saved store image under '__store__' or 'store:' prefix in subcategoryImages
+            if (cat?.subcategoryImages && typeof cat.subcategoryImages === 'object') {
+                for (const [key, url] of Object.entries(cat.subcategoryImages)) {
+                    if (url && (key.startsWith('__store__') || key.startsWith('store:'))) {
+                        const cleanKey = key.replace(/^__store__|^store:/, '');
+                        if (areSubcategoriesMatching(cleanKey, subName)) {
+                            return url;
+                        }
+                    }
+                }
+            }
         }
-        // If it's a category fallback
-        const matchedCat = findCanonicalCategory(subName, categories);
-        if (matchedCat) {
-            return matchedCat.storeImage || matchedCat.image || null;
+
+        // 3. Fallback: Check parent category storeImage if this subName belongs to a category
+        for (const cat of categories) {
+            if (Array.isArray(cat?.subcategories) && cat.subcategories.some(s => areSubcategoriesMatching(s, subName))) {
+                if (cat.storeImage) return cat.storeImage;
+            }
         }
+
+        // 4. Fallback: Product category page subcategory image
+        for (const cat of categories) {
+            if (cat?.subcategoryImages && typeof cat.subcategoryImages === 'object') {
+                for (const [key, url] of Object.entries(cat.subcategoryImages)) {
+                    if (url && !key.startsWith('__store__') && !key.startsWith('store:') && areSubcategoriesMatching(key, subName)) {
+                        return url;
+                    }
+                }
+            }
+        }
+
+        // 5. Final fallback: Parent category image
+        for (const cat of categories) {
+            if (Array.isArray(cat?.subcategories) && cat.subcategories.some(s => areSubcategoriesMatching(s, subName))) {
+                if (cat.image) return cat.image;
+            }
+        }
+
         return null;
     };
 

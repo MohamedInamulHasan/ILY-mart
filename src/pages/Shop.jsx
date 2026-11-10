@@ -47,14 +47,20 @@ const ShopCategoryItem = ({ item, isActive, onClick, dbCategories, settings, lan
         if (isAll) {
             return settings?.allStoreCategoryImage || settings?.allCategoryImage || null;
         }
-        // 1. Store subcategory image from parent category
+        // 1. Store subcategory image from parent category (direct or __store__ prefix)
         if (parentCat?.subcategoryStoreImages && typeof parentCat.subcategoryStoreImages === 'object') {
             const match = Object.entries(parentCat.subcategoryStoreImages).find(([k]) => areSubcategoriesMatching(k, item?.name));
             if (match && match[1]) return match[1];
         }
+        if (parentCat?.subcategoryImages && typeof parentCat.subcategoryImages === 'object') {
+            const direct = parentCat.subcategoryImages['__store__' + item?.name];
+            if (direct) return direct;
+            const match = Object.entries(parentCat.subcategoryImages).find(([k]) => k.startsWith('__store__') && areSubcategoriesMatching(k.replace('__store__', ''), item?.name));
+            if (match && match[1]) return match[1];
+        }
         // 2. Product subcategory image from parent category
         if (parentCat?.subcategoryImages && typeof parentCat.subcategoryImages === 'object') {
-            const match = Object.entries(parentCat.subcategoryImages).find(([k]) => areSubcategoriesMatching(k, item?.name));
+            const match = Object.entries(parentCat.subcategoryImages).find(([k]) => !k.startsWith('__store__') && areSubcategoriesMatching(k, item?.name));
             if (match && match[1]) return match[1];
         }
         // 3. Parent category storeImage
