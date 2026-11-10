@@ -11,7 +11,11 @@
 
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-import { getNativeDeviceLocation } from './floatingOverlay';
+import { 
+    getNativeDeviceLocation, 
+    promptDeviceLocationEnable, 
+    requestDeviceLocationPermission 
+} from './floatingOverlay';
 
 export const checkLocationPermission = async () => {
     const isNative = Capacitor.isNativePlatform();
@@ -247,7 +251,37 @@ export const getCurrentLocation = async () => {
         if (isNative) {
             console.log('📍 Native: Checking location permissions...');
 
-            // Tier 0: Direct Native Android LocationManager (Instant hardware/cached GPS, bypasses WebView bugs)
+            // Step 1: Ensure location runtime permission is granted (prompts "Allow ILY-mart to access location?")
+            try {
+                const permRes = await requestDeviceLocationPermission();
+                if (permRes && permRes.granted === false) {
+                    return {
+                        success: false,
+                        code: 'PERMISSION_DENIED',
+                        message: 'Location permission was denied. Please allow location access to detect your GPS position.'
+                    };
+                }
+            } catch (pErr) {
+                console.warn('Native permission prompt notice:', pErr);
+            }
+
+            // Step 2: Ensure device location (GPS) is turned ON.
+            // If turned off, triggers Google Play Services popup:
+            // "To continue, turn on device location, which uses Google's location service" [No thanks] [OK]
+            try {
+                const locPrompt = await promptDeviceLocationEnable();
+                if (locPrompt && locPrompt.enabled === false && !locPrompt.openedSettings) {
+                    return {
+                        success: false,
+                        code: 'LOCATION_DISABLED',
+                        message: 'Device location is turned off. Please turn ON location to detect your address.'
+                    };
+                }
+            } catch (lpErr) {
+                console.warn('Native location settings prompt notice:', lpErr);
+            }
+
+            // Step 3: Tier 0 Direct Native Android LocationManager (Instant hardware/cached GPS, bypasses WebView bugs)
             try {
                 const nativeLoc = await getNativeDeviceLocation();
                 if (nativeLoc && typeof nativeLoc.latitude === 'number' && typeof nativeLoc.longitude === 'number') {

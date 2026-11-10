@@ -1,3 +1,4 @@
+import androidx.annotation.NonNull;
 package com.ilayangudimart.app;
 
 import android.Manifest;
@@ -191,4 +192,22 @@ public class MainActivity extends BridgeActivity {
     private void handlePermissionResult(Map<String, Boolean> permissions) {
         // Handled silently
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FloatingOverlayPlugin.REQUEST_CHECK_SETTINGS) {
+            FloatingOverlayPlugin.onLocationSettingsResult(resultCode);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == FloatingOverlayPlugin.REQUEST_LOCATION_PERMISSION) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            FloatingOverlayPlugin.onPermissionResult(granted);
+        }
+    }
+
 }

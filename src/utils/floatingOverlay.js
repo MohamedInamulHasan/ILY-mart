@@ -204,3 +204,34 @@ export const getNativeDeviceLocation = async () => {
     }
     return null;
 };
+
+/**
+ * Prompts user to turn ON device location (GPS) via Google Play Services resolution popup:
+ * "To continue, turn on device location, which uses Google's location service" with [No thanks] and [OK].
+ * When the user taps [OK], Android turns on location automatically without leaving the app!
+ */
+export const promptDeviceLocationEnable = async () => {
+    if (!isNativeAndroid()) return { enabled: true };
+    try {
+        const res = await FloatingOverlay.promptEnableLocation();
+        return res || { enabled: false };
+    } catch (err) {
+        console.warn('Native promptEnableLocation error:', err);
+        return { enabled: false };
+    }
+};
+
+/**
+ * Requests location runtime permission from Android OS if not granted:
+ * "Allow ILY-mart to access this device's location?"
+ */
+export const requestDeviceLocationPermission = async () => {
+    if (!isNativeAndroid()) return { granted: true };
+    try {
+        const res = await FloatingOverlay.requestLocationPermission();
+        return res || { granted: false };
+    } catch (err) {
+        console.warn('Native requestLocationPermission error:', err);
+        return { granted: false };
+    }
+};
