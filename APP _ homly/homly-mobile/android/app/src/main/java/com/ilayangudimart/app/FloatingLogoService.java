@@ -159,8 +159,7 @@ public class FloatingLogoService extends Service {
         if (enabled && sessionActive) {
             isAppInForeground = false;
             mainHandler.post(() -> {
-                boolean hasAccepted = prefs.getBoolean("has_accepted_order", false);
-                if (!hasAccepted && orderCardView == null) {
+                if (orderCardView == null) {
                     showCircleBubble();
                 }
             });
@@ -199,16 +198,9 @@ public class FloatingLogoService extends Service {
                     instance.hideCircleBubble();
                     instance.dismissPorterOrderCard();
                 } else {
-                    // Out of the app:
-                    if (hasAccepted) {
-                        // When an order is accepted -> suppress both floating icon and repeated popups
-                        instance.hideCircleBubble();
-                        instance.dismissPorterOrderCard();
-                    } else {
-                        // No accepted cards -> show floating icon on phone screen
-                        if (instance.orderCardView == null) {
-                            instance.showCircleBubble();
-                        }
+                    // Out of the app: show floating icon on phone screen (do not hide when screen/panel is open)
+                    if (instance.orderCardView == null) {
+                        instance.showCircleBubble();
                     }
                 }
             });
@@ -332,14 +324,13 @@ public class FloatingLogoService extends Service {
             }
         });
 
-        // Add to windowManager only if app is not in foreground, enabled, no accepted card, and permitted
+        // Add to windowManager only if app is not in foreground, enabled, and permitted
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        boolean hasAccepted = prefs.getBoolean("has_accepted_order", false);
         boolean canDraw = Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this);
 
-        if (!isAppInForeground && !hasAccepted && enabled && sessionActive && canDraw) {
+        if (!isAppInForeground && enabled && sessionActive && canDraw) {
             try {
                 windowManager.addView(floatingCircleView, circleParams);
             } catch (Exception e) {
@@ -360,8 +351,7 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        boolean hasAcceptedOrder = prefs.getBoolean("has_accepted_order", false);
-        if (!enabled || !sessionActive || isAppInForeground || hasAcceptedOrder) {
+        if (!enabled || !sessionActive || isAppInForeground) {
             hideCircleBubble();
             return;
         }
@@ -385,8 +375,7 @@ public class FloatingLogoService extends Service {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        boolean hasAccepted = prefs.getBoolean("has_accepted_order", false);
-        if (!enabled || !sessionActive || hasAccepted) {
+        if (!enabled || !sessionActive) {
             return;
         }
 
@@ -976,7 +965,6 @@ public class FloatingLogoService extends Service {
             stopServiceAndHide();
             return;
         }
-        if (prefs.getBoolean("has_accepted_order", false)) return;
         synchronized (pendingOrdersQueue) {
             if (pendingOrdersQueue.isEmpty()) return;
             int idx = currentPendingOrderIndex % pendingOrdersQueue.size();
@@ -1023,9 +1011,7 @@ public class FloatingLogoService extends Service {
     public synchronized void dismissPorterOrderCard() {
         stopAlertEffects();
         dismissPorterOrderCardInternal();
-        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean hasAcceptedOrder = prefs.getBoolean("has_accepted_order", false);
-        if (!hasAcceptedOrder && !isAppInForeground) {
+        if (!isAppInForeground) {
             showCircleBubble();
         }
     }
@@ -1139,14 +1125,10 @@ public class FloatingLogoService extends Service {
                 stopServiceAndHide();
                 return;
             }
-            if (hasAccepted || isAppInForeground) {
-                // When there is an accepted card in delivery panel OR inside the app -> do NOT show floating icon or card
+            if (isAppInForeground) {
                 hideCircleBubble();
-                if (hasAccepted) {
-                    dismissPorterOrderCard();
-                }
+                dismissPorterOrderCard();
             } else {
-                // When there are NO accepted cards in delivery panel and out of the app -> show floating icon!
                 if (orderCardView == null) {
                     showCircleBubble();
                 }
@@ -1233,8 +1215,8 @@ public class FloatingLogoService extends Service {
                     final boolean hasAccepted = foundAccepted;
                     mainHandler.post(() -> updateAcceptedOrderState(hasAccepted));
 
-                    // Only alert pending/processing orders if delivery boy is NOT currently handling an accepted order
-                    if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty() && !foundAccepted) {
+                    // Alert pending/processing orders if any outside the app
+                    if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
                         mainHandler.post(() -> showNextPendingOrderIfAny());
                     }
                 }

@@ -136,11 +136,7 @@ const NotificationOverlay = () => {
             if (activePageOrderId && oId === activePageOrderId) return false;
             if (knownOrderIdsRef.current.has(oId)) return false;
             if (skippedOrderIds.has(oId)) return false;
-            if (!isProcessingStatus(o.status)) return false;
-
-            const orderTime = new Date(o.createdAt || o.date || o.timestamp || 0).getTime();
-            // Must have been created around or after this session mounted (not an old order)
-            return orderTime >= (sessionStartRef.current - 30000);
+            return isProcessingStatus(o.status);
         });
 
         if (newRealtimeOrder) {
@@ -148,9 +144,13 @@ const NotificationOverlay = () => {
             knownOrderIdsRef.current.add(oId);
             setStartWithAcceptView(false);
             setIncomingOrder(newRealtimeOrder);
+            triggerIncomingOrderAlert();
             try {
                 playSuccessSound();
             } catch (_) {}
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
         }
     }, [isDeliveryBoy, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds, location.pathname]);
 
@@ -222,23 +222,30 @@ const NotificationOverlay = () => {
             const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
             if (newOrder && isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled) {
                 const oId = String(newOrder._id || newOrder.id || '');
+                const activePageOrderId = location.pathname.startsWith('/admin/delivery-order/')
+                    ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
+                    : null;
+                if (activePageOrderId && oId === activePageOrderId) {
+                    return;
+                }
                 if (oId && !skippedOrderIds.has(oId) && !knownOrderIdsRef.current.has(oId) && isProcessingStatus(newOrder.status)) {
                     knownOrderIdsRef.current.add(oId);
-                    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/delivery-order')) {
-                        return;
-                    }
                     setStartWithAcceptView(false);
                     setIncomingOrder(newOrder);
+                    triggerIncomingOrderAlert();
                     try {
                         playSuccessSound();
                     } catch (_) {}
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                        navigator.vibrate([200, 100, 200]);
+                    }
                 }
             }
         };
 
         window.addEventListener('orders:refresh', handleOrdersRefresh);
         return () => window.removeEventListener('orders:refresh', handleOrdersRefresh);
-    }, [isDeliveryBoy, isDeliveryPage, skippedOrderIds, queryClient]);
+    }, [isDeliveryBoy, isDeliveryPage, skippedOrderIds, queryClient, location.pathname]);
 
     // Listen for native intent/card clicks when app was closed/backgrounded
     useEffect(() => {
