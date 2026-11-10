@@ -1220,6 +1220,7 @@ public class FloatingLogoService extends Service {
                 }
 
                 boolean foundAccepted = false;
+                boolean foundPending = false;
                 if (ordersArray != null && ordersArray.length() > 0) {
                     synchronized (pendingOrdersQueue) {
                         pendingOrdersQueue.clear();
