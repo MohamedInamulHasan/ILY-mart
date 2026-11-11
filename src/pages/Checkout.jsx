@@ -41,12 +41,6 @@ const Checkout = () => {
         return () => window.removeEventListener('focus', onFocus);
     }, [fetchSettings]);
 
-    useEffect(() => {
-        if (settings?.deliveryTimingType === 'instant') {
-            setFormErrors(prev => ({ ...prev, deliveryTime: false }));
-        }
-    }, [settings?.deliveryTimingType]);
-
     const displayItems = directPurchase ? directPurchase.items : cartItems;
     const displayTotal = directPurchase ? directPurchase.total : cartTotal;
 
@@ -173,6 +167,12 @@ const Checkout = () => {
     const [isInitialized, setIsInitialized] = useState(false);
     const [permissionStatus, setPermissionStatus] = useState('prompt'); // granted, prompt, denied
     const [fieldErrors, setFieldErrors] = useState({});
+
+    useEffect(() => {
+        if (settings?.deliveryTimingType === 'instant') {
+            setFieldErrors(prev => ({ ...prev, deliveryTime: false }));
+        }
+    }, [settings?.deliveryTimingType]);
 
     // Security Details for 9500171980
     const [showSecurityModal, setShowSecurityModal] = useState(false);

@@ -17,18 +17,6 @@
   text-rendering: optimizeLegibility;
 }
 
-/* Universal safe area protection for fixed headers against mobile status/nav bars */
-div[class*="fixed top-0"][class*="rounded-b-"] {
-  padding-top: calc(0.875rem + env(safe-area-inset-top, 0px)) !important;
-}
-
-div[class*="pt-[88px]"],
-div[class*="pt-[84px]"],
-div[class*="pt-[80px]"],
-div[class*="pt-[76px]"] {
-  padding-top: calc(88px + env(safe-area-inset-top, 0px)) !important;
-}
-
 body, html, #root {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   letter-spacing: -0.015em;
