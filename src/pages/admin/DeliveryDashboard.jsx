@@ -104,7 +104,7 @@ const DeliveryDashboard = () => {
         const handlePopState = () => {
             const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
             if (isDeliverySessionActive) {
-                window.history.pushState({ panel: 'delivery' }, '', '/admin');
+                window.history.pushState({ panel: 'delivery' }, '', '/delivery-dashboard');
             }
         };
 

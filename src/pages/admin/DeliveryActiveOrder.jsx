@@ -248,10 +248,10 @@ const DeliveryActiveOrder = () => {
         openExternalLink(targetUrl);
     };
 
-    // When Leave button is clicked: set stay to false and return to delivery dashboard (/admin), NEVER to user screens
+    // When Leave button is clicked: set stay to false and return to delivery dashboard (/delivery-dashboard), NEVER to user screens or admin
     const handleLeave = () => {
         localStorage.setItem('active_delivery_stay', 'false');
-        navigate('/admin', { replace: true });
+        navigate('/delivery-dashboard', { replace: true });
     };
 
     // 1. Accept order: saves to backend first, then updates card to Out for Delivery mode + celebratory popup
@@ -391,7 +391,7 @@ const DeliveryActiveOrder = () => {
             return;
         }
         if (completedType === 'cancelled') {
-            navigate('/admin', { replace: true });
+            navigate('/delivery-dashboard', { replace: true });
         }
     };
 
@@ -800,7 +800,7 @@ const DeliveryActiveOrder = () => {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => navigate('/admin', { replace: true })}
+                                onClick={() => navigate('/delivery-dashboard', { replace: true })}
                                 className="w-full py-3.5 rounded-2xl bg-black dark:bg-white text-white dark:text-black font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-transform cursor-pointer"
                             >
                                 <ArrowLeft size={16} className="stroke-[2.5]" />

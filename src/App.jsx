@@ -60,17 +60,11 @@ import LoadingSpinner from './components/LoadingSpinner';
 
 
 const HomeWithRedirect = () => {
-    const { user, loading } = useAuth();
-    if (loading) return null;
-
-    const roles = getUserRoles(user);
-    const isAdmin = roles.includes('admin');
-    const isDeliveryBoy = roles.includes('delivery_boy');
     const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
     const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-    const isDeliveryMode = isDeliveryBoy && !isAdmin && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
 
-    if (isDeliveryMode) {
+    // Immediate strict delivery lock: If entered as delivery boy, NEVER show Home page
+    if (isDeliverySessionActive && !isDeliveryBoyLoggedOut) {
         const activeOrderId = localStorage.getItem('active_delivery_order_id');
         const activeStay = localStorage.getItem('active_delivery_stay');
         if (activeOrderId && activeStay !== 'false') {
@@ -78,6 +72,7 @@ const HomeWithRedirect = () => {
         }
         return <Navigate to="/delivery-dashboard" replace />;
     }
+
     return <Home />;
 };
 
@@ -107,22 +102,17 @@ const AdminOrDeliveryDashboard = () => {
 };
 
 const RoleRedirectHandler = () => {
-    const { user, loading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
-        if (loading && !hasAdminAccess(user)) return;
-
-        const roles = getUserRoles(user);
-        const isDeliveryBoy = roles.includes('delivery_boy');
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
         const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-        const isDeliveryMode = isDeliveryBoy && !roles.includes('admin') && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
+        const isDeliveryMode = isDeliverySessionActive && !isDeliveryBoyLoggedOut;
 
-        // Strict delivery lock: When entered as delivery boy, cannot access customer shopping/profile pages
+        // Strict delivery lock: When entered as delivery boy, cannot access customer shopping, profile, or admin pages
         if (isDeliveryMode) {
-            const isDeliveryRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/delivery-dashboard');
+            const isDeliveryRoute = location.pathname.startsWith('/delivery-dashboard') || location.pathname.startsWith('/admin/delivery');
             if (!isDeliveryRoute) {
                 const activeOrderId = localStorage.getItem('active_delivery_order_id');
                 const activeStay = localStorage.getItem('active_delivery_stay');
@@ -134,15 +124,12 @@ const RoleRedirectHandler = () => {
                 return;
             }
 
-            if (location.pathname === '/admin' || location.pathname === '/delivery-dashboard') {
-                const activeOrderId = localStorage.getItem('active_delivery_order_id');
-                const activeStay = localStorage.getItem('active_delivery_stay');
-                if (activeOrderId && activeStay !== 'false') {
-                    navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
-                }
+            // Delivery boy has NO connection to /admin
+            if (location.pathname === '/admin') {
+                navigate('/delivery-dashboard', { replace: true });
             }
         }
-    }, [user, loading, location.pathname, navigate]);
+    }, [location.pathname, navigate]);
 
     return null;
 };
