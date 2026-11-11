@@ -381,22 +381,27 @@ const StoreProducts = () => {
     };
 
     // Extract unique categories and subcategories for the store page category scroller
-    const { subcategoryData, subcategorySortOrder } = useMemo(() => {
+    const { subcategoryData, subcategorySortOrder, getSubcategorySortIndex } = useMemo(() => {
         const itemMap = new Map();
 
-        // 1. Store's categories
+        // 1. Determine categories relevant to this store (from store.type and product categories)
         const storeTypes = Array.isArray(store?.type) ? store.type : (store?.type ? [store.type] : []);
-        const storeCats = categories.filter(cat => storeTypes.some(t => areCategoriesMatching(t, cat)));
+        const productCategoryRefs = [...new Set(groupedStoreProducts.map(p => p.category).filter(Boolean))];
 
-        // 2. Build ordered list of official subcategories from ALL categories in database
-        // (prioritizing storeCats if present, then all remaining categories in their exact saved order)
+        // Match categories from the admin categories array, preserving their admin-defined order
+        const isCatRelevant = (cat) => 
+            storeTypes.some(t => areCategoriesMatching(t, cat)) ||
+            productCategoryRefs.some(pc => areCategoriesMatching(pc, cat));
+
+        const relevantCats = categories.filter(isCatRelevant);
+        const otherCats = categories.filter(c => !isCatRelevant(c));
+
+        // Prioritize store-relevant categories in admin order, then other categories in admin order
+        const orderedCats = [...relevantCats, ...otherCats];
+
+        // 2. Build ordered list of official subcategories and categories
         const sortOrder = [];
         const officialSubcategories = [];
-
-        const orderedCats = [
-            ...storeCats,
-            ...categories.filter(c => !storeCats.some(sc => (sc._id || sc.name) === (c._id || c.name)))
-        ];
 
         orderedCats.forEach(cat => {
             if (Array.isArray(cat?.subcategories)) {
@@ -417,6 +422,19 @@ const StoreProducts = () => {
                 sortOrder.push(catNorm);
             }
         });
+
+        const getSortIndex = (name) => {
+            if (!name) return 99999;
+            const normKey = normSubcategoryKey(name);
+            const directIdx = sortOrder.indexOf(normKey);
+            if (directIdx !== -1) return directIdx;
+
+            const fuzzyIdx = sortOrder.findIndex(key => 
+                areSubcategoriesMatching(key, name) || areCategoriesMatching(key, name)
+            );
+            if (fuzzyIdx !== -1) return fuzzyIdx;
+            return 99999;
+        };
 
         // 3. Count matching products and merge identical categories/subcategories
         groupedStoreProducts.forEach(p => {
@@ -466,17 +484,9 @@ const StoreProducts = () => {
 
         // Sort based on category and subcategory order arranged in admin/database
         const sorted = result.sort((a, b) => {
-            const indexA = sortOrder.indexOf(normSubcategoryKey(a.name));
-            const indexB = sortOrder.indexOf(normSubcategoryKey(b.name));
-
-            if (indexA !== -1 && indexB !== -1) {
-                return indexA - indexB;
-            } else if (indexA !== -1) {
-                return -1;
-            } else if (indexB !== -1) {
-                return 1;
-            }
-            return 0;
+            const indexA = getSortIndex(a.name);
+            const indexB = getSortIndex(b.name);
+            return indexA - indexB;
         });
 
         // If there are 2 or more subcategories in that store, prepend "All" as first option
@@ -484,7 +494,11 @@ const StoreProducts = () => {
             ? [{ name: 'All', count: groupedStoreProducts.length }, ...sorted]
             : sorted;
 
-        return { subcategoryData: finalData, subcategorySortOrder: sortOrder };
+        return { 
+            subcategoryData: finalData, 
+            subcategorySortOrder: sortOrder,
+            getSubcategorySortIndex: getSortIndex
+        };
     }, [groupedStoreProducts, categories, store]);
 
     const totalProductCount = useMemo(() => groupedStoreProducts.length, [groupedStoreProducts]);
@@ -525,14 +539,14 @@ const StoreProducts = () => {
                     const getSubIndex = (p) => {
                         const rawSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
                         for (const s of rawSubs) {
-                            const idx = subcategorySortOrder.indexOf(normSubcategoryKey(s));
-                            if (idx !== -1) return idx;
+                            const idx = getSubcategorySortIndex ? getSubcategorySortIndex(s) : subcategorySortOrder.indexOf(normSubcategoryKey(s));
+                            if (idx !== -1 && idx !== 99999) return idx;
                         }
                         if (p.category) {
-                            const idx = subcategorySortOrder.indexOf(normCategoryKey(p.category));
-                            if (idx !== -1) return idx;
+                            const idx = getSubcategorySortIndex ? getSubcategorySortIndex(p.category) : subcategorySortOrder.indexOf(normCategoryKey(p.category));
+                            if (idx !== -1 && idx !== 99999) return idx;
                         }
-                        return 9999;
+                        return 99999;
                     };
                     return getSubIndex(a) - getSubIndex(b);
                 });
