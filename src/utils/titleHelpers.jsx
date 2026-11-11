@@ -35,13 +35,14 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
     const {
         mainClassName = '',
-        subClassName = 'opacity-80 text-xs font-normal',
+        subClassName,
         tagClassName,
         hideTag = false
     } = options;
 
     const default3DTagClass = 'inline-flex items-center justify-center text-[10.5px] sm:text-[11.5px] font-black px-1.5 py-0.5 rounded-md bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center';
     const resolvedTagClass = tagClassName || default3DTagClass;
+    const resolvedSubClass = subClassName !== undefined ? subClassName : (mainClassName || 'opacity-90 font-medium');
 
     // Extract tag if present, e.g. [1], [2], [1/2]
     const tagMatch = fullTitle.match(/\[([^\]]+)\]/);
@@ -80,7 +81,7 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
     }
 
     const firstLineClass = mainClassName.trim();
-    const secondLineClass = subClassName.trim();
+    const secondLineClass = resolvedSubClass.trim();
 
     return (
         <span className="flex flex-col w-full max-w-full min-w-0">

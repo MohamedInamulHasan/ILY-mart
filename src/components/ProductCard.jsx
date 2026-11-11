@@ -148,7 +148,7 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                     <div className="flex-1 min-h-[38px] sm:min-h-[40px] mb-0.5 w-full flex flex-col justify-start transition-opacity duration-300">
                         {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, language, {
                             mainClassName: 'text-[12px] sm:text-[13px] font-semibold text-gray-800 dark:text-white truncate w-full leading-snug',
-                            subClassName: 'text-[10px] sm:text-[11px] font-semibold text-gray-600 dark:text-gray-300 truncate w-full pt-0.5 pb-0.5 leading-normal'
+                            subClassName: 'text-[12px] sm:text-[13px] font-semibold text-gray-800 dark:text-white truncate w-full leading-snug'
                         })}
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 font-medium truncate mb-1.5 w-full">

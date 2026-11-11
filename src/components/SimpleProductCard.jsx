@@ -205,7 +205,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                     <div className="w-full mb-1 min-h-[38px] sm:min-h-[40px] flex flex-col justify-start">
                         {renderBilingualTitle(t(product, 'title') || product.title || product.name, language, {
                             mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full',
-                            subClassName: 'text-xs text-gray-600 dark:text-gray-300 font-medium truncate w-full pt-0.5 pb-0.5 leading-normal'
+                            subClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full'
                         })}
                     </div>
                         {/* Store Options */}
@@ -354,7 +354,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 <div className="w-full mb-1 min-h-[38px] sm:min-h-[40px] flex flex-col justify-start">
                     {renderBilingualTitle(t(featuredVariant, 'title') || featuredVariant.title || featuredVariant.name, language, {
                         mainClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full',
-                        subClassName: 'text-xs text-gray-600 dark:text-gray-300 font-medium truncate w-full pt-0.5 pb-0.5 leading-normal'
+                        subClassName: 'text-sm font-semibold text-gray-800 dark:text-white leading-snug truncate w-full'
                     })}
                 </div>
                     {product.storeId && (
