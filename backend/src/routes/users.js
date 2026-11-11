@@ -26,7 +26,17 @@ import {
 
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
 
+import { getApps } from 'firebase-admin/app';
+
 const router = express.Router();
+
+router.get('/fcm-status', (req, res) => {
+    res.json({
+        success: true,
+        fcmInitialized: getApps().length > 0,
+        hasServiceAccountEnv: Boolean(process.env.FIREBASE_SERVICE_ACCOUNT)
+    });
+});
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
