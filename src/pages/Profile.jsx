@@ -105,7 +105,6 @@ const Profile = () => {
     // 10-click delivery auth easter egg
     const nameClickCountRef = useRef(0);
     const nameClickTimerRef = useRef(null);
-    const [showDeliveryConfirmModal, setShowDeliveryConfirmModal] = useState(false);
     const [showDeliveryAuthModal, setShowDeliveryAuthModal] = useState(false);
     const [deliveryAuthId, setDeliveryAuthId] = useState('');
     const [deliveryAuthPassword, setDeliveryAuthPassword] = useState('');
@@ -157,7 +156,7 @@ const Profile = () => {
                 localStorage.setItem('userInfo', JSON.stringify(userData));
                 setAuthUser(userData);
                 setShowDeliveryAuthModal(false);
-                navigate('/admin');
+                navigate('/delivery-dashboard');
             } else {
                 setDeliveryAuthError('Invalid credentials. Please check your Delivery ID and password.');
             }
@@ -366,7 +365,13 @@ const Profile = () => {
                             )}
                             {isDeliveryBoy && (
                                 <MenuLink 
-                                    onClick={() => setShowDeliveryConfirmModal(true)}
+                                    onClick={() => {
+                                        setDeliveryAuthId(authUser?.deliveryId || user?.deliveryId || user?.mobile || '');
+                                        setDeliveryAuthPassword('');
+                                        setDeliveryAuthError('');
+                                        setShowDeliveryPassword(false);
+                                        setShowDeliveryAuthModal(true);
+                                    }}
                                     icon={<Truck size={17} strokeWidth={2} />} 
                                     title={t('Delivery Boy')} 
                                     badge={
@@ -508,71 +513,32 @@ const Profile = () => {
                 </svg>
             </button>
 
-            {/* Delivery Confirmation Modal */}
-            {showDeliveryConfirmModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-                    <div
-                        className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
-                        onClick={() => setShowDeliveryConfirmModal(false)}
-                    />
-                    <div className="relative bg-white dark:bg-gray-900 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200 text-center">
-                        <div className="w-14 h-14 rounded-2xl bg-[#CBF9B2] dark:bg-[#2E5A2E]/40 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center mx-auto mb-4 shadow-sm">
-                            <Truck size={28} />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1.5">
-                            {t('Enter Delivery Panel')}
-                        </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                            {t('Switch to Delivery Boy mode to view orders and manage deliveries?')}
-                        </p>
-
-                        <div className="flex flex-col gap-2.5">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    localStorage.removeItem('delivery_boy_logged_out');
-                                    localStorage.setItem('delivery_session_active', 'true');
-                                    setShowDeliveryConfirmModal(false);
-                                    navigate('/admin');
-                                }}
-                                className="w-full py-3 bg-[#2E5A2E] text-white font-bold text-sm rounded-xl hover:bg-[#245024] active:scale-95 transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                            >
-                                <Truck size={17} />
-                                <span>{t('Enter Delivery Panel')}</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowDeliveryConfirmModal(false)}
-                                className="w-full py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all cursor-pointer"
-                            >
-                                {t('Cancel')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Delivery Auth Modal */}
+            {/* Delivery Auth Modal (Popup to enter delivery panel) */}
             {showDeliveryAuthModal && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
                     <div
                         className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
                         onClick={() => setShowDeliveryAuthModal(false)}
                     />
-                    <div className="relative bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                    <div className="relative bg-white dark:bg-gray-900 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-5 sm:p-6">
                             <div className="flex items-center justify-between mb-5">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-9 h-9 rounded-full bg-[#2E5A2E] flex items-center justify-center">
-                                        <Truck size={18} className="text-white" />
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-10 h-10 rounded-2xl bg-[#CBF9B2] dark:bg-[#2E5A2E]/40 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center shadow-xs">
+                                        <Truck size={20} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                        {t('Delivery Login')}
-                                    </h3>
+                                    <div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
+                                            {t('Delivery Login')}
+                                        </h3>
+                                        <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                            {t('Enter credentials to access delivery panel')}
+                                        </p>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => setShowDeliveryAuthModal(false)}
-                                    className="w-9 h-9 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                    className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                                 >
                                     <XCircle size={18} />
                                 </button>

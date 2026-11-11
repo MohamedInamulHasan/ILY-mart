@@ -59,23 +59,6 @@ import LoadingSpinner from './components/LoadingSpinner';
 
 
 const HomeWithRedirect = () => {
-    const { user, loading } = useAuth();
-    if (loading) return null;
-
-    const roles = getUserRoles(user);
-    const isAdmin = roles.includes('admin');
-    const isDeliveryBoy = roles.includes('delivery_boy');
-    const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-    const isDeliveryMode = isDeliveryBoy && !isAdmin && !isDeliveryBoyLoggedOut;
-
-    if (isDeliveryMode) {
-        const activeOrderId = localStorage.getItem('active_delivery_order_id');
-        const activeStay = localStorage.getItem('active_delivery_stay');
-        if (activeOrderId && activeStay !== 'false') {
-            return <Navigate to={`/admin/delivery-order/${activeOrderId}`} replace />;
-        }
-        return <Navigate to="/admin" replace />;
-    }
     return <Home />;
 };
 
@@ -87,15 +70,19 @@ const AdminOrDeliveryDashboard = () => {
     const isDeliveryBoy = roles.includes('delivery_boy');
     const isAdmin = roles.includes('admin');
     const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-    const isDeliveryMode = isDeliveryBoy && !isAdmin && !isDeliveryBoyLoggedOut;
+    const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
 
-    if (isDeliveryMode) {
+    // If active delivery session
+    if (isDeliveryBoy && isDeliverySessionActive && !isDeliveryBoyLoggedOut) {
         return <DeliveryDashboard />;
     }
-    if (isDeliveryBoy && !isAdmin && isDeliveryBoyLoggedOut) {
-        return <Navigate to="/profile" replace />;
+
+    if (isAdmin) {
+        return <AdminDashboard />;
     }
-    return <AdminDashboard />;
+
+    // Otherwise, return to profile
+    return <Navigate to="/profile" replace />;
 };
 
 const RoleRedirectHandler = () => {
@@ -107,14 +94,14 @@ const RoleRedirectHandler = () => {
         if (loading && !hasAdminAccess(user)) return;
 
         const roles = getUserRoles(user);
-        const isAdmin = roles.includes('admin');
         const isDeliveryBoy = roles.includes('delivery_boy');
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
         const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-        const isDeliveryMode = isDeliveryBoy && !isAdmin && !isDeliveryBoyLoggedOut;
+        const isDeliveryMode = isDeliveryBoy && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
 
         // Never hijack or force-redirect regular customer shopping/profile pages.
         // Only redirect if explicitly on a delivery route and an active delivery order needs focus.
-        if (isDeliveryMode && location.pathname === '/admin') {
+        if (isDeliveryMode && (location.pathname === '/admin' || location.pathname === '/delivery-dashboard')) {
             const activeOrderId = localStorage.getItem('active_delivery_order_id');
             const activeStay = localStorage.getItem('active_delivery_stay');
             if (activeOrderId && activeStay !== 'false') {
@@ -140,16 +127,15 @@ const Layout = ({ children, onRefresh }) => {
 
         const roles = getUserRoles(user);
         const isDeliveryUser = roles.includes('delivery_boy');
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
         const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-        const isDeliveryMode = isDeliveryUser && !isDeliveryBoyLoggedOut;
+        const isDeliveryMode = isDeliveryUser && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
 
         if (isDeliveryMode) {
-            localStorage.setItem('delivery_session_active', 'true');
             try {
                 setOverlayDeliverySessionActive(true);
             } catch (e) {}
-        } else if (isDeliveryBoyLoggedOut) {
-            localStorage.setItem('delivery_session_active', 'false');
+        } else {
             try {
                 setOverlayDeliverySessionActive(false);
             } catch (e) {}
@@ -184,10 +170,8 @@ const Layout = ({ children, onRefresh }) => {
         const allowed = ['/', '/store', '/orders', '/profile', '/categories'];
         return allowed.includes(pathname) || pathname.startsWith('/category/');
     };
-    const isDeliveryUser = roles.includes('delivery_boy') && !isAdmin;
-    const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-    const isDeliveryMode = isDeliveryUser && !isDeliveryBoyLoggedOut;
-    const showMobileFooter = isAllowedFooterRoute(location.pathname) && !isFooterHidden && !isDeliveryMode;
+    const isDeliveryScreen = location.pathname.startsWith('/admin') || location.pathname.startsWith('/delivery-dashboard');
+    const showMobileFooter = isAllowedFooterRoute(location.pathname) && !isFooterHidden && !isDeliveryScreen;
 
     const { cartItems, deliveryCharge } = useCart();
     const { t } = useLanguage();
@@ -434,6 +418,22 @@ function App() {
                                         element={
                                             <PrivateRoute adminOnly={true}>
                                                 <AdminOrDeliveryDashboard />
+                                            </PrivateRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/delivery-dashboard"
+                                        element={
+                                            <PrivateRoute adminOnly={true}>
+                                                <DeliveryDashboard />
+                                            </PrivateRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/admin/delivery"
+                                        element={
+                                            <PrivateRoute adminOnly={true}>
+                                                <DeliveryDashboard />
                                             </PrivateRoute>
                                         }
                                     />
