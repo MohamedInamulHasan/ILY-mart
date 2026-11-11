@@ -542,14 +542,7 @@ const DeliveryDashboard = () => {
                             )}
                         </button>
                     ) : (
-                        <button
-                            type="button"
-                            onClick={() => navigate('/profile')}
-                            title={t('Back to Profile')}
-                            className="p-1.5 text-gray-900 dark:text-white hover:opacity-70 transition-opacity active:scale-95"
-                        >
-                            <ArrowLeft size={22} className="stroke-[2.5]" />
-                        </button>
+                        <div className="w-[30px]" />
                     )}
 
                     {/* Center: Title (Delivery Panel when cards exist, Orders List when no cards) */}

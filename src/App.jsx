@@ -86,18 +86,20 @@ const AdminOrDeliveryDashboard = () => {
     if (loading && !hasAdminAccess(user)) return <LoadingSpinner />;
 
     const roles = getUserRoles(user);
+    const isAdmin = roles.includes('admin') || roles.includes('store_admin') || roles.includes('service_admin');
+
+    // Admin always gets Admin Dashboard! Never redirect admin to delivery dashboard
+    if (isAdmin) {
+        return <AdminDashboard />;
+    }
+
     const isDeliveryBoy = roles.includes('delivery_boy');
-    const isAdmin = roles.includes('admin');
     const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
     const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
 
     // If active delivery session
     if (isDeliveryBoy && isDeliverySessionActive && !isDeliveryBoyLoggedOut) {
         return <DeliveryDashboard />;
-    }
-
-    if (isAdmin) {
-        return <AdminDashboard />;
     }
 
     // Otherwise, return to profile

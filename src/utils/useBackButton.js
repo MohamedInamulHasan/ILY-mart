@@ -27,6 +27,12 @@ const isOrderFlowRoute = (p) => {
 export const safeNavigateBack = (navigate, fallback = '/') => {
     if (typeof navigate !== 'function') return;
 
+    const currentPath = window.location.pathname || '/';
+    // Back navigation disabled on both Admin and Delivery Boy panels
+    if (currentPath.startsWith('/admin') || currentPath.startsWith('/delivery-dashboard')) {
+        return;
+    }
+
     // 1. If any modal / popup is open, close the top modal first
     if (modalBackStack.length > 0) {
         const closeTopModal = modalBackStack.pop();
@@ -53,8 +59,6 @@ export const safeNavigateBack = (navigate, fallback = '/') => {
         navigate('/', { replace: true });
         return;
     }
-
-    const currentPath = window.location.pathname || '/';
 
     // 3. Navigate back through tracked history stack
     while (navHistory.length > 1) {
@@ -158,19 +162,13 @@ export const useBackButton = () => {
         const handleBack = () => {
             const currentPath = locationRef.current?.pathname || window.location.pathname || '/';
 
-            // DELIVERY FLOW STRICT LOCK:
-            // ONLY disable back button on actual delivery boy screens:
-            // 1. Delivery panel: /admin (when active delivery boy)
-            // 2. Active delivery order / delivery details: /admin/delivery-order/*
-            const roles = getUserRoles(userRef.current);
-            const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
-            const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-            const isDeliveryMode = isDeliveryBoy && !isDeliveryBoyLoggedOut;
+            // STRICT LOCK FOR ADMIN AND DELIVERY PANELS:
+            // Back button on phone nav does NOT escape to user/customer screens on both Admin and Delivery panels
+            const isAdminRoute = currentPath.startsWith('/admin') && !currentPath.startsWith('/admin/delivery');
+            const isDeliveryRoute = currentPath === '/delivery-dashboard' || currentPath.startsWith('/delivery-dashboard') || currentPath.startsWith('/admin/delivery');
 
-            const isDeliveryScreen = currentPath === '/admin' || currentPath.startsWith('/admin/delivery');
-
-            if (isDeliveryMode && isDeliveryScreen) {
-                // If a modal is open in delivery panel (like Orders Feed modal or Logout modal), close it
+            if (isAdminRoute || isDeliveryRoute) {
+                // If a modal is open in panel (like Logout modal or orders feed), close the modal
                 if (modalBackStack.length > 0) {
                     const closeTopModal = modalBackStack.pop();
                     if (typeof closeTopModal === 'function') {
@@ -182,17 +180,7 @@ export const useBackButton = () => {
                         }
                     }
                 }
-                const activeOrderId = localStorage.getItem('active_delivery_order_id');
-                const activeStay = localStorage.getItem('active_delivery_stay');
-                // Lock back button only if actively fulfilling an order
-                if (activeOrderId && activeStay !== 'false' && currentPath.startsWith('/admin/delivery-order')) {
-                    return true;
-                }
-                // When on the main delivery panel, allow navigating back to profile
-                if (currentPath === '/admin') {
-                    navigate('/profile');
-                    return true;
-                }
+                // Completely block back button from leaving the panel
                 return true;
             }
 
