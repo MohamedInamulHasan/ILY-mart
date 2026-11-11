@@ -478,17 +478,36 @@ const ProductDetails = () => {
                                     const isLong = lines.length > 7 || text.length > 300;
                                     return (
                                         <div key={bIdx} className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base">
-                                            <p className={!isDescriptionExpanded && isLong ? "line-clamp-7 whitespace-pre-line" : "whitespace-pre-line"}>
-                                                {text}
-                                            </p>
-                                            {isLong && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                                    className="mt-1 text-gray-900 dark:text-white font-bold text-xs sm:text-sm hover:underline cursor-pointer block"
-                                                >
-                                                    {isDescriptionExpanded ? t('Read Less') : t('Read More...')}
-                                                </button>
+                                            {!isDescriptionExpanded && isLong ? (
+                                                <div className="relative">
+                                                    <p className="line-clamp-7 whitespace-pre-line">
+                                                        {text}
+                                                    </p>
+                                                    {/* Gradient fade + Read More overlaid at line 7 */}
+                                                    <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white dark:from-gray-900 to-transparent pointer-events-none" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsDescriptionExpanded(true)}
+                                                        className="relative mt-0.5 text-[#2E5A2E] dark:text-[#7CA90E] font-bold text-xs sm:text-sm hover:underline cursor-pointer block"
+                                                    >
+                                                        {t('Read More...')}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p className="whitespace-pre-line">
+                                                        {text}
+                                                    </p>
+                                                    {isLong && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsDescriptionExpanded(false)}
+                                                            className="mt-1 text-[#2E5A2E] dark:text-[#7CA90E] font-bold text-xs sm:text-sm hover:underline cursor-pointer block"
+                                                        >
+                                                            {t('Read Less')}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     );

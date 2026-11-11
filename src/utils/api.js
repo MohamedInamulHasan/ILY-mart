@@ -29,7 +29,7 @@ const api = axios.create({
 // Request interceptor - Add Bearer Token and support in-flight deduplication
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }

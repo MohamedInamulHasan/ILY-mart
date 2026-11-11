@@ -798,14 +798,6 @@ const DeliveryActiveOrder = () => {
                                 <CheckCircle size={20} className="text-white stroke-[2.8] relative z-10" />
                                 <span className="relative z-10">{t('Delivered Successfully')}</span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => navigate('/delivery-dashboard', { replace: true })}
-                                className="w-full py-3.5 rounded-2xl bg-black dark:bg-white text-white dark:text-black font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-transform cursor-pointer"
-                            >
-                                <ArrowLeft size={16} className="stroke-[2.5]" />
-                                <span>{t('Back to Delivery Panel')}</span>
-                            </button>
                         </div>
                     ) : (
                         <div className="w-full py-3.5 rounded-full text-center text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
