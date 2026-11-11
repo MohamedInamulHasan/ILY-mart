@@ -887,6 +887,7 @@ export const resetPassword = async (req, res, next) => {
 
 
 
+
 // @desc    Test Email Configuration
 // @route   GET /api/users/test-email
 // @access  Public
@@ -1212,13 +1213,42 @@ export const updateGuest = async (req, res, next) => {
         user.mobile = standardMobile;
         await user.save();
 
-        // Award signup bonus if eligible (first time setting mobile)
-        await rewardSignupBonus(user);
-
         sendTokenResponse(user, 200, res);
     } catch (error) {
         next(error);
     }
 };
+
+// @desc    Save/Register FCM token for push notifications
+// @route   POST /api/users/fcm-token
+// @access  Private
+export const saveFcmToken = async (req, res, next) => {
+    try {
+        const { fcmToken } = req.body;
+        if (!fcmToken) {
+            return res.status(400).json({ success: false, message: 'FCM token is required' });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.fcmTokens) {
+            user.fcmTokens = [];
+        }
+
+        if (!user.fcmTokens.includes(fcmToken)) {
+            user.fcmTokens.push(fcmToken);
+            await user.save();
+            console.log(`📲 FCM token registered for user ${user._id}`);
+        }
+
+        res.status(200).json({ success: true, message: 'FCM token saved successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 

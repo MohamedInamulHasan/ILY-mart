@@ -1,5 +1,6 @@
-import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import User from '../models/User.js';
@@ -8,22 +9,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Initialize Firebase Admin SDK (only once)
-if (!admin.apps.length) {
+if (getApps().length === 0) {
     try {
-        let serviceAccount;
+        let serviceAccount = null;
         if (process.env.FIREBASE_SERVICE_ACCOUNT) {
             // Support raw JSON or base64 encoded JSON string from environment variable (useful on Render)
             const raw = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
             serviceAccount = JSON.parse(raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'));
         } else {
             const serviceAccountPath = join(__dirname, '../config/firebase-service-account.json');
-            serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+            if (existsSync(serviceAccountPath)) {
+                serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+            } else {
+                console.warn('⚠️ No firebase-service-account.json found and FIREBASE_SERVICE_ACCOUNT env var not set.');
+            }
         }
 
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-        console.log('✅ Firebase Admin SDK initialized');
+        if (serviceAccount) {
+            initializeApp({
+                credential: cert(serviceAccount)
+            });
+            console.log('✅ Firebase Admin SDK initialized');
+        }
     } catch (err) {
         console.error('❌ Firebase Admin SDK initialization failed:', err.message);
     }
@@ -50,7 +57,7 @@ const getNotificationContent = (status) => {
  */
 export const sendOrderPushNotification = async (userId, orderId, status) => {
     try {
-        if (!admin.apps.length) {
+        if (getApps().length === 0) {
             console.warn('⚠️ Firebase Admin not initialized, skipping FCM push');
             return;
         }
@@ -85,7 +92,7 @@ export const sendOrderPushNotification = async (userId, orderId, status) => {
             tokens
         };
 
-        const response = await admin.messaging().sendEachForMulticast(message);
+        const response = await getMessaging().sendEachForMulticast(message);
         console.log(`📲 FCM sent for order ${orderId} (${status}): ${response.successCount} success, ${response.failureCount} failed`);
 
         // Remove invalid/expired tokens
