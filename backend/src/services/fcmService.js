@@ -4,6 +4,7 @@ import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import User from '../models/User.js';
+import Order from '../models/Order.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -62,21 +63,49 @@ export const sendOrderPushNotification = async (userId, orderId, status) => {
             return;
         }
 
-        // Fetch user's FCM tokens
-        const user = await User.findById(userId).select('fcmTokens name');
-        if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
-            console.log(`ℹ️ No FCM tokens for user ${userId}, skipping push`);
+        const tokensSet = new Set();
+        let resolvedUserId = userId;
+
+        // 1. Fetch direct FCM token from Order if available
+        if (orderId) {
+            try {
+                const order = await Order.findById(orderId).select('fcmToken user');
+                if (order?.fcmToken) {
+                    tokensSet.add(order.fcmToken);
+                }
+                if (!resolvedUserId && order?.user) {
+                    resolvedUserId = order.user;
+                }
+            } catch (orderErr) {
+                console.warn('⚠️ Could not fetch order for FCM:', orderErr.message);
+            }
+        }
+
+        // 2. Fetch user's FCM tokens
+        if (resolvedUserId) {
+            try {
+                const user = await User.findById(resolvedUserId).select('fcmTokens name');
+                if (user?.fcmTokens && Array.isArray(user.fcmTokens)) {
+                    user.fcmTokens.forEach(t => { if (t) tokensSet.add(t); });
+                }
+            } catch (userErr) {
+                console.warn('⚠️ Could not fetch user tokens for FCM:', userErr.message);
+            }
+        }
+
+        const tokens = Array.from(tokensSet).filter(Boolean);
+        if (tokens.length === 0) {
+            console.log(`ℹ️ No FCM tokens for order ${orderId} (user ${resolvedUserId}), skipping push`);
             return;
         }
 
         const { title, body } = getNotificationContent(status);
-        const tokens = user.fcmTokens;
 
         // Build the multicast message
         const message = {
             notification: { title, body },
             data: {
-                orderId: orderId.toString(),
+                orderId: orderId ? orderId.toString() : '',
                 status,
                 click_action: 'FLUTTER_NOTIFICATION_CLICK',
                 type: 'order_update'
@@ -93,10 +122,10 @@ export const sendOrderPushNotification = async (userId, orderId, status) => {
         };
 
         const response = await getMessaging().sendEachForMulticast(message);
-        console.log(`📲 FCM sent for order ${orderId} (${status}): ${response.successCount} success, ${response.failureCount} failed`);
+        console.log(`📲 FCM sent for order ${orderId} (${status}): ${response.successCount} success, ${response.failureCount} failed across ${tokens.length} token(s)`);
 
         // Remove invalid/expired tokens
-        if (response.failureCount > 0) {
+        if (response.failureCount > 0 && resolvedUserId) {
             const expiredTokens = [];
             response.responses.forEach((resp, idx) => {
                 if (!resp.success) {
@@ -112,14 +141,13 @@ export const sendOrderPushNotification = async (userId, orderId, status) => {
             });
 
             if (expiredTokens.length > 0) {
-                await User.findByIdAndUpdate(userId, {
+                await User.findByIdAndUpdate(resolvedUserId, {
                     $pull: { fcmTokens: { $in: expiredTokens } }
                 });
-                console.log(`🗑️ Removed ${expiredTokens.length} expired FCM token(s) for user ${userId}`);
+                console.log(`🗑️ Removed ${expiredTokens.length} expired FCM token(s) for user ${resolvedUserId}`);
             }
         }
     } catch (err) {
         console.error('❌ sendOrderPushNotification error:', err.message);
-        throw err;
     }
 };

@@ -113,6 +113,7 @@ const OrderConfirmation = () => {
                 last4: ''
             },
             deliveryTime: formData.deliveryTime,
+            fcmToken: localStorage.getItem('fcm_token') || undefined,
             scheduledDeliveryTime: formData.deliveryTime ? (() => {
                 const deliveryDate = new Date();
 

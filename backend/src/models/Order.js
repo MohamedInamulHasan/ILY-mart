@@ -124,6 +124,10 @@ const orderSchema = new mongoose.Schema({
         type: Date,
         required: false
     },
+    fcmToken: {
+        type: String,
+        default: null
+    },
     deliveredAt: Date
 }, {
     timestamps: true

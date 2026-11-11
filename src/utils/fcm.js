@@ -89,10 +89,11 @@ export const initFCM = async (navigate) => {
         // 5. Handle foreground notifications (when app is currently open)
         await PushNotifications.addListener('pushNotificationReceived', (notification) => {
             console.log('🔔 [FCM] Notification received in foreground:', notification);
-            // Optionally dispatch a custom event or trigger subtle vibration
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate([100, 50, 100]);
             }
+            // Trigger a custom event for any UI listeners
+            window.dispatchEvent(new CustomEvent('fcmNotificationReceived', { detail: notification }));
         });
 
         // 6. Handle notification click / tap action (when user taps the notification)
@@ -108,6 +109,9 @@ export const initFCM = async (navigate) => {
             }
         });
 
+        // Initial sync if token & auth already exist
+        await syncFcmTokenWithUser();
+
     } catch (error) {
         console.error('❌ [FCM] Initialization failed:', error);
     }
@@ -120,7 +124,7 @@ export const syncFcmTokenWithUser = async () => {
     if (!Capacitor.isNativePlatform()) return;
 
     const fcmToken = localStorage.getItem('fcm_token');
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem('authToken') || localStorage.getItem('token');
 
     if (fcmToken && authToken) {
         try {
@@ -131,3 +135,10 @@ export const syncFcmTokenWithUser = async () => {
         }
     }
 };
+
+// Auto-sync whenever auth state changes
+if (typeof window !== 'undefined') {
+    window.addEventListener('userChanged', () => {
+        syncFcmTokenWithUser();
+    });
+}

@@ -111,13 +111,25 @@ export const createOrder = async (req, res, next) => {
             scheduledDeliveryTime,
             isPaid: paymentMethod === 'Online',
             paidAt: paymentMethod === 'Online' ? Date.now() : null,
-            orderType: orderType || 'Store'
+            orderType: orderType || 'Store',
+            fcmToken: req.body.fcmToken || null
         };
         if (req.body._id && /^[0-9a-fA-F]{24}$/.test(req.body._id)) {
             orderData._id = req.body._id;
         }
 
         const order = await Order.create(orderData);
+
+        // Also associate FCM token to user account if logged in
+        if (req.user?._id && req.body.fcmToken) {
+            try {
+                await User.findByIdAndUpdate(req.user._id, {
+                    $addToSet: { fcmTokens: req.body.fcmToken }
+                });
+            } catch (fcmErr) {
+                console.warn('⚠️ Could not associate FCM token to user:', fcmErr.message);
+            }
+        }
 
         // PERSISTENCE FIX: Save the location to the user's profile for future orders
         if (req.user?._id && shippingAddress?.location) {
