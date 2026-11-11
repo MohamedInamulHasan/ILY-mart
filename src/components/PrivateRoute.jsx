@@ -8,6 +8,22 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
 
+    // Strict lock: delivery boys cannot access user/customer routes
+    const roles = getUserRoles(user);
+    const isDeliveryBoy = roles.includes('delivery_boy') && !roles.includes('admin');
+    const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
+    const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+    const isDeliveryMode = isDeliveryBoy && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
+
+    if (isDeliveryMode && !adminOnly) {
+        const activeOrderId = localStorage.getItem('active_delivery_order_id');
+        const activeStay = localStorage.getItem('active_delivery_stay');
+        if (activeOrderId && activeStay !== 'false') {
+            return <Navigate to={`/admin/delivery-order/${activeOrderId}`} replace />;
+        }
+        return <Navigate to="/delivery-dashboard" replace />;
+    }
+
     if (adminOnly) {
         // If still loading and we don't have cached admin credentials yet, show spinner
         if (loading && !hasAdminAccess(user)) {

@@ -26,7 +26,7 @@ export const initFCM = async (navigate) => {
 
         // 1. Request notification permission
         let permStatus = await PushNotifications.checkPermissions();
-        if (permStatus.receive === 'prompt') {
+        if (permStatus.receive !== 'granted') {
             permStatus = await PushNotifications.requestPermissions();
         }
 
@@ -35,7 +35,25 @@ export const initFCM = async (navigate) => {
             return;
         }
 
-        // 2. Register with Apple / Google APNs / FCM
+        // 2. Create high-priority Android notification channel for order updates
+        try {
+            await PushNotifications.createChannel({
+                id: 'order_updates',
+                name: 'Order Updates',
+                description: 'Real-time notifications about your orders',
+                importance: 5,
+                visibility: 1,
+                sound: 'default',
+                vibration: true,
+                lights: true,
+                lightColor: '#2E5A2E'
+            });
+            console.log('✅ [FCM] Notification channel order_updates registered');
+        } catch (channelErr) {
+            console.warn('⚠️ [FCM] Could not create channel:', channelErr?.message);
+        }
+
+        // 3. Register with Apple / Google APNs / FCM
         await PushNotifications.register();
 
         // 3. Listen for FCM Device Token registration

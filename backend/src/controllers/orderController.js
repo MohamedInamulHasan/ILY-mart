@@ -211,6 +211,13 @@ export const createOrder = async (req, res, next) => {
         sendN8nOrderEvent(order, 'order.created')
             .catch(err => console.error('❌ Failed to send n8n order webhook:', err));
 
+        // Send FCM push notification to customer for order placement
+        const customerUserId = order.user?._id || order.user;
+        if (customerUserId) {
+            sendOrderPushNotification(customerUserId, order._id.toString(), 'Processing')
+                .catch(err => console.error('❌ Failed to send FCM order created notification:', err));
+        }
+
         // Emit real-time event for admin
         getIO().emit('order:created', order);
 

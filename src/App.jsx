@@ -60,6 +60,24 @@ import LoadingSpinner from './components/LoadingSpinner';
 
 
 const HomeWithRedirect = () => {
+    const { user, loading } = useAuth();
+    if (loading) return null;
+
+    const roles = getUserRoles(user);
+    const isAdmin = roles.includes('admin');
+    const isDeliveryBoy = roles.includes('delivery_boy');
+    const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
+    const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+    const isDeliveryMode = isDeliveryBoy && !isAdmin && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
+
+    if (isDeliveryMode) {
+        const activeOrderId = localStorage.getItem('active_delivery_order_id');
+        const activeStay = localStorage.getItem('active_delivery_stay');
+        if (activeOrderId && activeStay !== 'false') {
+            return <Navigate to={`/admin/delivery-order/${activeOrderId}`} replace />;
+        }
+        return <Navigate to="/delivery-dashboard" replace />;
+    }
     return <Home />;
 };
 
@@ -98,15 +116,28 @@ const RoleRedirectHandler = () => {
         const isDeliveryBoy = roles.includes('delivery_boy');
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
         const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-        const isDeliveryMode = isDeliveryBoy && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
+        const isDeliveryMode = isDeliveryBoy && !roles.includes('admin') && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
 
-        // Never hijack or force-redirect regular customer shopping/profile pages.
-        // Only redirect if explicitly on a delivery route and an active delivery order needs focus.
-        if (isDeliveryMode && (location.pathname === '/admin' || location.pathname === '/delivery-dashboard')) {
-            const activeOrderId = localStorage.getItem('active_delivery_order_id');
-            const activeStay = localStorage.getItem('active_delivery_stay');
-            if (activeOrderId && activeStay !== 'false') {
-                navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
+        // Strict delivery lock: When entered as delivery boy, cannot access customer shopping/profile pages
+        if (isDeliveryMode) {
+            const isDeliveryRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/delivery-dashboard');
+            if (!isDeliveryRoute) {
+                const activeOrderId = localStorage.getItem('active_delivery_order_id');
+                const activeStay = localStorage.getItem('active_delivery_stay');
+                if (activeOrderId && activeStay !== 'false') {
+                    navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
+                } else {
+                    navigate('/delivery-dashboard', { replace: true });
+                }
+                return;
+            }
+
+            if (location.pathname === '/admin' || location.pathname === '/delivery-dashboard') {
+                const activeOrderId = localStorage.getItem('active_delivery_order_id');
+                const activeStay = localStorage.getItem('active_delivery_stay');
+                if (activeOrderId && activeStay !== 'false') {
+                    navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
+                }
             }
         }
     }, [user, loading, location.pathname, navigate]);
