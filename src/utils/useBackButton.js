@@ -182,7 +182,17 @@ export const useBackButton = () => {
                         }
                     }
                 }
-                // Return true to prevent any back navigation from escaping delivery screens
+                const activeOrderId = localStorage.getItem('active_delivery_order_id');
+                const activeStay = localStorage.getItem('active_delivery_stay');
+                // Lock back button only if actively fulfilling an order
+                if (activeOrderId && activeStay !== 'false' && currentPath.startsWith('/admin/delivery-order')) {
+                    return true;
+                }
+                // When on the main delivery panel, allow navigating back to profile
+                if (currentPath === '/admin') {
+                    navigate('/profile');
+                    return true;
+                }
                 return true;
             }
 

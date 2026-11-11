@@ -112,28 +112,13 @@ const RoleRedirectHandler = () => {
         const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
         const isDeliveryMode = isDeliveryBoy && !isAdmin && !isDeliveryBoyLoggedOut;
 
-        if (isDeliveryMode) {
-            // Strict delivery boy mode lock: can ONLY access delivery dashboard and delivery order pages
-            const isDeliveryRoute = 
-                location.pathname === '/admin' || 
-                location.pathname.startsWith('/admin/delivery-order');
-
-            if (!isDeliveryRoute) {
-                const activeOrderId = localStorage.getItem('active_delivery_order_id');
-                const activeStay = localStorage.getItem('active_delivery_stay');
-                if (activeOrderId && activeStay !== 'false') {
-                    navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
-                } else {
-                    navigate('/admin', { replace: true });
-                }
-                return;
-            }
-
+        // Never hijack or force-redirect regular customer shopping/profile pages.
+        // Only redirect if explicitly on a delivery route and an active delivery order needs focus.
+        if (isDeliveryMode && location.pathname === '/admin') {
             const activeOrderId = localStorage.getItem('active_delivery_order_id');
             const activeStay = localStorage.getItem('active_delivery_stay');
-            if (activeOrderId && activeStay !== 'false' && !location.pathname.startsWith('/admin/delivery-order')) {
+            if (activeOrderId && activeStay !== 'false') {
                 navigate(`/admin/delivery-order/${activeOrderId}`, { replace: true });
-                return;
             }
         }
     }, [user, loading, location.pathname, navigate]);

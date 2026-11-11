@@ -25,9 +25,27 @@ const Checkout = () => {
     const { user, setUser, loading: authLoading, updateGuest } = useAuth();
     const { data: userProfile } = useUserProfile(); // Fetch fresh user data with coins
     const { t, language } = useLanguage();
-    const { stores, updateUser, settings, categories: dataCategories } = useData();
+    const { stores, updateUser, settings, categories: dataCategories, fetchSettings } = useData();
     const { data: queryCategories = [] } = useCategories();
     const categories = (queryCategories && queryCategories.length > 0) ? queryCategories : (dataCategories || []);
+
+    // Ensure delivery timing settings update to users immediately in Checkout
+    useEffect(() => {
+        if (typeof fetchSettings === 'function') {
+            fetchSettings();
+        }
+        const onFocus = () => {
+            if (typeof fetchSettings === 'function') fetchSettings();
+        };
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [fetchSettings]);
+
+    useEffect(() => {
+        if (settings?.deliveryTimingType === 'instant') {
+            setFormErrors(prev => ({ ...prev, deliveryTime: false }));
+        }
+    }, [settings?.deliveryTimingType]);
 
     const displayItems = directPurchase ? directPurchase.items : cartItems;
     const displayTotal = directPurchase ? directPurchase.total : cartTotal;

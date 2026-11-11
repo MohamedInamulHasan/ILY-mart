@@ -25,14 +25,9 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Enable edge-to-edge display
+        // Ensure system bars (status bar / notch / nav bar) fit properly and do not hide app header
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        } else {
-            getWindow().setFlags(
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            );
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         }
 
         // Register the permission launcher BEFORE requesting permissions

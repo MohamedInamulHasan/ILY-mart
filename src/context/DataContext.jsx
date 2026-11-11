@@ -961,6 +961,10 @@ export const DataProvider = ({ children }) => {
                 if (detail.maintenance_mode !== undefined) next.maintenanceMode = detail.maintenance_mode;
                 if (detail.maintenanceMessage !== undefined) next.maintenanceMessage = detail.maintenanceMessage;
                 if (detail.maintenance_message !== undefined) next.maintenanceMessage = detail.maintenance_message;
+                if (detail.delivery_timing_type !== undefined) next.deliveryTimingType = detail.delivery_timing_type;
+                if (detail.deliveryTimingType !== undefined) next.deliveryTimingType = detail.deliveryTimingType;
+                if (detail.delivery_times !== undefined) next.deliveryTimes = detail.delivery_times;
+                if (detail.deliveryTimes !== undefined) next.deliveryTimes = detail.deliveryTimes;
                 return next;
             });
         };

@@ -366,11 +366,9 @@ const Profile = () => {
                             {isDeliveryBoy && (
                                 <MenuLink 
                                     onClick={() => {
-                                        setDeliveryAuthId(authUser?.deliveryId || user?.deliveryId || '');
-                                        setDeliveryAuthPassword('');
-                                        setDeliveryAuthError('');
-                                        setShowDeliveryPassword(false);
-                                        setShowDeliveryAuthModal(true);
+                                        localStorage.removeItem('delivery_boy_logged_out');
+                                        localStorage.setItem('delivery_session_active', 'true');
+                                        navigate('/admin');
                                     }}
                                     icon={<Truck size={17} strokeWidth={2} />} 
                                     title={t('Delivery Boy')} 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Save, Eye, CheckCircle, AlertCircle, Wrench, Clock, Zap, Calendar, Check } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import { useSocket } from '../../context/SocketContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatDeliveryRange } from '../../utils/storeHelpers';
 import MaintenanceScreen from '../../components/MaintenanceScreen';
@@ -13,6 +14,7 @@ const SettingsManagement = () => {
         updateMaintenanceMode,
         updateMaintenanceMessage
     } = useData();
+    const { socket } = useSocket();
     const { t } = useLanguage();
 
     const [loadingMode, setLoadingMode] = useState(false);
@@ -150,6 +152,18 @@ const SettingsManagement = () => {
                 updateDeliveryTimingType(deliveryTimingMode),
                 updateDeliverySettings(allowedSlots)
             ]);
+            window.dispatchEvent(new CustomEvent('settings:sync', {
+                detail: {
+                    delivery_timing_type: deliveryTimingMode,
+                    deliveryTimingType: deliveryTimingMode,
+                    delivery_times: allowedSlots,
+                    deliveryTimes: allowedSlots
+                }
+            }));
+            if (socket) {
+                socket.emit('settings:update', { key: 'delivery_timing_type', value: deliveryTimingMode });
+                socket.emit('settings:update', { key: 'delivery_times', value: allowedSlots });
+            }
             setMessage({ type: 'success', text: t('Delivery timing settings saved successfully!') });
         } catch (error) {
             console.error('Error saving delivery timing:', error);
