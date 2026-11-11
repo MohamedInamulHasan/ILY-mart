@@ -219,6 +219,7 @@ export const apiService = {
     resetPassword: (token, password) => api.put(`/users/resetpassword/${token}`, { password }),
     getProfile: () => api.get('/users/profile'),
     updateProfile: (data, config = {}) => api.put('/users/profile', data, config),
+    saveFcmToken: (fcmToken) => api.post('/users/fcm-token', { fcmToken }),
     getSavedProducts: () => api.get('/users/profile/saved-products'),
     toggleSavedProduct: (productId) => api.post('/users/profile/saved-products', { productId }),
     requestDeleteAccount: (data) => api.post('/users/delete-request', data),

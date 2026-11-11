@@ -44,6 +44,7 @@ import { Bike } from 'lucide-react';
 import { SocketProvider, useSocket } from './context/SocketContext';
 import { useData } from './context/DataContext';
 import { useAuth } from './context/AuthContext';
+import { initFCM, syncFcmTokenWithUser } from './utils/fcm';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import useBackButton from './utils/useBackButton';
 import { setOverlayAuthToken, hideFloatingOverlay, setOverlayDeliverySessionActive } from './utils/floatingOverlay';
@@ -115,9 +116,22 @@ const RoleRedirectHandler = () => {
 
 const Layout = ({ children, onRefresh }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { user } = useAuth();
     // Use back button handler for Android navigation
     useBackButton();
+
+    // Initialize Firebase Push Notifications on native Android
+    useEffect(() => {
+        initFCM(navigate);
+    }, [navigate]);
+
+    // Keep FCM token synced when user authenticates
+    useEffect(() => {
+        if (user) {
+            syncFcmTokenWithUser();
+        }
+    }, [user]);
 
     useEffect(() => {
         const token = localStorage.getItem('authToken');

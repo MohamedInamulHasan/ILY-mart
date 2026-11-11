@@ -3,3 +3,6 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# Firebase service account (never commit this)
+src/config/firebase-service-account.json

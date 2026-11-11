@@ -10,6 +10,7 @@ import { sendOrderNtfyAlert } from '../services/ntfyService.js';
 import { sendOrderWhatsAppNotification } from '../services/whatsappService.js';
 import { sendN8nOrderEvent } from '../services/n8nService.js';
 import { getIO } from '../socket.js';
+import { sendOrderPushNotification } from '../services/fcmService.js';
 
 
 
@@ -521,6 +522,10 @@ export const updateOrderStatus = async (req, res, next) => {
             sendN8nOrderEvent(updatedOrder, 'order.status_updated')
                 .catch(err => console.error('❌ Failed to send n8n order status webhook:', err));
         }
+
+        // Send FCM push notification to customer
+        sendOrderPushNotification(updatedOrder.user, updatedOrder._id.toString(), updatedOrder.status)
+            .catch(err => console.error('❌ FCM push failed:', err));
 
         // Emit real-time event for user
         getIO().emit('order:updated', updatedOrder);

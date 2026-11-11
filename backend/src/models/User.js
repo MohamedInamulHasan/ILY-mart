@@ -96,6 +96,9 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    fcmTokens: [{
+        type: String
+    }],
     resetPasswordToken: String,
     resetPasswordExpire: Date
 }, {

@@ -885,6 +885,8 @@ export const resetPassword = async (req, res, next) => {
     }
 };
 
+
+
 // @desc    Test Email Configuration
 // @route   GET /api/users/test-email
 // @access  Public
@@ -1218,3 +1220,5 @@ export const updateGuest = async (req, res, next) => {
         next(error);
     }
 };
+
+

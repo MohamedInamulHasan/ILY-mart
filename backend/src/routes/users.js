@@ -20,7 +20,8 @@ import {
     verifyOTP,
     registerGuest,
     updateGuest,
-    mobileLogin
+    mobileLogin,
+    saveFcmToken
 } from '../controllers/userController.js';
 
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
@@ -40,6 +41,7 @@ router.put('/resetpassword/:resettoken', resetPassword);
 router.post('/logout', logoutUser);
 router.post('/delete-request', requestAccountDeletion);
 router.get('/test-email', testEmailController);
+router.post('/fcm-token', protect, saveFcmToken);
 
 router.route('/profile')
     .get(protect, getUserProfile)
