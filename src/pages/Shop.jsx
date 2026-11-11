@@ -38,12 +38,17 @@ const ShopCategoryItem = ({ item, isActive, onClick, settings, language }) => {
         if (isAll) {
             return settings?.allStoreCategoryImage || settings?.allCategoryImage || null;
         }
+        // 1. Direct storeImage URL if present
         if (item?.storeImage) return item.storeImage;
-        if (item?.image) return item.image;
+
+        // 2. Prioritize dedicated category store-image endpoint
         const catId = item?._id || item?.id;
         if (catId) {
             return `${API_BASE_URL}/categories/${catId}/store-image?t=${Math.floor((item.updatedAt ? new Date(item.updatedAt).getTime() : Date.now()) / 60000)}`;
         }
+
+        // 3. Fallback to general category image if no store-specific image exists
+        if (item?.image) return item.image;
         return null;
     }, [item, isAll, settings]);
 
@@ -55,14 +60,20 @@ const ShopCategoryItem = ({ item, isActive, onClick, settings, language }) => {
             className="flex flex-col items-center justify-start flex-shrink-0 relative pb-2 pt-0.5 px-1 cursor-pointer select-none min-w-[62px] sm:min-w-[70px] max-w-[84px] sm:max-w-[92px] transition-all group outline-none"
         >
             {/* Image above - Clean transparent container without card background */}
-            <div className="w-8 h-8 sm:w-9 sm:h-9 aspect-square flex items-center justify-center bg-transparent mb-2 transition-transform group-hover:scale-105 pointer-events-none">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 aspect-square flex items-center justify-center bg-transparent mb-1.5 transition-transform group-hover:scale-105 pointer-events-none">
                 {imageUrl && !imgError ? (
                     <img
                         src={imageUrl}
                         alt={displayName}
                         draggable={false}
                         className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none transition-transform"
-                        onError={() => setImgError(true)}
+                        onError={(e) => {
+                            if (item?.image && e.target.src !== item.image) {
+                                e.target.src = item.image;
+                            } else {
+                                setImgError(true);
+                            }
+                        }}
                     />
                 ) : emoji ? (
                     <span className="text-xl sm:text-[22px] leading-none select-none pointer-events-none">{emoji}</span>
