@@ -48,6 +48,14 @@ const ProductDetails = () => {
         return parseProductDescription(product?.description);
     }, [product?.description]);
 
+    const isLongDescription = useMemo(() => {
+        if (!product?.description) return false;
+        const firstNormal = descBlocks.find(b => b.type === 'normal');
+        const text = firstNormal?.content || '';
+        const lines = text.split('\n').filter(Boolean);
+        return lines.length > 7 || text.length > 250 || descBlocks.length > 1;
+    }, [product?.description, descBlocks]);
+
     const productMentions = useMemo(() => {
         // Size selection is strictly for preview mode products (e.g. fashion/clothing)
         if (!isPreview) return [];
@@ -474,35 +482,40 @@ const ProductDetails = () => {
                             {descBlocks.map((block, bIdx) => {
                                 if (block.type === 'normal') {
                                     const text = block.content || '';
-                                    const lines = text.split('\n').filter(Boolean);
-                                    const isLong = lines.length > 7 || text.length > 300;
                                     return (
                                         <div key={bIdx} className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base">
-                                            {!isDescriptionExpanded && isLong ? (
+                                            {!isDescriptionExpanded && isLongDescription ? (
                                                 <div className="relative">
-                                                    <p className="line-clamp-7 whitespace-pre-line">
+                                                    <p
+                                                        className="whitespace-pre-line text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base"
+                                                        style={{
+                                                            display: '-webkit-box',
+                                                            WebkitLineClamp: 7,
+                                                            WebkitBoxOrient: 'vertical',
+                                                            overflow: 'hidden'
+                                                        }}
+                                                    >
                                                         {text}
                                                     </p>
-                                                    {/* Gradient fade + Read More overlaid at line 7 */}
-                                                    <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white dark:from-gray-900 to-transparent pointer-events-none" />
+                                                    <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white/90 dark:from-gray-900/90 to-transparent pointer-events-none" />
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsDescriptionExpanded(true)}
-                                                        className="relative mt-0.5 text-[#2E5A2E] dark:text-[#7CA90E] font-bold text-xs sm:text-sm hover:underline cursor-pointer block"
+                                                        className="mt-1.5 text-[#2E5A2E] dark:text-[#7CA90E] font-bold text-sm hover:underline cursor-pointer inline-flex items-center"
                                                     >
                                                         {t('Read More...')}
                                                     </button>
                                                 </div>
                                             ) : (
                                                 <div>
-                                                    <p className="whitespace-pre-line">
+                                                    <p className="whitespace-pre-line text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base">
                                                         {text}
                                                     </p>
-                                                    {isLong && (
+                                                    {isLongDescription && (
                                                         <button
                                                             type="button"
                                                             onClick={() => setIsDescriptionExpanded(false)}
-                                                            className="mt-1 text-[#2E5A2E] dark:text-[#7CA90E] font-bold text-xs sm:text-sm hover:underline cursor-pointer block"
+                                                            className="mt-2 text-[#2E5A2E] dark:text-[#7CA90E] font-bold text-sm hover:underline cursor-pointer inline-flex items-center"
                                                         >
                                                             {t('Read Less')}
                                                         </button>
@@ -511,6 +524,11 @@ const ProductDetails = () => {
                                             )}
                                         </div>
                                     );
+                                }
+
+                                // If long description is collapsed, hide other blocks (tables/points/cards) until expanded
+                                if (!isDescriptionExpanded && isLongDescription) {
+                                    return null;
                                 }
 
                                 if (block.type === 'box') {
