@@ -144,6 +144,12 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                 onClick={(e) => {
                     if (!product.anyStoreOpen || !isStoreOpenCheck) {
                         e.preventDefault();
+                    } else {
+                        try {
+                            const currentY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+                            sessionStorage.setItem('groupCardReturnScroll', String(currentY));
+                            sessionStorage.setItem('groupCardReturnPath', window.location.pathname + window.location.search);
+                        } catch (err) {}
                     }
                 }}
             >

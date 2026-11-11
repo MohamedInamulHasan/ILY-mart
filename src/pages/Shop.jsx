@@ -16,18 +16,9 @@ import HomeHeader from '../components/home/HomeHeader';
 import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
-const ShopCategoryItem = ({ item, isActive, onClick, dbCategories, settings, language }) => {
+const ShopCategoryItem = ({ item, isActive, onClick, settings, language }) => {
     const [imgError, setImgError] = useState(false);
     const isAll = (item?.name || '').toLowerCase() === 'all';
-
-    const parentCat = useMemo(() => {
-        if (isAll) return null;
-        if (item?.parentCat) return item.parentCat;
-        return (dbCategories || []).find(cat => {
-            const subs = Array.isArray(cat?.subcategories) ? cat.subcategories : [];
-            return subs.some(s => areSubcategoriesMatching(s, item?.name));
-        }) || findCanonicalCategory(item?.name, dbCategories);
-    }, [item, dbCategories, isAll]);
 
     // Clean name without truncation or Tamil brackets
     const displayName = useMemo(() => {
@@ -40,39 +31,21 @@ const ShopCategoryItem = ({ item, isActive, onClick, dbCategories, settings, lan
 
     const emoji = useMemo(() => {
         if (isAll) return '';
-        return parentCat?.emoji || parentCat?.icon || extractEmojis(parentCat?.name) || extractEmojis(item?.name) || '';
-    }, [parentCat, item, isAll]);
+        return item?.emoji || item?.icon || extractEmojis(item?.name) || '';
+    }, [item, isAll]);
 
     const imageUrl = useMemo(() => {
         if (isAll) {
             return settings?.allStoreCategoryImage || settings?.allCategoryImage || null;
         }
-        // 1. Store subcategory image from parent category (direct or __store__ prefix)
-        if (parentCat?.subcategoryStoreImages && typeof parentCat.subcategoryStoreImages === 'object') {
-            const match = Object.entries(parentCat.subcategoryStoreImages).find(([k]) => areSubcategoriesMatching(k, item?.name));
-            if (match && match[1]) return match[1];
-        }
-        if (parentCat?.subcategoryImages && typeof parentCat.subcategoryImages === 'object') {
-            const direct = parentCat.subcategoryImages['__store__' + item?.name];
-            if (direct) return direct;
-            const match = Object.entries(parentCat.subcategoryImages).find(([k]) => k.startsWith('__store__') && areSubcategoriesMatching(k.replace('__store__', ''), item?.name));
-            if (match && match[1]) return match[1];
-        }
-        // 2. Product subcategory image from parent category
-        if (parentCat?.subcategoryImages && typeof parentCat.subcategoryImages === 'object') {
-            const match = Object.entries(parentCat.subcategoryImages).find(([k]) => !k.startsWith('__store__') && areSubcategoriesMatching(k, item?.name));
-            if (match && match[1]) return match[1];
-        }
-        // 3. Parent category storeImage
-        if (parentCat?.storeImage) return parentCat.storeImage;
-        // 4. Parent category image
-        if (parentCat?.image) return parentCat.image;
-        const catId = parentCat?._id || parentCat?.id;
+        if (item?.storeImage) return item.storeImage;
+        if (item?.image) return item.image;
+        const catId = item?._id || item?.id;
         if (catId) {
-            return `${API_BASE_URL}/categories/${catId}/store-image?t=${Math.floor((parentCat.updatedAt ? new Date(parentCat.updatedAt).getTime() : Date.now()) / 60000)}`;
+            return `${API_BASE_URL}/categories/${catId}/store-image?t=${Math.floor((item.updatedAt ? new Date(item.updatedAt).getTime() : Date.now()) / 60000)}`;
         }
         return null;
-    }, [parentCat, item, isAll, settings]);
+    }, [item, isAll, settings]);
 
     return (
         <button
@@ -181,64 +154,28 @@ const Shop = () => {
     // Safety check for stores array to prevent crash if undefined & filter active only
     const safeStores = useMemo(() => (stores || []).filter(s => s.isActive !== false), [stores]);
 
-    // Calculate store counts per subcategory using normalized key matching
-    const subcategoryData = useMemo(() => {
-        const itemMap = new Map();
-
+    // Calculate store counts per Category (displaying Categories on Store list page)
+    const categoryData = useMemo(() => {
         // 1. All stores option
         const result = [{ name: 'All', count: safeStores.length, isAll: true }];
 
-        // 2. Collect subcategories from dbCategories
-        (dbCategories || []).forEach(cat => {
-            if (!cat || cat.isHidden) return;
-            const subs = Array.isArray(cat.subcategories) ? cat.subcategories : [];
-            subs.filter(Boolean).forEach(sub => {
-                const nKey = normSubcategoryKey(sub);
-                if (nKey && !itemMap.has(nKey)) {
-                    itemMap.set(nKey, {
-                        name: sub,
-                        parentCat: cat
-                    });
-                }
-            });
-        });
+        // 2. Collect visible categories from dbCategories
+        const visibleCats = (dbCategories || []).filter(cat => cat && !cat.isHidden);
 
-        // 3. Also check if products have subcategories
-        allProducts.forEach(p => {
-            const subs = (Array.isArray(p.subcategory) ? p.subcategory : [p.subcategory]).filter(Boolean);
-            subs.forEach(sub => {
-                const nKey = normSubcategoryKey(sub);
-                if (nKey && !itemMap.has(nKey)) {
-                    const matchedCat = (dbCategories || []).find(c => areCategoriesMatching(c, p.category));
-                    itemMap.set(nKey, {
-                        name: sub,
-                        parentCat: matchedCat || null
-                    });
-                }
-            });
-        });
-
-        // 4. Calculate store count for each subcategory
-        itemMap.forEach((entry) => {
-            const subName = entry.name;
+        visibleCats.forEach(cat => {
             const storeCount = safeStores.filter(store => {
+                const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
+                const hasMatchingType = types.some(t => areCategoriesMatching(t, cat.name));
+                if (hasMatchingType) return true;
+
                 const storeIdStr = String(store._id || store.id || '');
                 const storeProducts = allProducts.filter(p => String(p.storeId?._id || p.storeId || '') === storeIdStr);
-                const hasProduct = storeProducts.some(p => {
-                    const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-                    return subs.some(s => areSubcategoriesMatching(s, subName));
-                });
-                if (hasProduct) return true;
-
-                const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
-                return types.some(t => {
-                    const cat = (dbCategories || []).find(c => areCategoriesMatching(c, t));
-                    return cat?.subcategories?.some(s => areSubcategoriesMatching(s, subName));
-                });
+                return storeProducts.some(p => areCategoriesMatching(p.category, cat.name));
             }).length;
 
             result.push({
-                ...entry,
+                ...cat,
+                name: cat.name,
                 count: storeCount
             });
         });
@@ -256,20 +193,14 @@ const Shop = () => {
                 return matchesSearch;
             }
 
+            // Match on store category type
+            const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
+            const hasMatchingCatType = types.some(t => areCategoriesMatching(t, categoryFilter));
+
             // Direct match on products belonging to this store
             const storeIdStr = String(store._id || store.id || '');
             const storeProducts = allProducts.filter(p => String(p.storeId?._id || p.storeId || '') === storeIdStr);
-            const hasMatchingProduct = storeProducts.some(p => {
-                const subs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-                return subs.some(s => areSubcategoriesMatching(s, categoryFilter));
-            });
-
-            // Match on store category type having this subcategory
-            const types = Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []);
-            const hasMatchingCatType = types.some(t => {
-                const cat = (dbCategories || []).find(c => areCategoriesMatching(c, t));
-                return cat?.subcategories?.some(s => areSubcategoriesMatching(s, categoryFilter));
-            });
+            const hasMatchingProduct = storeProducts.some(p => areCategoriesMatching(p.category, categoryFilter));
 
             return matchesSearch && (hasMatchingProduct || hasMatchingCatType);
         }).sort((a, b) => {
@@ -279,7 +210,7 @@ const Shop = () => {
             if (isOpenA === isOpenB) return 0;
             return isOpenA ? -1 : 1;
         });
-    }, [safeStores, searchQuery, categoryFilter, allProducts, dbCategories]);
+    }, [safeStores, searchQuery, categoryFilter, allProducts]);
 
     const handleCategoryClick = (categoryName) => {
         setSearchParams({ category: normKey(categoryName) === 'all' ? 'All' : categoryName });
@@ -537,14 +468,13 @@ const Shop = () => {
                             ) : (
                                 <div className="max-w-7xl mx-auto mb-3 px-1 border-b border-gray-200/50 dark:border-gray-800/60 pb-1.5">
                                     <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
-                                        {subcategoryData.map((item) => {
+                                        {categoryData.map((item) => {
                                             const isActive = normKey(item.name) === normKey(categoryFilter);
                                             return (
                                                 <ShopCategoryItem
                                                     key={item.name}
                                                     item={item}
                                                     isActive={isActive}
-                                                    dbCategories={dbCategories}
                                                     settings={settings}
                                                     language={language}
                                                     onClick={(e) => {

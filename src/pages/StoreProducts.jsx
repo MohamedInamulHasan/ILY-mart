@@ -381,26 +381,44 @@ const StoreProducts = () => {
     };
 
     // Extract unique categories and subcategories for the store page category scroller
-    const subcategoryData = useMemo(() => {
+    const { subcategoryData, subcategorySortOrder } = useMemo(() => {
         const itemMap = new Map();
 
         // 1. Store's categories
         const storeTypes = Array.isArray(store?.type) ? store.type : (store?.type ? [store.type] : []);
         const storeCats = categories.filter(cat => storeTypes.some(t => areCategoriesMatching(t, cat)));
 
-        // Flatten official subcategories from store's categories
+        // 2. Build ordered list of official subcategories from ALL categories in database
+        // (prioritizing storeCats if present, then all remaining categories in their exact saved order)
+        const sortOrder = [];
         const officialSubcategories = [];
-        storeCats.forEach(cat => {
+
+        const orderedCats = [
+            ...storeCats,
+            ...categories.filter(c => !storeCats.some(sc => (sc._id || sc.name) === (c._id || c.name)))
+        ];
+
+        orderedCats.forEach(cat => {
             if (Array.isArray(cat?.subcategories)) {
                 cat.subcategories.forEach(sub => {
-                    if (sub && !officialSubcategories.some(os => areSubcategoriesMatching(os, sub))) {
-                        officialSubcategories.push(sub);
+                    if (sub) {
+                        const n = normSubcategoryKey(sub);
+                        if (n && !sortOrder.includes(n)) {
+                            sortOrder.push(n);
+                        }
+                        if (!officialSubcategories.some(os => areSubcategoriesMatching(os, sub))) {
+                            officialSubcategories.push(sub);
+                        }
                     }
                 });
             }
+            const catNorm = normCategoryKey(cat.name);
+            if (catNorm && !sortOrder.includes(catNorm)) {
+                sortOrder.push(catNorm);
+            }
         });
 
-        // 2. Count matching products and merge identical categories/subcategories
+        // 3. Count matching products and merge identical categories/subcategories
         groupedStoreProducts.forEach(p => {
             const rawSubs = (Array.isArray(p.subcategory) ? p.subcategory : [p.subcategory])
                 .filter(s => s && typeof s === 'string' && s.trim() !== '');
@@ -446,19 +464,7 @@ const StoreProducts = () => {
 
         const result = Array.from(itemMap.values());
 
-        // Sort based on category and subcategory order in database
-        const sortOrder = [];
-        storeCats.forEach(cat => {
-            if (Array.isArray(cat?.subcategories)) {
-                cat.subcategories.forEach(s => {
-                    const n = normSubcategoryKey(s);
-                    if (!sortOrder.includes(n)) sortOrder.push(n);
-                });
-            }
-            const catNorm = normCategoryKey(cat.name);
-            if (!sortOrder.includes(catNorm)) sortOrder.push(catNorm);
-        });
-
+        // Sort based on category and subcategory order arranged in admin/database
         const sorted = result.sort((a, b) => {
             const indexA = sortOrder.indexOf(normSubcategoryKey(a.name));
             const indexB = sortOrder.indexOf(normSubcategoryKey(b.name));
@@ -470,15 +476,15 @@ const StoreProducts = () => {
             } else if (indexB !== -1) {
                 return 1;
             }
-            return a.name.localeCompare(b.name);
+            return 0;
         });
 
         // If there are 2 or more subcategories in that store, prepend "All" as first option
-        if (sorted.length >= 2) {
-            return [{ name: 'All', count: groupedStoreProducts.length }, ...sorted];
-        }
+        const finalData = sorted.length >= 2 
+            ? [{ name: 'All', count: groupedStoreProducts.length }, ...sorted]
+            : sorted;
 
-        return sorted;
+        return { subcategoryData: finalData, subcategorySortOrder: sortOrder };
     }, [groupedStoreProducts, categories, store]);
 
     const totalProductCount = useMemo(() => groupedStoreProducts.length, [groupedStoreProducts]);
@@ -513,6 +519,23 @@ const StoreProducts = () => {
                     const priceB = Number(b.price || 0);
                     return globalSortOrder === 'lowToHigh' ? priceA - priceB : priceB - priceA;
                 });
+            } else if (subcategorySortOrder && subcategorySortOrder.length > 0) {
+                // Arrange products in the same order as subcategories are arranged in admin
+                allItems.sort((a, b) => {
+                    const getSubIndex = (p) => {
+                        const rawSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+                        for (const s of rawSubs) {
+                            const idx = subcategorySortOrder.indexOf(normSubcategoryKey(s));
+                            if (idx !== -1) return idx;
+                        }
+                        if (p.category) {
+                            const idx = subcategorySortOrder.indexOf(normCategoryKey(p.category));
+                            if (idx !== -1) return idx;
+                        }
+                        return 9999;
+                    };
+                    return getSubIndex(a) - getSubIndex(b);
+                });
             }
             return [['_all_', allItems]];
         }
@@ -535,7 +558,7 @@ const StoreProducts = () => {
             });
 
         return [[effectiveSubcategory, filteredProducts]];
-    }, [groupedStoreProducts, effectiveSubcategory, globalSortOrder, searchQuery]);
+    }, [groupedStoreProducts, effectiveSubcategory, globalSortOrder, searchQuery, subcategorySortOrder]);
 
     // Keep displayProducts for simple count checks
     const displayProducts = useMemo(() => sections.flatMap(s => s[1]), [sections]);

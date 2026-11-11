@@ -49,6 +49,9 @@ const ProductDetails = () => {
     }, [product?.description]);
 
     const productMentions = useMemo(() => {
+        // Size selection is strictly for preview mode products (e.g. fashion/clothing)
+        if (!isPreview) return [];
+
         const list = [];
 
         // 1. Check product.unit first (this is where admin form saves sizes like S, M, L, XL)
@@ -88,7 +91,7 @@ const ProductDetails = () => {
     }, [product?.unit, product?.mention, descMentions, isPreview]);
 
     const checkSizeSelected = () => {
-        if (productMentions && productMentions.length > 0 && !selectedMention) {
+        if (isPreview && productMentions && productMentions.length > 0 && !selectedMention) {
             setShowSizeWarning(true);
             if (sizeWarningTimeoutRef.current) clearTimeout(sizeWarningTimeoutRef.current);
             sizeWarningTimeoutRef.current = setTimeout(() => {
@@ -431,7 +434,7 @@ const ProductDetails = () => {
 
 
                     {/* Mentions (Sizes / Variants, e.g. S, M, L, XL - Uniform white cards, selected black with white text) */}
-                    {productMentions && productMentions.length > 0 && (
+                    {isPreview && productMentions && productMentions.length > 0 && (
                         <div ref={sizeSectionRef} className="mb-6">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
                                 {t('Size')}

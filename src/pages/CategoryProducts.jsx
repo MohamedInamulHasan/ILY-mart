@@ -458,13 +458,13 @@ const CategoryProducts = () => {
                                             e.stopPropagation();
                                             setSelectedSubcategory(sub);
                                         }}
-                                        className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[84px] h-[106px] sm:h-[116px] px-1.5 pt-2 pb-1.5 sm:px-3 sm:pt-2.5 sm:pb-2 rounded-xl flex flex-col items-center justify-start flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
+                                        className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] max-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[88px] h-[114px] sm:h-[126px] px-1 pt-2 pb-1.5 sm:px-2.5 sm:pt-2.5 sm:pb-2 rounded-xl flex flex-col items-center justify-start flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
                                             isSelected
                                                 ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
                                                 : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
                                         }`}
                                     >
-                                        <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square flex items-center justify-center bg-transparent pointer-events-none flex-shrink-0">
+                                        <div className="w-[62px] h-[62px] sm:w-[70px] sm:h-[70px] aspect-square flex items-center justify-center bg-transparent pointer-events-none flex-shrink-0">
                                             <img
                                                 src={subImg}
                                                 alt={cleanTitle}
@@ -473,7 +473,7 @@ const CategoryProducts = () => {
                                                 onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
                                             />
                                         </div>
-                                        <div className="flex items-start justify-center text-center mt-1 w-full px-0.5 pointer-events-none h-[28px] sm:h-[32px] overflow-hidden">
+                                        <div className="flex items-start justify-center text-center mt-1.5 w-full px-0.5 pointer-events-none h-[28px] sm:h-[32px] overflow-hidden">
                                             <span 
                                                 className={`leading-[14px] sm:leading-[15px] text-center w-full transition-colors text-[11px] sm:text-[12px] ${
                                                     isSelected 

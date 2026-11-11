@@ -108,6 +108,17 @@ const ProductGroupProducts = () => {
         return `${mainTitle} ${bracketText || ''}`.trim();
     })();
 
+    const handleBack = () => {
+        try {
+            const returnPath = sessionStorage.getItem('groupCardReturnPath');
+            if (returnPath) {
+                safeNavigateBack(navigate, returnPath);
+                return;
+            }
+        } catch (e) {}
+        safeNavigateBack(navigate, '/');
+    };
+
     return (
         <PullToRefreshLayout>
             <div className="flex-1 bg-[#E8EAEF] dark:bg-gray-900 pb-8 transition-colors duration-200 w-full relative">
@@ -123,7 +134,7 @@ const ProductGroupProducts = () => {
                             {/* Back button */}
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button
-                                    onClick={() => safeNavigateBack(navigate, '/')}
+                                    onClick={handleBack}
                                     className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50"
                                 >
                                     <ArrowLeft size={19} />

@@ -73,6 +73,12 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                 onClick={(e) => {
                     if (!canClick) {
                         e.preventDefault();
+                    } else if (product.isGroup) {
+                        try {
+                            const currentY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+                            sessionStorage.setItem('groupCardReturnScroll', String(currentY));
+                            sessionStorage.setItem('groupCardReturnPath', window.location.pathname + window.location.search);
+                        } catch (err) {}
                     }
                 }}
             >
