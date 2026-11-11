@@ -25,17 +25,24 @@ export const initFCM = async (navigate) => {
         console.log('🔔 [FCM] Initializing Push Notifications...');
 
         // 1. Request notification permission
-        let permStatus = await PushNotifications.checkPermissions();
-        if (permStatus.receive !== 'granted') {
-            permStatus = await PushNotifications.requestPermissions();
+        try {
+            let permStatus = await PushNotifications.checkPermissions();
+            if (permStatus.receive !== 'granted') {
+                permStatus = await PushNotifications.requestPermissions();
+            }
+        } catch (pErr) {
+            console.warn('⚠️ [FCM] check/request permissions notice:', pErr?.message);
         }
 
-        if (permStatus.receive !== 'granted') {
-            console.warn('⚠️ [FCM] Push notification permission not granted:', permStatus.receive);
-            return;
+        // 2. Always register with FCM to receive Device Token
+        try {
+            await PushNotifications.register();
+            console.log('✅ [FCM] PushNotifications.register() called');
+        } catch (rErr) {
+            console.error('❌ [FCM] PushNotifications.register() error:', rErr?.message);
         }
 
-        // 2. Create high-priority Android notification channel for order updates
+        // 3. Create high-priority Android notification channel for order updates
         try {
             await PushNotifications.createChannel({
                 id: 'order_updates',

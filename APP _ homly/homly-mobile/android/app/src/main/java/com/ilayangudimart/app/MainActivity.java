@@ -25,6 +25,8 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 public class MainActivity extends BridgeActivity {
 
@@ -261,19 +263,22 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void checkAndRequestLocationPermissions() {
-        boolean fineGranted = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED;
+        List<String> neededPermissions = new ArrayList<>();
 
-        boolean coarseGranted = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            neededPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            neededPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                neededPermissions.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
 
-        if (!fineGranted || !coarseGranted) {
-            locationPermissionLauncher.launch(new String[]{
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            });
+        if (!neededPermissions.isEmpty()) {
+            locationPermissionLauncher.launch(neededPermissions.toArray(new String[0]));
         }
     }
 
