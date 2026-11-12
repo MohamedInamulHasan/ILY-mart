@@ -97,25 +97,25 @@ const CategoryProducts = () => {
     }, [rawProducts]);
 
     // Filter products:
-    // 1. Must match current category
-    // 2. If subcategory selected (not 'All'), must match selected subcategory
+    // 1. When NO subcategory selected: must match current category
+    // 2. When a subcategory IS selected: show ALL products that have that subcategory
+    //    (regardless of category) — so shared subcategories like "Fresh Juice" that
+    //    appear under both "Fruits" and "Juice" categories will show the same products.
     const categoryProducts = useMemo(() => {
         const targetCategory = currentCategory?.name || decodedCategoryName;
 
         return allProducts.filter(p => {
             if (p.isAvailable === false) return false;
 
-            // Category match
-            if (targetCategory && targetCategory.toLowerCase() !== 'all') {
-                const catMatches = areCategoriesMatching(p.category, targetCategory);
-                if (!catMatches) return false;
+            if (selectedSubcategory) {
+                // Subcategory-first filtering: show any product that belongs to this subcategory
+                const pSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
+                return pSubs.some(s => areSubcategoriesMatching(s, selectedSubcategory));
             }
 
-            // Subcategory match (if subcategory selected)
-            if (selectedSubcategory) {
-                const pSubs = Array.isArray(p.subcategory) ? p.subcategory : (p.subcategory ? [p.subcategory] : []);
-                const subMatches = pSubs.some(s => areSubcategoriesMatching(s, selectedSubcategory));
-                if (!subMatches) return false;
+            // No subcategory selected → filter by category only
+            if (targetCategory && targetCategory.toLowerCase() !== 'all') {
+                return areCategoriesMatching(p.category, targetCategory);
             }
 
             return true;

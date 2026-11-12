@@ -17,15 +17,19 @@ export const groupProducts = (productList, stores = [], options = {}) => {
 
     productList.forEach(p => {
         const fullTitle = p.title?.trim() || 'Unknown Product';
-        let key;
+        let nameKey;
 
         if (exactMatch) {
-            key = fullTitle.toLowerCase();
+            nameKey = fullTitle.toLowerCase();
         } else {
             // Group by base name (e.g. "Pizza (1kg)" -> "pizza")
             const bracketIndex = fullTitle.indexOf('(');
-            key = (bracketIndex !== -1 ? fullTitle.substring(0, bracketIndex).trim() : fullTitle).toLowerCase();
+            nameKey = (bracketIndex !== -1 ? fullTitle.substring(0, bracketIndex).trim() : fullTitle).toLowerCase();
         }
+
+        // Always group within the same store — never merge products from different stores
+        const storeKey = String(p.storeId?._id || p.storeId || 'no-store');
+        const key = `${storeKey}::${nameKey}`;
 
         if (!groups[key]) groups[key] = [];
         groups[key].push(p);

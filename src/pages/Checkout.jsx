@@ -214,11 +214,6 @@ const Checkout = () => {
         if (!authLoading) {
             if (user) {
                 const currentUserId = user._id || user.id || 'current_user';
-                if (lastInitializedUserIdRef.current === currentUserId) {
-                    // Already initialized form for this user; strictly keep user's active form edits!
-                    return;
-                }
-                lastInitializedUserIdRef.current = currentUserId;
 
                 const addressObj = user.address || {};
                 const isAddressObject = typeof user.address === 'object' && user.address !== null;
@@ -231,21 +226,39 @@ const Checkout = () => {
                 const userDisplayName = user.fullName || user.name || '';
                 const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
 
+                const isFirstLoad = lastInitializedUserIdRef.current !== currentUserId;
+                lastInitializedUserIdRef.current = currentUserId;
+
                 setFormData(prev => {
                     let initAddress = (isAddressObject ? addressObj.street : user.address) || '';
                     let initCity = (isAddressObject ? addressObj.city : user.city) || '';
                     if (initAddress && initCity && initAddress.trim().toLowerCase() === initCity.trim().toLowerCase()) {
                         initAddress = '';
                     }
-                    return {
-                        ...prev,
-                        fullName: prev.fullName || (isGuestName ? '' : userDisplayName),
-                        mobile: prev.mobile || user.mobile || user.phone || '',
-                        address: prev.address || initAddress,
-                        city: prev.city || initCity,
-                        zip: prev.zip || '630702',
-                        location: prev.location || user.location || ''
-                    };
+
+                    if (isFirstLoad) {
+                        // First load: populate all fields from user (don't overwrite user edits)
+                        return {
+                            ...prev,
+                            fullName: prev.fullName || (isGuestName ? '' : userDisplayName),
+                            mobile: prev.mobile || user.mobile || user.phone || '',
+                            address: prev.address || initAddress,
+                            city: prev.city || initCity,
+                            zip: prev.zip || '630702',
+                            location: prev.location || user.location || ''
+                        };
+                    } else {
+                        // Subsequent updates (e.g. after address save): refresh address fields
+                        // Only update if NOT currently editing (so we don't clobber in-progress edits)
+                        return {
+                            ...prev,
+                            fullName: (isGuestName ? prev.fullName : userDisplayName) || prev.fullName,
+                            mobile: user.mobile || user.phone || prev.mobile || '',
+                            address: initAddress || prev.address,
+                            city: initCity || prev.city,
+                            location: user.location || prev.location || ''
+                        };
+                    }
                 });
 
                 // Auto-switch to card view only if address exists initially
