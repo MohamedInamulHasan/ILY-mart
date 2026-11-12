@@ -76,16 +76,16 @@ export const createOrder = async (req, res, next) => {
             };
         });
 
-        const hasGoldProduct = dbProducts.some(p => p.isGold);
+        const isAllGoldProducts = dbProducts.length > 0 && dbProducts.every(p => p.isGold);
 
-        if (hasGoldProduct) {
-            console.log('⚡ Gold Product found in order. Waiving delivery charge.');
+        if (isAllGoldProducts) {
+            console.log('⚡ All items are Gold products. Waiving delivery charge.');
             finalShipping = 0;
-            // No need to deduct coins if Gold Product is present
+            // No need to deduct coins if all items are Gold Products
             // Recalculate total if shipping was included
             finalTotal = Number(subtotal) + Number(tax) - Number(discount);
         } else if (req.user?._id) {
-            // Check for bonus coins (Free Delivery) if NOT Gold
+            // Check for bonus coins (Free Delivery) if NOT all Gold
             const user = await User.findById(req.user._id);
             if (user && user.coins > 0 && Number(shipping) > 0) {
                 console.log(`💰 User ${user._id} used 1 coin for free delivery. Remaining: ${user.coins - 1}`);
@@ -460,7 +460,9 @@ export const updateOrderStatus = async (req, res, next) => {
                     if (productIds.length > 0) {
                         const Product = (await import('../models/Product.js')).default;
                         const goldProds = await Product.find({ _id: { $in: productIds } }).select('isGold');
-                        isGoldOrder = order.items.some(item => item.isGold) || goldProds.some(p => p.isGold);
+                        const isAllFromDb = goldProds.length === productIds.length && goldProds.every(p => p.isGold);
+                        const isAllFromItems = (order.items || []).every(item => item.isGold);
+                        isGoldOrder = isAllFromDb || isAllFromItems;
                     }
                 } catch (gErr) {
                     console.warn('Gold product check failed, continuing cancellation:', gErr.message);

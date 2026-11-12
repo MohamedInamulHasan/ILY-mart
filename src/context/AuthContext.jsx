@@ -323,19 +323,29 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const updateGuest = async (name, mobile) => {
+    const updateGuest = async (name, mobile, address, location) => {
         try {
             setError(null);
-            const data = await apiService.updateGuest({ name, mobile });
+            const payload = { name, mobile };
+            if (address) payload.address = address;
+            if (location) payload.location = location;
+            const data = await apiService.updateGuest(payload);
 
-            setUser(data.data);
-            localStorage.setItem('userInfo', JSON.stringify(data.data));
-            if (data.token) {
+            const serverUser = data?.data || {};
+            const mergedUser = {
+                ...serverUser,
+                ...(address ? { address } : {}),
+                ...(location ? { location } : {})
+            };
+
+            setUser(mergedUser);
+            localStorage.setItem('userInfo', JSON.stringify(mergedUser));
+            if (data?.token) {
                 localStorage.setItem('authToken', data.token); // Store token for Hybrid Auth
             }
             // Dispatch custom event to notify cart of user change
             window.dispatchEvent(new Event('userChanged'));
-            return data.data;
+            return mergedUser;
         } catch (err) {
             setError(
                 err.response && err.response.data.message

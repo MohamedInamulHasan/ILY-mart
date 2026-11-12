@@ -174,8 +174,8 @@ export const sendOrderWhatsAppNotification = async (order, eventType = 'created'
         const shippingFee = Number(order.shipping ?? order.shippingFee ?? order.deliveryCharge ?? 0);
         let shippingText = `₹${shippingFee}`;
         if (shippingFee === 0) {
-            const hasGold = (order.items || []).some(i => i.isGold);
-            shippingText = hasGold ? 'FREE ⚡ (Gold Product)' : 'FREE 🪙 (Coin Applied)';
+            const allGold = (order.items || []).length > 0 && (order.items || []).every(i => i.isGold);
+            shippingText = allGold ? 'FREE ⚡ (Gold Product)' : 'FREE 🪙 (Coin Applied)';
         }
 
         const subtotal = Number(order.subtotal || 0);

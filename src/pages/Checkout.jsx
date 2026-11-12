@@ -424,7 +424,10 @@ const Checkout = () => {
 
                 // Step C: Fire background guest upgrade & profile update (non-blocking)
                 if (typeof updateGuest === 'function') {
-                    try { Promise.resolve(updateGuest(formData.fullName, formData.mobile)).catch(e => console.warn('Guest upgrade warning:', e)); } catch (e) {}
+                    try {
+                        Promise.resolve(updateGuest(formData.fullName, formData.mobile, updatedUserData.address, formData.location))
+                            .catch(e => console.warn('Guest upgrade warning:', e));
+                    } catch (e) {}
                 }
                 if (apiService && typeof apiService.updateProfile === 'function') {
                     try {
@@ -433,7 +436,8 @@ const Checkout = () => {
                             mobile: formData.mobile,
                             address: updatedUserData.address,
                             city: formData.city,
-                            zip: formData.zip
+                            zip: formData.zip,
+                            location: formData.location
                         })).catch(e => console.warn('Profile update warning:', e));
                     } catch (e) {}
                 }

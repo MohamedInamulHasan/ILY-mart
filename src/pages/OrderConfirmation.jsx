@@ -145,8 +145,7 @@ const OrderConfirmation = () => {
             clearCart();
         }
 
-        const hasGoldProduct = cartItems.some(item => item.isGold);
-        if (finalDeliveryCharge === 0 && deliveryCharge === 0 && !hasGoldProduct) {
+        if (finalDeliveryCharge === 0 && deliveryCharge === 0 && !isOnlyFreeProducts) {
             setUser(prev => ({
                 ...prev,
                 coins: Math.max((prev?.coins || 0) - 1, 0),

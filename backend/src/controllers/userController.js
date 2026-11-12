@@ -1170,7 +1170,7 @@ export const registerGuest = async (req, res, next) => {
 // @access  Private
 export const updateGuest = async (req, res, next) => {
     try {
-        const { name, mobile } = req.body;
+        const { name, mobile, address, location } = req.body;
 
         if (!name || !mobile) {
             return res.status(400).json({ success: false, message: 'Name and mobile number are required' });
@@ -1199,11 +1199,15 @@ export const updateGuest = async (req, res, next) => {
 
             if (isStaff || isRegisteredUser) {
                 // Switch session to this existing account (delivery boy, admin, or existing customer claiming their account)
+                if (address) existingUser.address = address;
+                if (location) existingUser.location = location;
+                if (name) existingUser.name = name;
+                await existingUser.save();
                 return sendTokenResponse(existingUser, 200, res);
             }
         }
 
-        // Update current user's name and mobile
+        // Update current user's name, mobile, address, and location
         const user = await User.findById(currentUserId);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
@@ -1211,6 +1215,8 @@ export const updateGuest = async (req, res, next) => {
 
         user.name = name;
         user.mobile = standardMobile;
+        if (address) user.address = address;
+        if (location) user.location = location;
         await user.save();
 
         sendTokenResponse(user, 200, res);

@@ -248,16 +248,36 @@ const EditAddress = () => {
                 const isGuest = !user?.email || user.email.startsWith('guest_') || user.email.startsWith('mobile_');
                 let result;
                 if (isGuest) {
-                    result = await apiService.updateGuest({ name: formData.fullName, mobile: formData.mobile });
+                    result = await apiService.updateGuest({
+                        name: formData.fullName,
+                        mobile: formData.mobile,
+                        address: updatedAddress,
+                        location: formData.location
+                    });
                 } else {
                     result = await apiService.updateProfile(profileData);
                 }
+
+                // Also ensure updateProfile is called with latest address to guarantee DB persistence
+                try {
+                    await apiService.updateProfile({
+                        name: formData.fullName,
+                        mobile: formData.mobile,
+                        address: updatedAddress,
+                        location: formData.location
+                    });
+                } catch (_) {}
 
                 const serverData = result?.data || result;
                 const newToken = result?.token;
 
                 if (serverData && typeof serverData === 'object') {
-                    const finalUser = { ...optimisticUser, ...serverData };
+                    const finalUser = {
+                        ...optimisticUser,
+                        ...serverData,
+                        address: updatedAddress,
+                        location: formData.location || serverData.location || optimisticUser.location
+                    };
                     setUser(finalUser);
                     localStorage.setItem('userInfo', JSON.stringify(finalUser));
                     queryClient.setQueryData(['users', 'profile'], finalUser);
@@ -266,10 +286,6 @@ const EditAddress = () => {
                     // save it so next request uses the delivery boy's token
                     if (newToken) {
                         localStorage.setItem('authToken', newToken);
-                        // Also update address separately since updateGuest doesn't save address
-                        try {
-                            await apiService.updateProfile({ address: updatedAddress, location: formData.location });
-                        } catch (_) {}
                         // Force a full profile refresh so role/nav updates
                         queryClient.invalidateQueries({ queryKey: ['users', 'profile'] });
                         window.dispatchEvent(new Event('userChanged'));

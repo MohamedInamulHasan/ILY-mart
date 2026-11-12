@@ -26,7 +26,7 @@ export const sendOrderTelegramNotification = async (order) => {
         const deliveryCharge = order.shipping || 0;
         let deliveryText;
         if (deliveryCharge === 0) {
-            deliveryText = order.items.some(i => i.isGold) ? 'FREE (Gold Benefit) ⚡' : 'FREE (Coin Applied) 🪙';
+            deliveryText = (order.items || []).length > 0 && order.items.every(i => i.isGold) ? 'FREE (Gold Benefit) ⚡' : 'FREE (Coin Applied) 🪙';
         } else {
             deliveryText = `₹${deliveryCharge}`;
         }

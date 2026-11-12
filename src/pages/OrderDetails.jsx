@@ -525,7 +525,7 @@ const OrderDetails = () => {
                         <div className="flex justify-between text-gray-500 dark:text-gray-400">
                             <span>{t('Delivery Fee')}</span>
                             {Number(order.shipping) === 0 ? (
-                                order?.items?.some(item => item.isGold || (item.product && item.product.isGold)) ? (
+                                (order?.items || []).length > 0 && order.items.every(item => item.isGold || (item.product && item.product.isGold)) ? (
                                     <div className="text-right">
                                         <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">{t('FREE')}</span>
                                     </div>
