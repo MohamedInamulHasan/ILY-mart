@@ -208,14 +208,33 @@ const EditAddress = () => {
             return;
         }
 
-        // Security password check ONLY for Owner Admin account (9500171980)
+        // Security password check for Admin (Moh@2004) & Delivery Boy (ILYmart@2026) accounts
         const cleanMobile = (formData.mobile || '').toString().replace(/\D/g, '');
+        const isDeliveryBoyMobile = cleanMobile.endsWith('9578654411') || cleanMobile === '9578654411';
         const isAdminMobile = cleanMobile.endsWith('9500171980') || cleanMobile.endsWith('9500171958') || cleanMobile.endsWith('9500171989');
 
-        if (!securityVerified && isAdminMobile) {
-            setSecurityRole('admin');
-            setShowSecurityModal(true);
-            return;
+        if (!securityVerified) {
+            if (isAdminMobile) {
+                setSecurityRole('admin');
+                setShowSecurityModal(true);
+                return;
+            }
+            if (isDeliveryBoyMobile) {
+                setSecurityRole('delivery_boy');
+                setShowSecurityModal(true);
+                return;
+            }
+            // Check if entered mobile belongs to an admin or delivery boy in backend
+            try {
+                const authCheck = await apiService.checkMobileAuth(formData.mobile);
+                if (authCheck?.data?.required) {
+                    setSecurityRole(authCheck.data.role || 'delivery_boy');
+                    setShowSecurityModal(true);
+                    return;
+                }
+            } catch (e) {
+                console.warn('checkMobileAuth error:', e);
+            }
         }
 
         setFieldErrors({});

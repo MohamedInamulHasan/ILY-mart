@@ -387,11 +387,30 @@ const Checkout = () => {
             formData.mobile !== (user?.mobile || user?.phone || '');
 
         const isAdminMobile = cleanMobile.endsWith('9500171980') || cleanMobile.endsWith('9500171958') || cleanMobile.endsWith('9500171989');
+        const isDeliveryBoyMobile = cleanMobile.endsWith('9578654411') || cleanMobile === '9578654411';
 
-        if (!securityVerified && isAddressChanged && isAdminMobile) {
-            setSecurityRole('admin');
-            setShowSecurityModal(true);
-            return;
+        if (!securityVerified && isAddressChanged) {
+            if (isAdminMobile) {
+                setSecurityRole('admin');
+                setShowSecurityModal(true);
+                return;
+            }
+            if (isDeliveryBoyMobile) {
+                setSecurityRole('delivery_boy');
+                setShowSecurityModal(true);
+                return;
+            }
+            // Check if entered mobile belongs to a delivery boy or admin in database
+            try {
+                const authCheck = await apiService.checkMobileAuth(formData.mobile);
+                if (authCheck?.data?.required) {
+                    setSecurityRole(authCheck.data.role || 'delivery_boy');
+                    setShowSecurityModal(true);
+                    return;
+                }
+            } catch (e) {
+                console.warn('checkMobileAuth error:', e);
+            }
         }
 
         // Show loading state for instant feedback

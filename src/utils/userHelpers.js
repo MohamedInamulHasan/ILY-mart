@@ -61,6 +61,14 @@ export const getUserRoles = (user) => {
         set.add('admin');
     }
 
+    // 4. Fallback for Delivery Boy mobile (9578654411) - ensure delivery_boy role is recognized
+    if (
+        (cleanMobile && (cleanMobile.endsWith('9578654411') || cleanMobile === '9578654411')) ||
+        (user && cachedMobile && (cachedMobile.endsWith('9578654411') || cachedMobile === '9578654411'))
+    ) {
+        set.add('delivery_boy');
+    }
+
     const list = Array.from(set);
     return list.length > 0 ? list : ['customer'];
 };
