@@ -185,9 +185,10 @@ export const notifyDeliveryBoys = async (order) => {
         // Import User model dynamically to avoid circular dependencies if any
         const User = (await import('../models/User.js')).default;
 
-        // Find all active delivery boys
+        // Find all active delivery boys with registered mobile numbers
         const deliveryBoys = await User.find({
             role: 'delivery_boy',
+            mobile: { $exists: true, $ne: '' },
             'deliverySettings.isActive': true,
             'deliverySettings.telegramChatId': { $exists: true, $ne: '' }
         });

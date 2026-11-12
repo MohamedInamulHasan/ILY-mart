@@ -35,8 +35,12 @@ const NotificationOverlay = () => {
 
     const roles = useMemo(() => getUserRoles(user), [user]);
     const isDeliveryBoy = useMemo(() => {
-        return roles.includes('delivery_boy') || roles.includes('deliveryboy');
-    }, [roles]);
+        const hasDeliveryRole = roles.includes('delivery_boy') || roles.includes('deliveryboy');
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+        const cleanMobile = (user?.mobile || user?.phone || '').toString().replace(/\D/g, '').slice(-10);
+        // Strictly show delivery notifications ONLY for users whose account role is delivery_boy with active session and phone number
+        return hasDeliveryRole && isDeliverySessionActive && Boolean(cleanMobile);
+    }, [roles, user]);
     const isAdmin = useMemo(() => roles.includes('admin'), [roles]);
 
     const { data: rawOrders = [] } = useOrders();

@@ -155,16 +155,16 @@ const Layout = ({ children, onRefresh }) => {
     }, [user]);
 
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            setOverlayAuthToken(token);
-        }
-
         const roles = getUserRoles(user);
-        const isDeliveryUser = roles.includes('delivery_boy');
+        const isDeliveryUser = roles.includes('delivery_boy') || roles.includes('deliveryboy');
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
         const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
         const isDeliveryMode = isDeliveryUser && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
+
+        const token = localStorage.getItem('authToken');
+        if (token && isDeliveryMode) {
+            setOverlayAuthToken(token);
+        }
 
         if (isDeliveryMode) {
             try {

@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { safeNavigateBack } from '../utils/useBackButton';
-import { ArrowLeft, MapPin, Check, Navigation, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Check, Navigation, AlertCircle, ChevronDown } from 'lucide-react';
 import { API_BASE_URL, apiService } from '../utils/api';
 import { getCurrentLocation } from '../utils/locationHelpers';
 
@@ -208,34 +208,14 @@ const EditAddress = () => {
             return;
         }
 
-        // Security password check for Admin & Delivery Boy accounts
+        // Security password check ONLY for Owner Admin account (9500171980)
         const cleanMobile = (formData.mobile || '').toString().replace(/\D/g, '');
-        const currentUserRoles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
-        const isCurrentUserDeliveryBoy = currentUserRoles.includes('delivery_boy');
         const isAdminMobile = cleanMobile.endsWith('9500171980') || cleanMobile.endsWith('9500171958') || cleanMobile.endsWith('9500171989');
 
-        if (!securityVerified) {
-            if (isAdminMobile) {
-                setSecurityRole('admin');
-                setShowSecurityModal(true);
-                return;
-            }
-            if (isCurrentUserDeliveryBoy && user?.mobile && user.mobile !== cleanMobile.slice(-10)) {
-                setSecurityRole('delivery_boy');
-                setShowSecurityModal(true);
-                return;
-            }
-            // Check if entered mobile belongs to a delivery boy
-            try {
-                const authCheck = await apiService.checkMobileAuth(formData.mobile);
-                if (authCheck?.data?.required) {
-                    setSecurityRole(authCheck.data.role || 'delivery_boy');
-                    setShowSecurityModal(true);
-                    return;
-                }
-            } catch (e) {
-                console.warn('checkMobileAuth error:', e);
-            }
+        if (!securityVerified && isAdminMobile) {
+            setSecurityRole('admin');
+            setShowSecurityModal(true);
+            return;
         }
 
         setFieldErrors({});
@@ -537,18 +517,28 @@ const EditAddress = () => {
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('City')}</label>
-                            <input
-                                ref={cityRef}
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={(e) => {
-                                    setFormData(prev => ({ ...prev, city: e.target.value }));
-                                    setFieldErrors(prev => ({ ...prev, city: false }));
-                                }}
-                                placeholder={t('Enter city name')}
-                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm shadow-none"
-                            />
+                            <div className="relative">
+                                <select
+                                    ref={cityRef}
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={(e) => {
+                                        setFormData(prev => ({ ...prev, city: e.target.value }));
+                                        setFieldErrors(prev => ({ ...prev, city: false }));
+                                    }}
+                                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm appearance-none pr-10 shadow-none cursor-pointer"
+                                >
+                                    <option value="" disabled>{t('-- Select City --')}</option>
+                                    {Array.from(new Set([...(cities && cities.length > 0 ? cities : ['Ilayangudi']), ...(formData.city ? [formData.city] : [])])).map((cityName, idx) => (
+                                        <option key={idx} value={cityName}>
+                                            {cityName}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-500">
+                                    <ChevronDown size={18} />
+                                </div>
+                            </div>
                             {fieldErrors.city && (
                                 <div className="relative mt-2 bg-white dark:bg-gray-855 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>

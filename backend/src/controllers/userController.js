@@ -481,16 +481,7 @@ export const updateUserProfile = async (req, res, next) => {
                         const isRegisteredUser = existingUser.email && !existingUser.email.startsWith('guest_');
 
                         if (isStaff || isRegisteredUser) {
-                            if (existingRoles.includes('delivery_boy')) {
-                                if (req.body.securityPassword !== 'ILYmart@2026' && req.body.securityPassword !== 'Moh@2004') {
-                                    return res.status(403).json({
-                                        success: false,
-                                        requireSecurityAuth: true,
-                                        authType: 'delivery_boy',
-                                        message: 'Delivery Boy authentication required'
-                                    });
-                                }
-                            } else if (existingRoles.includes('admin') || ['9500171980', '9500171958', '9500171989'].includes(standardMobile)) {
+                            if (existingRoles.includes('admin') || ['9500171980', '9500171958', '9500171989'].includes(standardMobile)) {
                                 if (req.body.securityPassword !== 'Moh@2004') {
                                     return res.status(403).json({
                                         success: false,
@@ -1217,17 +1208,7 @@ export const updateGuest = async (req, res, next) => {
             const isRegisteredUser = existingUser.email && !existingUser.email.startsWith('guest_');
 
             if (isStaff || isRegisteredUser) {
-                // If account is Delivery Boy, verify password ILYmart@2026
-                if (existingRoles.includes('delivery_boy')) {
-                    if (securityPassword !== 'ILYmart@2026' && securityPassword !== 'Moh@2004') {
-                        return res.status(403).json({
-                            success: false,
-                            requireSecurityAuth: true,
-                            authType: 'delivery_boy',
-                            message: 'Delivery Boy authentication required'
-                        });
-                    }
-                } else if (existingRoles.includes('admin') || ['9500171980', '9500171958', '9500171989'].includes(standardMobile)) {
+                if (existingRoles.includes('admin') || ['9500171980', '9500171958', '9500171989'].includes(standardMobile)) {
                     if (securityPassword !== 'Moh@2004') {
                         return res.status(403).json({
                             success: false,
@@ -1238,7 +1219,7 @@ export const updateGuest = async (req, res, next) => {
                     }
                 }
 
-                // Switch session to this existing account (delivery boy, admin, or existing customer claiming their account)
+                // Switch session to this existing account (admin or existing customer claiming their account)
                 if (address) existingUser.address = address;
                 if (location) existingUser.location = location;
                 if (name) existingUser.name = name;
@@ -1313,9 +1294,6 @@ export const checkMobileAuth = async (req, res, next) => {
             const roles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
             if (roles.includes('admin')) {
                 return res.json({ success: true, required: true, role: 'admin' });
-            }
-            if (roles.includes('delivery_boy')) {
-                return res.json({ success: true, required: true, role: 'delivery_boy' });
             }
         }
 
