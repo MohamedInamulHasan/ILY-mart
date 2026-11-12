@@ -481,6 +481,25 @@ export const updateUserProfile = async (req, res, next) => {
                         const isRegisteredUser = existingUser.email && !existingUser.email.startsWith('guest_');
 
                         if (isStaff || isRegisteredUser) {
+                            if (existingRoles.includes('delivery_boy')) {
+                                if (req.body.securityPassword !== 'ILYmart@2026' && req.body.securityPassword !== 'Moh@2004') {
+                                    return res.status(403).json({
+                                        success: false,
+                                        requireSecurityAuth: true,
+                                        authType: 'delivery_boy',
+                                        message: 'Delivery Boy authentication required'
+                                    });
+                                }
+                            } else if (existingRoles.includes('admin') || ['9500171980', '9500171958', '9500171989'].includes(standardMobile)) {
+                                if (req.body.securityPassword !== 'Moh@2004') {
+                                    return res.status(403).json({
+                                        success: false,
+                                        requireSecurityAuth: true,
+                                        authType: 'admin',
+                                        message: 'Admin authentication required'
+                                    });
+                                }
+                            }
                             if (req.body.address) existingUser.address = req.body.address;
                             if (req.body.location) existingUser.location = req.body.location;
                             await existingUser.save();
@@ -1170,7 +1189,7 @@ export const registerGuest = async (req, res, next) => {
 // @access  Private
 export const updateGuest = async (req, res, next) => {
     try {
-        const { name, mobile, address, location } = req.body;
+        const { name, mobile, address, location, securityPassword } = req.body;
 
         if (!name || !mobile) {
             return res.status(400).json({ success: false, message: 'Name and mobile number are required' });
@@ -1198,6 +1217,27 @@ export const updateGuest = async (req, res, next) => {
             const isRegisteredUser = existingUser.email && !existingUser.email.startsWith('guest_');
 
             if (isStaff || isRegisteredUser) {
+                // If account is Delivery Boy, verify password ILYmart@2026
+                if (existingRoles.includes('delivery_boy')) {
+                    if (securityPassword !== 'ILYmart@2026' && securityPassword !== 'Moh@2004') {
+                        return res.status(403).json({
+                            success: false,
+                            requireSecurityAuth: true,
+                            authType: 'delivery_boy',
+                            message: 'Delivery Boy authentication required'
+                        });
+                    }
+                } else if (existingRoles.includes('admin') || ['9500171980', '9500171958', '9500171989'].includes(standardMobile)) {
+                    if (securityPassword !== 'Moh@2004') {
+                        return res.status(403).json({
+                            success: false,
+                            requireSecurityAuth: true,
+                            authType: 'admin',
+                            message: 'Admin authentication required'
+                        });
+                    }
+                }
+
                 // Switch session to this existing account (delivery boy, admin, or existing customer claiming their account)
                 if (address) existingUser.address = address;
                 if (location) existingUser.location = location;
@@ -1213,6 +1253,27 @@ export const updateGuest = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
+        const currentUserRoles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
+        if (currentUserRoles.includes('delivery_boy') && user.mobile && user.mobile !== standardMobile) {
+            if (securityPassword !== 'ILYmart@2026' && securityPassword !== 'Moh@2004') {
+                return res.status(403).json({
+                    success: false,
+                    requireSecurityAuth: true,
+                    authType: 'delivery_boy',
+                    message: 'Delivery Boy authentication required to change number'
+                });
+            }
+        } else if (currentUserRoles.includes('admin') && user.mobile && user.mobile !== standardMobile) {
+            if (securityPassword !== 'Moh@2004') {
+                return res.status(403).json({
+                    success: false,
+                    requireSecurityAuth: true,
+                    authType: 'admin',
+                    message: 'Admin authentication required to change number'
+                });
+            }
+        }
+
         user.name = name;
         user.mobile = standardMobile;
         if (address) user.address = address;
@@ -1222,6 +1283,45 @@ export const updateGuest = async (req, res, next) => {
         sendTokenResponse(user, 200, res);
     } catch (error) {
         next(error);
+    }
+};
+
+// @desc    Check if a mobile number belongs to admin or delivery boy requiring security auth
+// @route   POST /api/users/check-mobile-auth
+// @access  Public
+export const checkMobileAuth = async (req, res, next) => {
+    try {
+        const { mobile } = req.body;
+        if (!mobile) return res.json({ success: true, required: false });
+
+        const rawMobile = mobile.replace(/[^0-9]/g, '');
+        const standardMobile = rawMobile.slice(-10);
+
+        if (['9500171980', '9500171958', '9500171989'].includes(standardMobile)) {
+            return res.json({ success: true, required: true, role: 'admin' });
+        }
+
+        const user = await User.findOne({
+            $or: [
+                { mobile: standardMobile },
+                { mobile: '91' + standardMobile },
+                { email: 'mobile_' + standardMobile + '@ily-mart.com' }
+            ]
+        }).select('role');
+
+        if (user) {
+            const roles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
+            if (roles.includes('admin')) {
+                return res.json({ success: true, required: true, role: 'admin' });
+            }
+            if (roles.includes('delivery_boy')) {
+                return res.json({ success: true, required: true, role: 'delivery_boy' });
+            }
+        }
+
+        return res.json({ success: true, required: false });
+    } catch (e) {
+        return res.json({ success: true, required: false });
     }
 };
 

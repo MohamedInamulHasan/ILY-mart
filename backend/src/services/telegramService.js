@@ -5,6 +5,19 @@ import axios from 'axios';
  * @param {Object} order - The order object
  * @returns {Promise<boolean>} - True if successful
  */
+const escapeHtml = (text) => {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+};
+
+const safeNum = (val) => {
+    const n = Number(val);
+    return isNaN(n) ? 0 : n;
+};
+
 export const sendOrderTelegramNotification = async (order) => {
     try {
         const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -16,19 +29,20 @@ export const sendOrderTelegramNotification = async (order) => {
         }
 
         const shippingAddr = order.shippingAddress || {};
-        const customerName = shippingAddr.name || order.user?.name || 'Customer';
-        const phone = shippingAddr.mobile || 'N/A';
+        const customerName = escapeHtml(shippingAddr.name || order.user?.name || 'Customer');
+        const phone = escapeHtml(shippingAddr.mobile || 'N/A');
         // PRIORITIZE SHIPPING LOCATION (From Checkout GPS) OVER USER PROFILE LOCATION
         const customerLocation = shippingAddr.location || order.user?.location || '';
-        const address = `${shippingAddr.street || ''}${shippingAddr.city ? `, ${shippingAddr.city}` : ''}${customerLocation ? `\n📍 Coordinates: ${customerLocation}` : ''}`;
+        const rawAddress = `${shippingAddr.street || ''}${shippingAddr.city ? `, ${shippingAddr.city}` : ''}${customerLocation ? `\n📍 Coordinates: ${customerLocation}` : ''}`;
+        const address = escapeHtml(rawAddress);
 
         // Format delivery charge
-        const deliveryCharge = order.shipping || 0;
+        const deliveryCharge = safeNum(order.shipping);
         let deliveryText;
         if (deliveryCharge === 0) {
             deliveryText = (order.items || []).length > 0 && order.items.every(i => i.isGold) ? 'FREE (Gold Benefit) ⚡' : 'FREE (Coin Applied) 🪙';
         } else {
-            deliveryText = `₹${deliveryCharge}`;
+            deliveryText = `₹${deliveryCharge.toFixed(0)}`;
         }
 
         // Format scheduled delivery time
@@ -86,6 +100,8 @@ export const sendOrderTelegramNotification = async (order) => {
             }
         }
 
+        const totalFormatted = safeNum(order.total).toFixed(0);
+
         // Construct the message with professional formatting
         const message = `
 🎉 <b>NEW ORDER RECEIVED</b>
@@ -93,25 +109,33 @@ export const sendOrderTelegramNotification = async (order) => {
 
 📋 <b>ORDER DETAILS</b>
 Order ID: #${order._id.toString().slice(-8).toUpperCase()}
-Total Amount: ₹${order.total.toFixed(0)}
+Total Amount: ₹${totalFormatted}
 Delivery Charge: ${deliveryText}
-Payment Method: ${order.paymentMethod?.type || 'Cash on Delivery'}
-Scheduled Delivery: ${deliveryTimeText}
+Payment Method: ${escapeHtml(order.paymentMethod?.type || 'Cash on Delivery')}
+Scheduled Delivery: ${escapeHtml(deliveryTimeText)}
 
 
 👤 <b>CUSTOMER INFORMATION</b>
 Name: ${customerName}
-📧 Email: ${order.user?.email || 'N/A'}
+📧 Email: ${escapeHtml(order.user?.email || 'N/A')}
 Phone: ${phone}
 Address: ${address}
-${order.user?.address ? `Registered Address: ${order.user.address.street || ''}, ${order.user.address.city || ''} ${order.user.address.zip || ''}` : ''}
+${order.user?.address ? `Registered Address: ${escapeHtml(order.user.address.street || '')}, ${escapeHtml(order.user.address.city || '')} ${escapeHtml(order.user.address.zip || '')}` : ''}
 ${mapsLink ? `🗺️ <a href="${mapsLink}">View Location on Map</a>` : ''}
 
 🛒 <b>ORDER ITEMS</b>
-${order.items.map((item, idx) => `${idx + 1}. ${item.name || item.product?.title || 'Item'} ${item.isFromAd ? '🔥 <b>[OFFER]</b>' : ''}
-   Quantity: ${item.quantity}x @ ₹${item.price.toFixed(0)}${item.unit ? ` / ${item.unit}` : ''}
-   Store: ${item.storeId?.name || 'ILY mart'}
-   Subtotal: ₹${(item.price * item.quantity).toFixed(0)}`).join('\n\n')}
+${(order.items || []).map((item, idx) => {
+    const itemName = escapeHtml(item.name || item.product?.title || 'Item');
+    const storeName = escapeHtml(item.storeId?.name || 'ILY mart');
+    const itemPrice = safeNum(item.price);
+    const itemQty = safeNum(item.quantity) || 1;
+    const itemSubtotal = (itemPrice * itemQty).toFixed(0);
+    const unitText = item.unit ? ` / ${escapeHtml(item.unit)}` : '';
+    return `${idx + 1}. ${itemName} ${item.isFromAd ? '🔥 <b>[OFFER]</b>' : ''} ${item.isGold ? '⚡ <b>[FREE]</b>' : ''}
+   Quantity: ${itemQty}x @ ₹${itemPrice.toFixed(0)}${unitText}
+   Store: ${storeName}
+   Subtotal: ₹${itemSubtotal}`;
+}).join('\n\n')}
 
 ━━━━━━━━━━━━━━━━━━━━
 <i>ILY mart Order Management System</i>
@@ -122,11 +146,20 @@ ${order.items.map((item, idx) => `${idx + 1}. ${item.name || item.product?.title
 
         console.log(`📱 Sending Telegram alert for Order #${order._id}...`);
 
-        await axios.post(url, {
-            chat_id: chatId,
-            text: message,
-            parse_mode: 'HTML'
-        });
+        try {
+            await axios.post(url, {
+                chat_id: chatId,
+                text: message,
+                parse_mode: 'HTML'
+            });
+        } catch (postErr) {
+            console.warn('⚠️ Telegram HTML send error, falling back to plain text:', postErr.response?.data || postErr.message);
+            const plainText = message.replace(/<[^>]+>/g, '');
+            await axios.post(url, {
+                chat_id: chatId,
+                text: plainText
+            });
+        }
 
         console.log('✅ Telegram notification sent successfully.');
         
@@ -172,10 +205,10 @@ export const notifyDeliveryBoys = async (order) => {
 🚚 <b>NEW DELIVERY ASSIGNMENT AVAILABLE</b>
 ━━━━━━━━━━━━━━━━━━━━
 📦 <b>Order ID:</b> #${order._id.toString().slice(-8).toUpperCase()}
-💰 <b>Total Amount:</b> ₹${order.total.toFixed(0)}
-👤 <b>Customer:</b> ${order.shippingAddress?.name || order.user?.name || 'Customer'}
-📍 <b>Location:</b> ${order.shippingAddress?.street}, ${order.shippingAddress?.city}
-📱 <b>Phone:</b> ${order.shippingAddress?.mobile || 'N/A'}
+💰 <b>Total Amount:</b> ₹${safeNum(order.total).toFixed(0)}
+👤 <b>Customer:</b> ${escapeHtml(order.shippingAddress?.name || order.user?.name || 'Customer')}
+📍 <b>Location:</b> ${escapeHtml(order.shippingAddress?.street || '')}, ${escapeHtml(order.shippingAddress?.city || '')}
+📱 <b>Phone:</b> ${escapeHtml(order.shippingAddress?.mobile || 'N/A')}
 
 🔗 <b><a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin">Open Admin Panel to Accept</a></b>
 ━━━━━━━━━━━━━━━━━━━━
@@ -188,7 +221,16 @@ export const notifyDeliveryBoys = async (order) => {
                     parse_mode: 'HTML'
                 });
             } catch (err) {
-                console.error(`❌ Failed to notify delivery boy ${boy.name}:`, err.response?.data || err.message);
+                console.warn(`⚠️ HTML notify delivery boy ${boy.name} failed, falling back to plain text`);
+                const plainText = boyMessage.replace(/<[^>]+>/g, '');
+                try {
+                    await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        chat_id: boy.deliverySettings.telegramChatId,
+                        text: plainText
+                    });
+                } catch (retryErr) {
+                    console.error(`❌ Failed to notify delivery boy ${boy.name}:`, retryErr.response?.data || retryErr.message);
+                }
             }
         }
     } catch (error) {

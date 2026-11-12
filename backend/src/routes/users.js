@@ -21,7 +21,8 @@ import {
     registerGuest,
     updateGuest,
     mobileLogin,
-    saveFcmToken
+    saveFcmToken,
+    checkMobileAuth
 } from '../controllers/userController.js';
 
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
@@ -38,6 +39,7 @@ router.get('/fcm-status', (req, res) => {
     });
 });
 
+router.post('/check-mobile-auth', checkMobileAuth);
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/mobile-login', mobileLogin);

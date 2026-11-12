@@ -174,8 +174,9 @@ const Checkout = () => {
         }
     }, [settings?.deliveryTimingType]);
 
-    // Security Details for 9500171980
+    // Security Details for Admin (Moh@2004) and Delivery Boy (ILYmart@2026)
     const [showSecurityModal, setShowSecurityModal] = useState(false);
+    const [securityRole, setSecurityRole] = useState('admin'); // 'admin' | 'delivery_boy'
     const [securityPassword, setSecurityPassword] = useState('');
     const [showPasswordText, setShowPasswordText] = useState(false);
     const [securityError, setSecurityError] = useState('');
@@ -183,7 +184,19 @@ const Checkout = () => {
 
     const handleVerifySecurityPassword = (e) => {
         e?.preventDefault();
-        if (securityPassword === 'Moh@2004') {
+        const isAdminPass = securityPassword === 'Moh@2004';
+        const isDeliveryPass = securityPassword === 'ILYmart@2026';
+
+        let isValid = false;
+        if (securityRole === 'admin') {
+            isValid = isAdminPass;
+        } else if (securityRole === 'delivery_boy') {
+            isValid = isDeliveryPass || isAdminPass;
+        } else {
+            isValid = isAdminPass || isDeliveryPass;
+        }
+
+        if (isValid) {
             setSecurityVerified(true);
             setShowSecurityModal(false);
             setSecurityError('');
@@ -366,16 +379,39 @@ const Checkout = () => {
             return;
         }
 
-        // Security password check for number 9500171980 ONLY when adding or updating address newly
+        // Security password check for Admin & Delivery Boy accounts
         const cleanMobile = (formData.mobile || '').toString().replace(/\D/g, '');
         const isAddressChanged = isEditingAddress || 
             formData.address !== (user?.address?.street || '') || 
             formData.city !== (user?.address?.city || '') ||
             formData.mobile !== (user?.mobile || user?.phone || '');
 
-        if (cleanMobile.endsWith('9500171980') && isAddressChanged && !securityVerified) {
-            setShowSecurityModal(true);
-            return;
+        const currentUserRoles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
+        const isCurrentUserDeliveryBoy = currentUserRoles.includes('delivery_boy');
+        const isAdminMobile = cleanMobile.endsWith('9500171980') || cleanMobile.endsWith('9500171958') || cleanMobile.endsWith('9500171989');
+
+        if (!securityVerified && isAddressChanged) {
+            if (isAdminMobile) {
+                setSecurityRole('admin');
+                setShowSecurityModal(true);
+                return;
+            }
+            if (isCurrentUserDeliveryBoy) {
+                setSecurityRole('delivery_boy');
+                setShowSecurityModal(true);
+                return;
+            }
+            // Check if entered mobile belongs to a delivery boy
+            try {
+                const authCheck = await apiService.checkMobileAuth(formData.mobile);
+                if (authCheck?.data?.required) {
+                    setSecurityRole(authCheck.data.role || 'delivery_boy');
+                    setShowSecurityModal(true);
+                    return;
+                }
+            } catch (e) {
+                console.warn('checkMobileAuth error:', e);
+            }
         }
 
         // Show loading state for instant feedback
@@ -425,7 +461,7 @@ const Checkout = () => {
                 // Step C: Fire background guest upgrade & profile update (non-blocking)
                 if (typeof updateGuest === 'function') {
                     try {
-                        Promise.resolve(updateGuest(formData.fullName, formData.mobile, updatedUserData.address, formData.location))
+                        Promise.resolve(updateGuest(formData.fullName, formData.mobile, updatedUserData.address, formData.location, securityPassword || undefined))
                             .catch(e => console.warn('Guest upgrade warning:', e));
                     } catch (e) {}
                 }
@@ -437,7 +473,8 @@ const Checkout = () => {
                             address: updatedUserData.address,
                             city: formData.city,
                             zip: formData.zip,
-                            location: formData.location
+                            location: formData.location,
+                            securityPassword: securityPassword || undefined
                         })).catch(e => console.warn('Profile update warning:', e));
                     } catch (e) {}
                 }
@@ -1045,9 +1082,13 @@ const Checkout = () => {
                                 {language === 'ta' ? 'பாதுகாப்பு சரிபார்ப்பு' : 'Security Verification'}
                             </h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
-                                {language === 'ta' 
-                                    ? '9500171980 எண்ணிற்கு முகவரியை மாற்ற கடவுச்சொல்லை உள்ளிடவும்.'
-                                    : 'Security verification required for 9500171980 to add/update address.'}
+                                {securityRole === 'delivery_boy'
+                                    ? (language === 'ta'
+                                        ? 'டெலிவரி பாய் கணக்கிற்கான விவரங்களை மாற்ற கடவுச்சொல்லை உள்ளிடவும்.'
+                                        : 'Security verification required for Delivery Boy account to update details.')
+                                    : (language === 'ta' 
+                                        ? 'அட்மின் எண்ணிற்கு முகவரியை மாற்ற கடவுச்சொல்லை உள்ளிடவும்.'
+                                        : 'Security verification required for Admin account to add/update address.')}
                             </p>
 
                             <form onSubmit={handleVerifySecurityPassword} className="space-y-4">

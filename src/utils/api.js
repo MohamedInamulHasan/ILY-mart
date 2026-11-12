@@ -214,6 +214,7 @@ export const apiService = {
     verifyOtp: (data) => api.post('/users/verify-otp', data),
     registerGuest: () => api.post('/users/register-guest'),
     updateGuest: (data) => api.post('/users/update-guest', data),
+    checkMobileAuth: (mobile) => api.post('/users/check-mobile-auth', { mobile }),
     logout: () => api.post('/users/logout'),
     forgotPassword: (email) => api.post('/users/forgotpassword', { email }),
     resetPassword: (token, password) => api.put(`/users/resetpassword/${token}`, { password }),
