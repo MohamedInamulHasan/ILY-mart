@@ -17,6 +17,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { API_BASE_URL, apiService } from '../utils/api';
 import { openExternalLink } from '../utils/linkHelper';
 
+const isCityUnavailable = (cityName) => {
+    if (!cityName) return false;
+    const cl = String(cityName).toLowerCase();
+    return cl.includes('not available') || cl.includes('not deliverable') || cl.includes('unavailable');
+};
+
 const Checkout = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -101,6 +107,18 @@ const Checkout = () => {
         };
         fetchCities();
     }, []);
+
+    // Auto-clear if selected city is marked not available
+    useEffect(() => {
+        if (formData.city && isCityUnavailable(formData.city)) {
+            setFormData(prev => ({ ...prev, city: '' }));
+        }
+    }, [formData.city]);
+
+    const citiesList = useMemo(() => {
+        if (!Array.isArray(cities) || cities.length === 0) return [];
+        return cities;
+    }, [cities]);
     const [isNavigating, setIsNavigating] = useState(false);
     const [isLocationSearching, setIsLocationSearching] = useState(false);
     const [cachedLocation, setCachedLocation] = useState(null); 
@@ -821,28 +839,53 @@ const Checkout = () => {
 
                                         <div className="md:col-span-2">
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('City')}</label>
-                                            <div className="relative">
-                                                <select
+                                            {citiesList.length > 0 ? (
+                                                <div className="relative">
+                                                    <select
+                                                        ref={cityRef}
+                                                        name="city"
+                                                        value={formData.city && !isCityUnavailable(formData.city) ? formData.city : ''}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            if (isCityUnavailable(val)) return;
+                                                            setFormData(prev => ({ ...prev, city: val }));
+                                                            setFieldErrors(prev => ({ ...prev, city: false }));
+                                                        }}
+                                                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm appearance-none pr-10 shadow-none cursor-pointer"
+                                                    >
+                                                        <option value="" disabled>{t('-- Select City --')}</option>
+                                                        {citiesList.map((cityName, idx) => {
+                                                            const isUnavailable = isCityUnavailable(cityName);
+                                                            return (
+                                                                <option 
+                                                                    key={idx} 
+                                                                    value={cityName}
+                                                                    disabled={isUnavailable}
+                                                                    className={isUnavailable ? 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}
+                                                                >
+                                                                    {cityName}
+                                                                </option>
+                                                            );
+                                                        })}
+                                                    </select>
+                                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-500">
+                                                        <ChevronDown size={18} />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <input
                                                     ref={cityRef}
+                                                    type="text"
                                                     name="city"
                                                     value={formData.city}
                                                     onChange={(e) => {
                                                         setFormData(prev => ({ ...prev, city: e.target.value }));
                                                         setFieldErrors(prev => ({ ...prev, city: false }));
                                                     }}
-                                                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm appearance-none pr-10 shadow-none cursor-pointer"
-                                                >
-                                                    <option value="" disabled>{t('-- Select City --')}</option>
-                                                    {Array.from(new Set([...(cities && cities.length > 0 ? cities : ['Ilayangudi']), ...(formData.city ? [formData.city] : [])])).map((cityName, idx) => (
-                                                        <option key={idx} value={cityName}>
-                                                            {cityName}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-500">
-                                                    <ChevronDown size={18} />
-                                                </div>
-                                            </div>
+                                                    placeholder={t('Enter city name')}
+                                                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-0 focus:border-[#2E5A2E] outline-none transition-all text-sm shadow-none"
+                                                />
+                                            )}
                                             {fieldErrors.city && (
                                                 <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
                                                     <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>

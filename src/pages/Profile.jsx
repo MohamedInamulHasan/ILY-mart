@@ -220,16 +220,21 @@ const Profile = () => {
     }, [user, userProfile, authUser]);
 
     const isDeliveryBoy = useMemo(() => {
-        if (roles.includes('delivery_boy') || roles.includes('deliveryboy')) return true;
-        const cleanMobile = (user?.mobile || user?.data?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '');
-        if (cleanMobile.endsWith('9578654411') || cleanMobile === '9578654411') return true;
-        return Boolean(
-            hasDeliveryRole(userProfile?.data) ||
-            hasDeliveryRole(userProfile) ||
-            hasDeliveryRole(user) ||
-            hasDeliveryRole(authUser)
-        );
-    }, [roles, userProfile, user, authUser]);
+        const cleanMobile = (user?.mobile || user?.data?.mobile || authUser?.mobile || userProfile?.mobile || userProfile?.data?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+
+        // Strictly ONLY show delivery boy administration to verified delivery boy accounts
+        const isDeliveryNumber = ['9578654411', '9500179180'].includes(cleanMobile);
+
+        const serverRole = userProfile?.data?.role || userProfile?.role || user?.role || authUser?.role;
+        const hasServerRole = Array.isArray(serverRole)
+            ? serverRole.includes('delivery_boy')
+            : String(serverRole || '').toLowerCase() === 'delivery_boy';
+
+        const hasDeliveryId = Boolean(user?.deliveryId || authUser?.deliveryId || userProfile?.deliveryId || userProfile?.data?.deliveryId);
+
+        // A user is ONLY a delivery boy if their mobile is a registered delivery boy number OR has an official deliveryId
+        return isDeliveryNumber || (hasServerRole && hasDeliveryId);
+    }, [user, authUser, userProfile]);
 
     const isAdmin = roles.includes('admin');
     const isStoreAdmin = roles.includes('store_admin');

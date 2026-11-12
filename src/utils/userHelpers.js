@@ -69,6 +69,15 @@ export const getUserRoles = (user) => {
         set.add('delivery_boy');
     }
 
+    // Strictly ensure delivery_boy role is ONLY granted to verified delivery numbers or verified deliveryId
+    const effectiveMobile = (cleanMobile || cachedMobile || '').slice(-10);
+    const isDeliveryBoyMobile = ['9578654411', '9500179180'].includes(effectiveMobile);
+    const hasDeliveryId = Boolean(user?.deliveryId || user?.data?.deliveryId);
+    if (!isDeliveryBoyMobile && !hasDeliveryId) {
+        set.delete('delivery_boy');
+        set.delete('deliveryboy');
+    }
+
     const list = Array.from(set);
     return list.length > 0 ? list : ['customer'];
 };
