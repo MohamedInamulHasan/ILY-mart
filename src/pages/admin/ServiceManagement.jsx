@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../../utils/api';
+import { API_BASE_URL, apiService } from '../../utils/api';
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -70,6 +70,42 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
     const { mutateAsync: deleteServiceItem } = useDeleteServiceItem();
 
     const { uploadImage, uploading: uploadingImage } = useCloudinaryUpload();
+
+    // ── Multi-select state for Services ──────────────────────────────────
+    const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+    const [isBulkDeletingServices, setIsBulkDeletingServices] = useState(false);
+
+    const toggleSelectService = (id) => {
+        setSelectedServiceIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const toggleSelectAllServices = (visibleIds) => {
+        if (visibleIds.every(id => selectedServiceIds.includes(id))) {
+            setSelectedServiceIds(prev => prev.filter(id => !visibleIds.includes(id)));
+        } else {
+            setSelectedServiceIds(prev => [...new Set([...prev, ...visibleIds])]);
+        }
+    };
+
+    const handleBulkDeleteServices = async () => {
+        if (selectedServiceIds.length === 0) return;
+        if (!window.confirm(t(`Delete ${selectedServiceIds.length} selected service(s)? This cannot be undone.`))) return;
+        setIsBulkDeletingServices(true);
+        try {
+            for (const id of selectedServiceIds) {
+                await deleteService(id);
+            }
+            setSelectedServiceIds([]);
+        } catch (err) {
+            console.error('Bulk delete services failed:', err);
+            alert(t('Failed to delete some services. Please try again.'));
+        } finally {
+            setIsBulkDeletingServices(false);
+        }
+    };
+    // ────────────────────────────────────────────────────────────────────
 
     const [view, setView] = useState('list'); // 'list', 'form', 'items', 'itemForm'
     const [selectedService, setSelectedService] = useState(null);
@@ -273,19 +309,68 @@ const ServiceManagement = ({ serviceAdminMode = false, myServiceId = null }) => 
                                 />
                             </div>
                         )}
+                        {/* Bulk Delete Toolbar */}
+                        {selectedServiceIds.length > 0 && !serviceAdminMode && (
+                            <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl px-4 py-2.5 mb-4">
+                                <span className="text-sm font-semibold text-red-700 dark:text-red-300 flex-1">
+                                    {selectedServiceIds.length} {t('service(s) selected')}
+                                </span>
+                                <button
+                                    onClick={() => setSelectedServiceIds([])}
+                                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 px-2 py-1 rounded-lg"
+                                >
+                                    {t('Clear')}
+                                </button>
+                                <button
+                                    onClick={handleBulkDeleteServices}
+                                    disabled={isBulkDeletingServices}
+                                    className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 px-3 py-1.5 rounded-xl shadow-sm"
+                                >
+                                    <Trash2 size={13} />
+                                    {isBulkDeletingServices ? t('Deleting...') : t('Delete Selected')}
+                                </button>
+                            </div>
+                        )}
+
                         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                             <SortableContext items={filteredServices.map(s => s.id || s._id)} strategy={rectSortingStrategy}>
+                                {/* Select All row */}
+                                {!serviceAdminMode && filteredServices.length > 0 && (
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
+                                            <input
+                                                type="checkbox"
+                                                checked={filteredServices.length > 0 && filteredServices.every(s => selectedServiceIds.includes(s._id || s.id))}
+                                                onChange={() => toggleSelectAllServices(filteredServices.map(s => s._id || s.id))}
+                                                className="w-4 h-4 rounded accent-red-600 cursor-pointer"
+                                            />
+                                            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                                {filteredServices.every(s => selectedServiceIds.includes(s._id || s.id)) ? t('Deselect All') : t('Select All')} ({filteredServices.length})
+                                            </span>
+                                        </label>
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {filteredServices.map(service => {
                                         const isOpen = isServiceOpen(service);
                                         return (
                                             <SortableServiceCard key={service._id || service.id} service={service}>
-                                                <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group flex flex-col h-full transition-all ${!isOpen ? '' : ''}`}>
+                                                <div className={`bg-white dark:bg-gray-800 rounded-2xl border ${selectedServiceIds.includes(service._id || service.id) ? 'border-red-400 ring-2 ring-red-300 dark:ring-red-700' : 'border-gray-100 dark:border-gray-700'} overflow-hidden shadow-sm group flex flex-col h-full transition-all`}>
                                                     <div className={`relative h-44 overflow-hidden cursor-pointer ${!isOpen ? 'opacity-60' : ''}`} onClick={() => handleManageItems(service)}>
                                                         {!serviceAdminMode && (
                                                             <DragHandle className="absolute top-3 left-3 z-30 p-2 bg-black/50 hover:bg-black/70 text-white rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg">
                                                                 <GripVertical size={18} />
                                                             </DragHandle>
+                                                        )}
+                                                        {!serviceAdminMode && (
+                                                            <div className="absolute top-3 right-3 z-40" onClick={(e) => { e.stopPropagation(); toggleSelectService(service._id || service.id); }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedServiceIds.includes(service._id || service.id)}
+                                                                    onChange={() => toggleSelectService(service._id || service.id)}
+                                                                    className="w-5 h-5 rounded accent-red-600 cursor-pointer shadow-lg"
+                                                                />
+                                                            </div>
                                                         )}
                                                         <img 
                                                             src={service.image || 'https://placehold.co/400x300?text=Service'} 

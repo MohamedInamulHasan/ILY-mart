@@ -854,6 +854,42 @@ const ProductManagement = () => {
 
     const { uploadImage, uploading } = useCloudinaryUpload();
 
+    // ── Multi-select state ──────────────────────────────────────────────
+    const [selectedProductIds, setSelectedProductIds] = useState([]);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+    const toggleSelectProduct = (id) => {
+        setSelectedProductIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const toggleSelectAllProducts = (visibleIds) => {
+        if (visibleIds.every(id => selectedProductIds.includes(id))) {
+            setSelectedProductIds(prev => prev.filter(id => !visibleIds.includes(id)));
+        } else {
+            setSelectedProductIds(prev => [...new Set([...prev, ...visibleIds])]);
+        }
+    };
+
+    const handleBulkDeleteProducts = async () => {
+        if (selectedProductIds.length === 0) return;
+        if (!window.confirm(t(`Delete ${selectedProductIds.length} selected product(s)? This cannot be undone.`))) return;
+        setIsBulkDeleting(true);
+        try {
+            await apiService.bulkDeleteProducts(selectedProductIds);
+            setSelectedProductIds([]);
+            queryClient.invalidateQueries(['products']);
+            alert(t('Selected products deleted successfully!'));
+        } catch (err) {
+            console.error('Bulk delete failed:', err);
+            alert(t('Failed to delete selected products. Please try again.'));
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    };
+    // ────────────────────────────────────────────────────────────────────
+
     const handleImageUpload = async (e, isSlider = false) => {
         const files = Array.from(e.target.files);
         if (files.length > 0) {
@@ -1095,6 +1131,29 @@ const ProductManagement = () => {
                         </div>
                     </div>
 
+                    {/* Bulk Delete Toolbar */}
+                    {selectedProductIds.length > 0 && (
+                        <div className="mb-3 flex items-center gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl px-4 py-2.5">
+                            <span className="text-sm font-semibold text-red-700 dark:text-red-300 flex-1">
+                                {selectedProductIds.length} {t('product(s) selected')}
+                            </span>
+                            <button
+                                onClick={() => setSelectedProductIds([])}
+                                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded-lg"
+                            >
+                                {t('Clear')}
+                            </button>
+                            <button
+                                onClick={handleBulkDeleteProducts}
+                                disabled={isBulkDeleting}
+                                className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 px-3 py-1.5 rounded-xl shadow-sm"
+                            >
+                                <Trash2 size={13} />
+                                {isBulkDeleting ? t('Deleting...') : t('Delete Selected')}
+                            </button>
+                        </div>
+                    )}
+
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -1105,6 +1164,9 @@ const ProductManagement = () => {
                                 <table className="w-full text-left">
                                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                                         <tr>
+                                            <th className="p-4 w-10">
+                                                {/* Select All checkbox — computed inline to access visible IDs */}
+                                            </th>
                                             <th className="p-4 w-12"></th>
                                             <th className="p-4 text-sm font-normal text-gray-500 dark:text-gray-400">{t('Image')}</th>
                                             <th className="p-4 text-sm font-normal text-gray-500 dark:text-gray-400">{t('Title')}</th>
@@ -1120,15 +1182,46 @@ const ProductManagement = () => {
                                             items={filteredProducts.map(p => p._id || p.id)}
                                             strategy={verticalListSortingStrategy}
                                         >
-                                            {filteredProducts
-                                                .filter(p => !p.storeId)
-                                                .filter(p =>
-                                                    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                                    p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                                    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
-                                                )
-                                                .map(product => (
+                                            {(() => {
+                                                const visibleProducts = filteredProducts
+                                                    .filter(p => !p.storeId)
+                                                    .filter(p =>
+                                                        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                                                    );
+                                                const visibleIds = visibleProducts.map(p => p._id || p.id);
+                                                const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedProductIds.includes(id));
+                                                return (<>
+                                                    {/* Inject Select-All into thead via a hidden row trick — simpler: render as first tbody row */}
+                                                    {visibleProducts.length > 0 && (
+                                                        <tr className="bg-gray-50/60 dark:bg-gray-700/30">
+                                                            <td className="px-4 py-2" colSpan={9}>
+                                                                <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={allSelected}
+                                                                        onChange={() => toggleSelectAllProducts(visibleIds)}
+                                                                        className="w-4 h-4 rounded accent-red-600 cursor-pointer"
+                                                                    />
+                                                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                                                        {allSelected ? t('Deselect All') : t('Select All')} ({visibleIds.length})
+                                                                    </span>
+                                                                </label>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                    {visibleProducts.map(product => (
                                                     <SortableProductRow key={product.id || product._id} product={product}>
+                                                        <td className="p-4 w-10">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedProductIds.includes(product._id || product.id)}
+                                                                onChange={() => toggleSelectProduct(product._id || product.id)}
+                                                                className="w-4 h-4 rounded accent-red-600 cursor-pointer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </td>
                                                         <td className="p-4">
                                                             <DragHandle className="text-gray-400 hover:text-gray-600">
                                                                 <GripVertical size={20} />
@@ -1307,7 +1400,9 @@ const ProductManagement = () => {
                                                             </div>
                                                         </td>
                                                     </SortableProductRow>
-                                                ))}
+                                                ))}</>
+                                                );
+                                            })()}
                                         </SortableContext>
                                     </tbody>
                                 </table>

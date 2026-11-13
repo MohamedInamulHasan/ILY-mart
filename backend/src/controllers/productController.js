@@ -331,6 +331,47 @@ export const deleteProduct = async (req, res, next) => {
     }
 };
 
+// @desc    Bulk Delete Products by IDs
+// @route   DELETE /api/products/bulk-delete
+// @access  Private (Admin / Store Admin)
+export const bulkDeleteProducts = async (req, res, next) => {
+    try {
+        const { ids } = req.body;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ success: false, message: 'Please provide an array of product IDs to delete.' });
+        }
+
+        const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
+
+        // Store Admin: can only delete their own store's products
+        let filter = { _id: { $in: ids } };
+        if (roles.includes('store_admin') && !roles.includes('admin')) {
+            filter.storeId = req.user.storeId;
+        }
+
+        // Delete Cloudinary images for each product
+        const productsToDelete = await Product.find(filter).select('image images');
+        for (const p of productsToDelete) {
+            if (p.image) await deleteFromCloudinary(p.image).catch(() => {});
+            if (Array.isArray(p.images) && p.images.length > 0) await deleteFromCloudinary(p.images).catch(() => {});
+        }
+
+        const result = await Product.deleteMany(filter);
+
+        invalidateProductCache();
+        getIO().emit('product:updated');
+
+        res.status(200).json({
+            success: true,
+            message: `Deleted ${result.deletedCount} product(s).`,
+            data: { deletedCount: result.deletedCount }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Simple CSV parser for product bulk upload (no external dependencies)
 function parseSimpleCSV(content) {
     if (!content || typeof content !== 'string') return [];

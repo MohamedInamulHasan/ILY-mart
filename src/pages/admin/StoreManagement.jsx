@@ -1,7 +1,7 @@
 import RichDescriptionEditor from '../../components/RichDescriptionEditor';
 import { parseProductDescription, serializeProductDescription } from '../../utils/descriptionHelper';
 import { useData } from '../../context/DataContext';
-import { API_BASE_URL } from '../../utils/api';
+import { API_BASE_URL, apiService } from '../../utils/api';
 import { openExternalLink } from '../../utils/linkHelper';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -83,6 +83,42 @@ const StoreManagement = () => {
 
     const { uploadImage, uploading: uploadingImage } = useCloudinaryUpload();
     const queryClient = useQueryClient();
+
+    // ── Multi-select state for Store Products ──────────────────────────
+    const [selectedStoreProductIds, setSelectedStoreProductIds] = useState([]);
+    const [isBulkDeletingStoreProducts, setIsBulkDeletingStoreProducts] = useState(false);
+
+    const toggleSelectStoreProduct = (id) => {
+        setSelectedStoreProductIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const toggleSelectAllStoreProducts = (visibleIds) => {
+        if (visibleIds.every(id => selectedStoreProductIds.includes(id))) {
+            setSelectedStoreProductIds(prev => prev.filter(id => !visibleIds.includes(id)));
+        } else {
+            setSelectedStoreProductIds(prev => [...new Set([...prev, ...visibleIds])]);
+        }
+    };
+
+    const handleBulkDeleteStoreProducts = async () => {
+        if (selectedStoreProductIds.length === 0) return;
+        if (!window.confirm(t(`Delete ${selectedStoreProductIds.length} selected product(s)? This cannot be undone.`))) return;
+        setIsBulkDeletingStoreProducts(true);
+        try {
+            await apiService.bulkDeleteProducts(selectedStoreProductIds);
+            setSelectedStoreProductIds([]);
+            queryClient.invalidateQueries(['products']);
+            alert(t('Selected products deleted successfully!'));
+        } catch (err) {
+            console.error('Bulk delete failed:', err);
+            alert(t('Failed to delete selected products. Please try again.'));
+        } finally {
+            setIsBulkDeletingStoreProducts(false);
+        }
+    };
+    // ────────────────────────────────────────────────────────────────────
 
     const userRoles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
     const isStoreAdmin = userRoles.includes('store_admin');
@@ -1071,7 +1107,28 @@ const StoreManagement = () => {
             {view === 'storeProducts' && selectedStore && (
                 <div className="space-y-6">
 
-
+                    {/* Bulk Delete Toolbar */}
+                    {selectedStoreProductIds.length > 0 && (
+                        <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl px-4 py-2.5">
+                            <span className="text-sm font-semibold text-red-700 dark:text-red-300 flex-1">
+                                {selectedStoreProductIds.length} {t('product(s) selected')}
+                            </span>
+                            <button
+                                onClick={() => setSelectedStoreProductIds([])}
+                                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded-lg"
+                            >
+                                {t('Clear')}
+                            </button>
+                            <button
+                                onClick={handleBulkDeleteStoreProducts}
+                                disabled={isBulkDeletingStoreProducts}
+                                className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 px-3 py-1.5 rounded-xl shadow-sm"
+                            >
+                                <Trash2 size={13} />
+                                {isBulkDeletingStoreProducts ? t('Deleting...') : t('Delete Selected')}
+                            </button>
+                        </div>
+                    )}
 
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         <div className="overflow-x-auto">
@@ -1100,14 +1157,45 @@ const StoreManagement = () => {
                                             }).map(p => p._id || p.id)}
                                             strategy={verticalListSortingStrategy}
                                         >
-                                            {products.filter(p => {
-                                                const pStoreId = p.storeId?._id || p.storeId;
-                                                const targetId = selectedStore._id || selectedStore.id;
-                                                return targetId === 'none' 
-                                                    ? (!pStoreId || pStoreId === 'none') 
-                                                    : (pStoreId == targetId || String(pStoreId) === String(targetId));
-                                            }).map(product => (
+                                            {(() => {
+                                                const storeProds = products.filter(p => {
+                                                    const pStoreId = p.storeId?._id || p.storeId;
+                                                    const targetId = selectedStore._id || selectedStore.id;
+                                                    return targetId === 'none' 
+                                                        ? (!pStoreId || pStoreId === 'none') 
+                                                        : (pStoreId == targetId || String(pStoreId) === String(targetId));
+                                                });
+                                                const spIds = storeProds.map(p => p._id || p.id);
+                                                const allSPSelected = spIds.length > 0 && spIds.every(id => selectedStoreProductIds.includes(id));
+                                                return (<>
+                                                    {storeProds.length > 0 && (
+                                                        <tr className="bg-gray-50/60 dark:bg-gray-700/30">
+                                                            <td className="px-4 py-2" colSpan={8}>
+                                                                <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={allSPSelected}
+                                                                        onChange={() => toggleSelectAllStoreProducts(spIds)}
+                                                                        className="w-4 h-4 rounded accent-red-600 cursor-pointer"
+                                                                    />
+                                                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                                                        {allSPSelected ? t('Deselect All') : t('Select All')} ({spIds.length})
+                                                                    </span>
+                                                                </label>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                    {storeProds.map(product => (
                                                 <SortableProductRow key={product._id || product.id} product={product}>
+                                                    <td className="p-4 w-10">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedStoreProductIds.includes(product._id || product.id)}
+                                                            onChange={() => toggleSelectStoreProduct(product._id || product.id)}
+                                                            className="w-4 h-4 rounded accent-red-600 cursor-pointer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </td>
                                                     <td className="p-4">
                                                         {!isStoreAdmin && (
                                                         <DragHandle className="text-gray-400 hover:text-gray-600">
@@ -1317,7 +1405,9 @@ const StoreManagement = () => {
                                                         </div>
                                                     </td>
                                                 </SortableProductRow>
-                                            ))}
+                                            ))}</>
+                                            );
+                                        })()}
                                         </SortableContext>
                                         {products.filter(p => {
                                             const pStoreId = p.storeId?._id || p.storeId;
