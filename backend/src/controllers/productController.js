@@ -362,7 +362,7 @@ function parseSimpleCSV(content) {
 
     const firstRow = parseRow(lines[0]);
     const isHeader = firstRow.some(col =>
-        ['title', 'name', 'price', 'category', 'unit', 'description', 'stock'].includes(col.toLowerCase())
+        ['title', 'name', 'price', 'category', 'subcategory', 'sub_category', 'unit', 'description', 'stock'].includes(col.toLowerCase())
     );
 
     let headers;
@@ -371,7 +371,7 @@ function parseSimpleCSV(content) {
         headers = firstRow.map(h => h.toLowerCase().trim());
         dataLines = lines.slice(1);
     } else {
-        headers = ['title', 'price', 'category', 'unit', 'description', 'stock'];
+        headers = ['title', 'price', 'category', 'subcategory', 'unit', 'description', 'stock'];
         dataLines = lines;
     }
 
@@ -436,6 +436,10 @@ export const bulkImportProducts = async (req, res, next) => {
             if (isNaN(price)) continue;
 
             const category = (item.category || 'Grocery').trim();
+            const rawSub = (item.subcategory || item.subCategory || item.sub_category || '').toString().trim();
+            const subcategory = rawSub
+                ? rawSub.split(/[,;|]/).map(s => s.trim()).filter(s => s.length > 0)
+                : [];
             const unit = (item.unit || item.weight || '').trim();
             const description = (item.description || title).trim();
             const rawStock = parseInt((item.stock || '50').toString().replace(/[^0-9]/g, ''), 10);
@@ -447,6 +451,7 @@ export const bulkImportProducts = async (req, res, next) => {
                 title,
                 price,
                 category,
+                subcategory,
                 unit,
                 description,
                 stock,

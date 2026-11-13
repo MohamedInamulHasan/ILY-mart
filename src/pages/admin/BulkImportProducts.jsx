@@ -4,12 +4,12 @@ import { ArrowLeft, Upload, FileText, CheckCircle2, AlertCircle, Copy, Loader2, 
 import { apiService } from '../../utils/api';
 import { safeNavigateBack } from '../../utils/useBackButton';
 
-const SAMPLE_CSV = `title,price,category,unit,description,stock
-Fresh Apple,180,Fruits,1 kg,Crisp naturally sweet apples,50
-Country Tomato,35,Vegetables,1 kg,Fresh farm harvested red tomatoes,100
-Toor Dal,140,Grocery,1 kg,High quality unpolished dal,50
-Farm Fresh Milk,35,Dairy,500 ml,Pure pasteurized milk,40
-Robusta Banana,45,Fruits,1 kg,Naturally ripened yellow bananas,60`;
+const SAMPLE_CSV = `title,price,category,subcategory,unit,description,stock
+Fresh Apple,180,Fruits,Fresh Fruits,1 kg,Crisp naturally sweet apples,50
+Country Tomato,35,Vegetables,Organic,1 kg,Fresh farm harvested red tomatoes,100
+Toor Dal,140,Grocery,Dals & Pulses,1 kg,High quality unpolished dal,50
+Farm Fresh Milk,35,Dairy,Milk & Cream,500 ml,Pure pasteurized milk,40
+Robusta Banana,45,Fruits,Fresh Fruits,1 kg,Naturally ripened yellow bananas,60`;
 
 // Client-side CSV parser to support direct importing and fallback
 function parseClientCSV(text) {
@@ -43,7 +43,7 @@ function parseClientCSV(text) {
 
     const firstRow = parseRow(lines[0]);
     const isHeader = firstRow.some(col =>
-        ['title', 'name', 'price', 'category', 'unit', 'description', 'stock'].includes(col.toLowerCase())
+        ['title', 'name', 'price', 'category', 'subcategory', 'sub_category', 'unit', 'description', 'stock'].includes(col.toLowerCase())
     );
 
     let headers;
@@ -52,7 +52,7 @@ function parseClientCSV(text) {
         headers = firstRow.map(h => h.toLowerCase().trim());
         dataLines = lines.slice(1);
     } else {
-        headers = ['title', 'price', 'category', 'unit', 'description', 'stock'];
+        headers = ['title', 'price', 'category', 'subcategory', 'unit', 'description', 'stock'];
         dataLines = lines;
     }
 
@@ -73,10 +73,16 @@ function parseClientCSV(text) {
 
         if (title && !isNaN(price)) {
             const rawStock = parseInt((obj.stock || '50').toString().replace(/[^0-9]/g, ''), 10);
+            const rawSub = (obj.subcategory || obj.subCategory || obj.sub_category || '').toString().trim();
+            const subcategory = rawSub
+                ? rawSub.split(/[,;|]/).map(s => s.trim()).filter(s => s.length > 0)
+                : [];
+
             items.push({
                 title,
                 price,
                 category: (obj.category || 'Grocery').trim(),
+                subcategory,
                 unit: (obj.unit || obj.weight || '').trim(),
                 description: (obj.description || title).trim(),
                 stock: !isNaN(rawStock) ? rawStock : 50,
@@ -246,7 +252,7 @@ export default function BulkImportProducts() {
                     <textarea
                         value={csvText}
                         onChange={(e) => setCsvText(e.target.value)}
-                        placeholder={`Paste CSV from ChatGPT here...\n\nExample:\ntitle,price,category,unit,description,stock\nApple,180,Fruits,1 kg,Crisp naturally sweet apples,50\nTomato,35,Vegetables,1 kg,Fresh farm tomatoes,100`}
+                        placeholder={`Paste CSV from ChatGPT here...\n\nExample:\ntitle,price,category,subcategory,unit,description,stock\nApple,180,Fruits,Fresh Fruits,1 kg,Crisp naturally sweet apples,50\nTomato,35,Vegetables,Organic,1 kg,Fresh farm tomatoes,100`}
                         rows={10}
                         className="w-full font-mono text-xs p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-y"
                     />
@@ -322,7 +328,7 @@ export default function BulkImportProducts() {
                         Prompt to ask ChatGPT on Mobile:
                     </div>
                     <p className="font-mono bg-gray-50 dark:bg-gray-900 p-2 rounded text-[10px] select-all leading-relaxed">
-                        "Give me a list of 20 grocery products in CSV format with columns: title, price, category, unit, description, stock. No image links needed."
+                        "Give me a list of 20 grocery products in CSV format with columns: title, price, category, subcategory, unit, description, stock. No image links needed."
                     </p>
                 </div>
             </div>
