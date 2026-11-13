@@ -220,33 +220,12 @@ const Profile = () => {
     }, [user, userProfile, authUser]);
 
     const isDeliveryBoy = useMemo(() => {
-        // Use ONLY server-fresh data — not merged/cached user object — to avoid localStorage pollution
-        const profileData = userProfile?.data || userProfile || {};
-        const authData = authUser?.data || authUser || {};
-
-        // Mobile from server sources only (not merged cached user)
-        const rawMobile = (profileData?.mobile || authData?.mobile || '').toString().replace(/\D/g, '').slice(-10);
-
-        // Verified delivery boy numbers hardcoded
         const DELIVERY_NUMBERS = ['9578654411', '9500179180'];
-        const isDeliveryNumber = DELIVERY_NUMBERS.includes(rawMobile);
+        const activeMobile = (user?.mobile || userProfile?.data?.mobile || authUser?.data?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
 
-        // Role must come from server (userProfile or fresh authUser), NOT cached/merged user
-        const serverRole = profileData?.role || authData?.role;
-        const hasServerDeliveryRole = Array.isArray(serverRole)
-            ? serverRole.some(r => ['delivery_boy', 'deliveryboy'].includes(String(r).toLowerCase().trim()))
-            : ['delivery_boy', 'deliveryboy'].includes(String(serverRole || '').toLowerCase().trim());
-
-        // deliveryId must come from server too, not cached merged user
-        const serverDeliveryId = profileData?.deliveryId || authData?.deliveryId;
-        const hasServerDeliveryId = Boolean(serverDeliveryId);
-
-        // ONLY show delivery admin if: verified number OR (server role + server deliveryId)
-        // Any regular user (even if localStorage has stale delivery data) should NOT see this
-        if (isDeliveryNumber) return true;
-        if (hasServerDeliveryRole && hasServerDeliveryId) return true;
-        return false;
-    }, [authUser, userProfile]);
+        // Strictly ONLY the authorized delivery boy numbers can see and access the Delivery Boy card
+        return DELIVERY_NUMBERS.includes(activeMobile);
+    }, [user, authUser, userProfile]);
 
     const isAdmin = roles.includes('admin');
     const isStoreAdmin = roles.includes('store_admin');

@@ -69,13 +69,10 @@ export const getUserRoles = (user) => {
         set.add('delivery_boy');
     }
 
-    // Strictly ensure delivery_boy role is ONLY granted to verified delivery numbers or verified deliveryId
-    // deliveryId check uses ONLY the user object passed in (server data), NOT localStorage
+    // Strictly ensure delivery_boy role is ONLY granted to verified delivery numbers
     const effectiveMobile = (cleanMobile || cachedMobile || '').slice(-10);
     const isDeliveryBoyMobile = ['9578654411', '9500179180'].includes(effectiveMobile);
-    const hasDeliveryId = Boolean(user?.deliveryId || user?.data?.deliveryId);
-    // Do NOT check localStorage for deliveryId — prevents stale delivery sessions from leaking
-    if (!isDeliveryBoyMobile && !hasDeliveryId) {
+    if (!isDeliveryBoyMobile) {
         set.delete('delivery_boy');
         set.delete('deliveryboy');
     }

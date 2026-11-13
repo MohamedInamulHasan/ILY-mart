@@ -268,6 +268,9 @@ const EditAddress = () => {
             country: 'India'
         };
 
+        const standardMobile = cleanMobile.slice(-10);
+        const isDeliveryNumber = ['9578654411', '9500179180'].includes(standardMobile);
+
         const optimisticUser = {
             ...(user || {}),
             name: formData.fullName,
@@ -277,6 +280,16 @@ const EditAddress = () => {
             address: updatedAddress,
             location: formData.location || ''
         };
+
+        if (!isDeliveryNumber) {
+            delete optimisticUser.deliveryId;
+            if (Array.isArray(optimisticUser.role)) {
+                optimisticUser.role = optimisticUser.role.filter(r => r !== 'delivery_boy' && r !== 'deliveryboy');
+                if (optimisticUser.role.length === 0) optimisticUser.role = ['customer'];
+            } else if (optimisticUser.role === 'delivery_boy' || optimisticUser.role === 'deliveryboy') {
+                optimisticUser.role = 'customer';
+            }
+        }
 
         setUser(optimisticUser);
         localStorage.setItem('userInfo', JSON.stringify(optimisticUser));
