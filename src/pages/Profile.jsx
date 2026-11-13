@@ -220,21 +220,33 @@ const Profile = () => {
     }, [user, userProfile, authUser]);
 
     const isDeliveryBoy = useMemo(() => {
-        const cleanMobile = (user?.mobile || user?.data?.mobile || authUser?.mobile || userProfile?.mobile || userProfile?.data?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+        // Use ONLY server-fresh data — not merged/cached user object — to avoid localStorage pollution
+        const profileData = userProfile?.data || userProfile || {};
+        const authData = authUser?.data || authUser || {};
 
-        // Strictly ONLY show delivery boy administration to verified delivery boy accounts
-        const isDeliveryNumber = ['9578654411', '9500179180'].includes(cleanMobile);
+        // Mobile from server sources only (not merged cached user)
+        const rawMobile = (profileData?.mobile || authData?.mobile || '').toString().replace(/\D/g, '').slice(-10);
 
-        const serverRole = userProfile?.data?.role || userProfile?.role || user?.role || authUser?.role;
-        const hasServerRole = Array.isArray(serverRole)
-            ? serverRole.includes('delivery_boy')
-            : String(serverRole || '').toLowerCase() === 'delivery_boy';
+        // Verified delivery boy numbers hardcoded
+        const DELIVERY_NUMBERS = ['9578654411', '9500179180'];
+        const isDeliveryNumber = DELIVERY_NUMBERS.includes(rawMobile);
 
-        const hasDeliveryId = Boolean(user?.deliveryId || authUser?.deliveryId || userProfile?.deliveryId || userProfile?.data?.deliveryId);
+        // Role must come from server (userProfile or fresh authUser), NOT cached/merged user
+        const serverRole = profileData?.role || authData?.role;
+        const hasServerDeliveryRole = Array.isArray(serverRole)
+            ? serverRole.some(r => ['delivery_boy', 'deliveryboy'].includes(String(r).toLowerCase().trim()))
+            : ['delivery_boy', 'deliveryboy'].includes(String(serverRole || '').toLowerCase().trim());
 
-        // A user is ONLY a delivery boy if their mobile is a registered delivery boy number OR has an official deliveryId
-        return isDeliveryNumber || (hasServerRole && hasDeliveryId);
-    }, [user, authUser, userProfile]);
+        // deliveryId must come from server too, not cached merged user
+        const serverDeliveryId = profileData?.deliveryId || authData?.deliveryId;
+        const hasServerDeliveryId = Boolean(serverDeliveryId);
+
+        // ONLY show delivery admin if: verified number OR (server role + server deliveryId)
+        // Any regular user (even if localStorage has stale delivery data) should NOT see this
+        if (isDeliveryNumber) return true;
+        if (hasServerDeliveryRole && hasServerDeliveryId) return true;
+        return false;
+    }, [authUser, userProfile]);
 
     const isAdmin = roles.includes('admin');
     const isStoreAdmin = roles.includes('store_admin');

@@ -152,6 +152,10 @@ export const AuthProvider = ({ children }) => {
             setUser(data.data);
             localStorage.setItem('userInfo', JSON.stringify(data.data));
             localStorage.removeItem('delivery_boy_logged_out');
+            // Clear any stale delivery session on fresh login
+            localStorage.removeItem('delivery_session_active');
+            localStorage.removeItem('customer_backup_token');
+            localStorage.removeItem('customer_backup_user');
             if (data.token) {
                 localStorage.setItem('authToken', data.token); // Store token for Hybrid Auth
             }
@@ -176,6 +180,10 @@ export const AuthProvider = ({ children }) => {
             setUser(data.data);
             localStorage.setItem('userInfo', JSON.stringify(data.data));
             localStorage.removeItem('delivery_boy_logged_out');
+            // Clear any stale delivery session on fresh login
+            localStorage.removeItem('delivery_session_active');
+            localStorage.removeItem('customer_backup_token');
+            localStorage.removeItem('customer_backup_user');
             if (data.token) {
                 localStorage.setItem('authToken', data.token); // Store token for Hybrid Auth
             }
