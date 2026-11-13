@@ -19,7 +19,7 @@ router.route('/')
     .post(protect, adminOrStoreAdmin, createProduct);
 
 router.post('/bulk-import', protect, adminOrStoreAdmin, bulkImportProducts);
-router.delete('/bulk-delete', protect, adminOrStoreAdmin, bulkDeleteProducts);
+router.post('/bulk-delete', protect, adminOrStoreAdmin, bulkDeleteProducts);
 
 router.put('/reorder', protect, adminOrStoreAdmin, updateProductsOrder);
 
