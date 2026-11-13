@@ -162,46 +162,19 @@ export default function BulkImportProducts() {
         setProgressText('Importing products to database...');
 
         try {
-            // First attempt: Call fast bulk-import API
+            // api interceptor already unwraps response.data, so res = { success, data, message }
             let importedCount = 0;
-            let usedFallback = false;
 
-            try {
-                const res = await apiService.bulkImportProducts({
-                    text: trimmed,
-                    products: parsedProducts,
-                    storeId: selectedStoreId || undefined
-                });
-                const data = res?.data || res;
-                if (data?.success) {
-                    importedCount = data?.data?.inserted || parsedProducts.length;
-                } else {
-                    usedFallback = true;
-                }
-            } catch (apiErr) {
-                // If endpoint returns 404 (e.g. backend redeploying), seamlessly fallback to direct creation
-                if (apiErr?.response?.status === 404 || !apiErr?.response) {
-                    console.log('Bulk endpoint not yet active, using direct product creation fallback...');
-                    usedFallback = true;
-                } else {
-                    throw apiErr;
-                }
-            }
+            const res = await apiService.bulkImportProducts({
+                products: parsedProducts,
+                storeId: selectedStoreId || undefined
+            });
 
-            // Fallback: create products directly
-            if (usedFallback) {
-                let successCount = 0;
-                for (let i = 0; i < parsedProducts.length; i++) {
-                    const prod = parsedProducts[i];
-                    setProgressText(`Importing ${i + 1} of ${parsedProducts.length}: ${prod.title}...`);
-                    try {
-                        await apiService.createProduct(prod);
-                        successCount++;
-                    } catch (itemErr) {
-                        console.warn(`Failed to import item ${prod.title}:`, itemErr);
-                    }
-                }
-                importedCount = successCount;
+            // res is already { success: true, data: { inserted: N }, message: "..." }
+            if (res?.success) {
+                importedCount = res?.data?.inserted ?? parsedProducts.length;
+            } else {
+                throw new Error(res?.message || 'Bulk import returned failure.');
             }
 
             if (importedCount > 0) {
