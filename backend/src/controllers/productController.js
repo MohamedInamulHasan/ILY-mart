@@ -372,15 +372,16 @@ export const bulkDeleteProducts = async (req, res, next) => {
     }
 };
 
-// @desc    Remove duplicate products (keep oldest copy of each title+storeId)
+// @desc    Remove duplicate products (keep oldest copy of each title+price+unit+storeId)
 // @route   POST /api/products/dedup
 // @access  Private (Admin)
 export const dedupProducts = async (req, res, next) => {
     try {
-        // Find all duplicates grouped by title + storeId
+        // Find all duplicates grouped by title + price + unit + storeId
+        // Products with same name but different price/unit are legitimate variants
         const dupes = await Product.aggregate([
             { $group: {
-                _id: { title: { $toLower: '$title' }, storeId: '$storeId' },
+                _id: { title: { $toLower: '$title' }, price: '$price', unit: { $toLower: { $ifNull: ['$unit', ''] } }, storeId: '$storeId' },
                 ids: { $push: '$_id' },
                 count: { $sum: 1 }
             }},
@@ -570,16 +571,17 @@ export const bulkImportProducts = async (req, res, next) => {
             });
         }
 
-        // Deduplicate: skip products that already exist with the same title+storeId
+        // Deduplicate: skip products that already exist with the same title+price+unit+storeId
+        // Products with same name but different price/unit are legitimate variants
         const storeIds = [...new Set(docsToInsert.map(d => d.storeId?.toString()).filter(Boolean))];
         const existingProducts = storeIds.length > 0
-            ? await Product.find({ storeId: { $in: storeIds } }).select('title storeId').lean()
+            ? await Product.find({ storeId: { $in: storeIds } }).select('title price unit storeId').lean()
             : [];
         const existingSet = new Set(
-            existingProducts.map(p => `${(p.title || '').toLowerCase().trim()}::${p.storeId?.toString() || ''}`)
+            existingProducts.map(p => `${(p.title || '').toLowerCase().trim()}::${p.price || 0}::${(p.unit || '').toLowerCase().trim()}::${p.storeId?.toString() || ''}`)
         );
         const uniqueDocs = docsToInsert.filter(d => {
-            const key = `${(d.title || '').toLowerCase().trim()}::${d.storeId?.toString() || ''}`;
+            const key = `${(d.title || '').toLowerCase().trim()}::${d.price || 0}::${(d.unit || '').toLowerCase().trim()}::${d.storeId?.toString() || ''}`;
             return !existingSet.has(key);
         });
         const skippedCount = docsToInsert.length - uniqueDocs.length;

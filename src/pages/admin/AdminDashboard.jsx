@@ -1083,8 +1083,8 @@ const ProductManagement = () => {
     return (
         <div className="max-w-6xl">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    {view === 'list' && <ShoppingBag className="text-[#2E5A2E] dark:text-[#7CA90E]" size={20} />}
+                <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    {view === 'list' && <ShoppingBag className="text-[#2E5A2E] dark:text-[#7CA90E]" size={16} />}
                     {view === 'list' ? t('Product Inventory') : editingProduct ? t('Edit Product') : t('Add New Product')}
                 </h2>
                 <div className="flex items-center gap-2">
