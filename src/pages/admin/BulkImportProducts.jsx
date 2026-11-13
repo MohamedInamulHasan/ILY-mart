@@ -224,7 +224,7 @@ export default function BulkImportProducts() {
             {/* Header */}
             <div className="fixed top-0 left-0 right-0 z-50 bg-[#CBF9B2] dark:bg-gray-800 shadow-sm px-4 py-3 flex items-center justify-between">
                 <button
-                    onClick={() => safeNavigateBack(navigate, '/admin')}
+                    onClick={() => navigate('/admin')}
                     className="w-10 h-10 flex items-center justify-center bg-white/80 dark:bg-gray-700 rounded-full text-gray-800 dark:text-white shadow-sm active:scale-95 transition-transform"
                 >
                     <ArrowLeft size={20} />
@@ -237,26 +237,6 @@ export default function BulkImportProducts() {
             </div>
 
             <div className="pt-20 px-4 max-w-2xl mx-auto space-y-4">
-                {/* Store Selector */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200">
-                        <StoreIcon size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />
-                        <span>Assign to Store:</span>
-                    </div>
-                    <select
-                        value={selectedStoreId}
-                        onChange={(e) => setSelectedStoreId(e.target.value)}
-                        className="text-xs font-semibold py-1.5 px-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#7CA90E] max-w-[200px]"
-                    >
-                        <option value="">General (No Store / From CSV)</option>
-                        {Array.isArray(stores) && stores.map(store => (
-                            <option key={store._id || store.id} value={store._id || store.id}>
-                                {store.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
                 {/* Main Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -356,38 +336,6 @@ export default function BulkImportProducts() {
                     )}
                 </button>
 
-                {/* Clean Duplicates Button */}
-                <button
-                    onClick={handleDedup}
-                    disabled={isDedupRunning}
-                    className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 active:scale-[0.98] transition-all disabled:opacity-50"
-                >
-                    {isDedupRunning ? (
-                        <>
-                            <Loader2 size={18} className="animate-spin" />
-                            <span>Cleaning duplicates...</span>
-                        </>
-                    ) : (
-                        <>
-                            <AlertCircle size={18} />
-                            <span>🧹 Clean Duplicate Products</span>
-                        </>
-                    )}
-                </button>
-
-                {/* Helper info */}
-                <div className="bg-white dark:bg-gray-800/60 rounded-xl p-3 border border-gray-100 dark:border-gray-700/60 text-[11px] text-gray-500 dark:text-gray-400 space-y-1">
-                    <div className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                        <Info size={13} />
-                        Prompt to ask ChatGPT on Mobile:
-                    </div>
-                    <p className="font-mono bg-gray-50 dark:bg-gray-900 p-2 rounded text-[10px] select-all leading-relaxed">
-                        "Give me a list of 20 grocery products in CSV format with columns: title, price, category, subcategory, unit, description, store. No image links needed."
-                    </p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 pt-1">
-                        💡 Note: Stock is automatically set to always in-stock (stock is not needed in the CSV).
-                    </p>
-                </div>
             </div>
         </div>
     );

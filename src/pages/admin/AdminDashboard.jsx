@@ -1091,9 +1091,9 @@ const ProductManagement = () => {
                     {view === 'list' && (
                         <button
                             onClick={() => navigate('/admin/bulk-import')}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 text-sm font-bold whitespace-nowrap shadow-sm"
+                            className="px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1.5 text-xs font-bold whitespace-nowrap shadow-sm"
                         >
-                            <Upload size={18} />
+                            <Upload size={14} />
                             {t('Bulk Import')}
                         </button>
                     )}
@@ -1107,9 +1107,9 @@ const ProductManagement = () => {
                                 setView('list');
                             }
                         }}
-                        className="px-4 py-2 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-2 text-sm font-bold whitespace-nowrap shadow-sm"
+                        className="px-2.5 py-1.5 bg-[#2E5A2E] text-white rounded-lg hover:bg-[#1a3d1a] transition-colors flex items-center gap-1.5 text-xs font-bold whitespace-nowrap shadow-sm"
                     >
-                        {view === 'list' ? <Plus size={18} /> : <List size={18} />}
+                        {view === 'list' ? <Plus size={14} /> : <List size={14} />}
                         {view === 'list' ? t('Add Product') : t('View List')}
                     </button>
                 </div>
