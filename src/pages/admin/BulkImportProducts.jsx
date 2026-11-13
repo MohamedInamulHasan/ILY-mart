@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, CheckCircle2, AlertCircle, Copy, Loader2, Info, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, CheckCircle2, AlertCircle, Copy, Loader2, Info, PlusCircle, Store as StoreIcon } from 'lucide-react';
 import { apiService } from '../../utils/api';
 import { safeNavigateBack } from '../../utils/useBackButton';
+import { useStores } from '../../hooks/queries/useStores';
 
-const SAMPLE_CSV = `title,price,category,subcategory,unit,description,stock
-Fresh Apple,180,Fruits,Fresh Fruits,1 kg,Crisp naturally sweet apples,50
-Country Tomato,35,Vegetables,Organic,1 kg,Fresh farm harvested red tomatoes,100
-Toor Dal,140,Grocery,Dals & Pulses,1 kg,High quality unpolished dal,50
-Farm Fresh Milk,35,Dairy,Milk & Cream,500 ml,Pure pasteurized milk,40
-Robusta Banana,45,Fruits,Fresh Fruits,1 kg,Naturally ripened yellow bananas,60`;
+const SAMPLE_CSV = `title,price,category,subcategory,unit,description,store
+Fresh Apple,180,Fruits,Fresh Fruits,1 kg,Crisp naturally sweet apples,Super Market
+Country Tomato,35,Vegetables,Organic,1 kg,Fresh farm harvested red tomatoes,Grocery Store
+Toor Dal,140,Grocery,Dals & Pulses,1 kg,High quality unpolished dal,Super Market
+Farm Fresh Milk,35,Dairy,Milk & Cream,500 ml,Pure pasteurized milk,Super Market
+Robusta Banana,45,Fruits,Fresh Fruits,1 kg,Naturally ripened yellow bananas,Grocery Store`;
 
-// Client-side CSV parser to support direct importing and fallback
-function parseClientCSV(text) {
+// Client-side CSV parser to support direct importing, store resolution, and fallback
+function parseClientCSV(text, storesList = [], defaultStoreId = '') {
     if (!text || typeof text !== 'string') return [];
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length === 0) return [];
@@ -43,7 +44,7 @@ function parseClientCSV(text) {
 
     const firstRow = parseRow(lines[0]);
     const isHeader = firstRow.some(col =>
-        ['title', 'name', 'price', 'category', 'subcategory', 'sub_category', 'unit', 'description', 'stock'].includes(col.toLowerCase())
+        ['title', 'name', 'price', 'category', 'subcategory', 'sub_category', 'unit', 'description', 'stock', 'store', 'store_name', 'storename'].includes(col.toLowerCase())
     );
 
     let headers;
@@ -52,7 +53,7 @@ function parseClientCSV(text) {
         headers = firstRow.map(h => h.toLowerCase().trim());
         dataLines = lines.slice(1);
     } else {
-        headers = ['title', 'price', 'category', 'subcategory', 'unit', 'description', 'stock'];
+        headers = ['title', 'price', 'category', 'subcategory', 'unit', 'description', 'store'];
         dataLines = lines;
     }
 
@@ -72,11 +73,24 @@ function parseClientCSV(text) {
         const price = parseFloat(rawPrice);
 
         if (title && !isNaN(price)) {
-            const rawStock = parseInt((obj.stock || '50').toString().replace(/[^0-9]/g, ''), 10);
+            // Stock is completely optional: default to 999 so items are always in stock
+            const rawStock = obj.stock !== undefined && obj.stock !== ''
+                ? parseInt(obj.stock.toString().replace(/[^0-9]/g, ''), 10)
+                : 999;
+            const stock = !isNaN(rawStock) ? rawStock : 999;
+
             const rawSub = (obj.subcategory || obj.subCategory || obj.sub_category || '').toString().trim();
             const subcategory = rawSub
                 ? rawSub.split(/[,;|]/).map(s => s.trim()).filter(s => s.length > 0)
                 : [];
+
+            // Match store name from CSV or fall back to selected store dropdown
+            const rowStoreName = (obj.store || obj.store_name || obj.storename || '').toString().trim().toLowerCase();
+            let matchedStore = null;
+            if (rowStoreName && Array.isArray(storesList)) {
+                matchedStore = storesList.find(s => (s.name || '').toLowerCase().trim() === rowStoreName);
+            }
+            const storeId = matchedStore ? (matchedStore._id || matchedStore.id) : (defaultStoreId || undefined);
 
             items.push({
                 title,
@@ -85,7 +99,8 @@ function parseClientCSV(text) {
                 subcategory,
                 unit: (obj.unit || obj.weight || '').trim(),
                 description: (obj.description || title).trim(),
-                stock: !isNaN(rawStock) ? rawStock : 50,
+                stock,
+                storeId: storeId || undefined,
                 isAvailable: true
             });
         }
@@ -95,6 +110,8 @@ function parseClientCSV(text) {
 
 export default function BulkImportProducts() {
     const navigate = useNavigate();
+    const { data: stores = [] } = useStores();
+    const [selectedStoreId, setSelectedStoreId] = useState('');
     const [csvText, setCsvText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [progressText, setProgressText] = useState('');
@@ -133,7 +150,7 @@ export default function BulkImportProducts() {
             return;
         }
 
-        const parsedProducts = parseClientCSV(trimmed);
+        const parsedProducts = parseClientCSV(trimmed, stores, selectedStoreId);
         if (parsedProducts.length === 0) {
             setError('No valid products found. Ensure each line has a title and price.');
             return;
@@ -152,7 +169,8 @@ export default function BulkImportProducts() {
             try {
                 const res = await apiService.bulkImportProducts({
                     text: trimmed,
-                    products: parsedProducts
+                    products: parsedProducts,
+                    storeId: selectedStoreId || undefined
                 });
                 const data = res?.data || res;
                 if (data?.success) {
@@ -170,7 +188,7 @@ export default function BulkImportProducts() {
                 }
             }
 
-            // Fallback: create products one by one or in small batches
+            // Fallback: create products directly
             if (usedFallback) {
                 let successCount = 0;
                 for (let i = 0; i < parsedProducts.length; i++) {
@@ -202,7 +220,7 @@ export default function BulkImportProducts() {
     };
 
     const rowCount = csvText.trim()
-        ? parseClientCSV(csvText.trim()).length
+        ? parseClientCSV(csvText.trim(), stores, selectedStoreId).length
         : 0;
 
     return (
@@ -223,6 +241,26 @@ export default function BulkImportProducts() {
             </div>
 
             <div className="pt-20 px-4 max-w-2xl mx-auto space-y-4">
+                {/* Store Selector */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200">
+                        <StoreIcon size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />
+                        <span>Assign to Store:</span>
+                    </div>
+                    <select
+                        value={selectedStoreId}
+                        onChange={(e) => setSelectedStoreId(e.target.value)}
+                        className="text-xs font-semibold py-1.5 px-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#7CA90E] max-w-[200px]"
+                    >
+                        <option value="">General (No Store / From CSV)</option>
+                        {Array.isArray(stores) && stores.map(store => (
+                            <option key={store._id || store.id} value={store._id || store.id}>
+                                {store.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* Main Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -252,7 +290,7 @@ export default function BulkImportProducts() {
                     <textarea
                         value={csvText}
                         onChange={(e) => setCsvText(e.target.value)}
-                        placeholder={`Paste CSV from ChatGPT here...\n\nExample:\ntitle,price,category,subcategory,unit,description,stock\nApple,180,Fruits,Fresh Fruits,1 kg,Crisp naturally sweet apples,50\nTomato,35,Vegetables,Organic,1 kg,Fresh farm tomatoes,100`}
+                        placeholder={`Paste CSV from ChatGPT here...\n\nExample:\ntitle,price,category,subcategory,unit,description,store\nApple,180,Fruits,Fresh Fruits,1 kg,Crisp sweet apples,Super Market\nTomato,35,Vegetables,Organic,1 kg,Fresh country tomatoes,Grocery Store`}
                         rows={10}
                         className="w-full font-mono text-xs p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-y"
                     />
@@ -328,7 +366,10 @@ export default function BulkImportProducts() {
                         Prompt to ask ChatGPT on Mobile:
                     </div>
                     <p className="font-mono bg-gray-50 dark:bg-gray-900 p-2 rounded text-[10px] select-all leading-relaxed">
-                        "Give me a list of 20 grocery products in CSV format with columns: title, price, category, subcategory, unit, description, stock. No image links needed."
+                        "Give me a list of 20 grocery products in CSV format with columns: title, price, category, subcategory, unit, description, store. No image links needed."
+                    </p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 pt-1">
+                        💡 Note: Stock is automatically set to always in-stock (stock is not needed in the CSV).
                     </p>
                 </div>
             </div>

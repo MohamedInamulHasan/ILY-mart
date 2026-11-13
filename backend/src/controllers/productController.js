@@ -7,6 +7,7 @@ export const invalidateProductCache = () => {
 };
 import mongoose from 'mongoose';
 import Product from '../models/Product.js';
+import Store from '../models/Store.js';
 import { getIO } from '../socket.js';
 import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
 
@@ -362,7 +363,7 @@ function parseSimpleCSV(content) {
 
     const firstRow = parseRow(lines[0]);
     const isHeader = firstRow.some(col =>
-        ['title', 'name', 'price', 'category', 'subcategory', 'sub_category', 'unit', 'description', 'stock'].includes(col.toLowerCase())
+        ['title', 'name', 'price', 'category', 'subcategory', 'sub_category', 'unit', 'description', 'stock', 'store', 'store_name', 'storename'].includes(col.toLowerCase())
     );
 
     let headers;
@@ -371,7 +372,7 @@ function parseSimpleCSV(content) {
         headers = firstRow.map(h => h.toLowerCase().trim());
         dataLines = lines.slice(1);
     } else {
-        headers = ['title', 'price', 'category', 'subcategory', 'unit', 'description', 'stock'];
+        headers = ['title', 'price', 'category', 'subcategory', 'unit', 'description', 'store'];
         dataLines = lines;
     }
 
@@ -397,7 +398,7 @@ function parseSimpleCSV(content) {
 // @access  Private (Admin / Store Admin)
 export const bulkImportProducts = async (req, res, next) => {
     try {
-        const { text, products: incomingProducts } = req.body;
+        const { text, products: incomingProducts, storeId: bodyStoreId } = req.body;
         let items = [];
 
         if (Array.isArray(incomingProducts) && incomingProducts.length > 0) {
@@ -424,6 +425,17 @@ export const bulkImportProducts = async (req, res, next) => {
         const isStoreAdmin = roles.includes('store_admin');
         const forcedStoreId = isStoreAdmin ? req.user.storeId : null;
 
+        // Fetch all existing stores to match store names from CSV
+        const storeMap = new Map();
+        try {
+            const allStores = await Store.find({}).select('_id name');
+            allStores.forEach(s => {
+                if (s.name) storeMap.set(s.name.toLowerCase().trim(), s._id);
+            });
+        } catch (storeLookupErr) {
+            console.warn('Could not load stores for lookup:', storeLookupErr.message);
+        }
+
         const defaultPlaceholderImage = 'https://placehold.co/400x400/e2e8f0/64748b?text=Product';
         const docsToInsert = [];
 
@@ -442,10 +454,20 @@ export const bulkImportProducts = async (req, res, next) => {
                 : [];
             const unit = (item.unit || item.weight || '').trim();
             const description = (item.description || title).trim();
-            const rawStock = parseInt((item.stock || '50').toString().replace(/[^0-9]/g, ''), 10);
-            const stock = !isNaN(rawStock) ? rawStock : 50;
+
+            // Stock is completely optional: default to 999 so items are always available
+            const rawStock = item.stock !== undefined && item.stock !== ''
+                ? parseInt(item.stock.toString().replace(/[^0-9]/g, ''), 10)
+                : 999;
+            const stock = !isNaN(rawStock) ? rawStock : 999;
+
             const image = (item.image || '').trim() || defaultPlaceholderImage;
-            const storeId = forcedStoreId || item.storeId || null;
+
+            // Resolve store: CSV row store name > body storeId > forced store admin storeId
+            const rowStoreName = (item.store || item.store_name || item.storeName || '').toString().trim().toLowerCase();
+            let matchedStoreId = rowStoreName && storeMap.has(rowStoreName) ? storeMap.get(rowStoreName) : null;
+            if (!matchedStoreId && item.storeId) matchedStoreId = item.storeId;
+            const finalStoreId = forcedStoreId || matchedStoreId || bodyStoreId || null;
 
             docsToInsert.push({
                 title,
@@ -458,7 +480,7 @@ export const bulkImportProducts = async (req, res, next) => {
                 image,
                 images: [image],
                 isAvailable: true,
-                storeId: storeId ? new mongoose.Types.ObjectId(storeId) : undefined
+                storeId: finalStoreId ? new mongoose.Types.ObjectId(finalStoreId) : undefined
             });
         }
 
