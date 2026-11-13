@@ -9,7 +9,6 @@ import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import { getIO } from '../socket.js';
 import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
-import { processProductsBatch, parseCSV } from '../../scripts/bulk-upload-products.js';
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -161,6 +160,13 @@ export const createProduct = async (req, res, next) => {
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
         if (roles.includes('store_admin')) {
             req.body.storeId = req.user.storeId;
+        }
+
+        if (!req.body.image) {
+            req.body.image = 'https://placehold.co/400x400/e2e8f0/64748b?text=Product';
+        }
+        if (!req.body.images || req.body.images.length === 0) {
+            req.body.images = [req.body.image];
         }
 
         const product = await Product.create(req.body);
@@ -324,7 +330,69 @@ export const deleteProduct = async (req, res, next) => {
     }
 };
 
-// @desc    Bulk Import Products from CSV or JSON text (with auto image fetch & Cloudinary upload)
+// Simple CSV parser for product bulk upload (no external dependencies)
+function parseSimpleCSV(content) {
+    if (!content || typeof content !== 'string') return [];
+    const lines = content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return [];
+
+    const parseRow = (line) => {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (ch === ',' && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    };
+
+    const firstRow = parseRow(lines[0]);
+    const isHeader = firstRow.some(col =>
+        ['title', 'name', 'price', 'category', 'unit', 'description', 'stock'].includes(col.toLowerCase())
+    );
+
+    let headers;
+    let dataLines;
+    if (isHeader) {
+        headers = firstRow.map(h => h.toLowerCase().trim());
+        dataLines = lines.slice(1);
+    } else {
+        headers = ['title', 'price', 'category', 'unit', 'description', 'stock'];
+        dataLines = lines;
+    }
+
+    const items = [];
+    for (const line of dataLines) {
+        const cols = parseRow(line);
+        if (cols.length === 0 || !cols.some(c => c.length > 0)) continue;
+        const obj = {};
+        headers.forEach((h, idx) => {
+            if (cols[idx] !== undefined) {
+                obj[h] = cols[idx];
+            }
+        });
+        if (obj.title || obj.name) {
+            items.push(obj);
+        }
+    }
+    return items;
+}
+
+// @desc    Bulk Import Products from CSV or JSON text (Direct DB import - No AI, No auto images)
 // @route   POST /api/products/bulk-import
 // @access  Private (Admin / Store Admin)
 export const bulkImportProducts = async (req, res, next) => {
@@ -340,7 +408,7 @@ export const bulkImportProducts = async (req, res, next) => {
                 const parsed = JSON.parse(trimmed);
                 items = Array.isArray(parsed) ? parsed : [parsed];
             } else {
-                items = parseCSV(trimmed);
+                items = parseSimpleCSV(trimmed);
             }
         }
 
@@ -356,15 +424,62 @@ export const bulkImportProducts = async (req, res, next) => {
         const isStoreAdmin = roles.includes('store_admin');
         const forcedStoreId = isStoreAdmin ? req.user.storeId : null;
 
-        const summary = await processProductsBatch(items, process.cwd(), forcedStoreId);
+        const defaultPlaceholderImage = 'https://placehold.co/400x400/e2e8f0/64748b?text=Product';
+        const docsToInsert = [];
+
+        for (const item of items) {
+            const title = (item.title || item.name || '').trim();
+            if (!title) continue;
+
+            const rawPrice = (item.price || '').toString().replace(/[^0-9.]/g, '');
+            const price = parseFloat(rawPrice);
+            if (isNaN(price)) continue;
+
+            const category = (item.category || 'Grocery').trim();
+            const unit = (item.unit || item.weight || '').trim();
+            const description = (item.description || title).trim();
+            const rawStock = parseInt((item.stock || '50').toString().replace(/[^0-9]/g, ''), 10);
+            const stock = !isNaN(rawStock) ? rawStock : 50;
+            const image = (item.image || '').trim() || defaultPlaceholderImage;
+            const storeId = forcedStoreId || item.storeId || null;
+
+            docsToInsert.push({
+                title,
+                price,
+                category,
+                unit,
+                description,
+                stock,
+                image,
+                images: [image],
+                isAvailable: true,
+                storeId: storeId ? new mongoose.Types.ObjectId(storeId) : undefined
+            });
+        }
+
+        if (docsToInsert.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No valid products to insert. Please ensure each row has title and price.'
+            });
+        }
+
+        const inserted = await Product.insertMany(docsToInsert);
 
         invalidateProductCache();
-        getIO().emit('product:updated');
+        try {
+            getIO().emit('product:updated');
+        } catch (e) {
+            // Ignore socket warning
+        }
 
         res.status(200).json({
             success: true,
-            message: `Successfully imported ${summary.inserted} of ${summary.total} products`,
-            data: summary
+            message: `Successfully imported ${inserted.length} of ${items.length} products`,
+            data: {
+                inserted: inserted.length,
+                total: items.length
+            }
         });
     } catch (error) {
         console.error('Error in bulkImportProducts:', error);
@@ -416,54 +531,6 @@ export const updateProductsOrder = async (req, res, next) => {
         invalidateProductCache();
         getIO().emit('product:updated');
     } catch (error) {
-        next(error);
-    }
-};
-
-// @desc    Bulk Import Products from CSV or JSON text (with auto image fetch & Cloudinary upload)
-// @route   POST /api/products/bulk-import
-// @access  Private (Admin / Store Admin)
-export const bulkImportProducts = async (req, res, next) => {
-    try {
-        const { text, products: incomingProducts } = req.body;
-        let items = [];
-
-        if (Array.isArray(incomingProducts) && incomingProducts.length > 0) {
-            items = incomingProducts;
-        } else if (typeof text === 'string' && text.trim().length > 0) {
-            const trimmed = text.trim();
-            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-                const parsed = JSON.parse(trimmed);
-                items = Array.isArray(parsed) ? parsed : [parsed];
-            } else {
-                items = parseCSV(trimmed);
-            }
-        }
-
-        if (!items || items.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'No valid products found. Please provide CSV text or products list.'
-            });
-        }
-
-        // Store admin restriction
-        const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        const isStoreAdmin = roles.includes('store_admin');
-        const forcedStoreId = isStoreAdmin ? req.user.storeId : null;
-
-        const summary = await processProductsBatch(items, process.cwd(), forcedStoreId);
-
-        invalidateProductCache();
-        getIO().emit('product:updated');
-
-        res.status(200).json({
-            success: true,
-            message: `Successfully imported ${summary.inserted} of ${summary.total} products`,
-            data: summary
-        });
-    } catch (error) {
-        console.error('Error in bulkImportProducts:', error);
         next(error);
     }
 };

@@ -26,7 +26,8 @@ const productSchema = new mongoose.Schema({
     },
     image: {
         type: String,
-        required: [true, 'Please add a product image']
+        default: 'https://placehold.co/400x400/e2e8f0/64748b?text=Product',
+        trim: true
     },
     images: [{
         type: String

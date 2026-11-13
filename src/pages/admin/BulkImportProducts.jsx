@@ -1,21 +1,97 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Upload, FileText, Sparkles, CheckCircle2, AlertCircle, Copy, Loader2, Info } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, CheckCircle2, AlertCircle, Copy, Loader2, Info, PlusCircle } from 'lucide-react';
 import { apiService } from '../../utils/api';
 import { safeNavigateBack } from '../../utils/useBackButton';
 
-const SAMPLE_CSV = `title,price,category,unit,description
-Fresh Apple,180,Fruits,1 kg,Crisp naturally sweet apples
-Country Tomato,35,Vegetables,1 kg,Fresh farm harvested red tomatoes
-Toor Dal,140,Grocery,1 kg,High quality unpolished dal
-Farm Fresh Milk,35,Dairy,500 ml,Pure pasteurized milk
-Robusta Banana,45,Fruits,1 kg,Naturally ripened yellow bananas`;
+const SAMPLE_CSV = `title,price,category,unit,description,stock
+Fresh Apple,180,Fruits,1 kg,Crisp naturally sweet apples,50
+Country Tomato,35,Vegetables,1 kg,Fresh farm harvested red tomatoes,100
+Toor Dal,140,Grocery,1 kg,High quality unpolished dal,50
+Farm Fresh Milk,35,Dairy,500 ml,Pure pasteurized milk,40
+Robusta Banana,45,Fruits,1 kg,Naturally ripened yellow bananas,60`;
+
+// Client-side CSV parser to support direct importing and fallback
+function parseClientCSV(text) {
+    if (!text || typeof text !== 'string') return [];
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return [];
+
+    const parseRow = (line) => {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (ch === ',' && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    };
+
+    const firstRow = parseRow(lines[0]);
+    const isHeader = firstRow.some(col =>
+        ['title', 'name', 'price', 'category', 'unit', 'description', 'stock'].includes(col.toLowerCase())
+    );
+
+    let headers;
+    let dataLines;
+    if (isHeader) {
+        headers = firstRow.map(h => h.toLowerCase().trim());
+        dataLines = lines.slice(1);
+    } else {
+        headers = ['title', 'price', 'category', 'unit', 'description', 'stock'];
+        dataLines = lines;
+    }
+
+    const items = [];
+    for (const line of dataLines) {
+        const cols = parseRow(line);
+        if (cols.length === 0 || !cols.some(c => c.length > 0)) continue;
+        const obj = {};
+        headers.forEach((h, idx) => {
+            if (cols[idx] !== undefined) {
+                obj[h] = cols[idx];
+            }
+        });
+
+        const title = (obj.title || obj.name || '').trim();
+        const rawPrice = (obj.price || '').toString().replace(/[^0-9.]/g, '');
+        const price = parseFloat(rawPrice);
+
+        if (title && !isNaN(price)) {
+            const rawStock = parseInt((obj.stock || '50').toString().replace(/[^0-9]/g, ''), 10);
+            items.push({
+                title,
+                price,
+                category: (obj.category || 'Grocery').trim(),
+                unit: (obj.unit || obj.weight || '').trim(),
+                description: (obj.description || title).trim(),
+                stock: !isNaN(rawStock) ? rawStock : 50,
+                isAvailable: true
+            });
+        }
+    }
+    return items;
+}
 
 export default function BulkImportProducts() {
     const navigate = useNavigate();
     const [csvText, setCsvText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [progressText, setProgressText] = useState('');
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
 
@@ -45,34 +121,82 @@ export default function BulkImportProducts() {
     };
 
     const handleImport = async () => {
-        if (!csvText.trim()) {
+        const trimmed = csvText.trim();
+        if (!trimmed) {
             setError('Please paste product details or select a CSV file first.');
+            return;
+        }
+
+        const parsedProducts = parseClientCSV(trimmed);
+        if (parsedProducts.length === 0) {
+            setError('No valid products found. Ensure each line has a title and price.');
             return;
         }
 
         setIsLoading(true);
         setError(null);
         setResult(null);
+        setProgressText('Importing products to database...');
 
         try {
-            const res = await apiService.bulkImportProducts({ text: csvText.trim() });
-            const data = res?.data || res;
-            if (data.success) {
-                setResult(data.data || { inserted: 0, total: 0 });
+            // First attempt: Call fast bulk-import API
+            let importedCount = 0;
+            let usedFallback = false;
+
+            try {
+                const res = await apiService.bulkImportProducts({
+                    text: trimmed,
+                    products: parsedProducts
+                });
+                const data = res?.data || res;
+                if (data?.success) {
+                    importedCount = data?.data?.inserted || parsedProducts.length;
+                } else {
+                    usedFallback = true;
+                }
+            } catch (apiErr) {
+                // If endpoint returns 404 (e.g. backend redeploying), seamlessly fallback to direct creation
+                if (apiErr?.response?.status === 404 || !apiErr?.response) {
+                    console.log('Bulk endpoint not yet active, using direct product creation fallback...');
+                    usedFallback = true;
+                } else {
+                    throw apiErr;
+                }
+            }
+
+            // Fallback: create products one by one or in small batches
+            if (usedFallback) {
+                let successCount = 0;
+                for (let i = 0; i < parsedProducts.length; i++) {
+                    const prod = parsedProducts[i];
+                    setProgressText(`Importing ${i + 1} of ${parsedProducts.length}: ${prod.title}...`);
+                    try {
+                        await apiService.createProduct(prod);
+                        successCount++;
+                    } catch (itemErr) {
+                        console.warn(`Failed to import item ${prod.title}:`, itemErr);
+                    }
+                }
+                importedCount = successCount;
+            }
+
+            if (importedCount > 0) {
+                setResult({ inserted: importedCount, total: parsedProducts.length });
                 setCsvText('');
             } else {
-                setError(data.message || 'Failed to import products');
+                setError('Failed to import products. Please check the format and try again.');
             }
         } catch (err) {
             console.error('Bulk import error:', err);
-            setError(err?.response?.data?.message || err?.message || 'Error uploading products');
+            setError(err?.response?.data?.message || err?.message || 'Error importing products');
         } finally {
             setIsLoading(false);
+            setProgressText('');
         }
     };
 
     const rowCount = csvText.trim()
-        ? csvText.trim().split(/\r?\n/).filter(line => line.trim().length > 0).length - 1
+        ? parseClientCSV(csvText.trim()).length
         : 0;
 
     return (
@@ -87,25 +211,12 @@ export default function BulkImportProducts() {
                 </button>
                 <div className="text-center">
                     <h1 className="text-base font-bold text-gray-900 dark:text-white leading-tight">Bulk Product Import</h1>
-                    <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300">Auto-Cloudinary & DB</p>
+                    <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300">Direct Database Import</p>
                 </div>
                 <div className="w-10" />
             </div>
 
             <div className="pt-20 px-4 max-w-2xl mx-auto space-y-4">
-                {/* Feature highlight banner */}
-                <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-green-500/10 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-500/30 rounded-2xl p-3.5 flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
-                        <Sparkles size={16} />
-                    </div>
-                    <div className="text-xs text-gray-700 dark:text-gray-200 space-y-1">
-                        <p className="font-bold text-emerald-800 dark:text-emerald-300">Auto-Photo & Cloudinary Upload</p>
-                        <p className="leading-relaxed">
-                            No image links needed! The server automatically finds high-quality product photos, uploads them to your Cloudinary, and saves them to MongoDB.
-                        </p>
-                    </div>
-                </div>
-
                 {/* Main Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -135,7 +246,7 @@ export default function BulkImportProducts() {
                     <textarea
                         value={csvText}
                         onChange={(e) => setCsvText(e.target.value)}
-                        placeholder={`Paste CSV from ChatGPT here...\n\nExample:\ntitle,price,category,unit,description\nApple,180,Fruits,1 kg,Crisp and sweet\nTomato,35,Vegetables,1 kg,Fresh country tomatoes`}
+                        placeholder={`Paste CSV from ChatGPT here...\n\nExample:\ntitle,price,category,unit,description,stock\nApple,180,Fruits,1 kg,Crisp naturally sweet apples,50\nTomato,35,Vegetables,1 kg,Fresh farm tomatoes,100`}
                         rows={10}
                         className="w-full font-mono text-xs p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-y"
                     />
@@ -143,7 +254,7 @@ export default function BulkImportProducts() {
                     {/* File upload alternative */}
                     <div className="flex items-center justify-between pt-1">
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {rowCount > 0 ? `Detected ~${rowCount} products` : 'Or select a .csv file:'}
+                            {rowCount > 0 ? `Detected ~${rowCount} valid products` : 'Or select a .csv file:'}
                         </span>
                         <label className="cursor-pointer text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-900/40 px-3 py-1.5 rounded-lg flex items-center gap-1.5 active:scale-95 transition-transform">
                             <Upload size={14} />
@@ -174,11 +285,11 @@ export default function BulkImportProducts() {
                             <span>Bulk Import Complete!</span>
                         </div>
                         <p className="text-xs">
-                            Successfully added <strong>{result.inserted}</strong> of <strong>{result.total}</strong> products to your store. All photos uploaded to Cloudinary.
+                            Successfully added <strong>{result.inserted}</strong> of <strong>{result.total}</strong> products directly to the store database.
                         </p>
                         <button
                             onClick={() => navigate('/shop')}
-                            className="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg mt-2 inline-block"
+                            className="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg mt-2 inline-block shadow-sm"
                         >
                             View in Shop →
                         </button>
@@ -189,16 +300,16 @@ export default function BulkImportProducts() {
                 <button
                     onClick={handleImport}
                     disabled={isLoading || !csvText.trim()}
-                    className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold rounded-2xl shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+                    className="w-full py-3.5 px-4 bg-[#2E5A2E] hover:bg-[#1a3d1a] text-white font-bold rounded-2xl shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
                 >
                     {isLoading ? (
                         <>
                             <Loader2 size={18} className="animate-spin" />
-                            <span>Uploading to Cloudinary & Saving to DB...</span>
+                            <span>{progressText || 'Importing products to database...'}</span>
                         </>
                     ) : (
                         <>
-                            <Sparkles size={18} />
+                            <PlusCircle size={18} />
                             <span>Import Products Now</span>
                         </>
                     )}
@@ -210,8 +321,8 @@ export default function BulkImportProducts() {
                         <Info size={13} />
                         Prompt to ask ChatGPT on Mobile:
                     </div>
-                    <p className="font-mono bg-gray-50 dark:bg-gray-900 p-2 rounded text-[10px] select-all">
-                        "Give me a list of 20 grocery products in CSV format with columns: title, price, category, unit, description. No image links needed."
+                    <p className="font-mono bg-gray-50 dark:bg-gray-900 p-2 rounded text-[10px] select-all leading-relaxed">
+                        "Give me a list of 20 grocery products in CSV format with columns: title, price, category, unit, description, stock. No image links needed."
                     </p>
                 </div>
             </div>
