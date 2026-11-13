@@ -8,7 +8,8 @@ import {
     getProductImage,
     updateProductsOrder,
     bulkImportProducts,
-    bulkDeleteProducts
+    bulkDeleteProducts,
+    dedupProducts
 } from '../controllers/productController.js';
 import { protect, adminOnly, optionalAuth, adminOrStoreAdmin } from '../middleware/authMiddleware.js';
 
@@ -20,6 +21,7 @@ router.route('/')
 
 router.post('/bulk-import', protect, adminOrStoreAdmin, bulkImportProducts);
 router.post('/bulk-delete', protect, adminOrStoreAdmin, bulkDeleteProducts);
+router.post('/dedup', protect, adminOrStoreAdmin, dedupProducts);
 
 router.put('/reorder', protect, adminOrStoreAdmin, updateProductsOrder);
 

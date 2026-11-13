@@ -131,6 +131,7 @@ export const apiService = {
     updateProduct: (id, data) => api.put(`/products/${id}`, data),
     deleteProduct: (id) => api.delete(`/products/${id}`),
     bulkDeleteProducts: (ids) => api.post('/products/bulk-delete', { ids }),
+    dedupProducts: () => api.post('/products/dedup'),
     updateProductsOrder: (orderedIds) => api.put('/products/reorder', { orderedIds }),
 
     // Stores

@@ -372,6 +372,44 @@ export const bulkDeleteProducts = async (req, res, next) => {
     }
 };
 
+// @desc    Remove duplicate products (keep oldest copy of each title+storeId)
+// @route   POST /api/products/dedup
+// @access  Private (Admin)
+export const dedupProducts = async (req, res, next) => {
+    try {
+        // Find all duplicates grouped by title + storeId
+        const dupes = await Product.aggregate([
+            { $group: {
+                _id: { title: { $toLower: '$title' }, storeId: '$storeId' },
+                ids: { $push: '$_id' },
+                count: { $sum: 1 }
+            }},
+            { $match: { count: { $gt: 1 } } }
+        ]);
+
+        let totalRemoved = 0;
+        for (const group of dupes) {
+            // Keep the first (oldest) product, delete the rest
+            const idsToDelete = group.ids.slice(1);
+            const delResult = await Product.deleteMany({ _id: { $in: idsToDelete } });
+            totalRemoved += delResult.deletedCount;
+        }
+
+        if (totalRemoved > 0) {
+            invalidateProductCache();
+            try { getIO().emit('product:updated'); } catch (e) {}
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Removed ${totalRemoved} duplicate product(s) from ${dupes.length} group(s).`,
+            data: { removed: totalRemoved, groups: dupes.length }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Simple CSV parser for product bulk upload (no external dependencies)
 function parseSimpleCSV(content) {
     if (!content || typeof content !== 'string') return [];
@@ -532,7 +570,29 @@ export const bulkImportProducts = async (req, res, next) => {
             });
         }
 
-        const inserted = await Product.insertMany(docsToInsert);
+        // Deduplicate: skip products that already exist with the same title+storeId
+        const storeIds = [...new Set(docsToInsert.map(d => d.storeId?.toString()).filter(Boolean))];
+        const existingProducts = storeIds.length > 0
+            ? await Product.find({ storeId: { $in: storeIds } }).select('title storeId').lean()
+            : [];
+        const existingSet = new Set(
+            existingProducts.map(p => `${(p.title || '').toLowerCase().trim()}::${p.storeId?.toString() || ''}`)
+        );
+        const uniqueDocs = docsToInsert.filter(d => {
+            const key = `${(d.title || '').toLowerCase().trim()}::${d.storeId?.toString() || ''}`;
+            return !existingSet.has(key);
+        });
+        const skippedCount = docsToInsert.length - uniqueDocs.length;
+
+        if (uniqueDocs.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: `All ${docsToInsert.length} products already exist in the store. Nothing new to import.`,
+                data: { inserted: 0, skipped: skippedCount, total: items.length }
+            });
+        }
+
+        const inserted = await Product.insertMany(uniqueDocs);
 
         invalidateProductCache();
         try {
@@ -543,9 +603,10 @@ export const bulkImportProducts = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            message: `Successfully imported ${inserted.length} of ${items.length} products`,
+            message: `Successfully imported ${inserted.length} of ${items.length} products` + (skippedCount > 0 ? ` (${skippedCount} duplicates skipped)` : ''),
             data: {
                 inserted: inserted.length,
+                skipped: skippedCount,
                 total: items.length
             }
         });

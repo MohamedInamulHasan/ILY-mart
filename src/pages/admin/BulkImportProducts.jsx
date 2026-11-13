@@ -117,6 +117,25 @@ export default function BulkImportProducts() {
     const [progressText, setProgressText] = useState('');
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
+    const [isDedupRunning, setIsDedupRunning] = useState(false);
+
+    const handleDedup = async () => {
+        if (!window.confirm('Remove duplicate products from all stores? This keeps the oldest copy of each product.')) return;
+        setIsDedupRunning(true);
+        setError(null);
+        try {
+            const res = await apiService.dedupProducts();
+            if (res?.success) {
+                alert(res.message || `Removed ${res.data?.removed || 0} duplicates.`);
+            } else {
+                throw new Error(res?.message || 'Dedup failed');
+            }
+        } catch (err) {
+            setError(err?.message || 'Failed to remove duplicates.');
+        } finally {
+            setIsDedupRunning(false);
+        }
+    };
 
     const handlePasteClipboard = async () => {
         try {
@@ -178,7 +197,11 @@ export default function BulkImportProducts() {
             }
 
             if (importedCount > 0) {
-                setResult({ inserted: importedCount, total: parsedProducts.length });
+                const skipped = res?.data?.skipped || 0;
+                setResult({ inserted: importedCount, total: parsedProducts.length, skipped });
+                setCsvText('');
+            } else if (res?.data?.skipped > 0) {
+                setResult({ inserted: 0, total: parsedProducts.length, skipped: res.data.skipped });
                 setCsvText('');
             } else {
                 setError('Failed to import products. Please check the format and try again.');
@@ -303,6 +326,7 @@ export default function BulkImportProducts() {
                         </div>
                         <p className="text-xs">
                             Successfully added <strong>{result.inserted}</strong> of <strong>{result.total}</strong> products directly to the store database.
+                            {result.skipped > 0 && <> (<strong>{result.skipped}</strong> duplicates skipped)</>}
                         </p>
                         <button
                             onClick={() => navigate('/shop')}
@@ -328,6 +352,25 @@ export default function BulkImportProducts() {
                         <>
                             <PlusCircle size={18} />
                             <span>Import Products Now</span>
+                        </>
+                    )}
+                </button>
+
+                {/* Clean Duplicates Button */}
+                <button
+                    onClick={handleDedup}
+                    disabled={isDedupRunning}
+                    className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                    {isDedupRunning ? (
+                        <>
+                            <Loader2 size={18} className="animate-spin" />
+                            <span>Cleaning duplicates...</span>
+                        </>
+                    ) : (
+                        <>
+                            <AlertCircle size={18} />
+                            <span>🧹 Clean Duplicate Products</span>
                         </>
                     )}
                 </button>
