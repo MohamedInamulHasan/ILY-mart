@@ -16,6 +16,7 @@ import News from './pages/News';
 import Services from './pages/Services';
 import SavedProducts from './pages/SavedProducts';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import BulkImportProducts from './pages/admin/BulkImportProducts';
 import DeliveryDashboard from './pages/admin/DeliveryDashboard';
 import DeliveryActiveOrder from './pages/admin/DeliveryActiveOrder';
 import CategoryProducts from './pages/CategoryProducts';
@@ -454,6 +455,14 @@ function App() {
                                         element={
                                             <PrivateRoute adminOnly={true}>
                                                 <AdminOrDeliveryDashboard />
+                                            </PrivateRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/admin/bulk-import"
+                                        element={
+                                            <PrivateRoute adminOnly={true}>
+                                                <BulkImportProducts />
                                             </PrivateRoute>
                                         }
                                     />

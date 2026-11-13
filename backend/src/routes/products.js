@@ -6,7 +6,8 @@ import {
     updateProduct,
     deleteProduct,
     getProductImage,
-    updateProductsOrder
+    updateProductsOrder,
+    bulkImportProducts
 } from '../controllers/productController.js';
 import { protect, adminOnly, optionalAuth, adminOrStoreAdmin } from '../middleware/authMiddleware.js';
 
@@ -15,6 +16,8 @@ const router = express.Router();
 router.route('/')
     .get(optionalAuth, getProducts)
     .post(protect, adminOrStoreAdmin, createProduct);
+
+router.post('/bulk-import', protect, adminOrStoreAdmin, bulkImportProducts);
 
 router.put('/reorder', protect, adminOrStoreAdmin, updateProductsOrder);
 

@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import { getIO } from '../socket.js';
 import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
+import { processProductsBatch, parseCSV } from '../../scripts/bulk-upload-products.js';
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -323,6 +324,54 @@ export const deleteProduct = async (req, res, next) => {
     }
 };
 
+// @desc    Bulk Import Products from CSV or JSON text (with auto image fetch & Cloudinary upload)
+// @route   POST /api/products/bulk-import
+// @access  Private (Admin / Store Admin)
+export const bulkImportProducts = async (req, res, next) => {
+    try {
+        const { text, products: incomingProducts } = req.body;
+        let items = [];
+
+        if (Array.isArray(incomingProducts) && incomingProducts.length > 0) {
+            items = incomingProducts;
+        } else if (typeof text === 'string' && text.trim().length > 0) {
+            const trimmed = text.trim();
+            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                const parsed = JSON.parse(trimmed);
+                items = Array.isArray(parsed) ? parsed : [parsed];
+            } else {
+                items = parseCSV(trimmed);
+            }
+        }
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No valid products found. Please provide CSV text or products list.'
+            });
+        }
+
+        // Store admin restriction
+        const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
+        const isStoreAdmin = roles.includes('store_admin');
+        const forcedStoreId = isStoreAdmin ? req.user.storeId : null;
+
+        const summary = await processProductsBatch(items, process.cwd(), forcedStoreId);
+
+        invalidateProductCache();
+        getIO().emit('product:updated');
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully imported ${summary.inserted} of ${summary.total} products`,
+            data: summary
+        });
+    } catch (error) {
+        console.error('Error in bulkImportProducts:', error);
+        next(error);
+    }
+};
+
 // @desc    Update products order
 // @route   PUT /api/products/reorder
 // @access  Private/Admin
@@ -367,6 +416,54 @@ export const updateProductsOrder = async (req, res, next) => {
         invalidateProductCache();
         getIO().emit('product:updated');
     } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Bulk Import Products from CSV or JSON text (with auto image fetch & Cloudinary upload)
+// @route   POST /api/products/bulk-import
+// @access  Private (Admin / Store Admin)
+export const bulkImportProducts = async (req, res, next) => {
+    try {
+        const { text, products: incomingProducts } = req.body;
+        let items = [];
+
+        if (Array.isArray(incomingProducts) && incomingProducts.length > 0) {
+            items = incomingProducts;
+        } else if (typeof text === 'string' && text.trim().length > 0) {
+            const trimmed = text.trim();
+            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                const parsed = JSON.parse(trimmed);
+                items = Array.isArray(parsed) ? parsed : [parsed];
+            } else {
+                items = parseCSV(trimmed);
+            }
+        }
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No valid products found. Please provide CSV text or products list.'
+            });
+        }
+
+        // Store admin restriction
+        const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
+        const isStoreAdmin = roles.includes('store_admin');
+        const forcedStoreId = isStoreAdmin ? req.user.storeId : null;
+
+        const summary = await processProductsBatch(items, process.cwd(), forcedStoreId);
+
+        invalidateProductCache();
+        getIO().emit('product:updated');
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully imported ${summary.inserted} of ${summary.total} products`,
+            data: summary
+        });
+    } catch (error) {
+        console.error('Error in bulkImportProducts:', error);
         next(error);
     }
 };

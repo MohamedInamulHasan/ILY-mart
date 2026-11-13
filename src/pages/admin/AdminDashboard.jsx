@@ -782,6 +782,7 @@ const SidebarItem = ({ icon, label, id, active, onClick, hidden = false }) => {
 // --- Sub-Components ---
 
 const ProductManagement = () => {
+    const navigate = useNavigate();
     const { refreshData } = useData();
 
     // NEW HOOKS
@@ -1050,21 +1051,32 @@ const ProductManagement = () => {
                     {view === 'list' && <ShoppingBag className="text-[#2E5A2E] dark:text-[#7CA90E]" size={20} />}
                     {view === 'list' ? t('Product Inventory') : editingProduct ? t('Edit Product') : t('Add New Product')}
                 </h2>
-                <button
-                    onClick={() => {
-                        if (view === 'list') {
-                            setEditingProduct(null);
-                            setFormData({ title: '', price: '', category: '', subcategory: [], storeId: '', description: '', image: '', sliderImages: [], stock: 0, unit: '' });
-                            setView('form');
-                        } else {
-                            setView('list');
-                        }
-                    }}
-                    className="px-4 py-2 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-2 text-sm font-bold whitespace-nowrap shadow-sm"
-                >
-                    {view === 'list' ? <Plus size={18} /> : <List size={18} />}
-                    {view === 'list' ? t('Add Product') : t('View List')}
-                </button>
+                <div className="flex items-center gap-2">
+                    {view === 'list' && (
+                        <button
+                            onClick={() => navigate('/admin/bulk-import')}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 text-sm font-bold whitespace-nowrap shadow-sm"
+                        >
+                            <Upload size={18} />
+                            {t('Bulk Import')}
+                        </button>
+                    )}
+                    <button
+                        onClick={() => {
+                            if (view === 'list') {
+                                setEditingProduct(null);
+                                setFormData({ title: '', price: '', category: '', subcategory: [], storeId: '', description: '', image: '', sliderImages: [], stock: 0, unit: '' });
+                                setView('form');
+                            } else {
+                                setView('list');
+                            }
+                        }}
+                        className="px-4 py-2 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-2 text-sm font-bold whitespace-nowrap shadow-sm"
+                    >
+                        {view === 'list' ? <Plus size={18} /> : <List size={18} />}
+                        {view === 'list' ? t('Add Product') : t('View List')}
+                    </button>
+                </div>
             </div>
 
             {view === 'list' ? (
