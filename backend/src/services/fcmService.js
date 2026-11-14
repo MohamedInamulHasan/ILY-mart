@@ -103,22 +103,25 @@ export const sendOrderPushNotification = async (userId, orderId, status) => {
 
         const { title, body } = getNotificationContent(status);
 
-        // Build the multicast message
+        // Build the multicast message with full Android background support
         const message = {
             notification: { title, body },
             data: {
                 orderId: orderId ? orderId.toString() : '',
-                status,
+                status: status || '',
                 click_action: 'FLUTTER_NOTIFICATION_CLICK',
                 type: 'order_update'
             },
             android: {
                 notification: {
                     sound: 'default',
-                    priority: 'HIGH',
-                    channelId: 'order_updates'
+                    priority: 'high',
+                    channelId: 'order_updates',
+                    visibility: 'public',
+                    defaultSound: true,
+                    defaultVibrateTimings: true
                 },
-                priority: 'HIGH'
+                priority: 'high'
             },
             tokens
         };

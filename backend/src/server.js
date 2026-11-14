@@ -10,6 +10,7 @@ import errorHandler from './middleware/errorHandler.js';
 import connectDB from './config/database.js';
 import axios from 'axios'; // For Keep-Warm mechanism
 import http from 'http';
+import { getApps } from 'firebase-admin/app';
 import { init as initSocket } from './socket.js';
 import { initCronJobs } from './cron/dailyRewards.js';
 
@@ -83,12 +84,25 @@ app.get('/api/health', async (req, res) => {
             environment: {
                 node_env: process.env.NODE_ENV,
                 has_mongo_uri: !!process.env.MONGODB_URI,
-                has_jwt_secret: !!process.env.JWT_SECRET
+                has_jwt_secret: !!process.env.JWT_SECRET,
+                has_firebase_service_account_env: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+                firebase_admin_initialized: getApps().length > 0
             }
         });
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
+});
+
+// FCM Status Check Endpoint
+app.get('/api/fcm-check', (req, res) => {
+    res.json({
+        success: true,
+        firebaseAdminInitialized: getApps().length > 0,
+        hasEnvVar: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+        envVarLength: process.env.FIREBASE_SERVICE_ACCOUNT ? process.env.FIREBASE_SERVICE_ACCOUNT.length : 0,
+        appsCount: getApps().length
+    });
 });
 
 // Server Time Endpoint - Returns current server time for accurate slot calculation
