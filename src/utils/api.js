@@ -200,6 +200,7 @@ export const apiService = {
     getOrders: (params = {}) => {
         const queryParams = new URLSearchParams();
         if (params && params.myOrders) queryParams.append('myOrders', 'true');
+        if (params && params.mobile) queryParams.append('mobile', params.mobile);
         const qs = queryParams.toString();
         return api.get(`/orders${qs ? `?${qs}` : ''}`);
     },

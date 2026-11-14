@@ -46,7 +46,7 @@ export const getUserRoles = (user) => {
         }
     } catch {}
 
-    // 3. Fallback for store owner / admin mobile (9500171980) - only for active matching user
+    // 3. Fallbacks for Admin and Delivery Boy authorized mobile numbers
     const cleanMobile = (user?.mobile || user?.data?.mobile || '').toString().replace(/\D/g, '');
     let cachedMobile = '';
     try {
@@ -54,27 +54,44 @@ export const getUserRoles = (user) => {
         cachedMobile = (cached?.mobile || cached?.data?.mobile || '').toString().replace(/\D/g, '');
     } catch {}
 
-    if (
-        (cleanMobile && (cleanMobile.endsWith('9500171980') || cleanMobile === '9500171980')) ||
-        (user && cachedMobile && (cachedMobile.endsWith('9500171980') || cachedMobile === '9500171980'))
-    ) {
-        set.add('admin');
-    }
-
-    // 4. Fallback for Delivery Boy mobile (9578654411) - ensure delivery_boy role is recognized
-    if (
-        (cleanMobile && (cleanMobile.endsWith('9578654411') || cleanMobile === '9578654411')) ||
-        (user && cachedMobile && (cachedMobile.endsWith('9578654411') || cachedMobile === '9578654411'))
-    ) {
-        set.add('delivery_boy');
-    }
-
-    // Strictly ensure delivery_boy role is ONLY granted to verified delivery numbers
+    const ADMIN_NUMBERS = ['9500171980', '9500171958', '9500171989'];
+    const DELIVERY_NUMBERS = ['9578654411', '9500179180'];
     const effectiveMobile = (cleanMobile || cachedMobile || '').slice(-10);
-    const isDeliveryBoyMobile = ['9578654411', '9500179180'].includes(effectiveMobile);
-    if (!isDeliveryBoyMobile) {
+
+    const isAdminMobile = ADMIN_NUMBERS.includes(effectiveMobile);
+    const isDeliveryBoyMobile = DELIVERY_NUMBERS.includes(effectiveMobile);
+
+    if (isAdminMobile) {
+        set.add('admin');
+    } else if (effectiveMobile) {
+        // Strictly prevent regular users from inheriting admin role
+        set.delete('admin');
+    }
+
+    if (isDeliveryBoyMobile) {
+        set.add('delivery_boy');
+    } else {
+        // Strictly ensure delivery_boy role is ONLY granted to verified delivery numbers
         set.delete('delivery_boy');
         set.delete('deliveryboy');
+    }
+
+    let cachedStoreId = null;
+    let cachedServiceId = null;
+    try {
+        const cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        cachedStoreId = cached?.storeId;
+        cachedServiceId = cached?.serviceId;
+    } catch {}
+
+    const hasStore = Boolean(user?.storeId || user?.data?.storeId || cachedStoreId);
+    if (!hasStore && !isAdminMobile) {
+        set.delete('store_admin');
+    }
+
+    const hasService = Boolean(user?.serviceId || user?.data?.serviceId || cachedServiceId);
+    if (!hasService && !isAdminMobile) {
+        set.delete('service_admin');
     }
 
     const list = Array.from(set);

@@ -262,6 +262,7 @@ export const getOrders = async (req, res, next) => {
 
             if (phone10) {
                 // Strictly return orders placed with THIS active mobile number ONLY.
+                const phoneNum = Number(phone10);
                 const phoneRegex = new RegExp(`${phone10}$`);
                 return {
                     $or: [
@@ -270,7 +271,13 @@ export const getOrders = async (req, res, next) => {
                         { 'shippingAddress.mobile': phone10 },
                         { 'shippingAddress.phone': phone10 },
                         { 'shippingAddress.mobile': '91' + phone10 },
-                        { 'shippingAddress.phone': '91' + phone10 }
+                        { 'shippingAddress.phone': '91' + phone10 },
+                        { 'shippingAddress.mobile': '+91' + phone10 },
+                        { 'shippingAddress.phone': '+91' + phone10 },
+                        ...(Number.isNaN(phoneNum) ? [] : [
+                            { 'shippingAddress.mobile': phoneNum },
+                            { 'shippingAddress.phone': phoneNum }
+                        ])
                     ]
                 };
             }

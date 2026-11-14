@@ -27,11 +27,28 @@ const Orders = () => {
     let fallbackSavedMobile = '';
     try {
         const saved = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
-        fallbackSavedMobile = saved?.mobile || '';
+        fallbackSavedMobile = saved?.mobile || saved?.phone || '';
     } catch {}
 
-    const currentMobile = user?.mobile || user?.phone || fallbackSavedMobile;
-    const { data: orders = [], isLoading: loadingOrders } = useOrders({ myOrders: true, mobile: currentMobile });
+    let userInfoMobile = '';
+    try {
+        const u = JSON.parse(localStorage.getItem('userInfo') || 'null');
+        userInfoMobile = u?.mobile || u?.phone || u?.address?.mobile || '';
+    } catch {}
+
+    const currentMobile = (
+        user?.mobile || 
+        user?.phone || 
+        user?.address?.mobile || 
+        user?.address?.phone || 
+        user?.shippingAddress?.mobile || 
+        fallbackSavedMobile || 
+        userInfoMobile || 
+        ''
+    ).toString();
+
+    const active10DigitMobile = currentMobile ? currentMobile.replace(/\D/g, '').slice(-10) : '';
+    const { data: orders = [], isLoading: loadingOrders } = useOrders({ myOrders: true, mobile: active10DigitMobile });
     const { cartCount } = useCart();
     const { data: stores = [] } = useStores();
     const { mutate: deleteOrder } = useDeleteOrder();
@@ -42,8 +59,6 @@ const Orders = () => {
     
     const [searchQuery, setSearchQuery] = useState('');
 
-
-
     const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, orderId: null });
 
     useEffect(() => {
@@ -51,17 +66,28 @@ const Orders = () => {
         return () => setIsFooterHidden(false);
     }, [deleteConfirmation.isOpen, setIsFooterHidden]);
 
-
-
-    
-
-    const active10DigitMobile = currentMobile ? currentMobile.replace(/\D/g, '').slice(-10) : '';
-
     // Strictly enforce showing orders for this user's mobile number only
     const userOrdersOnly = orders.filter(order => {
-        if (!active10DigitMobile) return true;
-        const orderPhone = (order.shippingAddress?.mobile || order.shippingAddress?.phone || order.phone || '').toString().replace(/\D/g, '').slice(-10);
-        return orderPhone === active10DigitMobile;
+        const orderPhone = (
+            order.shippingAddress?.mobile || 
+            order.shippingAddress?.phone || 
+            order.phone || 
+            order.user?.mobile || 
+            order.user?.phone || 
+            ''
+        ).toString().replace(/\D/g, '').slice(-10);
+
+        if (active10DigitMobile) {
+            return orderPhone === active10DigitMobile;
+        }
+
+        // If no mobile number is known yet, match user ID if available
+        if (user?._id) {
+            const orderUserId = typeof order.user === 'object' ? order.user?._id : order.user;
+            return String(orderUserId) === String(user._id);
+        }
+
+        return false;
     });
 
     const filteredOrders = userOrdersOnly.filter(order => {
@@ -195,8 +221,8 @@ const Orders = () => {
                             </button>
                         </div>
                         <div className="flex flex-col text-center">
-                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{isAdmin ? t('All Orders') : t('My Orders')}</h1>
-                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{isAdmin ? t('Manage & track all orders') : t('Track packages')}</p>
+                            <h1 className="text-[14.5px] font-bold text-gray-900 tracking-tight leading-tight">{t('My Orders')}</h1>
+                            <p className="text-[10px] font-semibold text-gray-700 mt-0.5">{t('Track packages')}</p>
                         </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
                             <button 
@@ -410,7 +436,7 @@ const Orders = () => {
                                     <ShoppingBag size={24} className="text-gray-400" />
                                 </div>
                                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">{t('No orders found')}</h3>
-                                <p className="text-gray-500 dark:text-gray-400 mb-6">{t('Try adjusting your search or filter to find what you\'re looking for.')}</p>
+                                <p className="text-gray-500 dark:text-gray-400 mb-6">{active10DigitMobile ? `${t('No orders placed yet for')} +91 ${active10DigitMobile}` : t('Try adjusting your search or filter to find what you\'re looking for.')}</p>
                                 <Link
                                     to="/"
                                     className="inline-flex items-center px-4 py-2 bg-[#2E5A2E] dark:bg-[#CBF9B2] hover:bg-[#1E3A1E] dark:hover:bg-[#a6d98e] text-white dark:text-gray-900 rounded-xl transition-all duration-300 text-sm font-bold active:scale-95"

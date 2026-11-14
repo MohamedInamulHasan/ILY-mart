@@ -21,7 +21,7 @@ import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
 import api, { apiService } from '../utils/api';
 import { getUserRoles } from '../utils/userHelpers';
 
-const MenuLink = ({ icon, title, to, onClick, isRed = false, disabled = false, badge = null }) => {
+const MenuLink = ({ icon, title, subtitle, to, onClick, isRed = false, disabled = false, badge = null }) => {
     const Wrapper = to && !disabled ? Link : 'button';
     return (
         <Wrapper 
@@ -34,15 +34,22 @@ const MenuLink = ({ icon, title, to, onClick, isRed = false, disabled = false, b
                     : `hover:bg-gray-100/50 dark:hover:bg-gray-800 ${!to ? 'cursor-pointer focus:outline-none' : ''}`
             }`}
         >
-            <div className="flex items-center gap-3 sm:gap-3.5">
-                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 ${isRed ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}>
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 shrink-0 ${isRed ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}>
                     {icon}
                 </div>
-                <span className={`text-[14px] sm:text-[14.5px] font-medium ${isRed ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-                    {title}
-                </span>
+                <div className="flex flex-col text-left min-w-0">
+                    <span className={`text-[14px] sm:text-[14.5px] font-medium leading-tight truncate ${isRed ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+                        {title}
+                    </span>
+                    {subtitle && (
+                        <span className="text-[11.5px] text-gray-500 dark:text-gray-400 font-medium leading-tight mt-0.5 truncate">
+                            {subtitle}
+                        </span>
+                    )}
+                </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
                 {badge}
                 {!disabled ? (
                     <ChevronRight size={17} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
@@ -224,22 +231,53 @@ const Profile = () => {
         return getUserRoles(userProfile?.data || userProfile || user || authUser);
     }, [user, userProfile, authUser]);
 
-    const isDeliveryBoy = useMemo(() => {
-        const DELIVERY_NUMBERS = ['9578654411', '9500179180'];
-        const activeMobile = (user?.mobile || userProfile?.data?.mobile || authUser?.data?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+    const ADMIN_NUMBERS = useMemo(() => ['9500171980', '9500171958', '9500171989'], []);
+    const DELIVERY_NUMBERS = useMemo(() => ['9578654411', '9500179180'], []);
 
-        return DELIVERY_NUMBERS.includes(activeMobile) || roles.includes('delivery_boy');
-    }, [user, authUser, userProfile, roles]);
+    const activeMobile = useMemo(() => {
+        let fallbackSavedMobile = '';
+        try {
+            const saved = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
+            fallbackSavedMobile = saved?.mobile || saved?.phone || '';
+        } catch {}
+
+        let userInfoMobile = '';
+        try {
+            const u = JSON.parse(localStorage.getItem('userInfo') || 'null');
+            userInfoMobile = u?.mobile || u?.phone || u?.address?.mobile || '';
+        } catch {}
+
+        const raw = (
+            user?.mobile || 
+            user?.phone || 
+            user?.address?.mobile || 
+            userProfile?.data?.mobile || 
+            userProfile?.data?.phone || 
+            userProfile?.data?.address?.mobile || 
+            authUser?.data?.mobile || 
+            authUser?.mobile || 
+            fallbackSavedMobile || 
+            userInfoMobile || 
+            ''
+        ).toString();
+        return raw.replace(/\D/g, '').slice(-10);
+    }, [user, userProfile, authUser]);
+
+    const isDeliveryBoy = useMemo(() => {
+        return DELIVERY_NUMBERS.includes(activeMobile);
+    }, [DELIVERY_NUMBERS, activeMobile]);
 
     const isAdmin = useMemo(() => {
-        const ADMIN_NUMBERS = ['9500171980', '9500171958', '9500171989'];
-        const activeMobile = (user?.mobile || userProfile?.data?.mobile || authUser?.data?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+        return ADMIN_NUMBERS.includes(activeMobile);
+    }, [ADMIN_NUMBERS, activeMobile]);
 
-        return ADMIN_NUMBERS.includes(activeMobile) || roles.includes('admin');
-    }, [user, authUser, userProfile, roles]);
+    const isStoreAdmin = useMemo(() => {
+        return Boolean(user?.storeId || userProfile?.data?.storeId) || (ADMIN_NUMBERS.includes(activeMobile) && roles.includes('store_admin'));
+    }, [user, userProfile, ADMIN_NUMBERS, activeMobile, roles]);
 
-    const isStoreAdmin = roles.includes('store_admin');
-    const isServiceAdmin = roles.includes('service_admin');
+    const isServiceAdmin = useMemo(() => {
+        return Boolean(user?.serviceId || userProfile?.data?.serviceId) || (ADMIN_NUMBERS.includes(activeMobile) && roles.includes('service_admin'));
+    }, [user, userProfile, ADMIN_NUMBERS, activeMobile, roles]);
     const isAdminView = isAdmin || isStoreAdmin || isServiceAdmin || isDeliveryBoy;
 
     const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy || isAdmin) });
@@ -366,7 +404,7 @@ const Profile = () => {
                                 <MenuLink 
                                     to="/admin" 
                                     icon={<Shield size={17} strokeWidth={2} />} 
-                                    title={t('Admin Dashboard')} 
+                                    title={t('Admin Dashboard')}
                                 />
                             )}
                             {isAdmin && isDeliveryBoy && (
@@ -382,7 +420,7 @@ const Profile = () => {
                                         setShowDeliveryAuthModal(true);
                                     }}
                                     icon={<Truck size={17} strokeWidth={2} />} 
-                                    title={t('Delivery Boy')} 
+                                    title={t('Delivery Boy')}
                                     badge={
                                         pendingOrdersCount > 0 ? (
                                             <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white flex items-center gap-1 shadow-xs animate-pulse">
