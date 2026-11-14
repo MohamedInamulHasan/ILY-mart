@@ -33,7 +33,20 @@ export const initFirebaseAdmin = () => {
             try {
                 serviceAccount = JSON.parse(jsonText);
             } catch (jsonErr) {
-                throw new Error(`JSON.parse failed: ${jsonErr.message} (preview: ${jsonText.substring(0, 40)}...)`);
+                // Robust fallback: extract required fields if JSON has bad escapes or control chars
+                const projMatch = jsonText.match(/"project_id"\s*:\s*"([^"]+)"/);
+                const emailMatch = jsonText.match(/"client_email"\s*:\s*"([^"]+)"/);
+                const keyMatch = jsonText.match(/"private_key"\s*:\s*"([\s\S]*?)(?:",\s*"|"\s*\})/);
+
+                if (projMatch && emailMatch && keyMatch) {
+                    serviceAccount = {
+                        project_id: projMatch[1],
+                        client_email: emailMatch[1],
+                        private_key: keyMatch[1].replace(/\\n/g, '\n').replace(/\\r/g, '')
+                    };
+                } else {
+                    throw new Error(`JSON.parse failed: ${jsonErr.message}`);
+                }
             }
         } else {
             const serviceAccountPath = join(__dirname, '../config/firebase-service-account.json');
