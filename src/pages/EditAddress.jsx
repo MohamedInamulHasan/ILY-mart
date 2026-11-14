@@ -116,6 +116,21 @@ const EditAddress = () => {
 
                 const userDisplayName = savedFallback?.fullName || user.fullName || user.name || '';
                 const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
+                const isGuestAccount = !user.mobile && !user.phone && (!user.email || user.email.startsWith('guest_') || user.name?.startsWith('User_'));
+
+                // If user is a guest / newly logged out with no saved address, guarantee empty form
+                if (isGuestAccount && !savedFallback) {
+                    setFormData({
+                        fullName: '',
+                        mobile: '',
+                        street: '',
+                        city: '',
+                        zip: '630702',
+                        location: ''
+                    });
+                    return;
+                }
+
                 let loadedStreet = savedFallback?.address?.street || user.address?.street || '';
                 let loadedCity = savedFallback?.address?.city || user.address?.city || '';
                 if (isCityUnavailable(loadedCity)) loadedCity = '';
@@ -129,6 +144,15 @@ const EditAddress = () => {
                     location: savedFallback?.location || user.location || ''
                 });
             }
+        } else {
+            setFormData({
+                fullName: '',
+                mobile: '',
+                street: '',
+                city: '',
+                zip: '630702',
+                location: ''
+            });
         }
     }, [user]);
 

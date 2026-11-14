@@ -201,6 +201,8 @@ const Orders = () => {
     const handleEmergencyLogout = () => {
         localStorage.removeItem('userInfo');
         localStorage.removeItem('authToken');
+        localStorage.removeItem('user_saved_address');
+        localStorage.removeItem('user_phone');
         window.location.href = '/login';
     };
 

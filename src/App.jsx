@@ -38,7 +38,6 @@ import MobileFooter from './components/MobileFooter';
 import InstallPrompt from './components/InstallPrompt';
 import IntroAnimation from './components/IntroAnimation';
 import NotificationOverlay from './components/NotificationOverlay';
-import CustomerNotificationBanner from './components/CustomerNotificationBanner';
 import { CartProvider, useCart } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { useLanguage } from './context/LanguageContext';
@@ -325,7 +324,6 @@ function App() {
                 <Router>
                     <RoleRedirectHandler />
                     <NotificationOverlay />
-                    <CustomerNotificationBanner />
 
                     
                     {/* Show offline screen first if no internet */}

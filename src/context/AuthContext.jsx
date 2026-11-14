@@ -335,6 +335,8 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('active_delivery_order_id');
         localStorage.removeItem('active_delivery_stay');
         localStorage.removeItem('orders');
+        localStorage.removeItem('user_saved_address');
+        localStorage.removeItem('user_phone');
         setUser(null);
         // Dispatch custom event to notify cart and data contexts of user reset
         window.dispatchEvent(new Event('userChanged'));
