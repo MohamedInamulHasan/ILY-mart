@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useLanguage } from '../context/LanguageContext';
-import { safeNavigateBack, registerModalBackHandler, safeNavigateBackFromGroup } from '../utils/useBackButton';
+import { safeNavigateBack, safeNavigateBackFromGroup } from '../utils/useBackButton';
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import SimpleProductCard from '../components/SimpleProductCard';
@@ -114,15 +114,6 @@ const ProductGroupProducts = () => {
         const fallback = storeIdParam ? `/store/${storeIdParam}` : '/';
         safeNavigateBackFromGroup(navigate, fallback);
     };
-
-    // Hardware back button handler: reliably returns to the exact prior page
-    useEffect(() => {
-        const fallback = storeIdParam ? `/store/${storeIdParam}` : '/';
-        const unregister = registerModalBackHandler(() => {
-            safeNavigateBackFromGroup(navigate, fallback);
-        });
-        return unregister;
-    }, [navigate, storeIdParam]);
 
     return (
         <PullToRefreshLayout>

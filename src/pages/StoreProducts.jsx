@@ -5,7 +5,7 @@ import { ArrowLeft, MapPin, Clock, Phone, ChevronRight, AlertCircle, Zap, Search
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import { safeNavigateBack, registerModalBackHandler } from '../utils/useBackButton';
+import { safeNavigateBack } from '../utils/useBackButton';
 import { useAds } from '../hooks/queries/useAds';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useStores } from '../hooks/queries/useStores';
@@ -625,38 +625,8 @@ const StoreProducts = () => {
     }, [effectiveSubcategory]);
 
     const handleHeaderBack = useCallback(() => {
-        const isNotAll = selectedSubcategory && 
-            normSubcategoryKey(selectedSubcategory) !== 'all' && 
-            subcategoryData.length >= 2 && 
-            selectedSubcategory !== subcategoryData[0]?.name;
-
-        if (isNotAll) {
-            handleSelectCategory(subcategoryData[0]?.name || null);
-            return;
-        }
-
-        if (searchQuery.trim()) {
-            setSearchQuery('');
-            return;
-        }
-
-        safeNavigateBack(navigate);
-    }, [selectedSubcategory, subcategoryData, searchQuery, handleSelectCategory, navigate]);
-
-    // Hardware back button dismisses active category filter before leaving store
-    useEffect(() => {
-        const isNotAll = selectedSubcategory && 
-            normSubcategoryKey(selectedSubcategory) !== 'all' && 
-            subcategoryData.length >= 2 && 
-            selectedSubcategory !== subcategoryData[0]?.name;
-
-        if (isNotAll) {
-            const unregister = registerModalBackHandler(() => {
-                handleSelectCategory(subcategoryData[0]?.name || null);
-            });
-            return unregister;
-        }
-    }, [selectedSubcategory, subcategoryData, handleSelectCategory]);
+        safeNavigateBack(navigate, isFromHome ? '/' : '/store');
+    }, [navigate, isFromHome]);
 
     if (!store || store.isActive === false) {
         return (

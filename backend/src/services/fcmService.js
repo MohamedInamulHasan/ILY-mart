@@ -34,18 +34,18 @@ export const initFirebaseAdmin = () => {
                 serviceAccount = JSON.parse(jsonText);
             } catch (jsonErr) {
                 // Robust fallback: extract required fields if JSON has bad escapes or control chars
-                const projMatch = jsonText.match(/"project_id"\s*:\s*"([^"]+)"/);
-                const emailMatch = jsonText.match(/"client_email"\s*:\s*"([^"]+)"/);
-                const keyMatch = jsonText.match(/"private_key"\s*:\s*"([\s\S]*?)(?:",\s*"|"\s*\})/);
+                const proj = (jsonText.match(/"project_id"\s*:\s*"([^"]+)"/) || [])[1];
+                const email = (jsonText.match(/"client_email"\s*:\s*"([^"]+)"/) || [])[1];
+                const keyMatch = jsonText.match(/(-----BEGIN (?:RSA )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA )?PRIVATE KEY-----)/);
 
-                if (projMatch && emailMatch && keyMatch) {
+                if (proj && email && keyMatch) {
                     serviceAccount = {
-                        project_id: projMatch[1],
-                        client_email: emailMatch[1],
-                        private_key: keyMatch[1].replace(/\\n/g, '\n').replace(/\\r/g, '')
+                        project_id: proj,
+                        client_email: email,
+                        private_key: keyMatch[1].replace(/\\n/g, '\n').replace(/\\r/g, '') + '\n'
                     };
                 } else {
-                    throw new Error(`JSON.parse failed: ${jsonErr.message}`);
+                    throw new Error(`JSON.parse failed (${jsonErr.message}). Extraction: proj=${!!proj}, email=${!!email}, key=${!!keyMatch}`);
                 }
             }
         } else {

@@ -268,6 +268,12 @@ export const useBackButton = () => {
                 return false;
             }
 
+            // 3.5. On a product group page: return to the exact prior page (store/category/home)
+            if (currentPath.startsWith('/product-group/')) {
+                safeNavigateBackFromGroup(navigate, '/');
+                return true;
+            }
+
             // If order was just placed, clean order flow routes out of navHistory
             if (orderJustPlaced) {
                 for (let i = navHistory.length - 1; i >= 0; i--) {

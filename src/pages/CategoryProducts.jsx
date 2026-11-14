@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useCategories } from '../hooks/queries/useCategories';
@@ -52,21 +52,58 @@ const CategoryProducts = () => {
         return subs.filter(Boolean);
     }, [currentCategory]);
 
-    const [selectedSubcategory, setSelectedSubcategory] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const sessionKey = `cat_sub_${decodedCategoryName}`;
 
-    // Default to the first subcategory when category changes or subcategories load
+    const [selectedSubcategory, setSelectedSubcategory] = useState(() => {
+        const querySub = searchParams.get('sub');
+        if (querySub) return querySub;
+        try {
+            return sessionStorage.getItem(sessionKey) || '';
+        } catch (e) {
+            return '';
+        }
+    });
+
+    const handleSelectSubcategory = useCallback((sub) => {
+        setSelectedSubcategory(sub);
+        try {
+            if (sub) {
+                sessionStorage.setItem(sessionKey, sub);
+                setSearchParams(prev => {
+                    const next = new URLSearchParams(prev);
+                    next.set('sub', sub);
+                    return next;
+                }, { replace: true });
+            } else {
+                sessionStorage.removeItem(sessionKey);
+                setSearchParams(prev => {
+                    const next = new URLSearchParams(prev);
+                    next.delete('sub');
+                    return next;
+                }, { replace: true });
+            }
+        } catch (e) {}
+    }, [sessionKey, setSearchParams]);
+
+    // Keep subcategory in sync with query parameter / session storage
     useEffect(() => {
         if (subcategoriesList.length > 0) {
             setSelectedSubcategory(prev => {
-                if (prev && subcategoriesList.some(s => areSubcategoriesMatching(s, prev))) {
-                    return prev;
+                const stored = searchParams.get('sub') || (() => {
+                    try { return sessionStorage.getItem(sessionKey); } catch (e) { return null; }
+                })();
+                const target = prev || stored;
+                if (target) {
+                    const match = subcategoriesList.find(s => areSubcategoriesMatching(s, target));
+                    if (match) return match;
                 }
                 return subcategoriesList[0];
             });
         } else {
             setSelectedSubcategory('');
         }
-    }, [decodedCategoryName, subcategoriesList]);
+    }, [decodedCategoryName, subcategoriesList, sessionKey, searchParams]);
 
     useEffect(() => {
         if (selectedSubcategory) {
@@ -265,7 +302,7 @@ const CategoryProducts = () => {
                     <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
                             <button
-                                onClick={() => safeNavigateBack(navigate)}
+                                onClick={() => safeNavigateBack(navigate, '/categories')}
                                 className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0 cursor-pointer"
                                 aria-label="Go back"
                             >
@@ -456,7 +493,7 @@ const CategoryProducts = () => {
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            setSelectedSubcategory(sub);
+                                            handleSelectSubcategory(sub);
                                         }}
                                         className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] max-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[88px] h-[114px] sm:h-[126px] px-1 pt-2 pb-1.5 sm:px-2.5 sm:pt-2.5 sm:pb-2 rounded-xl flex flex-col items-center justify-start flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
                                             isSelected
