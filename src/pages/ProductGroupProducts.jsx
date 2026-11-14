@@ -10,6 +10,7 @@ import ProductCard from '../components/ProductCard';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { ArrowLeft, ShoppingCart, Zap } from 'lucide-react';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
+import { safeDecodeURIComponent } from '../utils/categoryHelpers';
 import { useStores } from '../hooks/queries/useStores';
 
 const ProductGroupProducts = () => {
@@ -30,7 +31,7 @@ const ProductGroupProducts = () => {
     const products = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
 
     // Filter products by name (case-insensitive)
-    const decodedName = decodeURIComponent(productName);
+    const decodedName = safeDecodeURIComponent(productName);
 
     const storeIdParam = searchParams.get('storeId');
 

@@ -27,9 +27,9 @@ const isOrderFlowRoute = (p) => {
 export const safeNavigateBack = (navigate, fallback = '/') => {
     if (typeof navigate !== 'function') return;
 
-    const currentPath = window.location.pathname || '/';
+    const currentPath = (window.location.pathname || '/') + (window.location.search || '');
     // Back navigation disabled on both Admin and Delivery Boy panels
-    if (currentPath.startsWith('/admin') || currentPath.startsWith('/delivery-dashboard')) {
+    if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/delivery-dashboard')) {
         return;
     }
 
@@ -132,7 +132,7 @@ export const useBackButton = () => {
 
     useEffect(() => {
         locationRef.current = location;
-        const path = location.pathname;
+        const path = location.pathname + (location.search || '');
 
         // If user reaches home, reset orderJustPlaced flag so future shopping navigation is unaffected
         if (path === '/' || path === '/home') {

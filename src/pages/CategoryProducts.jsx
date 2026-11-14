@@ -14,7 +14,7 @@ import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
-import { getCleanCategoryName, areCategoriesMatching, areSubcategoriesMatching } from '../utils/categoryHelpers';
+import { getCleanCategoryName, areCategoriesMatching, areSubcategoriesMatching, safeDecodeURIComponent } from '../utils/categoryHelpers';
 import { groupProducts } from '../utils/productGrouping';
 import { API_BASE_URL } from '../utils/api';
 
@@ -26,7 +26,7 @@ const CategoryProducts = () => {
     const { t, language } = useLanguage();
     const { user } = useAuth();
 
-    const decodedCategoryName = useMemo(() => decodeURIComponent(categoryName || ''), [categoryName]);
+    const decodedCategoryName = useMemo(() => safeDecodeURIComponent(categoryName || ''), [categoryName]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isInitialMount, setIsInitialMount] = useState(true);
 

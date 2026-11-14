@@ -9,14 +9,30 @@ import Order from '../models/Order.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Initialize Firebase Admin SDK (only once)
-if (getApps().length === 0) {
+export let firebaseInitError = null;
+
+// Initialize Firebase Admin SDK
+export const initFirebaseAdmin = () => {
+    if (getApps().length > 0) return true;
+
     try {
         let serviceAccount = null;
         if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-            // Support raw JSON or base64 encoded JSON string from environment variable (useful on Render)
-            const raw = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
-            serviceAccount = JSON.parse(raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'));
+            let raw = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+            if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+                raw = raw.slice(1, -1).trim();
+            }
+
+            try {
+                serviceAccount = JSON.parse(raw);
+            } catch (jsonErr) {
+                try {
+                    const decoded = Buffer.from(raw, 'base64').toString('utf8');
+                    serviceAccount = JSON.parse(decoded);
+                } catch (b64Err) {
+                    throw new Error(`JSON.parse failed: ${jsonErr.message}`);
+                }
+            }
         } else {
             const serviceAccountPath = join(__dirname, '../config/firebase-service-account.json');
             if (existsSync(serviceAccountPath)) {
@@ -27,15 +43,28 @@ if (getApps().length === 0) {
         }
 
         if (serviceAccount) {
+            // Fix private_key newlines (Render often escapes \n to \\n or vice versa)
+            if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
+                serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+            }
+
             initializeApp({
                 credential: cert(serviceAccount)
             });
-            console.log('✅ Firebase Admin SDK initialized');
+            console.log('✅ Firebase Admin SDK initialized successfully');
+            firebaseInitError = null;
+            return true;
         }
     } catch (err) {
+        firebaseInitError = err.message;
         console.error('❌ Firebase Admin SDK initialization failed:', err.message);
+        return false;
     }
-}
+    return false;
+};
+
+// Initial boot attempt
+initFirebaseAdmin();
 
 // Map order status to notification content
 const getNotificationContent = (status) => {

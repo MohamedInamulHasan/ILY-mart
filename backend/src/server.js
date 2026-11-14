@@ -11,6 +11,7 @@ import connectDB from './config/database.js';
 import axios from 'axios'; // For Keep-Warm mechanism
 import http from 'http';
 import { getApps } from 'firebase-admin/app';
+import { initFirebaseAdmin, firebaseInitError } from './services/fcmService.js';
 import { init as initSocket } from './socket.js';
 import { initCronJobs } from './cron/dailyRewards.js';
 
@@ -96,12 +97,14 @@ app.get('/api/health', async (req, res) => {
 
 // FCM Status Check Endpoint
 app.get('/api/fcm-check', (req, res) => {
+    const isReady = getApps().length > 0 || initFirebaseAdmin();
     res.json({
         success: true,
-        firebaseAdminInitialized: getApps().length > 0,
+        firebaseAdminInitialized: isReady,
         hasEnvVar: !!process.env.FIREBASE_SERVICE_ACCOUNT,
         envVarLength: process.env.FIREBASE_SERVICE_ACCOUNT ? process.env.FIREBASE_SERVICE_ACCOUNT.length : 0,
-        appsCount: getApps().length
+        appsCount: getApps().length,
+        initError: firebaseInitError || null
     });
 });
 

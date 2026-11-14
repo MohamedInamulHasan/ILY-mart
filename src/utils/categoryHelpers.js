@@ -1,3 +1,16 @@
+export const safeDecodeURIComponent = (str) => {
+    if (!str) return '';
+    try {
+        return decodeURIComponent(str);
+    } catch (e) {
+        try {
+            return decodeURIComponent(String(str).replace(/%(?![0-9a-fA-F]{2})/g, '%25'));
+        } catch (e2) {
+            return String(str);
+        }
+    }
+};
+
 /**
  * Helper to determine if a category or product category is in Preview mode.
  * When in preview mode, products cannot be ordered, show no quantity controllers/add-to-cart buttons,

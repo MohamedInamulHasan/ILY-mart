@@ -16,7 +16,7 @@ import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
-import { getCleanCategoryName } from '../utils/categoryHelpers';
+import { getCleanCategoryName, safeDecodeURIComponent } from '../utils/categoryHelpers';
 import { groupProducts } from '../utils/productGrouping';
 import { API_BASE_URL } from '../utils/api';
 
@@ -43,7 +43,7 @@ const MainCategoryProducts = () => {
     const { cartCount } = useCart();
     const { user } = useAuth();
 
-    const decodedMainCatName = decodeURIComponent(mainCategoryName || '');
+    const decodedMainCatName = safeDecodeURIComponent(mainCategoryName || '');
     const [searchQuery, setSearchQuery] = useState('');
 
     const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();

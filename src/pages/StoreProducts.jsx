@@ -1,11 +1,11 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useParams, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, Phone, ChevronRight, AlertCircle, Zap, Search, ListFilter, ShoppingCart, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import { safeNavigateBack } from '../utils/useBackButton';
+import { safeNavigateBack, registerModalBackHandler } from '../utils/useBackButton';
 import { useAds } from '../hooks/queries/useAds';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useStores } from '../hooks/queries/useStores';
@@ -190,12 +190,52 @@ const StoreProducts = () => {
     const { data: rawCategories = [], refetch: refetchCategories } = useCategories();
     const { cartCount } = useCart();
     const { t, language } = useLanguage();
-    const [selectedSubcategory, setSelectedSubcategory] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const storeId = id;
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const isFromHome = location.state?.from === 'home';
+    const storeId = id;
+    const sessionKey = `store_sub_${id}`;
+
+    const [selectedSubcategory, setSelectedSubcategory] = useState(() => {
+        const queryCat = searchParams.get('category') || location.state?.category;
+        if (queryCat) return queryCat;
+        try {
+            return sessionStorage.getItem(sessionKey) || null;
+        } catch (e) {
+            return null;
+        }
+    });
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const handleSelectCategory = useCallback((name) => {
+        setSelectedSubcategory(name);
+        try {
+            if (name && normSubcategoryKey(name) !== 'all') {
+                sessionStorage.setItem(sessionKey, name);
+                setSearchParams(prev => {
+                    const next = new URLSearchParams(prev);
+                    next.set('category', name);
+                    return next;
+                }, { replace: true });
+            } else {
+                sessionStorage.removeItem(sessionKey);
+                setSearchParams(prev => {
+                    const next = new URLSearchParams(prev);
+                    next.delete('category');
+                    return next;
+                }, { replace: true });
+            }
+        } catch (e) {}
+    }, [sessionKey, setSearchParams]);
+
+    // Keep state in sync if URL query parameter changes externally
+    useEffect(() => {
+        const cat = searchParams.get('category');
+        if (cat && cat !== selectedSubcategory) {
+            setSelectedSubcategory(cat);
+        }
+    }, [searchParams, selectedSubcategory]);
 
     // Prioritize React Query cached/live data over legacy DataContext state
     const stores = useMemo(() => {
@@ -584,6 +624,40 @@ const StoreProducts = () => {
         }
     }, [effectiveSubcategory]);
 
+    const handleHeaderBack = useCallback(() => {
+        const isNotAll = selectedSubcategory && 
+            normSubcategoryKey(selectedSubcategory) !== 'all' && 
+            subcategoryData.length >= 2 && 
+            selectedSubcategory !== subcategoryData[0]?.name;
+
+        if (isNotAll) {
+            handleSelectCategory(subcategoryData[0]?.name || null);
+            return;
+        }
+
+        if (searchQuery.trim()) {
+            setSearchQuery('');
+            return;
+        }
+
+        safeNavigateBack(navigate);
+    }, [selectedSubcategory, subcategoryData, searchQuery, handleSelectCategory, navigate]);
+
+    // Hardware back button dismisses active category filter before leaving store
+    useEffect(() => {
+        const isNotAll = selectedSubcategory && 
+            normSubcategoryKey(selectedSubcategory) !== 'all' && 
+            subcategoryData.length >= 2 && 
+            selectedSubcategory !== subcategoryData[0]?.name;
+
+        if (isNotAll) {
+            const unregister = registerModalBackHandler(() => {
+                handleSelectCategory(subcategoryData[0]?.name || null);
+            });
+            return unregister;
+        }
+    }, [selectedSubcategory, subcategoryData, handleSelectCategory]);
+
     if (!store || store.isActive === false) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
@@ -611,7 +685,7 @@ const StoreProducts = () => {
                         <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
                             <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                 <button 
-                                    onClick={() => safeNavigateBack(navigate)} 
+                                    onClick={handleHeaderBack} 
                                     className="w-[38px] h-[38px] flex items-center justify-center bg-white dark:bg-white/80 rounded-full text-gray-900 dark:text-gray-900 transition-transform active:scale-95 shadow-sm border border-gray-100/50 dark:border-gray-200/50"
                                 >
                                     <ArrowLeft size={19} />
@@ -783,7 +857,7 @@ const StoreProducts = () => {
                                     id={isSelected ? 'active-sub-pill' : undefined}
                                     type="button"
                                     onClick={(e) => {
-                                        setSelectedSubcategory(name);
+                                        handleSelectCategory(name);
                                         e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                                     }}
                                     className={`text-[13px] sm:text-[14px] transition-all whitespace-nowrap flex items-center justify-center py-1.5 rounded-xl border cursor-pointer select-none ${
@@ -880,9 +954,9 @@ const StoreProducts = () => {
                                 onClick={() => {
                                     setSearchQuery('');
                                     if (subcategoryData.length >= 2) {
-                                        setSelectedSubcategory(subcategoryData[0]?.name);
+                                        handleSelectCategory(subcategoryData[0]?.name);
                                     } else {
-                                        setSelectedSubcategory(null);
+                                        handleSelectCategory(null);
                                     }
                                 }}
                                 className="px-6 py-2 bg-[#2E5A2E] dark:bg-[#CBF9B2] text-white dark:text-gray-900 rounded-xl font-bold text-sm active:scale-95 transition-all shadow-sm"
