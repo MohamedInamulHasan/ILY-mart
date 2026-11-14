@@ -39,15 +39,17 @@ if (getApps().length === 0) {
 
 // Map order status to notification content
 const getNotificationContent = (status) => {
+    const normalized = (status || '').trim();
     const map = {
         'Processing':       { title: '✅ Order Placed!',         body: 'Your order has been placed successfully. We\'ll start preparing it soon.' },
         'Confirmed':        { title: '📦 Order Confirmed!',      body: 'Your order is confirmed and being packed for delivery.' },
+        'Accepted':         { title: '🛵 Order Accepted!',       body: 'Your order has been accepted by our delivery partner.' },
         'Out for Delivery': { title: '🛵 Out for Delivery!',     body: 'Your delivery partner is on the way. Get ready!' },
         'Shipped':          { title: '🚚 Order Shipped!',        body: 'Your order is on its way to you.' },
         'Delivered':        { title: '🎉 Order Delivered!',      body: 'Your order has been delivered. Enjoy your purchase!' },
         'Cancelled':        { title: '❌ Order Cancelled',       body: 'Your order has been cancelled. We\'re sorry for the inconvenience.' },
     };
-    return map[status] || { title: '📋 Order Update', body: `Your order status has been updated to: ${status}` };
+    return map[normalized] || { title: '📋 Order Update', body: `Your order status has been updated to: ${status}` };
 };
 
 /**
