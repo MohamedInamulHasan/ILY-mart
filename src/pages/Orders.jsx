@@ -23,7 +23,14 @@ const Orders = () => {
     const { user } = useAuth();
     const roles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
     const isAdmin = roles.includes('admin');
-    const currentMobile = user?.mobile || user?.phone || '';
+    
+    let fallbackSavedMobile = '';
+    try {
+        const saved = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
+        fallbackSavedMobile = saved?.mobile || '';
+    } catch {}
+
+    const currentMobile = user?.mobile || user?.phone || fallbackSavedMobile;
     const { data: orders = [], isLoading: loadingOrders } = useOrders({ myOrders: true, mobile: currentMobile });
     const { cartCount } = useCart();
     const { data: stores = [] } = useStores();
@@ -48,7 +55,16 @@ const Orders = () => {
 
     
 
-    const filteredOrders = orders.filter(order => {
+    const active10DigitMobile = currentMobile ? currentMobile.replace(/\D/g, '').slice(-10) : '';
+
+    // Strictly enforce showing orders for this user's mobile number only
+    const userOrdersOnly = orders.filter(order => {
+        if (!active10DigitMobile) return true;
+        const orderPhone = (order.shippingAddress?.mobile || order.shippingAddress?.phone || order.phone || '').toString().replace(/\D/g, '').slice(-10);
+        return orderPhone === active10DigitMobile;
+    });
+
+    const filteredOrders = userOrdersOnly.filter(order => {
         const rawTrimmed = (searchQuery || '').trim();
         if (!rawTrimmed) return true;
 

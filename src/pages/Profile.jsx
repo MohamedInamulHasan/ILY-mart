@@ -223,11 +223,16 @@ const Profile = () => {
         const DELIVERY_NUMBERS = ['9578654411', '9500179180'];
         const activeMobile = (user?.mobile || userProfile?.data?.mobile || authUser?.data?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
 
-        // Strictly ONLY the authorized delivery boy numbers can see and access the Delivery Boy card
-        return DELIVERY_NUMBERS.includes(activeMobile);
-    }, [user, authUser, userProfile]);
+        return DELIVERY_NUMBERS.includes(activeMobile) || roles.includes('delivery_boy');
+    }, [user, authUser, userProfile, roles]);
 
-    const isAdmin = roles.includes('admin');
+    const isAdmin = useMemo(() => {
+        const ADMIN_NUMBERS = ['9500171980', '9500171958', '9500171989'];
+        const activeMobile = (user?.mobile || userProfile?.data?.mobile || authUser?.data?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+
+        return ADMIN_NUMBERS.includes(activeMobile) || roles.includes('admin');
+    }, [user, authUser, userProfile, roles]);
+
     const isStoreAdmin = roles.includes('store_admin');
     const isServiceAdmin = roles.includes('service_admin');
     const isAdminView = isAdmin || isStoreAdmin || isServiceAdmin || isDeliveryBoy;

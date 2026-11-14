@@ -386,6 +386,29 @@ export const getUserProfile = async (req, res, next) => {
         const user = await User.findById(req.user._id);
 
         if (user) {
+            let finalAddress = user.address;
+            let finalLocation = user.location;
+
+            // If user's address street is missing or empty, search for sibling document with the same mobile
+            if ((!finalAddress || !finalAddress.street || !finalAddress.street.trim()) && user.mobile) {
+                const raw10 = user.mobile.replace(/\D/g, '').slice(-10);
+                if (raw10) {
+                    const sibling = await User.findOne({
+                        $or: [{ mobile: raw10 }, { mobile: '91' + raw10 }],
+                        'address.street': { $exists: true, $ne: '' }
+                    }).sort({ updatedAt: -1 });
+
+                    if (sibling && sibling.address && sibling.address.street) {
+                        finalAddress = sibling.address;
+                        finalLocation = sibling.location || finalLocation;
+                        // Synchronize back to current user record
+                        await User.findByIdAndUpdate(user._id, {
+                            $set: { address: finalAddress, location: finalLocation }
+                        }).catch(() => {});
+                    }
+                }
+            }
+
             res.status(200).json({
                 success: true,
                 data: {
@@ -394,8 +417,8 @@ export const getUserProfile = async (req, res, next) => {
                     email: user.email,
                     role: Array.isArray(user.role) ? user.role : [user.role || 'customer'],
                     mobile: user.mobile,
-                    address: user.address,
-                    location: user.location,
+                    address: finalAddress,
+                    location: finalLocation,
                     storeId: user.storeId,
                     serviceId: user.serviceId,
                     coins: user.coins || 0,
@@ -510,7 +533,10 @@ export const updateUserProfile = async (req, res, next) => {
                 user.mobile = rawMobile;
             }
 
-            user.address = req.body.address || user.address;
+            if (req.body.address) {
+                user.set('address', req.body.address);
+                user.markModified('address');
+            }
             user.avatar = req.body.avatar || user.avatar;
 
             if (req.body.location) {
@@ -529,12 +555,29 @@ export const updateUserProfile = async (req, res, next) => {
             }
 
             const updatedUser = await user.save();
+
+            // Direct MongoDB update to guarantee persistence
+            await User.findByIdAndUpdate(updatedUser._id, {
+                $set: {
+                    ...(req.body.address ? { address: req.body.address } : {}),
+                    ...(req.body.location ? { location: req.body.location } : {}),
+                    name: updatedUser.name,
+                    mobile: updatedUser.mobile
+                }
+            }).catch(() => {});
+
             if (updatedUser.mobile) {
                 const raw10 = updatedUser.mobile.replace(/\D/g, '').slice(-10);
                 if (raw10) {
                     await User.updateMany(
-                        { _id: { $ne: updatedUser._id }, $or: [{ mobile: raw10 }, { mobile: '91' + raw10 }] },
-                        { $set: { address: updatedUser.address, location: updatedUser.location, name: updatedUser.name } }
+                        { $or: [{ mobile: raw10 }, { mobile: '91' + raw10 }] },
+                        { 
+                            $set: { 
+                                ...(req.body.address ? { address: req.body.address } : {}),
+                                ...(req.body.location ? { location: req.body.location } : {}),
+                                name: updatedUser.name 
+                            } 
+                        }
                     ).catch(() => {});
                 }
             }
@@ -1290,14 +1333,33 @@ export const updateGuest = async (req, res, next) => {
 
         user.name = name;
         user.mobile = standardMobile;
-        if (address) user.address = address;
+        if (address) {
+            user.set('address', address);
+            user.markModified('address');
+        }
         if (location) user.location = location;
         await user.save();
 
+        // Direct MongoDB update to guarantee persistence
+        await User.findByIdAndUpdate(user._id, {
+            $set: {
+                name: user.name,
+                mobile: user.mobile,
+                ...(address ? { address } : {}),
+                ...(location ? { location } : {})
+            }
+        }).catch(() => {});
+
         // Update all documents sharing this mobile number so old addresses never resurface
         await User.updateMany(
-            { _id: { $ne: user._id }, $or: [{ mobile: standardMobile }, { mobile: '91' + standardMobile }] },
-            { $set: { address: user.address, location: user.location, name: user.name } }
+            { $or: [{ mobile: standardMobile }, { mobile: '91' + standardMobile }] },
+            { 
+                $set: { 
+                    ...(address ? { address } : {}),
+                    ...(location ? { location } : {}),
+                    name: user.name 
+                } 
+            }
         ).catch(() => {});
 
         sendTokenResponse(user, 200, res);

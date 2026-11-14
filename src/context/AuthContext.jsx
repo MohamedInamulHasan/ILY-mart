@@ -90,9 +90,31 @@ export const AuthProvider = ({ children }) => {
                 ]);
 
                 console.log('✅ AuthContext: Server Verification Success', data);
-                // Update with fresh data from server
-                setUser(data.data);
-                localStorage.setItem('userInfo', JSON.stringify(data.data));
+                // Update with fresh data from server while protecting local address from being wiped
+                let localUser = {};
+                try {
+                    localUser = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                } catch {}
+
+                const serverData = data?.data || {};
+                const localHasAddress = localUser.address && (localUser.address.street || localUser.address.city);
+                const serverHasAddress = serverData.address && (serverData.address.street || serverData.address.city);
+
+                const finalAddress = serverHasAddress 
+                    ? serverData.address 
+                    : (localHasAddress ? localUser.address : serverData.address);
+
+                const finalLocation = serverData.location || localUser.location || '';
+
+                const mergedUser = {
+                    ...localUser,
+                    ...serverData,
+                    address: finalAddress,
+                    location: finalLocation
+                };
+
+                setUser(mergedUser);
+                localStorage.setItem('userInfo', JSON.stringify(mergedUser));
             } catch (err) {
                 console.warn('⚠️ AuthContext: Session verification failed:', err.message);
                 // If token exists but failed, it might be expired

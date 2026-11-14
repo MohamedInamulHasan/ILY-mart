@@ -261,7 +261,7 @@ export const getOrders = async (req, res, next) => {
             const phone10 = rawPhone.slice(-10);
 
             if (phone10) {
-                // Strictly return orders placed with THIS active mobile number.
+                // Strictly return orders placed with THIS active mobile number ONLY.
                 const phoneRegex = new RegExp(`${phone10}$`);
                 return {
                     $or: [
@@ -270,8 +270,7 @@ export const getOrders = async (req, res, next) => {
                         { 'shippingAddress.mobile': phone10 },
                         { 'shippingAddress.phone': phone10 },
                         { 'shippingAddress.mobile': '91' + phone10 },
-                        { 'shippingAddress.phone': '91' + phone10 },
-                        ...(userId ? [{ user: userId }] : [])
+                        { 'shippingAddress.phone': '91' + phone10 }
                     ]
                 };
             }

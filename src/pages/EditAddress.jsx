@@ -109,10 +109,15 @@ const EditAddress = () => {
             const currentUserId = user._id || user.id || 'current_user';
             if (lastInitializedUserIdRef.current !== currentUserId) {
                 lastInitializedUserIdRef.current = currentUserId;
-                const userDisplayName = user.fullName || user.name || '';
+                let savedFallback = null;
+                try {
+                    savedFallback = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
+                } catch {}
+
+                const userDisplayName = user.fullName || user.name || savedFallback?.fullName || '';
                 const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
-                let loadedStreet = user.address?.street || '';
-                let loadedCity = user.address?.city || '';
+                let loadedStreet = user.address?.street || savedFallback?.address?.street || '';
+                let loadedCity = user.address?.city || savedFallback?.address?.city || '';
                 if (isCityUnavailable(loadedCity)) loadedCity = '';
                 // If street was erroneously saved identical to city (e.g. Chennai / Chennai), clear it
                 if (loadedStreet && loadedCity && loadedStreet.trim().toLowerCase() === loadedCity.trim().toLowerCase()) {
@@ -120,11 +125,11 @@ const EditAddress = () => {
                 }
                 setFormData({
                     fullName: isGuestName ? '' : userDisplayName,
-                    mobile: user.mobile || user.phone || '',
+                    mobile: user.mobile || user.phone || savedFallback?.mobile || '',
                     street: loadedStreet,
                     city: loadedCity,
-                    zip: user.address?.zip || '630702',
-                    location: user.location || ''
+                    zip: user.address?.zip || savedFallback?.address?.zip || '630702',
+                    location: user.location || savedFallback?.location || ''
                 });
             }
         }
@@ -293,6 +298,12 @@ const EditAddress = () => {
 
         setUser(optimisticUser);
         localStorage.setItem('userInfo', JSON.stringify(optimisticUser));
+        localStorage.setItem('user_saved_address', JSON.stringify({
+            address: updatedAddress,
+            location: formData.location || '',
+            fullName: formData.fullName,
+            mobile: formData.mobile
+        }));
         queryClient.setQueryData(['users', 'profile'], optimisticUser);
         queryClient.removeQueries({ queryKey: ['orders'] });
         queryClient.invalidateQueries({ queryKey: ['orders'] });

@@ -29,6 +29,7 @@ import {
     Pencil,
 
     Trash2,
+    Camera,
     Image as ImageIcon,
     RefreshCw,
     Wrench,
@@ -854,6 +855,64 @@ const ProductManagement = () => {
 
     const { uploadImage, uploading } = useCloudinaryUpload();
 
+    // Direct table image upload state & handlers
+    const [uploadingProductId, setUploadingProductId] = useState(null);
+    const directImageInputRef = useRef(null);
+    const targetProductForImageRef = useRef(null);
+
+    const handleDirectTableImageClick = (product, e) => {
+        e.stopPropagation();
+        targetProductForImageRef.current = product;
+        if (directImageInputRef.current) {
+            directImageInputRef.current.value = '';
+            directImageInputRef.current.click();
+        }
+    };
+
+    const handleDirectTableImageChange = async (e) => {
+        const file = e.target.files?.[0];
+        const targetProduct = targetProductForImageRef.current;
+        if (!file || !targetProduct) return;
+
+        const productId = targetProduct._id || targetProduct.id;
+        setUploadingProductId(productId);
+
+        try {
+            const compressed = await compressImage(file);
+            const imageUrl = await uploadImage(compressed);
+            if (!imageUrl) throw new Error('Upload returned empty URL');
+
+            const existingImages = Array.isArray(targetProduct.images) ? targetProduct.images : [];
+            const cleanExisting = existingImages.filter(img => 
+                img && !img.includes(API_BASE_URL) && !img.includes('/api/products') && img !== targetProduct.image
+            );
+            const updatedImages = [imageUrl, ...cleanExisting];
+
+            queryClient.setQueryData(['products'], (old) => {
+                const list = Array.isArray(old) ? old : (old?.data || []);
+                return list.map(p => (p._id || p.id) === productId ? { ...p, image: imageUrl, images: updatedImages } : p);
+            });
+
+            await updateProduct({
+                id: productId,
+                data: {
+                    image: imageUrl,
+                    images: updatedImages
+                }
+            });
+
+            if (refreshData) {
+                refreshData().catch(() => {});
+            }
+        } catch (err) {
+            console.error('Direct table image upload failed:', err);
+            alert(t('Failed to upload image. Please try again.'));
+        } finally {
+            setUploadingProductId(null);
+            targetProductForImageRef.current = null;
+        }
+    };
+
     // ── Multi-select state ──────────────────────────────────────────────
     const [selectedProductIds, setSelectedProductIds] = useState([]);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -1163,6 +1222,13 @@ const ProductManagement = () => {
                         onDragEnd={handleDragEnd}
                     >
                         <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 overflow-hidden">
+                            <input
+                                type="file"
+                                ref={directImageInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleDirectTableImageChange}
+                            />
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -1231,15 +1297,28 @@ const ProductManagement = () => {
                                                             </DragHandle>
                                                         </td>
                                                         <td className="p-4">
-                                                            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-white">
+                                                            <div 
+                                                                onClick={(e) => handleDirectTableImageClick(product, e)}
+                                                                title={t('Click to upload new photo')}
+                                                                className="relative w-12 h-12 rounded-lg overflow-hidden bg-white border border-gray-200 dark:border-gray-700 cursor-pointer group shadow-xs hover:border-[#2E5A2E] dark:hover:border-[#CBF9B2] transition-all"
+                                                            >
                                                                 <img
                                                                     src={product.image || `${API_BASE_URL}/products/${product.id || product._id}/image`}
                                                                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
                                                                     alt={product.title}
-                                                                    className="w-12 h-12 object-cover"
+                                                                    className="w-12 h-12 object-cover group-hover:scale-105 transition-transform duration-200"
                                                                 />
-                                                                {product.unit && (
-                                                                    <span className="absolute bottom-0 right-0 bg-white/70 backdrop-blur-[2px] text-black text-[9px] font-medium px-1.5 py-0.5 rounded-tl-md shadow-sm z-10 leading-none flex items-center justify-center">
+                                                                <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                                                                    <Camera size={14} className="drop-shadow-xs" />
+                                                                    <span className="text-[7.5px] font-bold leading-none mt-0.5 uppercase tracking-tighter">Edit</span>
+                                                                </div>
+                                                                {uploadingProductId === (product._id || product.id) && (
+                                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+                                                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                                    </div>
+                                                                )}
+                                                                {product.unit && uploadingProductId !== (product._id || product.id) && (
+                                                                    <span className="absolute bottom-0 right-0 bg-white/70 backdrop-blur-[2px] text-black text-[9px] font-medium px-1.5 py-0.5 rounded-tl-md shadow-sm z-10 leading-none flex items-center justify-center pointer-events-none">
                                                                         {product.unit}
                                                                     </span>
                                                                 )}

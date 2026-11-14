@@ -268,6 +268,18 @@ export const useBackButton = () => {
                 return false;
             }
 
+            // 3.1. Category Products / Main Category Products: Android back goes directly to Home ('/')
+            if (currentPath.startsWith('/category/') || currentPath.startsWith('/main-category')) {
+                navigate('/');
+                return true;
+            }
+
+            // 3.2. Store Products page: Android back goes directly to Stores list ('/store')
+            if (currentPath.startsWith('/store/')) {
+                navigate('/store');
+                return true;
+            }
+
             // 3.5. On a product group page: return to the exact prior page (store/category/home)
             if (currentPath.startsWith('/product-group/')) {
                 safeNavigateBackFromGroup(navigate, '/');
