@@ -236,7 +236,7 @@ const MainCategoryProducts = () => {
                     <div className="w-full px-4 relative flex items-center justify-center min-h-[38px]">
                         <div className="absolute left-2 top-1/2 -translate-y-1/2">
                             <button
-                                onClick={() => safeNavigateBack(navigate)}
+                                onClick={() => navigate('/')}
                                 className="w-[38px] h-[38px] bg-white dark:bg-white/80 rounded-full flex items-center justify-center border border-black/5 dark:border-gray-200/50 shadow-sm transition-transform active:scale-95 flex-shrink-0 cursor-pointer"
                                 aria-label="Go back"
                             >

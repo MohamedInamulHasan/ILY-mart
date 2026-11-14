@@ -1083,17 +1083,17 @@ const ProductManagement = () => {
     return (
         <div className="max-w-6xl">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    {view === 'list' && <ShoppingBag className="text-[#2E5A2E] dark:text-[#7CA90E]" size={16} />}
-                    {view === 'list' ? t('Product Inventory') : editingProduct ? t('Edit Product') : t('Add New Product')}
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
+                    {view === 'list' && <ShoppingBag className="text-[#2E5A2E] dark:text-[#7CA90E]" size={22} />}
+                    {view === 'list' ? t('Products') : editingProduct ? t('Edit Product') : t('Add New Product')}
                 </h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     {view === 'list' && (
                         <button
                             onClick={() => navigate('/admin/bulk-import')}
-                            className="px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1.5 text-xs font-bold whitespace-nowrap shadow-sm"
+                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 text-sm font-bold whitespace-nowrap shadow-sm"
                         >
-                            <Upload size={14} />
+                            <Upload size={18} />
                             {t('Bulk Import')}
                         </button>
                     )}
@@ -1107,9 +1107,9 @@ const ProductManagement = () => {
                                 setView('list');
                             }
                         }}
-                        className="px-2.5 py-1.5 bg-[#2E5A2E] text-white rounded-lg hover:bg-[#1a3d1a] transition-colors flex items-center gap-1.5 text-xs font-bold whitespace-nowrap shadow-sm"
+                        className="px-4 py-2.5 bg-[#2E5A2E] text-white rounded-xl hover:bg-[#1a3d1a] transition-colors flex items-center gap-2 text-sm font-bold whitespace-nowrap shadow-sm"
                     >
-                        {view === 'list' ? <Plus size={14} /> : <List size={14} />}
+                        {view === 'list' ? <Plus size={18} /> : <List size={18} />}
                         {view === 'list' ? t('Add Product') : t('View List')}
                     </button>
                 </div>

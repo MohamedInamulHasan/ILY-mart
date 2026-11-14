@@ -625,8 +625,8 @@ const StoreProducts = () => {
     }, [effectiveSubcategory]);
 
     const handleHeaderBack = useCallback(() => {
-        safeNavigateBack(navigate, isFromHome ? '/' : '/store');
-    }, [navigate, isFromHome]);
+        navigate('/store');
+    }, [navigate]);
 
     if (!store || store.isActive === false) {
         return (
