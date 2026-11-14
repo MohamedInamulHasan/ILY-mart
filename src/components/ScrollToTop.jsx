@@ -9,8 +9,8 @@ const ScrollToTop = () => {
         const fromGroup = prevPathRef.current.startsWith('/product-group/');
         prevPathRef.current = pathname;
 
-        // For groupcard only: restore scroll position where user was instead of top of page
-        if (fromGroup) {
+        // For groupcard only: restore scroll position where user was instead of top of page (skip if inspecting product details)
+        if (fromGroup && !pathname.startsWith('/product/')) {
             try {
                 const savedScroll = sessionStorage.getItem('groupCardReturnScroll');
                 if (savedScroll !== null) {

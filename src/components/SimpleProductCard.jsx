@@ -140,6 +140,7 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
         return (
             <Link
                 to={(!product.anyStoreOpen || !isStoreOpenCheck) ? '#' : `/product-group/${encodeURIComponent(product.title)}?${isFastPurchase ? 'fast=true&' : ''}${product.storeId ? `storeId=${product.storeId._id || product.storeId}` : ''}`}
+                state={{ returnPath: window.location.pathname + window.location.search }}
                 className={`rounded-xl overflow-hidden transition-all duration-300 flex flex-col h-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${(product.anyStoreOpen && isStoreOpenCheck) ? 'hover:scale-[1.01]' : 'cursor-default'}`}
                 onClick={(e) => {
                     if (!product.anyStoreOpen || !isStoreOpenCheck) {

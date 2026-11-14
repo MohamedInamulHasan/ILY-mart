@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useLanguage } from '../context/LanguageContext';
-import { safeNavigateBack } from '../utils/useBackButton';
+import { safeNavigateBack, registerModalBackHandler } from '../utils/useBackButton';
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import SimpleProductCard from '../components/SimpleProductCard';
@@ -17,6 +17,7 @@ const ProductGroupProducts = () => {
     const { productName } = useParams();
     const { t } = useLanguage();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
     const { fastMode, toggleFastMode } = useData();
     const { cartItems } = useCart();
@@ -111,14 +112,46 @@ const ProductGroupProducts = () => {
 
     const handleBack = () => {
         try {
-            const returnPath = sessionStorage.getItem('groupCardReturnPath');
-            if (returnPath) {
-                safeNavigateBack(navigate, returnPath);
+            const returnPath = location.state?.returnPath || sessionStorage.getItem('groupCardReturnPath');
+            if (returnPath && returnPath !== (location.pathname + location.search)) {
+                sessionStorage.removeItem('groupCardReturnPath');
+                navigate(returnPath);
                 return;
             }
         } catch (e) {}
+
+        if (storeIdParam) {
+            navigate(`/store/${storeIdParam}`);
+            return;
+        }
+
+        if (window.history.state && window.history.state.idx > 0) {
+            navigate(-1);
+            return;
+        }
+
         safeNavigateBack(navigate, '/');
     };
+
+    // Hardware back button handler
+    useEffect(() => {
+        const returnPath = location.state?.returnPath || sessionStorage.getItem('groupCardReturnPath');
+        const unregister = registerModalBackHandler(() => {
+            if (returnPath && returnPath !== (location.pathname + location.search)) {
+                try {
+                    sessionStorage.removeItem('groupCardReturnPath');
+                } catch (e) {}
+                navigate(returnPath);
+            } else if (storeIdParam) {
+                navigate(`/store/${storeIdParam}`);
+            } else if (window.history.state && window.history.state.idx > 0) {
+                navigate(-1);
+            } else {
+                safeNavigateBack(navigate, '/');
+            }
+        });
+        return unregister;
+    }, [navigate, storeIdParam, location.state, location.pathname, location.search]);
 
     return (
         <PullToRefreshLayout>

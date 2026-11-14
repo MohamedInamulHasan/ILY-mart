@@ -68,7 +68,8 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
         <div className="relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden group transition-all duration-300">
             
             <Link 
-                to={!canClick ? '#' : (product.isGroup ? `/product-group/${encodeURIComponent(product.title)}` : `/product/${productId}`)} 
+                to={!canClick ? '#' : (product.isGroup ? `/product-group/${encodeURIComponent(product.title)}${product.storeId ? `?storeId=${product.storeId._id || product.storeId}` : ''}` : `/product/${productId}`)} 
+                state={product.isGroup ? { returnPath: window.location.pathname + window.location.search } : undefined}
                 className={`flex-1 ${!canClick ? 'cursor-default' : ''}`}
                 onClick={(e) => {
                     if (!canClick) {
