@@ -113,29 +113,51 @@ export const sendOrderPushNotification = async (userId, orderId, status) => {
 
         const tokensSet = new Set();
         let resolvedUserId = userId;
+        let customerPhone = null;
 
-        // 1. Fetch direct FCM token from Order if available
+        // 1. Fetch direct FCM token, user ID, and customer phone from Order
         if (orderId) {
             try {
-                const order = await Order.findById(orderId).select('fcmToken user');
+                const order = await Order.findById(orderId).select('fcmToken user shippingAddress');
                 if (order?.fcmToken) {
                     tokensSet.add(order.fcmToken);
                 }
                 if (!resolvedUserId && order?.user) {
                     resolvedUserId = order.user;
                 }
+                const rawPhone = (order?.shippingAddress?.mobile || order?.shippingAddress?.phone || '').toString().replace(/\D/g, '');
+                if (rawPhone) {
+                    customerPhone = rawPhone.slice(-10);
+                }
             } catch (orderErr) {
                 console.warn('⚠️ Could not fetch order for FCM:', orderErr.message);
             }
         }
 
-        // 2. Fetch user's FCM tokens
+        // 2. Fetch user's FCM tokens by User ID and by Mobile Number
+        const userOrConditions = [];
         if (resolvedUserId) {
+            userOrConditions.push({ _id: resolvedUserId });
+        }
+        if (customerPhone) {
+            const phoneRegex = new RegExp(`${customerPhone}$`);
+            userOrConditions.push(
+                { mobile: customerPhone },
+                { mobile: '91' + customerPhone },
+                { mobile: phoneRegex },
+                { phone: customerPhone },
+                { phone: phoneRegex }
+            );
+        }
+
+        if (userOrConditions.length > 0) {
             try {
-                const user = await User.findById(resolvedUserId).select('fcmTokens name');
-                if (user?.fcmTokens && Array.isArray(user.fcmTokens)) {
-                    user.fcmTokens.forEach(t => { if (t) tokensSet.add(t); });
-                }
+                const matchedUsers = await User.find({ $or: userOrConditions }).select('fcmTokens name mobile');
+                matchedUsers.forEach(u => {
+                    if (Array.isArray(u?.fcmTokens)) {
+                        u.fcmTokens.forEach(t => { if (t) tokensSet.add(t); });
+                    }
+                });
             } catch (userErr) {
                 console.warn('⚠️ Could not fetch user tokens for FCM:', userErr.message);
             }

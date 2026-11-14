@@ -24,7 +24,7 @@ const Orders = () => {
     const roles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
     const isAdmin = roles.includes('admin');
     const currentMobile = user?.mobile || user?.phone || '';
-    const { data: orders = [], isLoading: loadingOrders } = useOrders(isAdmin ? {} : { myOrders: true, mobile: currentMobile });
+    const { data: orders = [], isLoading: loadingOrders } = useOrders({ myOrders: true, mobile: currentMobile });
     const { cartCount } = useCart();
     const { data: stores = [] } = useStores();
     const { mutate: deleteOrder } = useDeleteOrder();

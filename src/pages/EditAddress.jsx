@@ -294,79 +294,53 @@ const EditAddress = () => {
         setUser(optimisticUser);
         localStorage.setItem('userInfo', JSON.stringify(optimisticUser));
         queryClient.setQueryData(['users', 'profile'], optimisticUser);
-        // Clear order cache so old number's orders are wiped immediately
         queryClient.removeQueries({ queryKey: ['orders'] });
         queryClient.invalidateQueries({ queryKey: ['orders'] });
-        window.dispatchEvent(new Event('userChanged'));
-        navigate('/profile');
 
-        // 2. Fast background server synchronization
-        (async () => {
-            try {
-                const profileData = {
-                    name: formData.fullName,
-                    mobile: formData.mobile,
-                    address: updatedAddress,
-                    location: formData.location,
-                    securityPassword: securityPassword || undefined
-                };
+        // 2. Synchronize to server and guarantee database persistence before navigating
+        try {
+            const profileData = {
+                name: formData.fullName,
+                mobile: formData.mobile,
+                address: updatedAddress,
+                location: formData.location,
+                securityPassword: securityPassword || undefined
+            };
 
-                // Guest users → use updateGuest (triggers delivery boy account switching)
-                // Real registered users → use updateProfile (no account switching)
-                const isGuest = !user?.email || user.email.startsWith('guest_') || user.email.startsWith('mobile_');
-                let result;
-                if (isGuest) {
-                    result = await apiService.updateGuest({
-                        name: formData.fullName,
-                        mobile: formData.mobile,
-                        address: updatedAddress,
-                        location: formData.location,
-                        securityPassword: securityPassword || undefined
-                    });
-                } else {
-                    result = await apiService.updateProfile(profileData);
-                }
-
-                // Also ensure updateProfile is called with latest address to guarantee DB persistence
-                try {
-                    await apiService.updateProfile({
-                        name: formData.fullName,
-                        mobile: formData.mobile,
-                        address: updatedAddress,
-                        location: formData.location,
-                        securityPassword: securityPassword || undefined
-                    });
-                } catch (_) {}
-
-                const serverData = result?.data || result;
-                const newToken = result?.token;
-
-                if (serverData && typeof serverData === 'object') {
-                    const finalUser = {
-                        ...optimisticUser,
-                        ...serverData,
-                        address: updatedAddress,
-                        location: formData.location || serverData.location || optimisticUser.location
-                    };
-                    setUser(finalUser);
-                    localStorage.setItem('userInfo', JSON.stringify(finalUser));
-                    queryClient.setQueryData(['users', 'profile'], finalUser);
-
-                    // If server returned a NEW token (delivery boy account switch happened)
-                    // save it so next request uses the delivery boy's token
-                    if (newToken) {
-                        localStorage.setItem('authToken', newToken);
-                        // Force a full profile refresh so role/nav updates
-                        queryClient.invalidateQueries({ queryKey: ['users', 'profile'] });
-                        window.dispatchEvent(new Event('userChanged'));
-                    }
-                }
-            } catch (err) {
-                console.warn('Background address sync warning:', err);
-            } finally {
-                setIsSaving(false);
+            const isGuest = !user?.email || user.email.startsWith('guest_') || user.email.startsWith('mobile_');
+            let result;
+            if (isGuest) {
+                result = await apiService.updateGuest(profileData);
+            } else {
+                result = await apiService.updateProfile(profileData);
             }
-        })();
+
+            const resData = result?.data || result;
+            const userPayload = (resData && typeof resData === 'object' && resData.data) ? resData.data : resData;
+            const newToken = result?.token || result?.data?.token || userPayload?.token;
+
+            const finalUser = {
+                ...optimisticUser,
+                ...(userPayload && typeof userPayload === 'object' ? userPayload : {}),
+                address: updatedAddress,
+                location: formData.location || userPayload?.location || optimisticUser.location
+            };
+
+            setUser(finalUser);
+            localStorage.setItem('userInfo', JSON.stringify(finalUser));
+            queryClient.setQueryData(['users', 'profile'], finalUser);
+
+            if (newToken) {
+                localStorage.setItem('authToken', newToken);
+                queryClient.invalidateQueries({ queryKey: ['users', 'profile'] });
+            }
+        } catch (err) {
+            console.warn('Address sync error (local changes saved):', err);
+        } finally {
+            setIsSaving(false);
+            window.dispatchEvent(new Event('userChanged'));
+            navigate('/profile');
+        }
     };
 
     return (

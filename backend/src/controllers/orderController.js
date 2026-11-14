@@ -262,15 +262,16 @@ export const getOrders = async (req, res, next) => {
 
             if (phone10) {
                 // Strictly return orders placed with THIS active mobile number.
-                // If found -> returns matching order cards.
-                // If not found -> returns empty array (shows "No orders found").
                 const phoneRegex = new RegExp(`${phone10}$`);
                 return {
                     $or: [
                         { 'shippingAddress.mobile': phoneRegex },
                         { 'shippingAddress.phone': phoneRegex },
                         { 'shippingAddress.mobile': phone10 },
-                        { 'shippingAddress.phone': phone10 }
+                        { 'shippingAddress.phone': phone10 },
+                        { 'shippingAddress.mobile': '91' + phone10 },
+                        { 'shippingAddress.phone': '91' + phone10 },
+                        ...(userId ? [{ user: userId }] : [])
                     ]
                 };
             }
@@ -279,15 +280,15 @@ export const getOrders = async (req, res, next) => {
                 return { user: userId };
             }
 
-            return { user: null };
+            return { _id: null };
         };
 
         // STRICT RBAC: Filter orders based on user role and context
-        if (isMyOrders && !isAdmin) {
-            // Customer "My Orders" tab: ALWAYS returns only personal orders for regular customers
+        if (isMyOrders) {
+            // Customer "My Orders" tab: ALWAYS returns only personal orders based strictly on mobile number
             query = getPersonalOrderQuery();
         } else if (isAdmin) {
-            // Global Admin: Sees all orders across the entire platform (including on the Orders page)
+            // Global Admin (in Admin Dashboard): Sees all orders across the entire platform
             query = {};
         } else if (roles.includes('delivery_boy')) {
             // Delivery boy panel: Sees all orders for delivery dispatch
@@ -301,11 +302,7 @@ export const getOrders = async (req, res, next) => {
                 ]
             };
         } else {
-            // Standard Customers / Service Admins: ONLY see their own personal orders
-            if (!req.user?._id && !req.user?.mobile) {
-                res.status(401);
-                throw new Error('User not authenticated');
-            }
+            // Standard Customers: ONLY see their own personal orders
             query = getPersonalOrderQuery();
         }
 

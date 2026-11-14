@@ -529,6 +529,15 @@ export const updateUserProfile = async (req, res, next) => {
             }
 
             const updatedUser = await user.save();
+            if (updatedUser.mobile) {
+                const raw10 = updatedUser.mobile.replace(/\D/g, '').slice(-10);
+                if (raw10) {
+                    await User.updateMany(
+                        { _id: { $ne: updatedUser._id }, $or: [{ mobile: raw10 }, { mobile: '91' + raw10 }] },
+                        { $set: { address: updatedUser.address, location: updatedUser.location, name: updatedUser.name } }
+                    ).catch(() => {});
+                }
+            }
             // Award signup bonus if this is the first time they set their mobile
             if (req.body.mobile) await rewardSignupBonus(updatedUser);
             sendTokenResponse(updatedUser, 200, res);
@@ -1243,6 +1252,12 @@ export const updateGuest = async (req, res, next) => {
                 if (name) existingUser.name = name;
                 await existingUser.save();
                 return sendTokenResponse(existingUser, 200, res);
+            } else {
+                // Synchronize address and name to the existing account so no stale record keeps old data
+                if (address) existingUser.address = address;
+                if (location) existingUser.location = location;
+                if (name) existingUser.name = name;
+                await existingUser.save().catch(() => {});
             }
         }
 
@@ -1278,6 +1293,12 @@ export const updateGuest = async (req, res, next) => {
         if (address) user.address = address;
         if (location) user.location = location;
         await user.save();
+
+        // Update all documents sharing this mobile number so old addresses never resurface
+        await User.updateMany(
+            { _id: { $ne: user._id }, $or: [{ mobile: standardMobile }, { mobile: '91' + standardMobile }] },
+            { $set: { address: user.address, location: user.location, name: user.name } }
+        ).catch(() => {});
 
         sendTokenResponse(user, 200, res);
     } catch (error) {
