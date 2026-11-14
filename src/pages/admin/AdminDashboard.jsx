@@ -1083,11 +1083,14 @@ const ProductManagement = () => {
     return (
         <div className="max-w-6xl">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
-                    {view === 'list' && <ShoppingBag className="text-[#2E5A2E] dark:text-[#7CA90E]" size={22} />}
-                    {view === 'list' ? t('Products') : editingProduct ? t('Edit Product') : t('Add New Product')}
-                </h2>
-                <div className="flex items-center gap-3">
+                <div>
+                    {view !== 'list' && (
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
+                            {editingProduct ? t('Edit Product') : t('Add New Product')}
+                        </h2>
+                    )}
+                </div>
+                <div className="flex items-center gap-3 ml-auto">
                     {view === 'list' && (
                         <button
                             onClick={() => navigate('/admin/bulk-import')}
