@@ -23,15 +23,17 @@ export const initFirebaseAdmin = () => {
                 raw = raw.slice(1, -1).trim();
             }
 
+            let jsonText = raw;
+            if (!raw.startsWith('{')) {
+                // Base64 encoded string: strip any whitespace/newlines and decode
+                const cleanB64 = raw.replace(/\s+/g, '');
+                jsonText = Buffer.from(cleanB64, 'base64').toString('utf8');
+            }
+
             try {
-                serviceAccount = JSON.parse(raw);
+                serviceAccount = JSON.parse(jsonText);
             } catch (jsonErr) {
-                try {
-                    const decoded = Buffer.from(raw, 'base64').toString('utf8');
-                    serviceAccount = JSON.parse(decoded);
-                } catch (b64Err) {
-                    throw new Error(`JSON.parse failed: ${jsonErr.message}`);
-                }
+                throw new Error(`JSON.parse failed: ${jsonErr.message} (preview: ${jsonText.substring(0, 40)}...)`);
             }
         } else {
             const serviceAccountPath = join(__dirname, '../config/firebase-service-account.json');
