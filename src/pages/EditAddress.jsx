@@ -114,22 +114,19 @@ const EditAddress = () => {
                     savedFallback = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
                 } catch {}
 
-                const userDisplayName = user.fullName || user.name || savedFallback?.fullName || '';
+                const userDisplayName = savedFallback?.fullName || user.fullName || user.name || '';
                 const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
-                let loadedStreet = user.address?.street || savedFallback?.address?.street || '';
-                let loadedCity = user.address?.city || savedFallback?.address?.city || '';
+                let loadedStreet = savedFallback?.address?.street || user.address?.street || '';
+                let loadedCity = savedFallback?.address?.city || user.address?.city || '';
                 if (isCityUnavailable(loadedCity)) loadedCity = '';
-                // If street was erroneously saved identical to city (e.g. Chennai / Chennai), clear it
-                if (loadedStreet && loadedCity && loadedStreet.trim().toLowerCase() === loadedCity.trim().toLowerCase()) {
-                    loadedStreet = '';
-                }
+
                 setFormData({
                     fullName: isGuestName ? '' : userDisplayName,
-                    mobile: user.mobile || user.phone || savedFallback?.mobile || '',
+                    mobile: savedFallback?.mobile || user.mobile || user.phone || '',
                     street: loadedStreet,
                     city: loadedCity,
-                    zip: user.address?.zip || savedFallback?.address?.zip || '630702',
-                    location: user.location || savedFallback?.location || ''
+                    zip: savedFallback?.address?.zip || user.address?.zip || '630702',
+                    location: savedFallback?.location || user.location || ''
                 });
             }
         }

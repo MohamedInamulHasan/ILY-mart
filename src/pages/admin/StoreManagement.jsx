@@ -3,7 +3,7 @@ import { parseProductDescription, serializeProductDescription } from '../../util
 import { useData } from '../../context/DataContext';
 import { API_BASE_URL, apiService } from '../../utils/api';
 import { openExternalLink } from '../../utils/linkHelper';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isStoreOpen, formatTime12h, isProductScheduled } from '../../utils/storeHelpers';
 import { motion } from 'framer-motion';

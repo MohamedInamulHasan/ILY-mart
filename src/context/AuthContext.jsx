@@ -90,25 +90,32 @@ export const AuthProvider = ({ children }) => {
                 ]);
 
                 console.log('✅ AuthContext: Server Verification Success', data);
-                // Update with fresh data from server while protecting local address from being wiped
                 let localUser = {};
                 try {
                     localUser = JSON.parse(localStorage.getItem('userInfo') || '{}');
                 } catch {}
 
+                let savedBackup = null;
+                try {
+                    savedBackup = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
+                } catch {}
+
                 const serverData = data?.data || {};
-                const localHasAddress = localUser.address && (localUser.address.street || localUser.address.city);
-                const serverHasAddress = serverData.address && (serverData.address.street || serverData.address.city);
 
-                const finalAddress = serverHasAddress 
-                    ? serverData.address 
-                    : (localHasAddress ? localUser.address : serverData.address);
+                // Protect user's address from being reverted by stale or empty server data
+                const finalAddress = (savedBackup?.address?.street) 
+                    ? savedBackup.address 
+                    : ((localUser.address?.street) ? localUser.address : serverData.address);
 
-                const finalLocation = serverData.location || localUser.location || '';
+                const finalLocation = savedBackup?.location || localUser.location || serverData.location || '';
+                const finalMobile = savedBackup?.mobile || localUser.mobile || serverData.mobile || '';
+                const finalName = savedBackup?.fullName || localUser.name || serverData.name || '';
 
                 const mergedUser = {
                     ...localUser,
                     ...serverData,
+                    name: finalName || serverData.name || localUser.name,
+                    mobile: finalMobile || serverData.mobile || localUser.mobile,
                     address: finalAddress,
                     location: finalLocation
                 };

@@ -254,29 +254,34 @@ const Checkout = () => {
                 const hasValidAddress = (isAddressObject && addressObj.street && addressObj.city) ||
                     (!isAddressObject && user.address && user.city);
 
-                const userDisplayName = user.fullName || user.name || '';
+                let savedFallback = null;
+                try {
+                    savedFallback = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
+                } catch {}
+
+                const userDisplayName = savedFallback?.fullName || user.fullName || user.name || '';
                 const isGuestName = userDisplayName.startsWith('User_') || userDisplayName === 'Guest User';
 
                 const isFirstLoad = lastInitializedUserIdRef.current !== currentUserId;
                 lastInitializedUserIdRef.current = currentUserId;
 
                 setFormData(prev => {
-                    let initAddress = (isAddressObject ? addressObj.street : user.address) || '';
-                    let initCity = (isAddressObject ? addressObj.city : user.city) || '';
-                    if (initAddress && initCity && initAddress.trim().toLowerCase() === initCity.trim().toLowerCase()) {
-                        initAddress = '';
-                    }
+                    let initAddress = savedFallback?.address?.street || (isAddressObject ? addressObj.street : user.address) || '';
+                    let initCity = savedFallback?.address?.city || (isAddressObject ? addressObj.city : user.city) || '';
+                    let initZip = savedFallback?.address?.zip || (isAddressObject ? addressObj.zip : user.zip) || '630702';
+                    let initMobile = savedFallback?.mobile || user.mobile || user.phone || '';
+                    let initLocation = savedFallback?.location || user.location || '';
 
                     if (isFirstLoad) {
                         // First load: populate all fields from user (don't overwrite user edits)
                         return {
                             ...prev,
                             fullName: prev.fullName || (isGuestName ? '' : userDisplayName),
-                            mobile: prev.mobile || user.mobile || user.phone || '',
+                            mobile: prev.mobile || initMobile,
                             address: prev.address || initAddress,
                             city: prev.city || initCity,
-                            zip: prev.zip || '630702',
-                            location: prev.location || user.location || ''
+                            zip: prev.zip || initZip,
+                            location: prev.location || initLocation
                         };
                     } else {
                         // Subsequent updates (e.g. after address save): refresh address fields
@@ -284,10 +289,11 @@ const Checkout = () => {
                         return {
                             ...prev,
                             fullName: (isGuestName ? prev.fullName : userDisplayName) || prev.fullName,
-                            mobile: user.mobile || user.phone || prev.mobile || '',
+                            mobile: initMobile || prev.mobile || '',
                             address: initAddress || prev.address,
                             city: initCity || prev.city,
-                            location: user.location || prev.location || ''
+                            zip: initZip || prev.zip,
+                            location: initLocation || prev.location || ''
                         };
                     }
                 });
@@ -458,6 +464,12 @@ const Checkout = () => {
 
                 // Save locally first (instant)
                 localStorage.setItem('userInfo', JSON.stringify(updatedUserData));
+                localStorage.setItem('user_saved_address', JSON.stringify({
+                    address: updatedUserData.address,
+                    location: formData.location || '',
+                    fullName: formData.fullName,
+                    mobile: formData.mobile
+                }));
                 setUser(updatedUserData);
 
                 // Step B: Calculate delivery & slot parameters

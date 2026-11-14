@@ -73,13 +73,18 @@ const Profile = () => {
             if (cached?.data) cached = cached.data;
         } catch {}
 
+        let savedFallback = null;
+        try {
+            savedFallback = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
+        } catch {}
+
         const profileObj = userProfile?.data || userProfile || {};
         const authObj = authUser?.data || authUser || {};
         const cachedObj = cached || {};
 
-        const street = cachedObj.address?.street || authObj.address?.street || profileObj.address?.street || '';
-        const city = cachedObj.address?.city || authObj.address?.city || profileObj.address?.city || '';
-        const zip = cachedObj.address?.zip || authObj.address?.zip || profileObj.address?.zip || '';
+        const street = savedFallback?.address?.street || cachedObj.address?.street || authObj.address?.street || profileObj.address?.street || '';
+        const city = savedFallback?.address?.city || cachedObj.address?.city || authObj.address?.city || profileObj.address?.city || '';
+        const zip = savedFallback?.address?.zip || cachedObj.address?.zip || authObj.address?.zip || profileObj.address?.zip || '';
 
         return {
             ...profileObj,

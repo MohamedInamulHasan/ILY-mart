@@ -2,7 +2,7 @@ import RichDescriptionEditor from '../../components/RichDescriptionEditor';
 import { parseProductDescription, serializeProductDescription } from '../../utils/descriptionHelper';
 import { CartoonCoin } from '../../components/CartoonCoin';
 import { getUserRoles } from '../../utils/userHelpers';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
