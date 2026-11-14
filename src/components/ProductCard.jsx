@@ -77,8 +77,12 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                     } else if (product.isGroup) {
                         try {
                             const currentY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+                            const origin = window.location.pathname + window.location.search;
                             sessionStorage.setItem('groupCardReturnScroll', String(currentY));
-                            sessionStorage.setItem('groupCardReturnPath', window.location.pathname + window.location.search);
+                            if (!window.location.pathname.startsWith('/product-group/')) {
+                                sessionStorage.setItem('groupCardOriginPath', origin);
+                            }
+                            sessionStorage.setItem('groupCardReturnPath', origin);
                         } catch (err) {}
                     }
                 }}

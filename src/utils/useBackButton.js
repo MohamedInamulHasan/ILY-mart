@@ -84,6 +84,56 @@ export const safeNavigateBack = (navigate, fallback = '/') => {
 };
 
 /**
+ * Returns the most recent route before any product / group exploration.
+ * e.g., if user navigated Home -> Store -> Group -> Product -> Group,
+ * this returns the exact Store route (with all filters/query params intact).
+ */
+export const getPreviousNonProductRoute = (fallback = '/') => {
+    for (let i = navHistory.length - 1; i >= 0; i--) {
+        const route = navHistory[i];
+        if (route && !route.startsWith('/product-group/') && !route.startsWith('/product/')) {
+            return route;
+        }
+    }
+    return fallback;
+};
+
+/**
+ * Specifically handles back navigation from Group Cards (/product-group/:name).
+ * Always reliably returns the user to the exact page they were on before entering the group
+ * (Store, Category, Main Category, or Home).
+ */
+export const safeNavigateBackFromGroup = (navigate, fallback = '/') => {
+    if (typeof navigate !== 'function') return;
+
+    // 1. Close any open modal first
+    if (modalBackStack.length > 0) {
+        const closeTopModal = modalBackStack.pop();
+        if (typeof closeTopModal === 'function') {
+            try {
+                closeTopModal();
+                return;
+            } catch (e) {}
+        }
+    }
+
+    // 2. Check explicitly stored origin path first
+    try {
+        const originPath = sessionStorage.getItem('groupCardOriginPath') || sessionStorage.getItem('groupCardReturnPath');
+        if (originPath && !originPath.startsWith('/product-group/')) {
+            sessionStorage.removeItem('groupCardOriginPath');
+            sessionStorage.removeItem('groupCardReturnPath');
+            navigate(originPath);
+            return;
+        }
+    } catch (e) {}
+
+    // 3. Find the exact previous route in navHistory before any product/group page
+    const target = getPreviousNonProductRoute(fallback);
+    navigate(target);
+};
+
+/**
  * Call this when an order is submitted/confirmed so back navigation
  * purges the cart, checkout, order-confirmation, and product details from history
  * and routes directly to the Home page.

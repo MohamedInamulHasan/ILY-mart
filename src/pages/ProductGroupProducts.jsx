@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useLanguage } from '../context/LanguageContext';
-import { safeNavigateBack, registerModalBackHandler } from '../utils/useBackButton';
+import { safeNavigateBack, registerModalBackHandler, safeNavigateBackFromGroup } from '../utils/useBackButton';
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import SimpleProductCard from '../components/SimpleProductCard';
@@ -111,47 +111,18 @@ const ProductGroupProducts = () => {
     })();
 
     const handleBack = () => {
-        try {
-            const returnPath = location.state?.returnPath || sessionStorage.getItem('groupCardReturnPath');
-            if (returnPath && returnPath !== (location.pathname + location.search)) {
-                sessionStorage.removeItem('groupCardReturnPath');
-                navigate(returnPath);
-                return;
-            }
-        } catch (e) {}
-
-        if (storeIdParam) {
-            navigate(`/store/${storeIdParam}`);
-            return;
-        }
-
-        if (window.history.state && window.history.state.idx > 0) {
-            navigate(-1);
-            return;
-        }
-
-        safeNavigateBack(navigate, '/');
+        const fallback = storeIdParam ? `/store/${storeIdParam}` : '/';
+        safeNavigateBackFromGroup(navigate, fallback);
     };
 
-    // Hardware back button handler
+    // Hardware back button handler: reliably returns to the exact prior page
     useEffect(() => {
-        const returnPath = location.state?.returnPath || sessionStorage.getItem('groupCardReturnPath');
+        const fallback = storeIdParam ? `/store/${storeIdParam}` : '/';
         const unregister = registerModalBackHandler(() => {
-            if (returnPath && returnPath !== (location.pathname + location.search)) {
-                try {
-                    sessionStorage.removeItem('groupCardReturnPath');
-                } catch (e) {}
-                navigate(returnPath);
-            } else if (storeIdParam) {
-                navigate(`/store/${storeIdParam}`);
-            } else if (window.history.state && window.history.state.idx > 0) {
-                navigate(-1);
-            } else {
-                safeNavigateBack(navigate, '/');
-            }
+            safeNavigateBackFromGroup(navigate, fallback);
         });
         return unregister;
-    }, [navigate, storeIdParam, location.state, location.pathname, location.search]);
+    }, [navigate, storeIdParam]);
 
     return (
         <PullToRefreshLayout>
