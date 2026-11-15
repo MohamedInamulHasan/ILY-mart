@@ -1,6 +1,8 @@
-import { X } from 'lucide-react';
+import { X, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import deliveryCharacterImg from '../assets/delivery-character.png';
+import pointerHandImg from '../assets/pointer-hand.png';
+import { Link } from 'react-router-dom';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { apiService } from '../utils/api';
 import { useData } from './DataContext';
@@ -309,6 +311,53 @@ export const CartProvider = ({ children }) => {
                     className="fixed inset-0 bg-black/70 z-[9999] flex flex-col items-center justify-end overflow-hidden pb-0 px-4 animate-in fade-in duration-150 pointer-events-auto transform-gpu"
                     onClick={(e) => { if (e.target === e.currentTarget) setShowStoreReminder(false); }}
                 >
+                    {/* Top Right Highlighted Cart & Bouncing Pointer Hand */}
+                    <div className="fixed top-3.5 right-6 z-[10000] flex flex-col items-center pointer-events-auto">
+                        <Link
+                            to="/cart"
+                            onClick={() => setShowStoreReminder(false)}
+                            className="flex flex-col items-center group cursor-pointer"
+                            aria-label="View cart"
+                        >
+                            {/* Glowing Cart Button */}
+                            <div className="relative">
+                                {/* Glowing ring / spotlight animation */}
+                                <span className="absolute -inset-2 rounded-full bg-[#CBF9B2] opacity-80 animate-ping pointer-events-none" />
+                                <span className="absolute -inset-1.5 rounded-full bg-white/60 blur-xs pointer-events-none" />
+
+                                <div className="w-[40px] h-[40px] bg-white rounded-full flex items-center justify-center shadow-[0_0_24px_rgba(203,249,178,0.95)] border-2 border-[#2E5A2E] relative group-active:scale-95 transition-transform">
+                                    <ShoppingCart size={20} className="text-[#2E5A2E]" strokeWidth={2.2} />
+
+                                    {/* Red Badge with Quantity */}
+                                    {cartCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-black h-[20px] min-w-[20px] px-1 rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
+                                            {cartCount}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Hand Image Shaking / Bouncing Up and Down pointing to the cart */}
+                            <motion.div
+                                animate={{
+                                    y: [0, -14, 0, -8, 0],
+                                    rotate: [0, -3, 3, -2, 0],
+                                }}
+                                transition={{
+                                    repeat: Infinity,
+                                    duration: 1,
+                                    ease: "easeInOut"
+                                }}
+                                className="mt-2.5 flex flex-col items-center select-none"
+                            >
+                                <img
+                                    src={pointerHandImg}
+                                    alt="Check cart"
+                                    className="w-10 h-auto object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)] filter"
+                                />
+                            </motion.div>
+                        </Link>
+                    </div>
                     {/* Speech Bubble Above Character - styled like delivery character dialogue */}
                     <motion.div 
                         initial={{ scale: 0.92, opacity: 0, y: 14 }}
