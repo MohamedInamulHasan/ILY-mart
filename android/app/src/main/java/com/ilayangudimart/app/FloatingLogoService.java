@@ -250,8 +250,7 @@ public class FloatingLogoService extends Service {
                 boolean sessionActive = isSessionActive(prefs);
                 boolean hasActive = prefs.getBoolean("has_active_orders", false);
                 boolean hasPending = prefs.getBoolean("has_pending_orders", false);
-                boolean isStore = prefs.getBoolean("store_session_active", false);
-                boolean hasActiveOrPending = hasActive || hasPending || isStore;
+                boolean hasActiveOrPending = hasActive || hasPending;
 
                 if (!enabled || !sessionActive) {
                     instance.hideCircleBubble();
@@ -1018,7 +1017,9 @@ public class FloatingLogoService extends Service {
         dismissPorterOrderCardInternal();
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean hasActive = prefs.getBoolean("has_active_orders", false);
-        if (!isAppInForeground) {
+        boolean hasPending = prefs.getBoolean("has_pending_orders", false);
+        boolean hasActiveOrPending = hasActive || hasPending;
+        if (!isAppInForeground && hasActiveOrPending) {
             showCircleBubble();
         }
         // 5s gap before showing the next pending processing order (only if no accepted order in progress)
@@ -1092,7 +1093,11 @@ public class FloatingLogoService extends Service {
     public synchronized void dismissPorterOrderCard() {
         stopAlertEffects();
         dismissPorterOrderCardInternal();
-        if (!isAppInForeground) {
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean hasPending = prefs.getBoolean("has_pending_orders", false);
+        boolean hasActiveOrPending = hasActive || hasPending;
+        if (!isAppInForeground && hasActiveOrPending) {
             showCircleBubble();
         }
     }
@@ -1215,9 +1220,11 @@ public class FloatingLogoService extends Service {
                 stopServiceAndHide();
                 return;
             }
-            if (isAppInForeground || (!hasActive && !hasPending)) {
+            boolean hasActiveOrPending = hasActive || hasPending;
+
+            if (isAppInForeground || !hasActiveOrPending) {
                 hideCircleBubble();
-                if (!hasActive && !hasPending) {
+                if (!hasActiveOrPending) {
                     dismissPorterOrderCard();
                 }
             } else {

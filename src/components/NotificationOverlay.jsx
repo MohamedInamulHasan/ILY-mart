@@ -124,10 +124,22 @@ const NotificationOverlay = () => {
         return allOrders.filter(o => isProcessingStatus(o.status));
     }, [allOrders, isDeliveryBoy]);
 
+    // Helper to check if order is undelivered (active until delivered)
+    const isUndeliveredStatus = (status) => {
+        const s = String(status || '').toLowerCase().trim();
+        return ['pending', 'processing', 'order placed', 'confirmed', 'accepted', 'out for delivery', 'shipped'].includes(s);
+    };
+
     // Filter processing orders for store admin
     const storeProcessingOrders = useMemo(() => {
         if (!isStoreAdmin || (!myStoreId && !myStoreName)) return [];
         return allOrders.filter(o => isProcessingStatus(o.status) && isOrderForMyStore(o));
+    }, [allOrders, isStoreAdmin, myStoreId, myStoreName]);
+
+    // Filter undelivered orders for store admin (keeps floating icon active until delivered)
+    const storeUndeliveredOrders = useMemo(() => {
+        if (!isStoreAdmin || (!myStoreId && !myStoreName)) return [];
+        return allOrders.filter(o => isUndeliveredStatus(o.status) && isOrderForMyStore(o));
     }, [allOrders, isStoreAdmin, myStoreId, myStoreName]);
 
     // Sync order state (active/pending) with native floating overlay
@@ -138,10 +150,11 @@ const NotificationOverlay = () => {
             const hasPending = processingOrders.length > 0;
             setOverlayOrdersState({ hasActive, hasPending });
         } else if (isStoreAdmin && myStore) {
-            const hasPending = storeProcessingOrders.length > 0;
-            setOverlayOrdersState({ hasActive: false, hasPending });
+            const hasActive = storeUndeliveredOrders.some(o => ['accepted', 'out for delivery', 'shipped'].includes(String(o.status || '').toLowerCase().trim()));
+            const hasPending = storeUndeliveredOrders.some(o => ['pending', 'processing', 'order placed', 'confirmed'].includes(String(o.status || '').toLowerCase().trim()));
+            setOverlayOrdersState({ hasActive, hasPending });
         }
-    }, [hasActiveAcceptedOrder, processingOrders.length, storeProcessingOrders.length, isDeliveryBoy, isStoreAdmin, myStore]);
+    }, [hasActiveAcceptedOrder, processingOrders.length, storeUndeliveredOrders.length, isDeliveryBoy, isStoreAdmin, myStore]);
 
     const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
         return localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';

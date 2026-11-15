@@ -35,6 +35,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useStores, useCreateStore, useUpdateStore, useDeleteStore, useUpdateStoreOrder } from '../../hooks/queries/useStores';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useUpdateProductOrder } from '../../hooks/queries/useProducts';
 import { useCategories } from '../../hooks/queries/useCategories';
+import { useOrders } from '../../hooks/queries/useOrders';
 import useCloudinaryUpload from '../../hooks/useCloudinaryUpload';
 import { useQueryClient } from '@tanstack/react-query';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
@@ -65,6 +66,7 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
     const { data: stores = [] } = useStores();
     const { data: products = [] } = useProducts();
     const { data: categories = [] } = useCategories();
+    const { data: rawOrders = [] } = useOrders();
 
     // Floating overlay alert state like Delivery Boy
     const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
@@ -237,6 +239,47 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
         return false;
     }) : null;
 
+    const { storeHasActive, storeHasPending } = useMemo(() => {
+        if (!isStoreAdmin || !myStore) return { storeHasActive: false, storeHasPending: false };
+        const list = Array.isArray(rawOrders) ? rawOrders : (rawOrders?.data || []);
+        const sId = String(myStore._id || myStore.id || myStoreId || '');
+        const sName = (myStore.name || '').trim().toLowerCase();
+
+        let hasActive = false;
+        let hasPending = false;
+
+        list.forEach(o => {
+            const s = String(o.status || '').toLowerCase().trim();
+            if (['delivered', 'cancelled', 'rejected'].includes(s)) return;
+
+            let belongs = false;
+            const oStoreId = String(o.storeId?._id || o.storeId || '').trim();
+            if (sId && oStoreId && oStoreId === sId) {
+                belongs = true;
+            } else if (Array.isArray(o.items)) {
+                belongs = o.items.some(item => {
+                    const itemStoreId = String(item.storeId?._id || item.storeId || item.store?._id || item.store?.id || '').trim();
+                    if (sId && itemStoreId && itemStoreId === sId) return true;
+                    const itemStoreName = (item.storeName || item.storeId?.name || '').trim().toLowerCase();
+                    if (sName && itemStoreName && itemStoreName === sName) return true;
+                    return false;
+                });
+            }
+
+            if (belongs) {
+                if (['accepted', 'out for delivery', 'shipped'].includes(s)) {
+                    hasActive = true;
+                } else if (['pending', 'processing', 'order placed', 'confirmed'].includes(s)) {
+                    hasPending = true;
+                }
+            }
+        });
+
+        return { storeHasActive: hasActive, storeHasPending: hasPending };
+    }, [rawOrders, isStoreAdmin, myStore, myStoreId]);
+
+    const hasAnyStoreOrder = storeHasActive || storeHasPending;
+
     // Sync store session active with native floating overlay when store admin opens store management
     useEffect(() => {
         if (!isStoreAdmin || !myStore) return;
@@ -247,13 +290,13 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
             setOverlayStoreSessionActive(true, sId, sName);
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) setOverlayAuthToken(currentToken);
-            setOverlayOrdersState({ hasActive: false, hasPending: true });
+            setOverlayOrdersState({ hasActive: storeHasActive, hasPending: storeHasPending });
             checkOverlayPermission().then(granted => {
                 setHasOverlayPermission(granted);
-                if (granted) showFloatingOverlay();
+                if (granted && hasAnyStoreOrder) showFloatingOverlay();
             });
         }
-    }, [isStoreAdmin, myStore, myStoreId]);
+    }, [isStoreAdmin, myStore, myStoreId, storeHasActive, storeHasPending, hasAnyStoreOrder]);
 
     const [view, setView] = useState('list'); // Default to list view for everyone
     const [selectedStore, setSelectedStore] = useState(myStore);
@@ -1002,8 +1045,10 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
                                                                     if (granted) {
                                                                         const currentToken = localStorage.getItem('authToken');
                                                                         if (currentToken) await setOverlayAuthToken(currentToken);
-                                                                        await setOverlayOrdersState({ hasActive: false, hasPending: true });
-                                                                        await showFloatingOverlay();
+                                                                        await setOverlayOrdersState({ hasActive: storeHasActive, hasPending: storeHasPending });
+                                                                        if (hasAnyStoreOrder) {
+                                                                            await showFloatingOverlay();
+                                                                        }
                                                                     } else {
                                                                         // Ask permission and open Android Settings so floating icon and order alerts appear
                                                                         await requestOverlayPermission();

@@ -138,11 +138,13 @@ const MyStore = () => {
             setOverlayStoreSessionActive(true, sId, sName);
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) setOverlayAuthToken(currentToken);
-            const pendingCount = storeOrders.filter(o => ['Pending', 'Processing', 'Order Placed', 'Confirmed'].includes(o.status)).length;
-            setOverlayOrdersState({ hasActive: false, hasPending: pendingCount > 0 });
+            const hasActive = storeOrders.some(o => ['accepted', 'out for delivery', 'shipped'].includes(String(o.status || '').toLowerCase().trim()));
+            const hasPending = storeOrders.some(o => ['pending', 'processing', 'order placed', 'confirmed'].includes(String(o.status || '').toLowerCase().trim()));
+            const hasAnyStoreOrder = hasActive || hasPending;
+            setOverlayOrdersState({ hasActive, hasPending });
             checkOverlayPermission().then(granted => {
                 setHasOverlayPermission(granted);
-                if (granted) showFloatingOverlay();
+                if (granted && hasAnyStoreOrder) showFloatingOverlay();
             });
         }
     }, [myStore, myStoreId, storeOrders]);
