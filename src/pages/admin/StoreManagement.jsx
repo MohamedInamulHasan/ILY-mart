@@ -78,21 +78,6 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
         return () => window.removeEventListener('delivery:floating-toggle', handleFloatingToggle);
     }, []);
 
-    // Sync store session active with native floating overlay when store admin opens store management
-    useEffect(() => {
-        if (!isStoreAdmin || !myStore) return;
-        const sId = String(myStore._id || myStore.id || myStoreId || '');
-        const sName = myStore.name || '';
-        const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        if (enabled && !myStore.isManuallyClosed) {
-            setOverlayStoreSessionActive(true, sId, sName);
-            const currentToken = localStorage.getItem('authToken');
-            if (currentToken) setOverlayAuthToken(currentToken);
-            setOverlayOrdersState({ hasActive: false, hasPending: true });
-            showFloatingOverlay();
-        }
-    }, [isStoreAdmin, myStore, myStoreId]);
-
     const { mutateAsync: addStore } = useCreateStore();
     const { mutateAsync: updateStore } = useUpdateStore();
     const { mutateAsync: deleteStore } = useDeleteStore();
@@ -237,6 +222,21 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
         if (activeMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
         return false;
     }) : null;
+
+    // Sync store session active with native floating overlay when store admin opens store management
+    useEffect(() => {
+        if (!isStoreAdmin || !myStore) return;
+        const sId = String(myStore._id || myStore.id || myStoreId || '');
+        const sName = myStore.name || '';
+        const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+        if (enabled && !myStore.isManuallyClosed) {
+            setOverlayStoreSessionActive(true, sId, sName);
+            const currentToken = localStorage.getItem('authToken');
+            if (currentToken) setOverlayAuthToken(currentToken);
+            setOverlayOrdersState({ hasActive: false, hasPending: true });
+            showFloatingOverlay();
+        }
+    }, [isStoreAdmin, myStore, myStoreId]);
 
     const [view, setView] = useState('list'); // Default to list view for everyone
     const [selectedStore, setSelectedStore] = useState(myStore);
