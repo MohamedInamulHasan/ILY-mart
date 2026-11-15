@@ -6,7 +6,7 @@ import { apiService } from '../utils/api';
 import { useData } from './DataContext';
 import { useAuth } from './AuthContext';
 import { useLanguage } from './LanguageContext';
-import { isStoreOpen, calculateDeliveryCharge, getStoreName } from '../utils/storeHelpers';
+import { isStoreOpen, calculateDeliveryCharge } from '../utils/storeHelpers';
 
 const CartContext = createContext();
 
@@ -32,11 +32,7 @@ export const CartProvider = ({ children }) => {
     const [userId, setUserId] = useState(getUserId());
     const { user } = useAuth();
     const { t, language } = useLanguage();
-    const [pendingProduct, setPendingProduct] = useState(null);
-    const [showStoreWarning, setShowStoreWarning] = useState(false);
-    const [nextStoreCharge, setNextStoreCharge] = useState(25);
-    const [warningStoreNames, setWarningStoreNames] = useState('');
-    const [newStoreName, setNewStoreName] = useState('');
+    const [showStoreReminder, setShowStoreReminder] = useState(false);
 
 
 
@@ -208,37 +204,20 @@ export const CartProvider = ({ children }) => {
 
 
 
-    const addToCart = (product, force = false) => {
+    const addToCart = (product) => {
         const productId = product._id || product.id;
         const newStoreId = (product.storeId?._id || product.storeId || '').toString();
 
-        // Never show the multi-store warning for free (gold) products,
-        // or when the cart already contains a free/gold product
-        const isNewProductFree = product.isGold === true;
-        const cartHasFreeProduct = cartItems.some(item => item.isGold);
-
-        if (!force && !isNewProductFree && !cartHasFreeProduct && newStoreId && cartItems.length > 0) {
+        // Customer can ONLY order products from one store at a time
+        if (newStoreId && cartItems.length > 0) {
             const currentUniqueStores = new Set(
-                cartItems.map(item => (item.storeId?._id || item.storeId || '').toString()).filter(Boolean)
+                cartItems
+                    .map(item => (item.storeId?._id || item.storeId || '').toString())
+                    .filter(Boolean)
             );
 
-            if (!currentUniqueStores.has(newStoreId) && currentUniqueStores.size > 0) {
-                const nextCharge = 20 + currentUniqueStores.size * 10;
-
-                // Get names of existing stores in the cart
-                const currentStoreIds = Array.from(currentUniqueStores);
-                const storeNames = currentStoreIds.map(id => getStoreName(id, stores)).filter(Boolean);
-                const storesText = storeNames.length > 1
-                    ? storeNames.slice(0, -1).join(', ') + (language === 'ta' ? ' and ' : ' and ') + storeNames[storeNames.length - 1]
-                    : storeNames.join(', ');
-
-                const newStoreNameVal = getStoreName(newStoreId, stores) || 'another store';
-
-                setWarningStoreNames(storesText);
-                setNewStoreName(newStoreNameVal);
-                setPendingProduct(product);
-                setNextStoreCharge(nextCharge);
-                setShowStoreWarning(true);
+            if (currentUniqueStores.size > 0 && !currentUniqueStores.has(newStoreId)) {
+                setShowStoreReminder(true);
                 return;
             }
         }
@@ -249,11 +228,10 @@ export const CartProvider = ({ children }) => {
             title: product.title || product.name,
             price: product.price,
             image: product.image || (product.images && product.images.length > 0 ? product.images[0] : null),
-            storeId: product.storeId || null, // Just save the storeId string
+            storeId: product.storeId?._id || product.storeId || null,
             quantity: 1,
             unit: product.unit || product.size || '',
             isGold: Boolean(product.isGold || product.deliveryCharge === 0 || product.isFreeDelivery || product.freeDelivery),
-            // Ad-related fields
             isFromAd: product.isFromAd || false,
             adTitle: product.adTitle || null,
             storeName: product.storeName || null
@@ -268,19 +246,6 @@ export const CartProvider = ({ children }) => {
             }
             return [...prevItems, productToSave];
         });
-    };
-
-    const confirmAddToCart = () => {
-        if (pendingProduct) {
-            addToCart(pendingProduct, true);
-        }
-        setShowStoreWarning(false);
-        setPendingProduct(null);
-    };
-
-    const cancelAddToCart = () => {
-        setShowStoreWarning(false);
-        setPendingProduct(null);
     };
 
     const removeFromCart = (productId) => {
@@ -338,113 +303,84 @@ export const CartProvider = ({ children }) => {
         <CartContext.Provider value={value}>
             {children}
 
-            {/* Multi-Store Warning — Half-Screen Character & Speech Bubble Above */}
-            {showStoreWarning && (() => {
-                const currentUniqueStores = new Set(
-                    cartItems.map(item => (item.storeId?._id || item.storeId || '').toString()).filter(Boolean)
-                );
-                const isMultiStore = currentUniqueStores.size > 1;
-                const currentCharge = 20 + (currentUniqueStores.size - 1) * 10;
-                const newCharge = nextStoreCharge || (currentCharge + 10);
-                const extraCharge = newCharge - currentCharge > 0 ? (newCharge - currentCharge) : 10;
-
-                return (
-                    <div 
-                        className="fixed inset-0 bg-black/70 z-[9999] flex flex-col items-center justify-end overflow-hidden pb-0 px-4 animate-in fade-in duration-150 pointer-events-auto transform-gpu"
-                        onClick={(e) => { if (e.target === e.currentTarget) cancelAddToCart(); }}
+            {/* Single Store Restriction Reminder Modal — Delivery Character & Speech Bubble */}
+            {showStoreReminder && (
+                <div 
+                    className="fixed inset-0 bg-black/70 z-[9999] flex flex-col items-center justify-end overflow-hidden pb-0 px-4 animate-in fade-in duration-150 pointer-events-auto transform-gpu"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowStoreReminder(false); }}
+                >
+                    {/* Speech Bubble Above Character - styled like delivery character dialogue */}
+                    <motion.div 
+                        initial={{ scale: 0.92, opacity: 0, y: 14 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 p-4 sm:p-5 max-w-[340px] sm:max-w-[380px] w-full mb-3 z-10 transform-gpu will-change-transform"
                     >
-                        {/* Speech Bubble Above Character - wider length and clean styling */}
-                        <motion.div 
-                            initial={{ scale: 0.92, opacity: 0, y: 14 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                            className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 p-4 sm:p-5 max-w-[340px] sm:max-w-[380px] w-full mb-3 z-10 transform-gpu will-change-transform"
+                        {/* Speech Bubble Arrow Tail pointing down towards character's head */}
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[9px] border-t-white dark:border-t-gray-900 filter drop-shadow-[0_2px_1px_rgba(0,0,0,0.08)]"></div>
+
+                        {/* Close button */}
+                        <button
+                            type="button"
+                            onClick={() => setShowStoreReminder(false)}
+                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-base font-bold"
+                            aria-label="Close"
                         >
-                            {/* Speech Bubble Arrow Tail pointing down towards character's head */}
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[9px] border-t-white dark:border-t-gray-900 filter drop-shadow-[0_2px_1px_rgba(0,0,0,0.08)]"></div>
+                            ×
+                        </button>
 
-                            {/* Close button */}
-                            <button
-                                onClick={cancelAddToCart}
-                                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-base font-bold"
-                                aria-label={language === 'ta' ? 'இல்லை' : 'No'}
-                            >
-                                ×
-                            </button>
-
-                            {/* Label with Forest Green accent */}
-                            <div className="flex items-center gap-1.5 mb-2">
-                                <p className="text-[12px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-wider">
-                                    {language === 'ta' ? 'கவனம்!' : 'NOTE!'}
-                                </p>
-                            </div>
-
-                            {/* Main speech message */}
-                            <p className="text-[13px] italic font-semibold text-gray-800 dark:text-gray-100 leading-relaxed mb-3.5">
-                                {isMultiStore ? (
-                                    language === 'ta' ? (
-                                        <>
-                                            நீங்கள் ஏற்கனவே <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> ல் products add பண்ணிருக்கீங்க. Current delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>. இப்போ <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> ல் இருந்து products add பண்ண, delivery charge (<span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{extraCharge} extra</span>) ஆகும், So Delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span>.
-                                            <br />
-                                            <span className="mt-1 inline-block">Add பண்ணலாமா?</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            Neenga already <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> la products add pannirukeenga. Current delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>. Ippo <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> la irundhu products add panna, delivery charge (<span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{extraCharge} extra</span>) aagum, So Delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span>.
-                                            <br />
-                                            <span className="mt-1 inline-block">Add pannava?</span>
-                                        </>
-                                    )
-                                ) : (
-                                    language === 'ta' ? (
-                                        <>
-                                            நீங்கள் ஏற்கனவே <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> ல் products add பண்ணிருக்கீங்க. Current delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>. <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> ல் இருந்து add பண்ண <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{extraCharge} extra</span> charge ஆகும், So Delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span>.
-                                            <br />
-                                            <span className="mt-1 inline-block">Add பண்ணலாமா?</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            Neenga already <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{warningStoreNames}</span> la products add pannirukeenga. Current delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{currentCharge}</span>. <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">{newStoreName}</span> la irundhu add panna <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{extraCharge} extra</span> charge aagum, So Delivery charge <span className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">₹{newCharge}</span>.
-                                            <br />
-                                            <span className="mt-1 inline-block">Add pannava?</span>
-                                        </>
-                                    )
-                                )}
+                        {/* Label with Forest Green accent */}
+                        <div className="flex items-center gap-1.5 mb-2.5">
+                            <p className="text-[13px] sm:text-[13.5px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-wide flex items-center gap-1">
+                                <span>⚠️</span>
+                                <span>{language === 'ta' ? 'ஒரு சிறிய Reminder!' : 'A Quick Reminder!'}</span>
                             </p>
+                        </div>
 
-                            {/* Buttons: No is Black, Yes is Delivery boy tshirt color (#00B329) */}
-                            <div className="flex gap-2.5">
-                                <button
-                                    onClick={cancelAddToCart}
-                                    className="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 font-bold rounded-xl text-xs sm:text-[13px] active:scale-95 transition-all shadow-sm"
-                                >
-                                    {language === 'ta' ? 'இல்லை' : 'No'}
-                                </button>
-                                <button
-                                    onClick={confirmAddToCart}
-                                    className="flex-1 py-2.5 bg-black hover:bg-gray-900 text-white font-bold rounded-xl text-xs sm:text-[13px] active:scale-95 transition-transform shadow-sm"
-                                >
-                                    {language === 'ta' ? 'ஆமாம்' : 'Yes'}
-                                </button>
-                            </div>
-                        </motion.div>
+                        {/* Main speech message */}
+                        <div className="text-[12.5px] sm:text-[13px] italic font-semibold text-gray-800 dark:text-gray-100 leading-relaxed mb-3.5 space-y-2">
+                            <p>
+                                {language === 'ta'
+                                    ? 'நீங்கள் ஏற்கனவே ஒரு Store-லிருந்து Products-ஐ உங்கள் Cart-ல் Add செய்துள்ளீர்கள்.'
+                                    : 'You already have products from another store in your cart.'}
+                            </p>
+                            <p>
+                                {language === 'ta'
+                                    ? 'வேறொரு Store-லிருந்து Products Add செய்ய விரும்பினால், முதலில் உங்கள் Cart-ல் உள்ள பழைய Store Products-ஐ Remove செய்துவிட்டு, புதிய Store Products-ஐ Add செய்யவும்.'
+                                    : 'If you want to add products from a different store, please remove the existing items from your cart first, then add the new store products.'}
+                            </p>
+                            <p className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black not-italic">
+                                {language === 'ta'
+                                    ? 'ஒரு நேரத்தில் ஒரு Store-லிருந்து மட்டுமே Order செய்ய முடியும்!'
+                                    : 'You can only order from one store at a time!'}
+                            </p>
+                        </div>
 
-                        {/* Delivery Character — Swipes up first from bottom */}
-                        <motion.div 
-                            initial={{ y: '60%', opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                            className="h-[46vh] sm:h-[50vh] flex justify-center items-end select-none pointer-events-none z-0 -mt-2"
+                        {/* Button */}
+                        <button
+                            type="button"
+                            onClick={() => setShowStoreReminder(false)}
+                            className="w-full py-2.5 bg-black hover:bg-gray-900 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold rounded-xl text-xs sm:text-[13px] active:scale-95 transition-transform shadow-sm"
                         >
-                            <img 
-                                src={deliveryCharacterImg} 
-                                alt="Delivery Character" 
-                                className="h-full w-auto max-w-full object-contain object-bottom drop-shadow-2xl"
-                            />
-                        </motion.div>
-                    </div>
-                );
-            })()}
+                            {language === 'ta' ? 'சரி, புரிந்தது!' : 'Got it!'}
+                        </button>
+                    </motion.div>
+
+                    {/* Delivery Character — Swipes up first from bottom */}
+                    <motion.div 
+                        initial={{ y: '60%', opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                        className="h-[46vh] sm:h-[50vh] flex justify-center items-end select-none pointer-events-none z-0 -mt-2"
+                    >
+                        <img 
+                            src={deliveryCharacterImg} 
+                            alt="Delivery Character" 
+                            className="h-full w-auto max-w-full object-contain object-bottom drop-shadow-2xl"
+                        />
+                    </motion.div>
+                </div>
+            )}
         </CartContext.Provider>
     );
 };
