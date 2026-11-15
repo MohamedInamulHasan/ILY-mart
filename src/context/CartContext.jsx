@@ -396,24 +396,42 @@ export const CartProvider = ({ children }) => {
                         {/* Main speech message */}
                         <div className="text-[12px] sm:text-[12.5px] font-medium text-gray-800 dark:text-gray-100 leading-relaxed mb-1 space-y-2">
                             <p>
-                                {language === 'ta'
-                                    ? `நீங்கள் ஏற்கனவே ${reminderStoreNames.current || 'Store'} கடையிலிருந்து பொருட்களை உங்கள் கார்ட்டில் சேர்த்துள்ளீர்கள்.`
-                                    : `Neenga already ${reminderStoreNames.current || 'Store'}-la irundhu products-ah Cart-la add pannirukeenga.`}
+                                {language === 'ta' ? (
+                                    <>
+                                        நீங்கள் ஏற்கனவே <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.current || 'Store'}</strong> கடையிலிருந்து பொருட்களை உங்கள் கார்ட்டில் சேர்த்துள்ளீர்கள்.
+                                    </>
+                                ) : (
+                                    <>
+                                        Neenga already <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.current || 'Store'}</strong> la irundhu products ah Cart la add pannirukeenga.
+                                    </>
+                                )}
                             </p>
                             <p>
-                                {language === 'ta'
-                                    ? `இப்போது ${reminderStoreNames.selected || 'Store'} கடையிலிருந்து பொருட்களைச் சேர்க்க முடியாது.`
-                                    : `Ippo ${reminderStoreNames.selected || 'Store'}-la irundhu products add panna mudiyadhu.`}
+                                {language === 'ta' ? (
+                                    <>
+                                        இப்போது <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.selected || 'Store'}</strong> கடையிலிருந்து பொருட்களைச் சேர்க்க முடியாது.
+                                    </>
+                                ) : (
+                                    <>
+                                        Ippo <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.selected || 'Store'}</strong> la irundhu products add panna mudiyadhu.
+                                    </>
+                                )}
                             </p>
                             <p>
-                                {language === 'ta'
-                                    ? `${reminderStoreNames.selected || 'Store'} கடையிலிருந்து பொருட்கள் வாங்க விரும்பினால், முதலில் கார்ட்டில் உள்ள ${reminderStoreNames.current || 'Store'} பொருட்களை நீக்கிவிட்டு, புதிய கடையிலிருந்து பொருட்களைச் சேர்க்கவும்.`
-                                    : `${reminderStoreNames.selected || 'Store'}-la irundhu products vaanga virumbina, first Cart-la irukkura ${reminderStoreNames.current || 'Store'} products-ah remove pannitu, pudhu store-la irundhu products add pannunga.`}
+                                {language === 'ta' ? (
+                                    <>
+                                        <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.selected || 'Store'}</strong> கடையிலிருந்து பொருட்கள் வாங்க விரும்பினால், முதலில் கார்ட்டில் உள்ள <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.current || 'Store'}</strong> பொருட்களை நீக்கிவிட்டு, புதிய கடையிலிருந்து பொருட்களைச் சேர்க்கவும்.
+                                    </>
+                                ) : (
+                                    <>
+                                        <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.selected || 'Store'}</strong> la irundhu products vaanga virumbina, first Cart la irukkura <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.current || 'Store'}</strong> products ah remove pannitu, pudhu store la irundhu products add pannunga.
+                                    </>
+                                )}
                             </p>
-                            <p className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">
+                            <p className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">
                                 {language === 'ta'
                                     ? 'ஒரு ஆர்டரில் ஒரு கடையிலிருந்து மட்டுமே பொருட்களை வாங்க முடியும்'
-                                    : 'Oru order-la oru store-la irundhu mattum dhaan products vaanga mudiyum!'}
+                                    : 'Oru order la oru store la irundhu mattum dhaan products vaanga mudiyum!'}
                             </p>
                         </div>
                     </motion.div>

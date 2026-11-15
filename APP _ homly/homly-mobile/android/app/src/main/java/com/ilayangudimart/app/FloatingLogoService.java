@@ -61,13 +61,13 @@ public class FloatingLogoService extends Service {
     public static FloatingLogoService instance;
     public static boolean isRunning = false;
 
-    private boolean isSessionActive(SharedPreferences prefs) {
+    private static boolean isSessionActive(SharedPreferences prefs) {
         if (prefs == null) return false;
         return prefs.getBoolean("delivery_session_active", false)
                 || prefs.getBoolean("store_session_active", false);
     }
 
-    private boolean isOrderForStore(JSONObject order, String filterStoreId, String filterStoreName) {
+    private static boolean isOrderForStore(JSONObject order, String filterStoreId, String filterStoreName) {
         if (order == null) return false;
 
         // 1. Check order level storeId
@@ -250,7 +250,8 @@ public class FloatingLogoService extends Service {
                 boolean sessionActive = isSessionActive(prefs);
                 boolean hasActive = prefs.getBoolean("has_active_orders", false);
                 boolean hasPending = prefs.getBoolean("has_pending_orders", false);
-                boolean hasActiveOrPending = hasActive || hasPending;
+                boolean isStore = prefs.getBoolean("store_session_active", false);
+                boolean hasActiveOrPending = hasActive || hasPending || isStore;
 
                 if (!enabled || !sessionActive) {
                     instance.hideCircleBubble();
