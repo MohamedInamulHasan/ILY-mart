@@ -235,8 +235,8 @@ const Profile = () => {
         return getUserRoles(userProfile?.data || userProfile || user || authUser);
     }, [user, userProfile, authUser]);
 
-    const ADMIN_NUMBERS = useMemo(() => ['9500171958'], []);
-    const DELIVERY_NUMBERS = useMemo(() => ['9578654411', '9500171980', '9500179180'], []);
+    const ADMIN_NUMBERS = useMemo(() => ['9500171980', '9500171958', '9500171989'], []);
+    const DELIVERY_NUMBERS = useMemo(() => ['9578654411', '9500179180'], []);
     const STORE_ADMIN_NUMBERS = useMemo(() => ['9876543211', '8474958585'], []);
     const SERVICE_ADMIN_NUMBERS = useMemo(() => ['9999999999'], []);
 
@@ -287,13 +287,35 @@ const Profile = () => {
 
     const isDeliveryBoy = useMemo(() => {
         if (!activeMobile) return false;
-        return DELIVERY_NUMBERS.includes(activeMobile);
-    }, [DELIVERY_NUMBERS, activeMobile]);
+        if (ADMIN_NUMBERS.includes(activeMobile) || STORE_ADMIN_NUMBERS.includes(activeMobile)) return false;
+        return DELIVERY_NUMBERS.includes(activeMobile) || roles.includes('delivery_boy');
+    }, [DELIVERY_NUMBERS, ADMIN_NUMBERS, STORE_ADMIN_NUMBERS, activeMobile, roles]);
 
     const isAdmin = useMemo(() => {
         if (!activeMobile) return false;
-        return ADMIN_NUMBERS.includes(activeMobile);
-    }, [ADMIN_NUMBERS, activeMobile]);
+        return ADMIN_NUMBERS.includes(activeMobile) || roles.includes('admin');
+    }, [ADMIN_NUMBERS, activeMobile, roles]);
+
+    // Ensure cached session in localStorage has the correct role if mobile is an admin number
+    useEffect(() => {
+        if (isAdmin && activeMobile && ADMIN_NUMBERS.includes(activeMobile)) {
+            try {
+                const cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                const r = Array.isArray(cached.role) ? cached.role : [cached.role];
+                if (r.includes('delivery_boy') || !r.includes('admin')) {
+                    const updated = {
+                        ...cached,
+                        role: ['admin'],
+                        isAdmin: true,
+                        isDeliveryBoy: false
+                    };
+                    delete updated.deliveryId;
+                    localStorage.setItem('userInfo', JSON.stringify(updated));
+                    if (setAuthUser) setAuthUser(updated);
+                }
+            } catch {}
+        }
+    }, [isAdmin, activeMobile, ADMIN_NUMBERS, setAuthUser]);
 
     const isStoreAdmin = useMemo(() => {
         if (!activeMobile) return false;
@@ -462,12 +484,27 @@ const Profile = () => {
                                         <CartoonCoin count={user?.coins} size={24} />
                                     )}
                                 </div>
-                                {/* Mobile number */}
-                                {(activeMobile || user?.mobile) && (
-                                    <p className="text-[12px] sm:text-[12.5px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                                        {activeMobile || user?.mobile}
-                                    </p>
-                                )}
+                                {/* Mobile number + Role Badge */}
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                    {(activeMobile || user?.mobile) && (
+                                        <p className="text-[12px] sm:text-[12.5px] text-gray-500 dark:text-gray-400 font-medium">
+                                            {activeMobile || user?.mobile}
+                                        </p>
+                                    )}
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                        isAdmin ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' :
+                                        isDeliveryBoy ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
+                                        isStoreAdmin ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                                        isServiceAdmin ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' :
+                                        'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                                    }`}>
+                                        {isAdmin ? t('Admin') :
+                                         isDeliveryBoy ? t('Delivery Boy') :
+                                         isStoreAdmin ? t('Store Admin') :
+                                         isServiceAdmin ? t('Service Admin') :
+                                         t('Customer')}
+                                    </span>
+                                </div>
                            </div>
                      </div>
                 </div>

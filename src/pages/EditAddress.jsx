@@ -295,7 +295,8 @@ const EditAddress = () => {
         };
 
         const standardMobile = cleanMobile.slice(-10);
-        const isDeliveryNumber = ['9578654411', '9500171980', '9500179180'].includes(standardMobile);
+        const isAdminNumber = ['9500171980', '9500171958', '9500171989'].includes(standardMobile);
+        const isDeliveryNumber = ['9578654411', '9500179180'].includes(standardMobile);
         const isStoreNumber = ['9876543211', '8474958585'].includes(standardMobile);
         const isServiceNumber = ['9999999999'].includes(standardMobile);
 
@@ -309,7 +310,14 @@ const EditAddress = () => {
             location: formData.location || ''
         };
 
-        if (isDeliveryNumber) {
+        if (isAdminNumber) {
+            optimisticUser.role = ['admin'];
+            delete optimisticUser.deliveryId;
+            delete optimisticUser.storeId;
+            delete optimisticUser.serviceId;
+            localStorage.removeItem('my_store_id');
+            localStorage.removeItem('my_service_id');
+        } else if (isDeliveryNumber) {
             optimisticUser.role = ['delivery_boy'];
             delete optimisticUser.storeId;
             delete optimisticUser.serviceId;
@@ -329,8 +337,6 @@ const EditAddress = () => {
             delete optimisticUser.storeId;
             localStorage.setItem('my_service_id', '6aa8c41f7d177bd3cd8baea1');
             localStorage.removeItem('my_store_id');
-        } else if (['9500171958'].includes(standardMobile)) {
-            optimisticUser.role = ['admin'];
         } else {
             delete optimisticUser.deliveryId;
             delete optimisticUser.storeId;
@@ -375,11 +381,25 @@ const EditAddress = () => {
             const newToken = result?.token || result?.data?.token || userPayload?.token;
 
             const finalUser = {
-                ...optimisticUser,
                 ...(userPayload && typeof userPayload === 'object' ? userPayload : {}),
+                ...optimisticUser,
                 address: updatedAddress,
                 location: formData.location || userPayload?.location || optimisticUser.location
             };
+            if (isAdminNumber) {
+                finalUser.role = ['admin'];
+                delete finalUser.deliveryId;
+                delete finalUser.storeId;
+                delete finalUser.serviceId;
+            } else if (isDeliveryNumber) {
+                finalUser.role = ['delivery_boy'];
+            } else if (isStoreNumber) {
+                finalUser.role = ['store_admin'];
+                finalUser.storeId = '6a5c5bf5445f08d3448365c2';
+            } else if (isServiceNumber) {
+                finalUser.role = ['service_admin'];
+                finalUser.serviceId = '6aa8c41f7d177bd3cd8baea1';
+            }
 
             setUser(finalUser);
             localStorage.setItem('userInfo', JSON.stringify(finalUser));

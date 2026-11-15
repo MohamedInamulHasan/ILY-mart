@@ -29,25 +29,22 @@ export const getUserRoles = (user) => {
     addRoles(user);
     if (user?.data) addRoles(user.data);
 
-        // 2. Check localStorage cached userInfo ONLY IF user matches or no user object passed
+        // 2. Check localStorage cached userInfo
     try {
         const cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        const userObj = user?.data || user;
-        const cachedObj = cached?.data || cached;
-        const uId = String(userObj?._id || userObj?.id || '');
-        const cId = String(cachedObj?._id || cachedObj?.id || '');
-        const uMobile = (userObj?.mobile || '').toString().replace(/\D/g, '').slice(-10);
-        const cMobile = (cachedObj?.mobile || '').toString().replace(/\D/g, '').slice(-10);
-
-        // Prevent cross-user pollution: only add cached roles if it belongs to the same active user
-        if (user && ((uId && cId && uId === cId) || (uMobile && cMobile && uMobile === cMobile))) {
-            addRoles(cached);
-            if (cached?.data) addRoles(cached.data);
-        }
+        addRoles(cached);
+        if (cached?.data) addRoles(cached.data);
     } catch {}
 
-    // 3. Fallbacks for Admin and Delivery Boy authorized mobile numbers
-    const cleanMobile = (user?.mobile || user?.data?.mobile || '').toString().replace(/\D/g, '');
+    // Check saved address
+    let savedMobile = '';
+    try {
+        const saved = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
+        savedMobile = (saved?.mobile || saved?.phone || '').toString().replace(/\D/g, '');
+    } catch {}
+
+    // 3. Fallbacks for Admin, Delivery Boy, Store Admin, and Service Admin authorized mobile numbers
+    const cleanMobile = (savedMobile || user?.mobile || user?.data?.mobile || '').toString().replace(/\D/g, '');
     let cachedMobile = '';
     try {
         const cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
@@ -56,42 +53,23 @@ export const getUserRoles = (user) => {
 
     const ADMIN_NUMBERS = ['9500171980', '9500171958', '9500171989'];
     const DELIVERY_NUMBERS = ['9578654411', '9500179180'];
+    const STORE_ADMIN_NUMBERS = ['9876543211', '8474958585'];
+    const SERVICE_ADMIN_NUMBERS = ['9999999999'];
     const effectiveMobile = (cleanMobile || cachedMobile || '').slice(-10);
 
-    const isAdminMobile = ADMIN_NUMBERS.includes(effectiveMobile);
-    const isDeliveryBoyMobile = DELIVERY_NUMBERS.includes(effectiveMobile);
-
-    if (isAdminMobile) {
-        set.add('admin');
-    } else if (effectiveMobile) {
-        // Strictly prevent regular users from inheriting admin role
-        set.delete('admin');
-    }
-
-    if (isDeliveryBoyMobile) {
-        set.add('delivery_boy');
-    } else {
-        // Strictly ensure delivery_boy role is ONLY granted to verified delivery numbers
+    if (ADMIN_NUMBERS.includes(effectiveMobile)) {
         set.delete('delivery_boy');
-        set.delete('deliveryboy');
-    }
-
-    let cachedStoreId = null;
-    let cachedServiceId = null;
-    try {
-        const cached = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        cachedStoreId = cached?.storeId;
-        cachedServiceId = cached?.serviceId;
-    } catch {}
-
-    const hasStore = Boolean(user?.storeId || user?.data?.storeId || cachedStoreId);
-    if (!hasStore && !isAdminMobile) {
+        set.add('admin');
+    } else if (DELIVERY_NUMBERS.includes(effectiveMobile)) {
+        set.delete('admin');
         set.delete('store_admin');
-    }
-
-    const hasService = Boolean(user?.serviceId || user?.data?.serviceId || cachedServiceId);
-    if (!hasService && !isAdminMobile) {
-        set.delete('service_admin');
+        set.add('delivery_boy');
+    } else if (STORE_ADMIN_NUMBERS.includes(effectiveMobile)) {
+        set.delete('delivery_boy');
+        set.add('store_admin');
+    } else if (SERVICE_ADMIN_NUMBERS.includes(effectiveMobile)) {
+        set.delete('delivery_boy');
+        set.add('service_admin');
     }
 
     const list = Array.from(set);
