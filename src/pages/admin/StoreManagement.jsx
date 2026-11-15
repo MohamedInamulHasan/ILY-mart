@@ -49,7 +49,9 @@ import {
     checkOverlayPermission, 
     showFloatingOverlay, 
     hideFloatingOverlay, 
-    setOverlayAuthToken 
+    setOverlayAuthToken,
+    setOverlayStoreSessionActive,
+    setOverlayOrdersState
 } from '../../utils/floatingOverlay';
 
 const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
@@ -75,6 +77,21 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
         window.addEventListener('delivery:floating-toggle', handleFloatingToggle);
         return () => window.removeEventListener('delivery:floating-toggle', handleFloatingToggle);
     }, []);
+
+    // Sync store session active with native floating overlay when store admin opens store management
+    useEffect(() => {
+        if (!isStoreAdmin || !myStore) return;
+        const sId = String(myStore._id || myStore.id || myStoreId || '');
+        const sName = myStore.name || '';
+        const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+        if (enabled && !myStore.isManuallyClosed) {
+            setOverlayStoreSessionActive(true, sId, sName);
+            const currentToken = localStorage.getItem('authToken');
+            if (currentToken) setOverlayAuthToken(currentToken);
+            setOverlayOrdersState({ hasActive: false, hasPending: true });
+            showFloatingOverlay();
+        }
+    }, [isStoreAdmin, myStore, myStoreId]);
 
     const { mutateAsync: addStore } = useCreateStore();
     const { mutateAsync: updateStore } = useUpdateStore();
@@ -936,13 +953,19 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
                                                                 localStorage.setItem('delivery_floating_overlay_enabled', String(nextState));
                                                                 window.dispatchEvent(new Event('delivery:floating-toggle'));
 
+                                                                const sId = String(store.id || store._id || myStoreId || '');
+                                                                const sName = store.name || '';
+
                                                                 if (!nextState) {
+                                                                    await setOverlayStoreSessionActive(false, '', '');
                                                                     await hideFloatingOverlay();
                                                                 } else {
+                                                                    await setOverlayStoreSessionActive(true, sId, sName);
                                                                     const granted = await checkOverlayPermission();
                                                                     if (granted) {
                                                                         const currentToken = localStorage.getItem('authToken');
                                                                         if (currentToken) await setOverlayAuthToken(currentToken);
+                                                                        await setOverlayOrdersState({ hasActive: false, hasPending: true });
                                                                         await showFloatingOverlay();
                                                                     }
                                                                 }

@@ -27,6 +27,13 @@ import SwipeActionButton from '../components/SwipeActionButton';
 import DeliveryOrdersFeedModal from '../components/DeliveryOrdersFeedModal';
 import DeliveryOrdersListFeed from '../components/DeliveryOrdersListFeed';
 import { registerModalBackHandler, safeNavigateBack } from '../utils/useBackButton';
+import { 
+    setOverlayStoreSessionActive, 
+    setOverlayAuthToken, 
+    setOverlayOrdersState, 
+    showFloatingOverlay, 
+    isNativeAndroid 
+} from '../utils/floatingOverlay';
 import StoreManagement from './admin/StoreManagement';
 
 const MyStore = () => {
@@ -39,6 +46,22 @@ const MyStore = () => {
 
     const { data: rawOrders = [], isLoading: loadingOrders } = useOrders();
     const { data: stores = [] } = useStores();
+
+    // Sync store session active with native floating overlay
+    useEffect(() => {
+        if (!isNativeAndroid() || !myStore) return;
+        const sId = String(myStore._id || myStore.id || myStoreId || '');
+        const sName = myStore.name || '';
+        const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+        if (enabled && !myStore.isManuallyClosed) {
+            setOverlayStoreSessionActive(true, sId, sName);
+            const currentToken = localStorage.getItem('authToken');
+            if (currentToken) setOverlayAuthToken(currentToken);
+            const pendingCount = storeOrders.filter(o => ['Pending', 'Processing', 'Order Placed', 'Confirmed'].includes(o.status)).length;
+            setOverlayOrdersState({ hasActive: false, hasPending: pendingCount > 0 });
+            showFloatingOverlay();
+        }
+    }, [myStore, myStoreId, storeOrders]);
 
     // Query params for deep-linking (e.g. ?tab=management or ?orderId=...)
     const searchParams = new URLSearchParams(location.search);

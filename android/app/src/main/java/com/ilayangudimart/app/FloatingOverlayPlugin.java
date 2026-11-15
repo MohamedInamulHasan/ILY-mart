@@ -138,6 +138,33 @@ public class FloatingOverlayPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void setStoreSessionActive(PluginCall call) {
+        boolean active = call.getBoolean("active", false);
+        String storeId = call.getString("storeId", "");
+        String storeName = call.getString("storeName", "");
+        SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        prefs.edit()
+                .putBoolean("store_session_active", active)
+                .putString("store_id", storeId != null ? storeId.trim() : "")
+                .putString("store_name", storeName != null ? storeName.trim().toLowerCase() : "")
+                .apply();
+        if (!active && !prefs.getBoolean("delivery_session_active", false)) {
+            prefs.edit().putBoolean("floating_enabled", false).apply();
+            if (FloatingLogoService.instance != null) {
+                FloatingLogoService.instance.stopServiceAndHide();
+            }
+            try {
+                Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
+                stopIntent.setAction("STOP_SERVICE");
+                getContext().stopService(stopIntent);
+            } catch (Exception ignored) {}
+        }
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
     public void setDeliverySessionActive(PluginCall call) {
         boolean active = call.getBoolean("active", false);
         SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);

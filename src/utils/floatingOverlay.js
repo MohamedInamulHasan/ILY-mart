@@ -169,6 +169,23 @@ export const setOverlayDeliverySessionActive = async (active) => {
 };
 
 /**
+ * Notify the native service whether a store admin panel session is currently active.
+ * Sets the active storeId and storeName so native background polling only alerts for this store.
+ */
+export const setOverlayStoreSessionActive = async (active, storeId = '', storeName = '') => {
+    if (!isNativeAndroid()) return;
+    try {
+        await FloatingOverlay.setStoreSessionActive({ 
+            active: !!active,
+            storeId: String(storeId || ''),
+            storeName: String(storeName || '')
+        });
+    } catch (err) {
+        console.warn('Error setting overlay store session active:', err);
+    }
+};
+
+/**
  * Safely open external URLs (like Google Maps) using native Android Intent.ACTION_VIEW.
  * This guarantees the URL opens in Google Maps or default browser and NEVER crashes WebView.
  */

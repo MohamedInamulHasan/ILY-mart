@@ -60,6 +60,64 @@ import java.util.concurrent.TimeUnit;
 public class FloatingLogoService extends Service {
     public static FloatingLogoService instance;
     public static boolean isRunning = false;
+
+    private boolean isSessionActive(SharedPreferences prefs) {
+        if (prefs == null) return false;
+        return prefs.getBoolean("delivery_session_active", false)
+                || prefs.getBoolean("store_session_active", false);
+    }
+
+    private boolean isOrderForStore(JSONObject order, String filterStoreId, String filterStoreName) {
+        if (order == null) return false;
+
+        // 1. Check order level storeId
+        Object storeIdObj = order.opt("storeId");
+        if (storeIdObj != null) {
+            String sid = "";
+            if (storeIdObj instanceof JSONObject) {
+                sid = ((JSONObject) storeIdObj).optString("_id", ((JSONObject) storeIdObj).optString("id", ""));
+            } else {
+                sid = String.valueOf(storeIdObj);
+            }
+            if (!filterStoreId.isEmpty() && sid.trim().equalsIgnoreCase(filterStoreId.trim())) return true;
+        }
+
+        // 2. Check order level storeName
+        String sName = order.optString("storeName", "").trim().toLowerCase();
+        if (!filterStoreName.isEmpty() && !sName.isEmpty()) {
+            if (sName.equals(filterStoreName) || sName.contains(filterStoreName) || filterStoreName.contains(sName)) {
+                return true;
+            }
+        }
+
+        // 3. Check items array
+        JSONArray items = order.optJSONArray("items");
+        if (items != null) {
+            for (int j = 0; j < items.length(); j++) {
+                JSONObject it = items.optJSONObject(j);
+                if (it == null) continue;
+
+                Object itSidObj = it.opt("storeId");
+                if (itSidObj != null) {
+                    String itSid = "";
+                    if (itSidObj instanceof JSONObject) {
+                        itSid = ((JSONObject) itSidObj).optString("_id", ((JSONObject) itSidObj).optString("id", ""));
+                    } else {
+                        itSid = String.valueOf(itSidObj);
+                    }
+                    if (!filterStoreId.isEmpty() && itSid.trim().equalsIgnoreCase(filterStoreId.trim())) return true;
+                }
+
+                String itSName = it.optString("storeName", "").trim().toLowerCase();
+                if (!filterStoreName.isEmpty() && !itSName.isEmpty()) {
+                    if (itSName.equals(filterStoreName) || itSName.contains(filterStoreName) || filterStoreName.contains(itSName)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
     public static boolean isAppInForeground = false;
 
     private WindowManager windowManager;
@@ -107,7 +165,7 @@ public class FloatingLogoService extends Service {
 
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        boolean sessionActive = isSessionActive(prefs);
         if (!enabled || !sessionActive) {
             stopSelf();
             return;
@@ -122,7 +180,7 @@ public class FloatingLogoService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        boolean sessionActive = isSessionActive(prefs);
         if (!enabled || !sessionActive) {
             stopServiceAndHide();
             return START_NOT_STICKY;
@@ -155,7 +213,7 @@ public class FloatingLogoService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        boolean sessionActive = isSessionActive(prefs);
         boolean hasActive = prefs.getBoolean("has_active_orders", false);
         boolean hasPending = prefs.getBoolean("has_pending_orders", false);
         boolean hasActiveOrPending = hasActive || hasPending;
@@ -189,7 +247,7 @@ public class FloatingLogoService extends Service {
             instance.mainHandler.post(() -> {
                 SharedPreferences prefs = instance.getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
                 boolean enabled = prefs.getBoolean("floating_enabled", false);
-                boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+                boolean sessionActive = isSessionActive(prefs);
                 boolean hasActive = prefs.getBoolean("has_active_orders", false);
                 boolean hasPending = prefs.getBoolean("has_pending_orders", false);
                 boolean hasActiveOrPending = hasActive || hasPending;
@@ -336,18 +394,17 @@ public class FloatingLogoService extends Service {
             }
         });
 
-        // Add to windowManager only if app is not in foreground, has active/pending orders, enabled, and permitted
+        // Add to windowManager only if app is not in foreground, enabled, sessionActive, and permitted
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
-        boolean hasPending = prefs.getBoolean("has_pending_orders", false);
-        boolean hasActiveOrPending = hasActive || hasPending;
+        boolean sessionActive = isSessionActive(prefs);
         boolean canDraw = Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this);
 
-        if (!isAppInForeground && hasActiveOrPending && enabled && sessionActive && canDraw) {
+        if (!isAppInForeground && enabled && sessionActive && canDraw) {
             try {
-                windowManager.addView(floatingCircleView, circleParams);
+                if (floatingCircleView != null && !floatingCircleView.isAttachedToWindow() && windowManager != null) {
+                    windowManager.addView(floatingCircleView, circleParams);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -365,12 +422,9 @@ public class FloatingLogoService extends Service {
     private void showCircleBubble() {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
-        boolean hasPending = prefs.getBoolean("has_pending_orders", false);
-        boolean hasActiveOrPending = hasActive || hasPending;
+        boolean sessionActive = isSessionActive(prefs);
 
-        if (!enabled || !sessionActive || isAppInForeground || !hasActiveOrPending) {
+        if (!enabled || !sessionActive || isAppInForeground) {
             hideCircleBubble();
             return;
         }
@@ -393,7 +447,7 @@ public class FloatingLogoService extends Service {
         if (order == null || isAppInForeground) return;
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        boolean sessionActive = isSessionActive(prefs);
         boolean hasActive = prefs.getBoolean("has_active_orders", false);
         if (!enabled || !sessionActive || hasActive) {
             return;
@@ -983,7 +1037,7 @@ public class FloatingLogoService extends Service {
         if (orderCardView != null || isGapWaiting || isAppInForeground) return;
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        boolean sessionActive = isSessionActive(prefs);
         boolean hasActive = prefs.getBoolean("has_active_orders", false);
         if (!enabled || !sessionActive || hasActive) {
             if (!enabled || !sessionActive) {
@@ -1155,7 +1209,7 @@ public class FloatingLogoService extends Service {
                 .apply();
         mainHandler.post(() -> {
             boolean enabled = prefs.getBoolean("floating_enabled", false);
-            boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+            boolean sessionActive = isSessionActive(prefs);
             if (!enabled || !sessionActive) {
                 stopServiceAndHide();
                 return;
@@ -1191,7 +1245,7 @@ public class FloatingLogoService extends Service {
     private void pollForPendingOrders() {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false);
+        boolean sessionActive = isSessionActive(prefs);
         if (!enabled || !sessionActive) {
             stopServiceAndHide();
             return;
@@ -1233,6 +1287,10 @@ public class FloatingLogoService extends Service {
                     }
                 }
 
+                String filterStoreId = prefs.getString("store_id", "");
+                String filterStoreName = prefs.getString("store_name", "");
+                boolean isStoreMode = prefs.getBoolean("store_session_active", false);
+
                 boolean foundAccepted = false;
                 boolean foundPending = false;
                 if (ordersArray != null && ordersArray.length() > 0) {
@@ -1241,6 +1299,13 @@ public class FloatingLogoService extends Service {
                         for (int i = 0; i < ordersArray.length(); i++) {
                             JSONObject order = ordersArray.optJSONObject(i);
                             if (order == null) continue;
+
+                            // If store mode: strictly filter only orders for this store!
+                            if (isStoreMode) {
+                                if (!isOrderForStore(order, filterStoreId, filterStoreName)) {
+                                    continue;
+                                }
+                            }
 
                             String status = order.optString("status", "");
                             if ("Accepted".equalsIgnoreCase(status) || "Out for Delivery".equalsIgnoreCase(status) || "Shipped".equalsIgnoreCase(status)) {
