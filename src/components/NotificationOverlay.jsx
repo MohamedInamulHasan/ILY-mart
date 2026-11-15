@@ -7,6 +7,7 @@ import { Package, Bell, CheckCircle, Truck, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useOrders } from '../hooks/queries/useOrders';
+import { useStores } from '../hooks/queries/useStores';
 import IncomingOrderModal from './IncomingOrderModal';
 import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound } from '../utils/soundHelper';
 import { isNativeAndroid, setOverlayOrdersState, triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
@@ -30,10 +31,47 @@ const NotificationOverlay = () => {
     const location = useLocation();
 
     const isDeliveryPage = useMemo(() => {
-        return location.pathname.startsWith('/admin');
+        return location.pathname.startsWith('/admin') || location.pathname.startsWith('/my-store');
     }, [location.pathname]);
 
     const roles = useMemo(() => getUserRoles(user), [user]);
+    const { data: stores = [] } = useStores();
+
+    const isStoreAdmin = useMemo(() => {
+        return roles.includes('store_admin') || Boolean(user?.storeId);
+    }, [roles, user]);
+
+    const myStore = useMemo(() => {
+        if (!isStoreAdmin) return null;
+        const targetStoreId = String(user?.storeId?._id || user?.storeId || '');
+        const cleanMobile = (user?.mobile || user?.phone || '').toString().replace(/\D/g, '').slice(-10);
+        return stores.find(s => {
+            const sId = String(s._id || s.id || '');
+            if (targetStoreId && sId === targetStoreId) return true;
+            const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
+            if (cleanMobile && sMobile && sMobile === cleanMobile) return true;
+            return false;
+        }) || null;
+    }, [isStoreAdmin, user, stores]);
+
+    const myStoreId = String(myStore?._id || myStore?.id || user?.storeId?._id || user?.storeId || '');
+    const myStoreName = (myStore?.name || '').trim().toLowerCase();
+
+    const isOrderForMyStore = (order) => {
+        if (!isStoreAdmin || (!myStoreId && !myStoreName)) return false;
+        const oStoreId = String(order?.storeId?._id || order?.storeId || '').trim();
+        if (myStoreId && oStoreId && oStoreId === myStoreId) return true;
+
+        if (Array.isArray(order?.items)) {
+            return order.items.some(item => {
+                const itemStoreId = String(item.storeId?._id || item.storeId || item.store?._id || item.store?.id || '').trim();
+                if (myStoreId && itemStoreId && itemStoreId === myStoreId) return true;
+                if (myStoreName && (item.storeName || item.storeId?.name || '').trim().toLowerCase() === myStoreName) return true;
+                return false;
+            });
+        }
+        return false;
+    };
     const isDeliveryBoy = useMemo(() => {
         const hasDeliveryRole = roles.includes('delivery_boy') || roles.includes('deliveryboy');
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
@@ -121,7 +159,11 @@ const NotificationOverlay = () => {
     useEffect(() => {
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
         const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        if (!isDeliveryBoy || !isDeliveryPage || !isDeliverySessionActive || !isFloatingEnabled) return;
+
+        const canDeliveryAlert = isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled;
+        const canStoreAlert = isStoreAdmin && myStore;
+
+        if (!canDeliveryAlert && !canStoreAlert) return;
         if (allOrders.length === 0) return;
 
         // On first load of orders, record all existing order IDs as known so we never alert old past orders
@@ -148,7 +190,13 @@ const NotificationOverlay = () => {
             if (activePageOrderId && oId === activePageOrderId) return false;
             if (knownOrderIdsRef.current.has(oId)) return false;
             if (skippedOrderIds.has(oId)) return false;
-            return isProcessingStatus(o.status);
+            if (!isProcessingStatus(o.status)) return false;
+
+            // For store admin: strictly check that order belongs to their store
+            if (!canDeliveryAlert && canStoreAlert) {
+                return isOrderForMyStore(o);
+            }
+            return true;
         });
 
         if (newRealtimeOrder) {
@@ -164,7 +212,7 @@ const NotificationOverlay = () => {
                 navigator.vibrate([200, 100, 200]);
             }
         }
-    }, [isDeliveryBoy, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds, location.pathname]);
+    }, [isDeliveryBoy, isStoreAdmin, myStore, myStoreId, myStoreName, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds, location.pathname]);
 
     // Auto-dismiss popup if the current order is accepted or cancelled
     useEffect(() => {
@@ -232,7 +280,16 @@ const NotificationOverlay = () => {
             const newOrder = e.detail;
             const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
             const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-            if (newOrder && isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled) {
+
+            const canDeliveryAlert = isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled;
+            const canStoreAlert = isStoreAdmin && myStore;
+
+            if (newOrder && (canDeliveryAlert || canStoreAlert)) {
+                // For store admin: strictly check if this new order belongs to their store!
+                if (!canDeliveryAlert && canStoreAlert && !isOrderForMyStore(newOrder)) {
+                    return;
+                }
+
                 const oId = String(newOrder._id || newOrder.id || '');
                 const activePageOrderId = location.pathname.startsWith('/admin/delivery-order/')
                     ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
@@ -257,14 +314,15 @@ const NotificationOverlay = () => {
 
         window.addEventListener('orders:refresh', handleOrdersRefresh);
         return () => window.removeEventListener('orders:refresh', handleOrdersRefresh);
-    }, [isDeliveryBoy, isDeliveryPage, skippedOrderIds, queryClient, location.pathname]);
+    }, [isDeliveryBoy, isStoreAdmin, myStore, myStoreId, myStoreName, isDeliveryPage, skippedOrderIds, queryClient, location.pathname]);
 
     // Listen for native intent/card clicks when app was closed/backgrounded
     useEffect(() => {
         const openOrderById = async (orderId) => {
             if (!orderId) return;
             const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-            if (!isDeliverySessionActive) {
+            const isStoreOnly = isStoreAdmin && !isDeliveryBoy;
+            if (!isDeliverySessionActive && !isStoreOnly) {
                 // User did not go to delivery panel; strictly prevent auto-opening delivery order page
                 return;
             }
@@ -279,7 +337,11 @@ const NotificationOverlay = () => {
                         orderData = res.data;
                     }
                 }
-                navigate(`/admin/delivery-order/${orderId}`, { state: { order: orderData } });
+                if (isStoreOnly) {
+                    navigate(`/my-store?tab=orders&orderId=${orderId}`, { state: { order: orderData } });
+                } else {
+                    navigate(`/admin/delivery-order/${orderId}`, { state: { order: orderData } });
+                }
             } catch (err) {
                 console.warn('Failed to fetch order from native event:', err);
                 setIncomingOrder(null);

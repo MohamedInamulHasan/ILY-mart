@@ -15,6 +15,7 @@ import { formatOrderBannerTime } from '../utils/dateUtils';
 import SwipeActionButton from './SwipeActionButton';
 import DeliveryStatusPopup from './DeliveryStatusPopup';
 import { registerModalBackHandler } from '../utils/useBackButton';
+import { getUserRoles } from '../utils/userHelpers';
 
 const IncomingOrderModal = ({
     order,
@@ -32,6 +33,8 @@ const IncomingOrderModal = ({
     const navigate = useNavigate();
     const { mutateAsync: updateOrderStatus } = useUpdateOrderStatus();
     const dragControls = useDragControls();
+    const roles = getUserRoles(user);
+    const isStoreOnly = (roles.includes('store_admin') || Boolean(user?.storeId)) && !roles.includes('delivery_boy');
 
     const [isMuted, setIsMuted] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
@@ -145,9 +148,15 @@ const IncomingOrderModal = ({
         if (completedType === 'accepted') {
             const acceptedOrder = { ...order, status: 'Out for Delivery' };
             if (onAccepted) onAccepted(acceptedOrder);
-            navigate(`/admin/delivery-order/${id}`, {
-                state: { order: acceptedOrder, status: 'Out for Delivery' }
-            });
+            if (isStoreOnly) {
+                navigate(`/my-store?tab=orders&orderId=${id}`, {
+                    state: { order: acceptedOrder, status: 'Out for Delivery' }
+                });
+            } else {
+                navigate(`/admin/delivery-order/${id}`, {
+                    state: { order: acceptedOrder, status: 'Out for Delivery' }
+                });
+            }
         } else if (completedType === 'delivered') {
             localStorage.removeItem('active_delivery_order_id');
             localStorage.removeItem('active_delivery_stay');
@@ -409,7 +418,11 @@ const IncomingOrderModal = ({
                                 stopIncomingOrderAlertSound();
                                 if (onAcceptViewOpened) onAcceptViewOpened(order);
                                 if (onClose) onClose();
-                                navigate(`/admin/delivery-order/${order._id || order.id}`, { state: { order, status: order.status } });
+                                if (isStoreOnly) {
+                                    navigate(`/my-store?tab=orders&orderId=${order._id || order.id}`, { state: { order, selectedOrderId: order._id || order.id } });
+                                } else {
+                                    navigate(`/admin/delivery-order/${order._id || order.id}`, { state: { order, status: order.status } });
+                                }
                             }}
                         />
 
