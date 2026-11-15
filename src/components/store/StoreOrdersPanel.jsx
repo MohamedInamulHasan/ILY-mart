@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
     Package, 
     Search, 
@@ -15,9 +16,7 @@ import {
     AlertTriangle, 
     X, 
     Store,
-    RefreshCw,
-    ChevronDown,
-    ExternalLink
+    RefreshCw
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -29,10 +28,12 @@ import { formatDeliveryRangeFromDate } from '../../utils/storeHelpers';
 import { renderBilingualTitle } from '../../utils/titleHelpers';
 import { openExternalLink } from '../../utils/linkHelper';
 import { playSuccessSound } from '../../utils/soundHelper';
+import SwipeActionButton from '../SwipeActionButton';
 
 const StoreOrdersPanel = ({ selectedOrderId = null }) => {
     const { t, language } = useLanguage();
     const { user } = useAuth();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
 
     const { data: rawOrders = [], isLoading: loadingOrders, refetch } = useOrders();
@@ -42,11 +43,8 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
 
     const [activeTab, setActiveTab] = useState('All'); // 'All' | 'Processing' | 'Out for Delivery' | 'Delivered' | 'Cancelled'
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedOrder, setSelectedOrder] = useState(null);
     const [orderToCancel, setOrderToCancel] = useState(null);
     const [isCancelling, setIsCancelling] = useState(false);
-    const [updatingOrderId, setUpdatingOrderId] = useState(null);
-    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Identify this store admin's store
     const myStore = useMemo(() => {
@@ -82,11 +80,9 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
         if (!myStoreId && !myStoreName) return [];
 
         return list.filter(order => {
-            // Direct storeId on order
             const oStoreId = String(order.storeId?._id || order.storeId || '').trim();
             if (myStoreId && oStoreId && oStoreId === myStoreId) return true;
 
-            // Check if any item belongs to this store
             if (Array.isArray(order.items)) {
                 return order.items.some(isItemFromMyStore);
             }
@@ -94,45 +90,35 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
         });
     }, [rawOrders, myStoreId, myStoreName]);
 
-    // Auto-select order if query param/prop passed
-    React.useEffect(() => {
-        if (selectedOrderId && allOrders.length > 0) {
-            const target = allOrders.find(o => String(o._id || o.id) === String(selectedOrderId));
-            if (target) setSelectedOrder(target);
-        }
-    }, [selectedOrderId, allOrders]);
-
-    // Manual refresh handler
-    const handleRefresh = async () => {
-        setIsRefreshing(true);
-        try {
-            await refetch();
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
-        } finally {
-            setTimeout(() => setIsRefreshing(false), 500);
-        }
+    // Handle order selection / swipe to accept & delivery page
+    const handleSelectOrder = (order) => {
+        const oId = order._id || order.id;
+        localStorage.setItem('active_delivery_order_id', oId);
+        localStorage.setItem('active_delivery_stay', 'true');
+        navigate(`/admin/delivery-order/${oId}`, {
+            state: { order, status: order.status, fromStore: true }
+        });
     };
 
-    // Calculate count by status for this store
-    const stats = useMemo(() => {
+    // Status helpers
+    const isProcessing = (status) => ['processing', 'pending', 'order placed', 'confirmed'].includes((status || '').toLowerCase());
+    const isOut = (status) => ['out for delivery', 'shipped'].includes((status || '').toLowerCase());
+    const isDone = (status) => ['delivered', 'completed'].includes((status || '').toLowerCase());
+    const isCancelled = (status) => (status || '').toLowerCase() === 'cancelled';
+
+    // Status tab counts
+    const tabCounts = useMemo(() => {
         let pending = 0;
         let outForDelivery = 0;
         let delivered = 0;
         let cancelled = 0;
-        let totalRevenue = 0;
 
         allOrders.forEach(o => {
             const s = (o.status || '').toLowerCase();
-            if (['processing', 'pending', 'order placed', 'confirmed'].includes(s)) pending++;
-            else if (['out for delivery', 'shipped'].includes(s)) outForDelivery++;
-            else if (['delivered', 'completed'].includes(s)) delivered++;
-            else if (s === 'cancelled') cancelled++;
-
-            if (s !== 'cancelled') {
-                const storeItems = (o.items || []).filter(isItemFromMyStore);
-                const orderStoreSum = storeItems.reduce((acc, item) => acc + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
-                totalRevenue += orderStoreSum;
-            }
+            if (isProcessing(s)) pending++;
+            else if (isOut(s)) outForDelivery++;
+            else if (isDone(s)) delivered++;
+            else if (isCancelled(s)) cancelled++;
         });
 
         return {
@@ -140,16 +126,9 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
             pending,
             outForDelivery,
             delivered,
-            cancelled,
-            totalRevenue
+            cancelled
         };
     }, [allOrders]);
-
-    // Status helpers
-    const isProcessing = (status) => ['processing', 'pending', 'order placed', 'confirmed'].includes((status || '').toLowerCase());
-    const isOut = (status) => ['out for delivery', 'shipped'].includes((status || '').toLowerCase());
-    const isDone = (status) => ['delivered', 'completed'].includes((status || '').toLowerCase());
-    const isCancelled = (status) => (status || '').toLowerCase() === 'cancelled';
 
     // Filter by activeTab and search query
     const filteredOrders = useMemo(() => {
@@ -192,21 +171,6 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
         });
     }, [allOrders, activeTab, searchQuery]);
 
-    // Handle status change
-    const handleUpdateStatus = async (orderId, newStatus) => {
-        setUpdatingOrderId(orderId);
-        try {
-            await updateOrderStatus({ id: orderId, status: newStatus });
-            playSuccessSound();
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
-        } catch (err) {
-            console.error('Failed to update order status:', err);
-            alert(t('Failed to update status. Please try again.'));
-        } finally {
-            setUpdatingOrderId(null);
-        }
-    };
-
     // Handle order cancellation
     const handleConfirmCancel = async () => {
         if (!orderToCancel || isCancelling) return;
@@ -225,150 +189,66 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
         }
     };
 
-    // Helper to get status badge styling
-    const getStatusBadge = (status) => {
-        if (isProcessing(status)) {
-            return {
-                text: t('Processing'),
-                bg: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60',
-                dot: 'bg-amber-500 animate-pulse'
-            };
-        }
-        if (isOut(status)) {
-            return {
-                text: t('Out for Delivery'),
-                bg: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-700/60',
-                dot: 'bg-sky-500'
-            };
-        }
-        if (isDone(status)) {
-            return {
-                text: t('Delivered'),
-                bg: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700/60',
-                dot: 'bg-emerald-500'
-            };
-        }
-        return {
-            text: t('Cancelled'),
-            bg: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700/60',
-            dot: 'bg-rose-500'
-        };
-    };
-
     return (
-        <div className="w-full space-y-4 pb-16">
-            {/* Top Store Overview Bar */}
-            <div className="bg-white dark:bg-gray-800 rounded-3xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#CBF9B2]/40 dark:bg-[#2E5A2E]/30 flex items-center justify-center text-[#2E5A2E] dark:text-[#CBF9B2]">
-                        <Store size={24} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                        <h2 className="text-base sm:text-lg font-black text-gray-900 dark:text-white leading-tight">
-                            {myStore?.name || t('My Store Delivery Panel')}
-                        </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                            {t('Store Orders & Live Dispatch')}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2">
+        <div className="w-full space-y-3.5 pb-20">
+            {/* Search Bar - Exactly like Delivery Boy Page */}
+            <div className="relative">
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t('Search by Order ID, customer, phone, or product...')}
+                    className="w-full pl-11 pr-10 py-3.5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#2E5A2E] shadow-xs"
+                />
+                <Search size={19} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                {searchQuery && (
                     <button
-                        onClick={handleRefresh}
-                        disabled={isRefreshing}
-                        className="px-3.5 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-xs"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
                     >
-                        <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
-                        <span>{t('Refresh')}</span>
+                        <X size={16} />
                     </button>
-                </div>
+                )}
             </div>
 
-            {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-3.5 border border-gray-100 dark:border-gray-700 shadow-xs">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t('Total Orders')}</p>
-                    <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mt-1">{stats.total}</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-3.5 border border-amber-200/80 dark:border-amber-800/40 shadow-xs">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">{t('Pending')}</p>
-                    <p className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300 mt-1 flex items-center gap-1.5">
-                        <span>{stats.pending}</span>
-                        {stats.pending > 0 && <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />}
-                    </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-3.5 border border-sky-200/80 dark:border-sky-800/40 shadow-xs">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">{t('On Delivery')}</p>
-                    <p className="text-xl sm:text-2xl font-black text-sky-700 dark:text-sky-300 mt-1">{stats.outForDelivery}</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-3.5 border border-emerald-200/80 dark:border-emerald-800/40 shadow-xs">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{t('Completed')}</p>
-                    <p className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 mt-1">{stats.delivered}</p>
-                </div>
-            </div>
-
-            {/* Filter Tabs & Search Bar */}
-            <div className="space-y-3">
-                {/* Search Bar */}
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={t('Search by Order ID, customer, phone, or product...')}
-                        className="w-full pl-11 pr-10 py-3 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-[#2E5A2E] shadow-xs"
-                    />
-                    <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    {searchQuery && (
+            {/* Filter Tabs - Delivery Boy Styling */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none select-none">
+                {[
+                    { id: 'All', label: t('All Orders'), count: tabCounts.total },
+                    { id: 'Processing', label: t('Pending'), count: tabCounts.pending },
+                    { id: 'Out for Delivery', label: t('On Delivery'), count: tabCounts.outForDelivery },
+                    { id: 'Delivered', label: t('Delivered'), count: tabCounts.delivered },
+                    { id: 'Cancelled', label: t('Cancelled'), count: tabCounts.cancelled }
+                ].map(tab => {
+                    const isActive = activeTab === tab.id;
+                    return (
                         <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                                isActive
+                                    ? 'bg-[#2E5A2E] text-white shadow-sm'
+                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 border border-gray-200/80 dark:border-gray-700'
+                            }`}
                         >
-                            <X size={16} />
+                            <span>{tab.label}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                                isActive
+                                    ? 'bg-white/25 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                            }`}>
+                                {tab.count}
+                            </span>
                         </button>
-                    )}
-                </div>
-
-                {/* Filter Tabs */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none select-none">
-                    {[
-                        { id: 'All', label: t('All Orders'), count: stats.total },
-                        { id: 'Processing', label: t('Pending'), count: stats.pending, badgeColor: 'bg-amber-500' },
-                        { id: 'Out for Delivery', label: t('On Delivery'), count: stats.outForDelivery, badgeColor: 'bg-sky-500' },
-                        { id: 'Delivered', label: t('Delivered'), count: stats.delivered, badgeColor: 'bg-emerald-500' },
-                        { id: 'Cancelled', label: t('Cancelled'), count: stats.cancelled, badgeColor: 'bg-rose-500' }
-                    ].map(tab => {
-                        const isActive = activeTab === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                                    isActive
-                                        ? 'bg-[#2E5A2E] text-white shadow-sm'
-                                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 border border-gray-200/80 dark:border-gray-700'
-                                }`}
-                            >
-                                <span>{tab.label}</span>
-                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                                    isActive
-                                        ? 'bg-white/25 text-white'
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                                }`}>
-                                    {tab.count}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                    );
+                })}
             </div>
 
             {/* Orders Feed List */}
             {loadingOrders ? (
                 <div className="py-12 flex flex-col items-center justify-center text-gray-400">
                     <div className="w-8 h-8 border-3 border-[#2E5A2E] border-t-transparent rounded-full animate-spin mb-3" />
-                    <p className="text-xs font-semibold">{t('Loading store orders...')}</p>
+                    <p className="text-xs font-semibold">{t('Loading orders...')}</p>
                 </div>
             ) : filteredOrders.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 text-center border border-gray-100 dark:border-gray-700 shadow-xs">
@@ -379,7 +259,7 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
                         {searchQuery ? t('No matching store orders') : t('No orders in this section')}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
-                        {t('Incoming orders from your store will automatically appear here in real-time.')}
+                        {t('Incoming orders from your store will appear here in real-time.')}
                     </p>
                 </div>
             ) : (
@@ -387,10 +267,10 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
                     {filteredOrders.map(order => {
                         const orderId = String(order._id || order.id || '');
                         const shortId = orderId.slice(-6).toUpperCase();
-                        const customerName = order.shippingAddress?.name || t('Customer');
-                        const customerPhone = order.shippingAddress?.mobile || '';
-                        const street = order.shippingAddress?.street || '';
-                        const city = order.shippingAddress?.city || 'Ilayangudi';
+                        const customerName = typeof order.shippingAddress?.name === 'string' ? order.shippingAddress.name : (typeof order.user === 'string' ? order.user : t('Customer'));
+                        const customerPhone = typeof order.shippingAddress?.mobile === 'string' ? order.shippingAddress.mobile : '';
+                        const street = typeof order.shippingAddress?.street === 'string' ? order.shippingAddress.street : '';
+                        const city = typeof order.shippingAddress?.city === 'string' ? order.shippingAddress.city : 'Ilayangudi';
                         const addressText = [street, city].filter(s => typeof s === 'string' && s.trim()).join(', ');
                         const rawScheduleTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
                         const scheduleBanner = formatDeliveryRangeFromDate(rawScheduleTime) || rawScheduleTime;
@@ -398,48 +278,56 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
                         // Items belonging strictly to this store
                         const storeItems = (order.items || []).filter(isItemFromMyStore);
                         const storeSubtotal = storeItems.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
-                        const statusBadge = getStatusBadge(order.status);
-                        const isUpdating = updatingOrderId === orderId;
+
+                        const isCancelledOrder = isCancelled(order.status);
+                        const isDeliveredOrder = isDone(order.status);
 
                         return (
-                            <motion.div
+                            <div
                                 key={orderId}
-                                layout
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs hover:shadow-sm ${
-                                    isCancelled(order.status)
-                                        ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700'
+                                className={`rounded-xl border overflow-hidden flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-sm ${
+                                    isCancelledOrder
+                                        ? 'bg-gray-100/90 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700/80'
                                         : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
                                 }`}
                             >
-                                {/* Header Row */}
-                                <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-700/80 bg-gray-50/50 dark:bg-gray-800/40">
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={15} className="text-gray-400" />
-                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                                {/* Top Header Row: Time Left & ID Right (matches Delivery boy card header) */}
+                                <div className="px-4 pt-3 pb-2 flex items-center justify-between text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 shrink-0">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <Clock size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
+                                        <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 tracking-wide truncate">
                                             {formatOrderBannerTime(order.createdAt || order.date) || t('New Order')}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-mono font-black text-gray-700 dark:text-gray-200">
+
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className="text-sm sm:text-[15px] font-bold text-gray-500 dark:text-gray-400 font-mono shrink-0">
                                             #{shortId}
-                                        </span>
-                                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border flex items-center gap-1.5 ${statusBadge.bg}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${statusBadge.dot}`} />
-                                            <span>{statusBadge.text}</span>
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Order Content */}
-                                <div className="p-4 space-y-3.5">
-                                    {/* Scheduled Delivery Banner if present */}
+                                {/* Divider line */}
+                                <div className="mx-4 h-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+
+                                {/* Card Content */}
+                                <div className="pt-2.5 pb-2.5 px-3.5 sm:px-4">
+                                    {/* Store Subtotal Header */}
+                                    <div className="text-center py-1 mb-2 border-b border-gray-100 dark:border-gray-700/60">
+                                        <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 block mb-0.5">
+                                            {t('Store Subtotal')} ({storeItems.length} {storeItems.length === 1 ? t('item') : t('items')})
+                                        </span>
+                                        <div className="text-3xl sm:text-4xl font-black text-black dark:text-white tracking-tight font-sans">
+                                            ₹{storeSubtotal}
+                                        </div>
+                                    </div>
+
+                                    {/* Scheduled Delivery Banner */}
                                     {scheduleBanner && (
-                                        <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-3 py-2 flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                                                <Calendar size={14} className="text-emerald-600 dark:text-emerald-400" />
-                                                <span>{t('Scheduled Delivery')}:</span>
+                                        <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-3 py-2 flex items-center justify-between mb-2.5">
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                                <Calendar size={13} className="text-emerald-600 dark:text-emerald-400" />
+                                                <span>{t('Scheduled')}:</span>
                                             </div>
                                             <span className="text-xs font-black text-emerald-900 dark:text-emerald-200">
                                                 {scheduleBanner}
@@ -447,259 +335,134 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
                                         </div>
                                     )}
 
-                                    {/* Customer & Location Box */}
-                                    <div className="bg-gray-50 dark:bg-gray-700/40 rounded-xl p-3 flex items-start justify-between gap-3">
-                                        <div className="space-y-0.5 min-w-0 flex-1">
-                                            <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                                                {customerName}
-                                            </h4>
+                                    {/* Route Timeline Track & Details */}
+                                    <div className="flex gap-3 text-left mt-2">
+                                        {/* Timeline dots */}
+                                        <div className="flex flex-col items-center pt-1.5 shrink-0">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-950/80 shrink-0" />
+                                            <div className="w-[2px] flex-1 bg-gray-300 dark:bg-gray-600 my-1 min-h-[32px]" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-950/80 shrink-0" />
+                                        </div>
+
+                                        <div className="flex-1 min-w-0 space-y-1">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate leading-tight">
+                                                    {customerName}
+                                                </h3>
+                                                {customerPhone && (
+                                                    <a
+                                                        href={`tel:${customerPhone}`}
+                                                        className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-black flex items-center gap-1 border border-emerald-200/80 shrink-0"
+                                                    >
+                                                        <Phone size={12} />
+                                                        <span>{t('Call')}</span>
+                                                    </a>
+                                                )}
+                                            </div>
                                             {addressText && (
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate flex items-center gap-1">
-                                                    <MapPin size={12} className="shrink-0 text-gray-400" />
-                                                    <span className="truncate">{addressText}</span>
+                                                <p className="text-xs sm:text-[13px] text-gray-500 dark:text-gray-400 font-medium truncate">
+                                                    {addressText}
                                                 </p>
                                             )}
-                                        </div>
 
-                                        {/* Contact & Map Buttons */}
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            {customerPhone && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openExternalLink(`tel:${customerPhone}`)}
-                                                    className="w-8 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-xs active:scale-90 transition-transform"
-                                                    title={t('Call Customer')}
-                                                >
-                                                    <Phone size={14} />
-                                                </button>
-                                            )}
-                                            {addressText && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openExternalLink(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.shippingAddress?.location || addressText)}`)}
-                                                    className="w-8 h-8 rounded-full bg-sky-600 hover:bg-sky-700 text-white flex items-center justify-center shadow-xs active:scale-90 transition-transform"
-                                                    title={t('View Location on Map')}
-                                                >
-                                                    <MapPin size={14} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Store Products List */}
-                                    <div className="space-y-2 border-t border-b border-gray-100 dark:border-gray-700/60 py-2.5">
-                                        <div className="flex items-center justify-between text-xs font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                            <span>{t('Store Items')} ({storeItems.length})</span>
-                                            <span>{t('Store Subtotal')}: <strong className="text-gray-900 dark:text-white font-black text-sm">₹{storeSubtotal}</strong></span>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            {storeItems.map((item, idx) => (
-                                                <div key={idx} className="flex items-center justify-between gap-3 text-xs">
-                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                        {item.image && (
-                                                            <img
-                                                                src={item.image}
-                                                                alt=""
-                                                                className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0 border border-gray-200 dark:border-gray-700"
-                                                            />
-                                                        )}
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="font-bold text-gray-900 dark:text-white truncate">
-                                                                {renderBilingualTitle(item.name || item.title || item.adTitle || '', language) || item.title || item.name || ''}
-                                                            </p>
-                                                            {(item.unit || item.size) && (
-                                                                <span className="text-[11px] text-gray-500 font-medium">
-                                                                    {item.unit || item.size}
-                                                                </span>
-                                                            )}
+                                            {/* Store products items preview */}
+                                            <div className="space-y-1 pt-1.5 border-t border-gray-100 dark:border-gray-700/60">
+                                                {storeItems.map((item, idx) => {
+                                                    const itemTitle = renderBilingualTitle(item.name || item.title || item.adTitle || '', language) || item.title || item.name || '';
+                                                    return (
+                                                        <div key={idx} className="flex items-center justify-between text-xs text-gray-700 dark:text-gray-300">
+                                                            <span className="truncate pr-2 font-medium">
+                                                                {item.quantity} × {itemTitle}
+                                                            </span>
+                                                            <span className="font-bold shrink-0">
+                                                                ₹{Number(item.price || 0) * Number(item.quantity || 1)}
+                                                            </span>
                                                         </div>
-                                                    </div>
-
-                                                    <div className="text-right shrink-0">
-                                                        <span className="font-bold text-gray-700 dark:text-gray-300">
-                                                            {item.quantity} × ₹{item.price}
-                                                        </span>
-                                                        <p className="font-black text-[#2E5A2E] dark:text-[#CBF9B2]">
-                                                            ₹{Number(item.price || 0) * Number(item.quantity || 1)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Bottom Action Footer */}
-                                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                                        <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                                            <CreditCard size={14} className="text-gray-400" />
-                                            <span>{typeof order.paymentMethod === 'string' ? order.paymentMethod : (order.paymentMethod?.type || t('Cash on Delivery'))}</span>
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="flex items-center gap-2 ml-auto">
-                                            {/* Details button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedOrder(order)}
-                                                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 transition-colors"
-                                            >
-                                                {t('Details')}
-                                            </button>
-
-                                            {/* Status transitions */}
-                                            {isProcessing(order.status) && (
-                                                <>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setOrderToCancel(order)}
-                                                        className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold transition-colors"
-                                                    >
-                                                        {t('Cancel')}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        disabled={isUpdating}
-                                                        onClick={() => handleUpdateStatus(orderId, 'Out for Delivery')}
-                                                        className="px-4 py-2 bg-[#2E5A2E] hover:bg-[#245024] text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm flex items-center gap-1.5"
-                                                    >
-                                                        <Truck size={14} />
-                                                        <span>{t('Dispatch Order')}</span>
-                                                    </button>
-                                                </>
-                                            )}
-
-                                            {isOut(order.status) && (
-                                                <button
-                                                    type="button"
-                                                    disabled={isUpdating}
-                                                    onClick={() => handleUpdateStatus(orderId, 'Delivered')}
-                                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm flex items-center gap-1.5"
-                                                >
-                                                    <CheckCircle size={14} />
-                                                    <span>{t('Mark Delivered')}</span>
-                                                </button>
-                                            )}
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </motion.div>
+
+                                {/* Bottom Action: Swipe Action Button (matches delivery boy view) */}
+                                <div className="p-3 sm:p-3.5 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
+                                    {isDeliveredOrder ? (
+                                        <div className="relative overflow-hidden w-full py-3.5 rounded-full bg-[#00C988] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md select-none">
+                                            <CheckCircle size={17} className="text-white stroke-[2.8]" />
+                                            <span>{t('Delivered Successfully')}</span>
+                                        </div>
+                                    ) : isCancelledOrder ? (
+                                        <div className="w-full py-3.5 text-center text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-700/50 rounded-full select-none">
+                                            {t('Cancelled')}
+                                        </div>
+                                    ) : (
+                                        <SwipeActionButton
+                                            variant="yellow"
+                                            label={t('VIEW ORDER')}
+                                            autoReset={true}
+                                            heightClass="h-[50px]"
+                                            knobSizeClass="w-[38px] h-[38px]"
+                                            onSuccess={() => handleSelectOrder(order)}
+                                        />
+                                    )}
+                                </div>
+                            </div>
                         );
                     })}
                 </div>
             )}
 
-            {/* Order Details Modal */}
-            {selectedOrder && (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            {/* Cancel Order Popup if invoked */}
+            <AnimatePresence>
+                {orderToCancel && (
                     <motion.div
-                        initial={{ scale: 0.94, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="bg-white dark:bg-gray-900 rounded-3xl p-5 max-w-md w-full max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl border border-gray-100 dark:border-gray-800"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs"
                     >
-                        <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
-                            <div>
-                                <h3 className="text-base font-black text-gray-900 dark:text-white">
-                                    #{String(selectedOrder._id || selectedOrder.id || '').slice(-6).toUpperCase()}
-                                </h3>
-                                <p className="text-xs text-gray-500 font-medium">
-                                    {formatOrderDateTime(selectedOrder.createdAt || selectedOrder.date)}
-                                </p>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white dark:bg-gray-900 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-gray-100 dark:border-gray-800 space-y-3"
+                        >
+                            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs">
+                                <AlertTriangle size={32} />
                             </div>
-                            <button
-                                onClick={() => setSelectedOrder(null)}
-                                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-800"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
 
-                        {/* Customer Info */}
-                        <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-3.5 space-y-1">
-                            <p className="text-xs font-extrabold uppercase text-gray-400">{t('Customer Details')}</p>
-                            <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                {selectedOrder.shippingAddress?.name || t('Customer')}
-                            </p>
-                            {selectedOrder.shippingAddress?.mobile && (
-                                <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
-                                    📞 {selectedOrder.shippingAddress.mobile}
-                                </p>
-                            )}
-                            <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
-                                📍 {[selectedOrder.shippingAddress?.street, selectedOrder.shippingAddress?.city, selectedOrder.shippingAddress?.zip].filter(Boolean).join(', ')}
-                            </p>
-                        </div>
-
-                        {/* Store Items */}
-                        <div className="space-y-2">
-                            <p className="text-xs font-extrabold uppercase text-gray-400">{t('Items from your store')}</p>
-                            {selectedOrder.items?.filter(isItemFromMyStore).map((it, idx) => (
-                                <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 text-xs">
-                                    <div className="flex items-center gap-2">
-                                        {it.image && <img src={it.image} alt="" className="w-9 h-9 rounded-lg object-cover" />}
-                                        <div>
-                                            <p className="font-bold text-gray-900 dark:text-white">{renderBilingualTitle(it.name || it.title || it.adTitle || '', language) || it.title || it.name || ''}</p>
-                                            <p className="text-[11px] text-gray-400">{it.unit || it.size}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-bold text-gray-800 dark:text-gray-200">{it.quantity} × ₹{it.price}</p>
-                                        <p className="font-black text-[#2E5A2E] dark:text-[#CBF9B2]">₹{Number(it.price || 0) * Number(it.quantity || 1)}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="pt-2 flex justify-end">
-                            <button
-                                onClick={() => setSelectedOrder(null)}
-                                className="w-full py-3 bg-[#2E5A2E] text-white rounded-xl font-bold text-xs active:scale-98 transition-all"
-                            >
-                                {t('Close')}
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-
-            {/* Cancel Confirmation Modal */}
-            {orderToCancel && (
-                <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-                    <motion.div
-                        initial={{ scale: 0.94, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="bg-white dark:bg-gray-900 rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl border border-gray-100 dark:border-gray-800 text-center"
-                    >
-                        <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-                            <AlertTriangle size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-base font-black text-gray-900 dark:text-white">
-                                {t('Cancel this order?')}
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {t('Cancel Order')} #{String(orderToCancel._id || orderToCancel.id || '000000').slice(-6).toUpperCase()}?
                             </h3>
-                            <p className="text-xs text-gray-500 mt-1">
-                                {t('Are you sure you want to cancel order')} #{String(orderToCancel._id || orderToCancel.id).slice(-6).toUpperCase()}?
+                            <p className="text-xs text-gray-600 dark:text-gray-300">
+                                {t('Are you sure you want to cancel this order?')}
                             </p>
-                        </div>
 
-                        <div className="flex gap-2.5 pt-2">
+                            <div className="pt-2">
+                                <SwipeActionButton
+                                    variant="red"
+                                    label={t('Swipe to Cancel')}
+                                    loadingLabel={t('Cancelling...')}
+                                    isLoading={isCancelling}
+                                    heightClass="h-[56px]"
+                                    knobSizeClass="w-[44px] h-[44px]"
+                                    onSuccess={handleConfirmCancel}
+                                />
+                            </div>
+
                             <button
+                                type="button"
                                 onClick={() => setOrderToCancel(null)}
-                                className="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold text-xs"
-                            >
-                                {t('No, Keep Order')}
-                            </button>
-                            <button
-                                onClick={handleConfirmCancel}
                                 disabled={isCancelling}
-                                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs disabled:opacity-50"
+                                className="w-full py-2 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors uppercase tracking-wider"
                             >
-                                {isCancelling ? t('Cancelling...') : t('Yes, Cancel')}
+                                {t('Keep Order')}
                             </button>
-                        </div>
+                        </motion.div>
                     </motion.div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
         </div>
     );
 };

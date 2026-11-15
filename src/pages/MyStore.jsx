@@ -137,7 +137,7 @@ const MyStore = () => {
                         }`}
                     >
                         <Package size={16} />
-                        <span>{t('Orders & Deliveries')}</span>
+                        <span>{t('Orders')}</span>
                         {pendingOrdersCount > 0 && (
                             <span className={`px-2 py-0.5 text-[10px] font-black rounded-full ${
                                 activeTab === 'orders'
@@ -159,7 +159,7 @@ const MyStore = () => {
                         }`}
                     >
                         <Store size={16} />
-                        <span>{t('Store & Products')}</span>
+                        <span>{t('Stores')}</span>
                     </button>
                 </div>
 

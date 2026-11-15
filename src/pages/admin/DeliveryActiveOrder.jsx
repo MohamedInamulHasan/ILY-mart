@@ -248,10 +248,13 @@ const DeliveryActiveOrder = () => {
         openExternalLink(targetUrl);
     };
 
-    // When Leave button is clicked: set stay to false and return to delivery dashboard (/delivery-dashboard), NEVER to user screens or admin
+    const isFromStore = Boolean(location.state?.fromStore) || (user?.roles?.includes('store_admin') && !user?.roles?.includes('delivery_boy'));
+    const returnPath = isFromStore ? '/my-store?tab=orders' : '/delivery-dashboard';
+
+    // When Leave button is clicked: set stay to false and return to delivery dashboard (/delivery-dashboard) or store orders (/my-store?tab=orders)
     const handleLeave = () => {
         localStorage.setItem('active_delivery_stay', 'false');
-        navigate('/delivery-dashboard', { replace: true });
+        navigate(returnPath, { replace: true });
     };
 
     // 1. Accept order: saves to backend first, then updates card to Out for Delivery mode + celebratory popup
@@ -391,7 +394,7 @@ const DeliveryActiveOrder = () => {
             return;
         }
         if (completedType === 'cancelled') {
-            navigate('/delivery-dashboard', { replace: true });
+            navigate(returnPath, { replace: true });
         }
     };
 
