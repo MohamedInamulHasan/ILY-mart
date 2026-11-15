@@ -13,7 +13,8 @@ const DeliveryOrdersListFeed = ({
     orders = [],
     onSelectOrder,
     searchQuery = '',
-    paddingBottomClass = 'pb-36'
+    paddingBottomClass = 'pb-36',
+    isStore = false
 }) => {
     const { t } = useLanguage();
     const { mutateAsync: updateOrderStatus } = useUpdateOrderStatus();
@@ -226,12 +227,16 @@ const DeliveryOrdersListFeed = ({
 
                             {/* Card Content: Delivery Charge in center thick, Customer & address on left */}
                             <div className="pt-2.5 pb-2.5 px-3.5 sm:px-4">
-                                {/* Delivery Charge and Price in Center Thick */}
+                                {/* Delivery Charge / Store Subtotal in Center Thick */}
                                 <div className="text-center py-1 mb-1.5 border-b border-gray-100 dark:border-gray-700/60">
                                     <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white block mb-0.5">
-                                        {t('Delivery Charge')}
+                                        {isStore ? t('Store Subtotal') : t('Delivery Charge')}
                                     </span>
-                                    {isFreeDelivery ? (
+                                    {isStore ? (
+                                        <div className="text-4xl sm:text-5xl font-black text-black dark:text-white tracking-tight font-sans">
+                                            ₹{order.storeSubtotal !== undefined ? order.storeSubtotal : (order.items || []).reduce((sum, it) => sum + (Number(it.price || 0) * Number(it.quantity || 1)), 0)}
+                                        </div>
+                                    ) : isFreeDelivery ? (
                                         <div className="flex items-center justify-center gap-2 py-0.5">
                                             <span className="text-3xl sm:text-4xl font-black text-black dark:text-white tracking-tight uppercase">
                                                 {t('Free Delivery')}

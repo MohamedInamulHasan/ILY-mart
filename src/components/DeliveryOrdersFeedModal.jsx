@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LogOut, Search, X } from 'lucide-react';
+import { ArrowLeft, LogOut, Search, X, Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import LogoutModal from './LogoutModal';
 import DeliveryOrdersListFeed from './DeliveryOrdersListFeed';
 
-const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }) => {
+const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder, isStore = false, onOpenStore }) => {
     const { t } = useLanguage();
     const navigate = useNavigate();
     const { logout, setUser } = useAuth();
@@ -87,15 +87,30 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                             {t('Orders List')}
                         </h1>
 
-                        {/* Right: Logout button */}
-                        <button
-                            type="button"
-                            onClick={() => setShowLogoutModal(true)}
-                            title={t('Logout')}
-                            className="p-1.5 text-red-500 hover:opacity-70 transition-opacity active:scale-95"
-                        >
-                            <LogOut size={22} className="stroke-[2.5]" />
-                        </button>
+                        {/* Right: Logout button or My Store button */}
+                        {isStore ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (onClose) onClose();
+                                    if (onOpenStore) onOpenStore();
+                                }}
+                                title={t('My Store')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2E5A2E] text-white text-xs font-bold active:scale-95 transition-all shadow-xs cursor-pointer select-none"
+                            >
+                                <Store size={15} />
+                                <span>{t('My Store')}</span>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setShowLogoutModal(true)}
+                                title={t('Logout')}
+                                className="p-1.5 text-red-500 hover:opacity-70 transition-opacity active:scale-95"
+                            >
+                                <LogOut size={22} className="stroke-[2.5]" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -127,6 +142,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder }
                         orders={orders}
                         searchQuery={searchQuery}
                         onSelectOrder={onSelectOrder}
+                        isStore={isStore}
                         paddingBottomClass="pb-36"
                     />
                 </div>
