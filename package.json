@@ -1,7 +1,7 @@
 {
   "name": "ily-mart",
   "private": true,
-  "version": "1.6.2",
+  "version": "1.6.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -51,4 +51,3 @@
     "workbox-window": "^7.4.0"
   }
 }
-

@@ -384,12 +384,51 @@ const Profile = () => {
     }, [ADMIN_NUMBERS, DELIVERY_NUMBERS, STORE_ADMIN_NUMBERS, SERVICE_ADMIN_NUMBERS, activeMobile, roles, services, dataServices, user, userProfile, authUser]);
     const isAdminView = isAdmin || isStoreAdmin || isServiceAdmin || isDeliveryBoy;
 
-    const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy || isAdmin) });
+    const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy || isAdmin || isStoreAdmin) });
     const pendingOrdersCount = useMemo(() => {
         if (!isDeliveryBoy) return 0;
         const list = Array.isArray(allOrders) ? allOrders : (allOrders?.data || []);
         return list.filter(o => ['Processing', 'Pending', 'Order Placed'].includes(o.status)).length;
     }, [isDeliveryBoy, allOrders]);
+
+    const explicitStoreId = localStorage.getItem('my_store_id');
+    const myStore = useMemo(() => {
+        if (!isStoreAdmin) return null;
+        const allStores = Array.isArray(stores) && stores.length > 0 ? stores : (dataStores || []);
+        const targetId = explicitStoreId || user?.storeId?._id || user?.storeId;
+        return allStores.find(s => {
+            const sId = String(s._id || s.id || '');
+            if (targetId && sId === String(targetId)) return true;
+            const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
+            if (activeMobile && sMobile && sMobile === activeMobile) return true;
+            if (activeMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
+            return false;
+        }) || null;
+    }, [isStoreAdmin, stores, dataStores, explicitStoreId, user, activeMobile]);
+
+    const storePendingOrdersCount = useMemo(() => {
+        if (!isStoreAdmin) return 0;
+        const list = Array.isArray(allOrders) ? allOrders : (allOrders?.data || []);
+        const sId = String(myStore?._id || myStore?.id || explicitStoreId || user?.storeId?._id || user?.storeId || '').trim();
+        const sName = (myStore?.name || '').trim().toLowerCase();
+
+        return list.filter(o => {
+            const status = String(o.status || '').toLowerCase().trim();
+            if (!['pending', 'processing', 'order placed'].includes(status)) return false;
+
+            const oStoreId = String(o.storeId?._id || o.storeId || '').trim();
+            if (sId && oStoreId && oStoreId === sId) return true;
+            if (Array.isArray(o.items)) {
+                return o.items.some(item => {
+                    const itemStoreId = String(item.storeId?._id || item.storeId || '').trim();
+                    if (sId && itemStoreId && itemStoreId === sId) return true;
+                    if (sName && (item.storeName || item.storeId?.name || '').trim().toLowerCase() === sName) return true;
+                    return false;
+                });
+            }
+            return false;
+        }).length;
+    }, [isStoreAdmin, allOrders, myStore, explicitStoreId, user]);
 
     const addressObj = user?.address || {};
     const isAddressObject = typeof user?.address === 'object' && user?.address !== null;
@@ -561,6 +600,18 @@ const Profile = () => {
                                         to="/my-store" 
                                         icon={<Store size={17} strokeWidth={2} />} 
                                         title={t('My Store')} 
+                                        badge={
+                                            storePendingOrdersCount > 0 ? (
+                                                <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500 text-white flex items-center gap-1 shadow-xs animate-pulse">
+                                                    <span>{storePendingOrdersCount}</span>
+                                                    <span className="text-[10px] font-semibold uppercase">{t('Pending')}</span>
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                                                    0 {t('Pending')}
+                                                </span>
+                                            )
+                                        }
                                     />
                                 </>
                             )}
