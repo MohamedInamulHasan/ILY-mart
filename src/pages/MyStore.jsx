@@ -32,6 +32,8 @@ import {
     setOverlayAuthToken, 
     setOverlayOrdersState, 
     showFloatingOverlay, 
+    checkOverlayPermission,
+    requestOverlayPermission,
     isNativeAndroid 
 } from '../utils/floatingOverlay';
 import StoreManagement from './admin/StoreManagement';
@@ -53,6 +55,19 @@ const MyStore = () => {
     const [showStoreManagement, setShowStoreManagement] = useState(initialManagement);
     const [searchQuery, setSearchQuery] = useState('');
     const [showOrdersFeed, setShowOrdersFeed] = useState(false);
+    const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
+
+    // Check overlay permission on mount
+    useEffect(() => {
+        let isMounted = true;
+        const initOverlay = async () => {
+            if (!isNativeAndroid()) return;
+            const granted = await checkOverlayPermission();
+            if (isMounted) setHasOverlayPermission(granted);
+        };
+        initOverlay();
+        return () => { isMounted = false; };
+    }, []);
 
     // Identify this store admin's store
     const myStore = useMemo(() => {
@@ -119,13 +134,16 @@ const MyStore = () => {
         const sId = String(myStore._id || myStore.id || myStoreId || '');
         const sName = myStore.name || '';
         const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        if (enabled && !myStore.isManuallyClosed) {
+        if (enabled) {
             setOverlayStoreSessionActive(true, sId, sName);
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) setOverlayAuthToken(currentToken);
             const pendingCount = storeOrders.filter(o => ['Pending', 'Processing', 'Order Placed', 'Confirmed'].includes(o.status)).length;
             setOverlayOrdersState({ hasActive: false, hasPending: pendingCount > 0 });
-            showFloatingOverlay();
+            checkOverlayPermission().then(granted => {
+                setHasOverlayPermission(granted);
+                if (granted) showFloatingOverlay();
+            });
         }
     }, [myStore, myStoreId, storeOrders]);
 
@@ -389,6 +407,25 @@ const MyStore = () => {
             <PullToRefreshLayout>
                 <div className="pt-[72px]">
                     <div className="px-5 mt-2 max-w-3xl mx-auto pb-40">
+                        {/* Permission Warning Banner if Display Over Other Apps is missing */}
+                        {!hasOverlayPermission && (
+                            <div className="mb-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-xl">⚠️</span>
+                                    <div className="text-left">
+                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">{t('Display Over Other Apps Required')}</p>
+                                        <p className="text-[11px] text-amber-700 dark:text-amber-300">{t('Enable permission so floating screen image and order alerts appear')}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={requestOverlayPermission}
+                                    className="shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                                >
+                                    {t('Allow')}
+                                </button>
+                            </div>
+                        )}
+
                         {/* Search Bar: Exact style as delivery boy page */}
                         <div className="relative mb-3.5">
                             <input

@@ -47,6 +47,7 @@ import SwipeActionButton from '../../components/SwipeActionButton';
 import { 
     isNativeAndroid, 
     checkOverlayPermission, 
+    requestOverlayPermission,
     showFloatingOverlay, 
     hideFloatingOverlay, 
     setOverlayAuthToken,
@@ -69,6 +70,7 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
     const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
         return localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
     });
+    const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
 
     useEffect(() => {
         const handleFloatingToggle = () => {
@@ -76,6 +78,18 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
         };
         window.addEventListener('delivery:floating-toggle', handleFloatingToggle);
         return () => window.removeEventListener('delivery:floating-toggle', handleFloatingToggle);
+    }, []);
+
+    // Check overlay permission on mount for store admin
+    useEffect(() => {
+        let isMounted = true;
+        const initOverlay = async () => {
+            if (!isNativeAndroid()) return;
+            const granted = await checkOverlayPermission();
+            if (isMounted) setHasOverlayPermission(granted);
+        };
+        initOverlay();
+        return () => { isMounted = false; };
     }, []);
 
     const { mutateAsync: addStore } = useCreateStore();
@@ -229,12 +243,15 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
         const sId = String(myStore._id || myStore.id || myStoreId || '');
         const sName = myStore.name || '';
         const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        if (enabled && !myStore.isManuallyClosed) {
+        if (enabled) {
             setOverlayStoreSessionActive(true, sId, sName);
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) setOverlayAuthToken(currentToken);
             setOverlayOrdersState({ hasActive: false, hasPending: true });
-            showFloatingOverlay();
+            checkOverlayPermission().then(granted => {
+                setHasOverlayPermission(granted);
+                if (granted) showFloatingOverlay();
+            });
         }
     }, [isStoreAdmin, myStore, myStoreId]);
 
@@ -596,7 +613,10 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
         try {
             await updateStore({
                 id: store.id || store._id,
-                data: { isManuallyClosed: newManualStatus }
+                data: { 
+                    isManuallyClosed: newManualStatus,
+                    isActive: true
+                }
             });
 
             // If we just manually opened it but it's still closed by time
@@ -781,6 +801,25 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
 
             {view === 'list' && (
                 <>
+                    {/* Permission Warning Banner if Display Over Other Apps is missing */}
+                    {isStoreAdmin && !hasOverlayPermission && (
+                        <div className="mb-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-xl">⚠️</span>
+                                <div className="text-left">
+                                    <p className="text-xs font-bold text-amber-900 dark:text-amber-200">{t('Display Over Other Apps Required')}</p>
+                                    <p className="text-[11px] text-amber-700 dark:text-amber-300">{t('Enable permission so floating screen image and order alerts appear')}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={requestOverlayPermission}
+                                className="shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                            >
+                                {t('Allow')}
+                            </button>
+                        </div>
+                    )}
+
                     {/* Search Bar - Hide for Store Admin */}
                     {!isStoreAdmin && (
                         <div className="mb-4">
@@ -838,7 +877,7 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
                                                     </div>
 
                                                     {/* Large Closed/Hidden Overlay */}
-                                                    {store.isActive === false && !isStoreAdmin ? (
+                                                    {store.isActive === false ? (
                                                         <div className="absolute inset-0 z-20 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
                                                             <span className="bg-red-600 text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg animate-in fade-in zoom-in-95 duration-500">
                                                                 {t('Hidden')}
@@ -902,17 +941,15 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
                                                             >
                                                                 <Power size={18} />
                                                             </button>
-                                                            {!isStoreAdmin && (
-                                                                <button
-                                                                    onClick={(e) => { e.stopPropagation(); handleToggleActive(store); }}
-                                                                    title={store.isActive === false ? t('Unhide Store') : t('Hide Store')}
-                                                                    className={`p-2 rounded-xl transition-all active:scale-90 ${store.isActive === false 
-                                                                        ? 'bg-red-50 dark:bg-red-900/20 text-red-500' 
-                                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-gray-600'}`}
-                                                                >
-                                                                    {store.isActive === false ? <EyeOff size={18} /> : <Eye size={18} />}
-                                                                </button>
-                                                            )}
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleToggleActive(store); }}
+                                                                title={store.isActive === false ? t('Unhide Store') : t('Hide Store')}
+                                                                className={`p-2 rounded-xl transition-all active:scale-90 ${store.isActive === false 
+                                                                    ? 'bg-red-50 dark:bg-red-900/20 text-red-500' 
+                                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-gray-600'}`}
+                                                            >
+                                                                {store.isActive === false ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                            </button>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); handleEditStore(store); }}
                                                                 className="p-2 text-[#2E5A2E] hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors"
@@ -940,15 +977,14 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
                                                 >
                                                     <div className="max-w-md mx-auto px-4">
                                                         <SwipeActionButton
-                                                            key={isFloatingEnabled && !store.isManuallyClosed ? 'store-disable' : 'store-enable'}
-                                                            variant={isFloatingEnabled && !store.isManuallyClosed ? 'black-shine' : 'outline-white'}
-                                                            label={isFloatingEnabled && !store.isManuallyClosed ? t('Swipe to Disable') : t('Swipe to Enable')}
-                                                            loadingLabel={isFloatingEnabled && !store.isManuallyClosed ? t('Disabling...') : t('Enabling...')}
+                                                            key={isFloatingEnabled ? 'store-disable' : 'store-enable'}
+                                                            variant={isFloatingEnabled ? 'black-shine' : 'outline-white'}
+                                                            label={isFloatingEnabled ? t('Swipe to Disable') : t('Swipe to Enable')}
+                                                            loadingLabel={isFloatingEnabled ? t('Disabling...') : t('Enabling...')}
                                                             onSuccess={async () => {
-                                                                const currentlyActive = isFloatingEnabled && !store.isManuallyClosed;
-                                                                const nextState = !currentlyActive;
+                                                                const nextState = !isFloatingEnabled;
 
-                                                                // 1. Mobile alert and floating overlay toggle like Delivery Boy
+                                                                // Mobile alert and floating overlay toggle strictly like Delivery Boy
                                                                 setIsFloatingEnabled(nextState);
                                                                 localStorage.setItem('delivery_floating_overlay_enabled', String(nextState));
                                                                 window.dispatchEvent(new Event('delivery:floating-toggle'));
@@ -962,25 +998,16 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
                                                                 } else {
                                                                     await setOverlayStoreSessionActive(true, sId, sName);
                                                                     const granted = await checkOverlayPermission();
+                                                                    setHasOverlayPermission(granted);
                                                                     if (granted) {
                                                                         const currentToken = localStorage.getItem('authToken');
                                                                         if (currentToken) await setOverlayAuthToken(currentToken);
                                                                         await setOverlayOrdersState({ hasActive: false, hasPending: true });
                                                                         await showFloatingOverlay();
+                                                                    } else {
+                                                                        // Ask permission and open Android Settings so floating icon and order alerts appear
+                                                                        await requestOverlayPermission();
                                                                     }
-                                                                }
-
-                                                                // 2. Set isManuallyClosed: true when disabled, false when enabled. NEVER HIDE the store (always isActive: true)!
-                                                                try {
-                                                                    await updateStore({
-                                                                        id: store.id || store._id,
-                                                                        data: {
-                                                                            isManuallyClosed: currentlyActive,
-                                                                            isActive: true
-                                                                        }
-                                                                    });
-                                                                } catch (err) {
-                                                                    console.error('Failed to update store status:', err);
                                                                 }
                                                             }}
                                                             autoReset={true}

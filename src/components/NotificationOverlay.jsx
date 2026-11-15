@@ -180,7 +180,7 @@ const NotificationOverlay = () => {
         const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
 
         const canDeliveryAlert = isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled;
-        const canStoreAlert = isStoreAdmin && myStore;
+        const canStoreAlert = isStoreAdmin && myStore && isFloatingEnabled;
 
         if (!canDeliveryAlert && !canStoreAlert) return;
         if (allOrders.length === 0) return;
@@ -304,7 +304,7 @@ const NotificationOverlay = () => {
             const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
 
             const canDeliveryAlert = isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled;
-            const canStoreAlert = isStoreAdmin && myStore;
+            const canStoreAlert = isStoreAdmin && myStore && isFloatingEnabled;
 
             if (newOrder && (canDeliveryAlert || canStoreAlert)) {
                 // For store admin: strictly check if this new order belongs to their store!
