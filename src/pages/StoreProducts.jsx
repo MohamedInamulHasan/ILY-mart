@@ -430,11 +430,12 @@ const StoreProducts = () => {
 
         // Match categories from the admin categories array, preserving their admin-defined order
         const isCatRelevant = (cat) => 
-            storeTypes.some(t => areCategoriesMatching(t, cat)) ||
-            productCategoryRefs.some(pc => areCategoriesMatching(pc, cat));
+            !cat.isHidden && !cat.isHomeHidden &&
+            (storeTypes.some(t => areCategoriesMatching(t, cat)) ||
+            productCategoryRefs.some(pc => areCategoriesMatching(pc, cat)));
 
         const relevantCats = categories.filter(isCatRelevant);
-        const otherCats = categories.filter(c => !isCatRelevant(c));
+        const otherCats = categories.filter(c => !c.isHidden && !c.isHomeHidden && !isCatRelevant(c));
 
         // Prioritize store-relevant categories in admin order, then other categories in admin order
         const orderedCats = [...relevantCats, ...otherCats];

@@ -171,7 +171,7 @@ const Shop = () => {
         const result = [{ name: 'All', count: safeStores.length, isAll: true }];
 
         // 2. Collect visible categories from dbCategories
-        const visibleCats = (dbCategories || []).filter(cat => cat && !cat.isHidden);
+        const visibleCats = (dbCategories || []).filter(cat => cat && !cat.isHidden && !cat.isHomeHidden);
 
         visibleCats.forEach(cat => {
             const storeCount = safeStores.filter(store => {

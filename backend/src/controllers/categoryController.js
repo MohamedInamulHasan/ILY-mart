@@ -73,7 +73,7 @@ export const getCategoryById = async (req, res, next) => {
 // @access  Private/Admin
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, name_ta, description, icon, image, storeImage, subcategories, subcategoryImages, subcategoryStoreImages, isPreview, mode, mainCategory } = req.body;
+        const { name, name_ta, description, icon, image, storeImage, subcategories, subcategoryImages, subcategoryStoreImages, isPreview, mode, mainCategory, isHomeHidden, isHidden } = req.body;
 
         // Check if category already exists
         const categoryExists = await Category.findOne({ name });
@@ -95,6 +95,8 @@ export const createCategory = async (req, res, next) => {
             subcategoryStoreImages: subcategoryStoreImages || {},
             isPreview: Boolean(isPreview === true || mode === 'preview'),
             mode: mode || (isPreview ? 'preview' : 'normal'),
+            isHomeHidden: Boolean(isHomeHidden),
+            isHidden: Boolean(isHidden),
             mainCategory: mainCategory || ''
         });
 

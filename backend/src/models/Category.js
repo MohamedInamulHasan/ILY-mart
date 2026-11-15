@@ -44,6 +44,14 @@ const categorySchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    isHidden: {
+        type: Boolean,
+        default: false
+    },
+    isHomeHidden: {
+        type: Boolean,
+        default: false
+    },
     isPreview: {
         type: Boolean,
         default: false

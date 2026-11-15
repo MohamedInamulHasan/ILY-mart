@@ -942,6 +942,10 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
                                                         </h3>
                                                         <div className="flex flex-wrap gap-1 mt-1">
                                                             {(Array.isArray(store.type) ? store.type : (store.type ? [store.type] : []))
+                                                                .filter(catName => {
+                                                                    const cat = categories.find(c => areCategoriesMatching(c, catName));
+                                                                    return !cat || (!cat.isHidden && !cat.isHomeHidden);
+                                                                })
                                                                 .slice(0, 1)
                                                                 .map((cat, idx) => (
                                                                     <span key={idx} className="text-[10px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-widest opacity-60">

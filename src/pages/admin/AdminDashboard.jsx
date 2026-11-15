@@ -2365,8 +2365,25 @@ const CategoryManagement = () => {
         subcategories: [], // Array of subcategory names
         subcategoryImages: {}, // Map of subcategory name -> product category page image URL
         subcategoryStoreImages: {}, // Map of subcategory name -> store sub category image URL
-        isPreview: false
+        isPreview: false,
+        isHomeHidden: false
     });
+
+    const handleToggleHomeVisibility = async (category) => {
+        const newStatus = !category.isHomeHidden;
+        try {
+            await updateCategory({
+                id: category._id || category.id,
+                data: {
+                    ...category,
+                    isHomeHidden: newStatus
+                }
+            });
+        } catch (error) {
+            console.error('Error toggling category home visibility:', error);
+            alert(t('Failed to update category visibility. Please try again.'));
+        }
+    };
     const [newSubcategory, setNewSubcategory] = useState(''); // For adding new subcategories
     const [newSubcategoryImage, setNewSubcategoryImage] = useState('');
     const [newSubcategoryStoreImage, setNewSubcategoryStoreImage] = useState('');
@@ -2632,7 +2649,8 @@ const CategoryManagement = () => {
             subcategories: Array.isArray(category.subcategories) ? category.subcategories : [],
             subcategoryImages: cleanSubImages,
             subcategoryStoreImages: subStoreImages,
-            isPreview: Boolean(category.isPreview === true || category.mode === 'preview')
+            isPreview: Boolean(category.isPreview === true || category.mode === 'preview'),
+            isHomeHidden: Boolean(category.isHomeHidden)
         });
         setNewSubcategory('');
         setNewSubcategoryImage('');
@@ -2691,7 +2709,8 @@ const CategoryManagement = () => {
                     subcategoryImages: combinedSubImages,
                     subcategoryStoreImages: subStoreImgs,
                     isPreview: Boolean(formData.isPreview),
-                    mode: formData.isPreview ? 'preview' : 'normal'
+                    mode: formData.isPreview ? 'preview' : 'normal',
+                    isHomeHidden: Boolean(formData.isHomeHidden)
                 };
                 // Check if image is a backend proxy URL (hasn't been changed)
                 // If it contains API_BASE_URL or '/api/categories', don't send it
@@ -2710,11 +2729,12 @@ const CategoryManagement = () => {
                     subcategoryImages: combinedSubImages,
                     subcategoryStoreImages: subStoreImgs,
                     isPreview: Boolean(formData.isPreview),
-                    mode: formData.isPreview ? 'preview' : 'normal'
+                    mode: formData.isPreview ? 'preview' : 'normal',
+                    isHomeHidden: Boolean(formData.isHomeHidden)
                 });
                 alert(t('Category added successfully!'));
             }
-            setFormData({ name: '', image: '', storeImage: '', subcategories: [], subcategoryImages: {}, subcategoryStoreImages: {}, isPreview: false });
+            setFormData({ name: '', image: '', storeImage: '', subcategories: [], subcategoryImages: {}, subcategoryStoreImages: {}, isPreview: false, isHomeHidden: false });
             setNewSubcategory('');
             setNewSubcategoryImage('');
             setNewSubcategoryStoreImage('');
@@ -2737,7 +2757,7 @@ const CategoryManagement = () => {
                             onClick={() => {
                                 if (view === 'list') {
                                     setEditingCategory(null);
-                                    setFormData({ name: '', image: '', storeImage: '', subcategories: [], subcategoryImages: {}, subcategoryStoreImages: {}, isPreview: false });
+                                    setFormData({ name: '', image: '', storeImage: '', subcategories: [], subcategoryImages: {}, subcategoryStoreImages: {}, isPreview: false, isHomeHidden: false });
                                     setNewSubcategory('');
                                     setNewSubcategoryImage('');
                                     setNewSubcategoryStoreImage('');
@@ -2893,6 +2913,7 @@ const CategoryManagement = () => {
                                                     {(() => {
                                                         const fullName = category.name;
                                                         const isPreviewCat = Boolean(category.isPreview || category.mode === 'preview');
+                                                        const isHomeHiddenCat = Boolean(category.isHomeHidden);
                                                         const bracketIndex = fullName?.indexOf('(');
 
                                                         if (bracketIndex !== -1) {
@@ -2900,11 +2921,16 @@ const CategoryManagement = () => {
                                                             const bracketText = fullName.substring(bracketIndex).trim();
                                                             return (
                                                                 <div className="max-w-[150px]">
-                                                                    <div className="flex items-center gap-1.5">
+                                                                    <div className="flex items-center gap-1.5 flex-wrap">
                                                                         <span className="truncate" title={mainName}>{mainName}</span>
                                                                         {isPreviewCat && (
                                                                             <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded font-bold shrink-0">
                                                                                 Preview
+                                                                            </span>
+                                                                        )}
+                                                                        {isHomeHiddenCat && (
+                                                                            <span className="text-[10px] bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                                                                {t('Hidden')}
                                                                             </span>
                                                                         )}
                                                                     </div>
@@ -2914,11 +2940,16 @@ const CategoryManagement = () => {
                                                         }
                                                         return (
                                                             <div className="max-w-[150px]">
-                                                                <div className="flex items-center gap-1.5">
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
                                                                     <span className="truncate" title={fullName}>{fullName}</span>
                                                                     {isPreviewCat && (
                                                                         <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded font-bold shrink-0">
                                                                             Preview
+                                                                        </span>
+                                                                    )}
+                                                                    {isHomeHiddenCat && (
+                                                                        <span className="text-[10px] bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                                                            {t('Hidden')}
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -2928,6 +2959,23 @@ const CategoryManagement = () => {
                                                 </td>
                                                 <td className="p-4" onPointerDown={(e) => e.stopPropagation()}>
                                                     <div className="flex gap-2 items-center relative z-20">
+                                                        <button
+                                                            type="button"
+                                                            onPointerDown={(e) => e.stopPropagation()}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleToggleHomeVisibility(category);
+                                                            }}
+                                                            className={`p-2 rounded-xl transition-all cursor-pointer ${
+                                                                category.isHomeHidden
+                                                                    ? 'bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30'
+                                                                    : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-600'
+                                                            }`}
+                                                            title={category.isHomeHidden ? t('Show on Home') : t('Hide from Home')}
+                                                        >
+                                                            {category.isHomeHidden ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </button>
                                                         <button
                                                             type="button"
                                                             onPointerDown={(e) => e.stopPropagation()}
@@ -2977,23 +3025,42 @@ const CategoryManagement = () => {
                             <div className="flex items-center justify-between mb-2">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('Category Name')}</label>
                                 {!editingCategory?.isAll && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, isPreview: !prev.isPreview }))}
-                                        className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all flex items-center gap-1.5 border select-none ${
-                                            formData.isPreview
-                                                ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400'
-                                        }`}
-                                        title={t('Optional: When enabled, products in this category can only be previewed and called (no direct ordering)')}
-                                    >
-                                        <span>Preview</span>
-                                        {formData.isPreview ? (
-                                            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                                        ) : (
-                                            <span className="text-[10px] opacity-60">off</span>
-                                        )}
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, isHomeHidden: !prev.isHomeHidden }))}
+                                            className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all flex items-center gap-1.5 border select-none ${
+                                                formData.isHomeHidden
+                                                    ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400'
+                                            }`}
+                                            title={t('When enabled, this category card is hidden from the Home page')}
+                                        >
+                                            <span>{t('Hide from Home')}</span>
+                                            {formData.isHomeHidden ? (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                            ) : (
+                                                <span className="text-[10px] opacity-60">off</span>
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, isPreview: !prev.isPreview }))}
+                                            className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all flex items-center gap-1.5 border select-none ${
+                                                formData.isPreview
+                                                    ? 'bg-[#2E5A2E] text-white border-[#2E5A2E] shadow-sm'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400'
+                                            }`}
+                                            title={t('Optional: When enabled, products in this category can only be previewed and called (no direct ordering)')}
+                                        >
+                                            <span>Preview</span>
+                                            {formData.isPreview ? (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                            ) : (
+                                                <span className="text-[10px] opacity-60">off</span>
+                                            )}
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                             <input

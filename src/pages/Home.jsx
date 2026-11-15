@@ -62,7 +62,7 @@ const Home = () => {
     // Admin Categories visible on Home (active / non-hidden)
     const homeCategories = useMemo(() => {
         const list = Array.isArray(rawCategories) ? rawCategories : (rawCategories?.data || []);
-        return list.filter(c => !c.isHidden);
+        return list.filter(c => c.isActive !== false && !c.isHidden && !c.isHomeHidden);
     }, [rawCategories]);
 
     // Zepto-style typewriter animated placeholder (cycles through Admin Categories)
@@ -197,10 +197,13 @@ const Home = () => {
             }
         });
 
-        // 2. Add orphan category sections (only if 'All' or matching)
+        // 2. Add orphan category sections (only if 'All' or matching and not hidden)
         Object.entries(groupedByStore).forEach(([key, products]) => {
             if (key.startsWith('category_')) {
                 const categoryName = key.replace('category_', '');
+                const catObj = (rawCategories || []).find(c => (c.name || '').toLowerCase() === categoryName.toLowerCase());
+                if (catObj && (catObj.isHidden || catObj.isHomeHidden)) return;
+
                 if (selectedCategory === 'All' || categoryName === selectedCategory) {
                     sections.push({
                         id: key,
