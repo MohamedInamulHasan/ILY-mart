@@ -35,6 +35,7 @@ export const CartProvider = ({ children }) => {
     const { user } = useAuth();
     const { t, language } = useLanguage();
     const [showStoreReminder, setShowStoreReminder] = useState(false);
+    const [reminderStoreNames, setReminderStoreNames] = useState({ current: '', selected: '' });
 
 
 
@@ -212,13 +213,20 @@ export const CartProvider = ({ children }) => {
 
         // Customer can ONLY order products from one store at a time
         if (newStoreId && cartItems.length > 0) {
-            const currentUniqueStores = new Set(
-                cartItems
-                    .map(item => (item.storeId?._id || item.storeId || '').toString())
-                    .filter(Boolean)
-            );
+            const currentItem = cartItems.find(item => (item.storeId?._id || item.storeId));
+            const currentStoreId = (currentItem?.storeId?._id || currentItem?.storeId || '').toString();
 
-            if (currentUniqueStores.size > 0 && !currentUniqueStores.has(newStoreId)) {
+            if (currentStoreId && currentStoreId !== newStoreId) {
+                const curStoreObj = (stores || []).find(s => String(s._id || s.id) === String(currentStoreId));
+                const curName = curStoreObj?.name || currentItem?.storeName || 'Store';
+
+                const selStoreObj = (stores || []).find(s => String(s._id || s.id) === String(newStoreId));
+                const selName = selStoreObj?.name || product.storeName || 'Store';
+
+                setReminderStoreNames({
+                    current: curName,
+                    selected: selName
+                });
                 setShowStoreReminder(true);
                 return;
             }
@@ -380,39 +388,34 @@ export const CartProvider = ({ children }) => {
 
                         {/* Label with Forest Green accent */}
                         <div className="flex items-center gap-1.5 mb-2.5">
-                            <p className="text-[13px] sm:text-[13.5px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-wide flex items-center gap-1">
-                                <span>⚠️</span>
-                                <span>{language === 'ta' ? 'ஒரு சிறிய Reminder!' : 'A Quick Reminder!'}</span>
+                            <p className="text-[13.5px] sm:text-[14px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-wide flex items-center gap-1">
+                                <span>{language === 'ta' ? '⚠️ ஒரு சிறிய நினைவூட்டல்!' : '⚠️ Oru chinna Reminder!'}</span>
                             </p>
                         </div>
 
                         {/* Main speech message */}
-                        <div className="text-[12.5px] sm:text-[13px] italic font-semibold text-gray-800 dark:text-gray-100 leading-relaxed mb-3.5 space-y-2">
+                        <div className="text-[12px] sm:text-[12.5px] font-medium text-gray-800 dark:text-gray-100 leading-relaxed mb-1 space-y-2">
                             <p>
                                 {language === 'ta'
-                                    ? 'நீங்கள் ஏற்கனவே ஒரு Store-லிருந்து Products-ஐ உங்கள் Cart-ல் Add செய்துள்ளீர்கள்.'
-                                    : 'You already have products from another store in your cart.'}
+                                    ? `நீங்கள் ஏற்கனவே ${reminderStoreNames.current || 'Store'} கடையிலிருந்து பொருட்களை உங்கள் கார்ட்டில் சேர்த்துள்ளீர்கள்.`
+                                    : `Neenga already ${reminderStoreNames.current || 'Store'}-la irundhu products-ah Cart-la add pannirukeenga.`}
                             </p>
                             <p>
                                 {language === 'ta'
-                                    ? 'வேறொரு Store-லிருந்து Products Add செய்ய விரும்பினால், முதலில் உங்கள் Cart-ல் உள்ள பழைய Store Products-ஐ Remove செய்துவிட்டு, புதிய Store Products-ஐ Add செய்யவும்.'
-                                    : 'If you want to add products from a different store, please remove the existing items from your cart first, then add the new store products.'}
+                                    ? `இப்போது ${reminderStoreNames.selected || 'Store'} கடையிலிருந்து பொருட்களைச் சேர்க்க முடியாது.`
+                                    : `Ippo ${reminderStoreNames.selected || 'Store'}-la irundhu products add panna mudiyadhu.`}
                             </p>
-                            <p className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black not-italic">
+                            <p>
                                 {language === 'ta'
-                                    ? 'ஒரு நேரத்தில் ஒரு Store-லிருந்து மட்டுமே Order செய்ய முடியும்!'
-                                    : 'You can only order from one store at a time!'}
+                                    ? `${reminderStoreNames.selected || 'Store'} கடையிலிருந்து பொருட்கள் வாங்க விரும்பினால், முதலில் கார்ட்டில் உள்ள ${reminderStoreNames.current || 'Store'} பொருட்களை நீக்கிவிட்டு, புதிய கடையிலிருந்து பொருட்களைச் சேர்க்கவும்.`
+                                    : `${reminderStoreNames.selected || 'Store'}-la irundhu products vaanga virumbina, first Cart-la irukkura ${reminderStoreNames.current || 'Store'} products-ah remove pannitu, pudhu store-la irundhu products add pannunga.`}
+                            </p>
+                            <p className="text-[#2E5A2E] dark:text-[#CBF9B2] font-bold">
+                                {language === 'ta'
+                                    ? 'ஒரு ஆர்டரில் ஒரு கடையிலிருந்து மட்டுமே பொருட்களை வாங்க முடியும்'
+                                    : 'Oru order-la oru store-la irundhu mattum dhaan products vaanga mudiyum!'}
                             </p>
                         </div>
-
-                        {/* Button */}
-                        <button
-                            type="button"
-                            onClick={() => setShowStoreReminder(false)}
-                            className="w-full py-2.5 bg-black hover:bg-gray-900 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold rounded-xl text-xs sm:text-[13px] active:scale-95 transition-transform shadow-sm"
-                        >
-                            {language === 'ta' ? 'சரி, புரிந்தது!' : 'Got it!'}
-                        </button>
                     </motion.div>
 
                     {/* Delivery Character — Swipes up first from bottom */}

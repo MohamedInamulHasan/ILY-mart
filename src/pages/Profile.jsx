@@ -14,6 +14,8 @@ import { safeNavigateBack } from '../utils/useBackButton';
 import AuthContext, { useAuth } from '../context/AuthContext';
 import { useUserProfile, useUpdateProfile } from '../hooks/queries/useUsers';
 import { useOrders } from '../hooks/queries/useOrders';
+import { useStores } from '../hooks/queries/useStores';
+import { useServices } from '../hooks/queries/useServices';
 import { useData } from '../context/DataContext';
 import LogoutModal from '../components/LogoutModal';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
@@ -66,7 +68,9 @@ const MenuLink = ({ icon, title, subtitle, to, onClick, isRed = false, disabled 
 const Profile = () => {
     const { theme, toggleTheme } = useTheme();
     const { language, setLanguage, t } = useLanguage();
-    const { setIsFooterHidden } = useData();
+    const { setIsFooterHidden, stores: dataStores = [], services: dataServices = [] } = useData();
+    const { data: stores = [] } = useStores();
+    const { data: services = [] } = useServices();
     const { user: authUser, logout, setUser: setAuthUser } = useAuth();
     const { cartCount } = useCart();
 
@@ -231,8 +235,25 @@ const Profile = () => {
         return getUserRoles(userProfile?.data || userProfile || user || authUser);
     }, [user, userProfile, authUser]);
 
-    const ADMIN_NUMBERS = useMemo(() => ['9500171980', '9500171958', '9500171989'], []);
-    const DELIVERY_NUMBERS = useMemo(() => ['9578654411', '9500179180'], []);
+    const ADMIN_NUMBERS = useMemo(() => ['9500171958'], []);
+    const DELIVERY_NUMBERS = useMemo(() => ['9578654411', '9500171980', '9500179180'], []);
+    const STORE_ADMIN_NUMBERS = useMemo(() => ['9876543211', '8474958585'], []);
+    const SERVICE_ADMIN_NUMBERS = useMemo(() => ['9999999999'], []);
+
+    const [savedAddressTrigger, setSavedAddressTrigger] = useState(0);
+
+    // Re-check role privileges dynamically every time address is saved or updated
+    useEffect(() => {
+        const handleAddressChange = () => {
+            setSavedAddressTrigger(prev => prev + 1);
+        };
+        window.addEventListener('userChanged', handleAddressChange);
+        window.addEventListener('storage', handleAddressChange);
+        return () => {
+            window.removeEventListener('userChanged', handleAddressChange);
+            window.removeEventListener('storage', handleAddressChange);
+        };
+    }, []);
 
     const activeMobile = useMemo(() => {
         let fallbackSavedMobile = '';
@@ -247,37 +268,98 @@ const Profile = () => {
             userInfoMobile = u?.mobile || u?.phone || u?.address?.mobile || '';
         } catch {}
 
+        // Dynamic address checking: always prioritizes latest saved/updated address number
         const raw = (
+            fallbackSavedMobile ||
+            user?.address?.mobile || 
+            userInfoMobile || 
             user?.mobile || 
             user?.phone || 
-            user?.address?.mobile || 
+            userProfile?.data?.address?.mobile || 
             userProfile?.data?.mobile || 
             userProfile?.data?.phone || 
-            userProfile?.data?.address?.mobile || 
             authUser?.data?.mobile || 
             authUser?.mobile || 
-            fallbackSavedMobile || 
-            userInfoMobile || 
             ''
         ).toString();
         return raw.replace(/\D/g, '').slice(-10);
-    }, [user, userProfile, authUser]);
+    }, [user, userProfile, authUser, savedAddressTrigger]);
 
     const isDeliveryBoy = useMemo(() => {
+        if (!activeMobile) return false;
         return DELIVERY_NUMBERS.includes(activeMobile);
     }, [DELIVERY_NUMBERS, activeMobile]);
 
     const isAdmin = useMemo(() => {
+        if (!activeMobile) return false;
         return ADMIN_NUMBERS.includes(activeMobile);
     }, [ADMIN_NUMBERS, activeMobile]);
 
     const isStoreAdmin = useMemo(() => {
-        return Boolean(user?.storeId || userProfile?.data?.storeId) || (ADMIN_NUMBERS.includes(activeMobile) && roles.includes('store_admin'));
-    }, [user, userProfile, ADMIN_NUMBERS, activeMobile, roles]);
+        if (!activeMobile) return false;
+        // If this number is a delivery boy number, strictly hide My Store
+        if (DELIVERY_NUMBERS.includes(activeMobile)) return false;
+
+        // Dedicated Store Admin phone number
+        if (STORE_ADMIN_NUMBERS.includes(activeMobile)) {
+            localStorage.setItem('my_store_id', '6a5c5bf5445f08d3448365c2');
+            return true;
+        }
+
+        // Check 1: User's registered number matches activeMobile AND user has storeId or store_admin role
+        const cleanUserMobile = (user?.mobile || userProfile?.data?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+        const hasStoreRoleOrId = Boolean(user?.storeId || userProfile?.data?.storeId || roles.includes('store_admin') || user?.role === 'store_admin');
+        if (cleanUserMobile && cleanUserMobile === activeMobile && hasStoreRoleOrId) {
+            return true;
+        }
+
+        // Check 2: Dynamic phone match against ANY store in the database
+        const allStores = Array.isArray(stores) && stores.length > 0 ? stores : (dataStores || []);
+        const matched = allStores.find(s => {
+            const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
+            return sMobile && sMobile === activeMobile;
+        });
+        if (matched) {
+            localStorage.setItem('my_store_id', matched._id || matched.id);
+            return true;
+        }
+
+        // Check 3: Admin number with store_admin role
+        return ADMIN_NUMBERS.includes(activeMobile) && (roles.includes('store_admin') || Boolean(user?.storeId || userProfile?.data?.storeId));
+    }, [ADMIN_NUMBERS, DELIVERY_NUMBERS, STORE_ADMIN_NUMBERS, activeMobile, roles, stores, dataStores, user, userProfile, authUser]);
 
     const isServiceAdmin = useMemo(() => {
-        return Boolean(user?.serviceId || userProfile?.data?.serviceId) || (ADMIN_NUMBERS.includes(activeMobile) && roles.includes('service_admin'));
-    }, [user, userProfile, ADMIN_NUMBERS, activeMobile, roles]);
+        if (!activeMobile) return false;
+        // If this number is a delivery boy number or store admin, strictly hide My Service
+        if (DELIVERY_NUMBERS.includes(activeMobile) || STORE_ADMIN_NUMBERS.includes(activeMobile)) return false;
+
+        // Dedicated Service Admin phone number
+        if (SERVICE_ADMIN_NUMBERS.includes(activeMobile)) {
+            localStorage.setItem('my_service_id', '6aa8c41f7d177bd3cd8baea1');
+            return true;
+        }
+
+        // Check 1: User's registered number matches activeMobile AND user has serviceId or service_admin role
+        const cleanUserMobile = (user?.mobile || userProfile?.data?.mobile || authUser?.mobile || '').toString().replace(/\D/g, '').slice(-10);
+        const hasServiceRoleOrId = Boolean(user?.serviceId || userProfile?.data?.serviceId || roles.includes('service_admin') || user?.role === 'service_admin');
+        if (cleanUserMobile && cleanUserMobile === activeMobile && hasServiceRoleOrId) {
+            return true;
+        }
+
+        // Check 2: Dynamic phone match against ANY service in the database
+        const allServices = Array.isArray(services) && services.length > 0 ? services : (dataServices || []);
+        const matched = allServices.find(srv => {
+            const srvMobile = String(srv.mobile || srv.phone || '').replace(/\D/g, '').slice(-10);
+            return srvMobile && srvMobile === activeMobile;
+        });
+        if (matched) {
+            localStorage.setItem('my_service_id', matched._id || matched.id);
+            return true;
+        }
+
+        // Check 3: Admin number with service_admin role
+        return ADMIN_NUMBERS.includes(activeMobile) && (roles.includes('service_admin') || Boolean(user?.serviceId || userProfile?.data?.serviceId));
+    }, [ADMIN_NUMBERS, DELIVERY_NUMBERS, STORE_ADMIN_NUMBERS, SERVICE_ADMIN_NUMBERS, activeMobile, roles, services, dataServices, user, userProfile, authUser]);
     const isAdminView = isAdmin || isStoreAdmin || isServiceAdmin || isDeliveryBoy;
 
     const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy || isAdmin) });
@@ -381,9 +463,9 @@ const Profile = () => {
                                     )}
                                 </div>
                                 {/* Mobile number */}
-                                {user?.mobile && (
+                                {(activeMobile || user?.mobile) && (
                                     <p className="text-[12px] sm:text-[12.5px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                                        {user.mobile}
+                                        {activeMobile || user?.mobile}
                                     </p>
                                 )}
                            </div>

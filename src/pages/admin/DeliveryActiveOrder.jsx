@@ -21,6 +21,7 @@ import { useStores } from '../../hooks/queries/useStores';
 import { apiService, API_BASE_URL } from '../../utils/api';
 import { renderBilingualTitle, getSelectedUnitDisplay } from '../../utils/titleHelpers';
 import { getStoreName } from '../../utils/storeHelpers';
+import { getUserRoles } from '../../utils/userHelpers';
 import { formatOrderBannerTime, formatOrderDateTime } from '../../utils/dateUtils';
 import { CartoonCoin } from '../../components/CartoonCoin';
 import SwipeActionButton from '../../components/SwipeActionButton';
@@ -190,8 +191,16 @@ const DeliveryActiveOrder = () => {
         });
     }, [items, optimizedRoute?.sortedStores]);
     const subtotal = items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
-    const deliveryCharge = Number(order?.deliveryCharge ?? 30);
-    const totalAmount = order?.totalAmount ?? (subtotal + (deliveryCharge > 0 ? deliveryCharge : 0));
+    const deliveryCharge = order?.shipping !== undefined && order?.shipping !== null
+        ? Number(order.shipping)
+        : (order?.deliveryCharge !== undefined && order?.deliveryCharge !== null
+            ? Number(order.deliveryCharge)
+            : 20);
+    const totalAmount = order?.total !== undefined && order?.total !== null
+        ? Number(order.total)
+        : (order?.totalAmount !== undefined && order?.totalAmount !== null
+            ? Number(order.totalAmount)
+            : (subtotal + (deliveryCharge > 0 ? deliveryCharge : 0)));
 
     const getItemImage = (item) => {
         const img = item.image || item.product?.image;
@@ -248,12 +257,23 @@ const DeliveryActiveOrder = () => {
         openExternalLink(targetUrl);
     };
 
-    const isFromStore = Boolean(location.state?.fromStore) || (user?.roles?.includes('store_admin') && !user?.roles?.includes('delivery_boy'));
-    const returnPath = isFromStore ? '/my-store?tab=orders' : '/delivery-dashboard';
+    const userRoles = getUserRoles(user);
+    let savedMobile = '';
+    try {
+        const saved = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
+        savedMobile = (saved?.mobile || saved?.phone || '').toString().replace(/\D/g, '').slice(-10);
+    } catch {}
+    const isStoreAdminUser = userRoles.includes('store_admin') || Boolean(user?.storeId) || Boolean(localStorage.getItem('my_store_id')) || savedMobile === '9876543211';
+    const isFromStore = Boolean(location.state?.fromStore) || 
+        localStorage.getItem('delivery_order_from_store') === 'true' || 
+        isStoreAdminUser;
+    const returnPath = isFromStore ? '/my-store' : '/delivery-dashboard';
 
-    // When Leave button is clicked: set stay to false and return to delivery dashboard (/delivery-dashboard) or store orders (/my-store?tab=orders)
+    // When Leave/Panel button is clicked: set stay to false and return strictly to My Store delivery panel or delivery dashboard
     const handleLeave = () => {
+        localStorage.removeItem('active_delivery_order_id');
         localStorage.setItem('active_delivery_stay', 'false');
+        localStorage.removeItem('delivery_order_from_store');
         navigate(returnPath, { replace: true });
     };
 
@@ -367,6 +387,7 @@ const DeliveryActiveOrder = () => {
 
             localStorage.removeItem('active_delivery_order_id');
             localStorage.removeItem('active_delivery_stay');
+            localStorage.removeItem('delivery_order_from_store');
 
             // Trigger red flower popup
             setPopupState({

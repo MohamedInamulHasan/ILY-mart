@@ -88,6 +88,15 @@ const SwipeActionButton = ({
                     knobBg: 'bg-white',
                     sheen: 'via-white/25'
                 };
+            case 'dark-blue':
+            case 'navy':
+                return {
+                    track: 'bg-[#1E3A8A] hover:bg-[#172554] border-[#1E3A8A]',
+                    text: 'text-white',
+                    knob: 'text-[#1E3A8A]',
+                    knobBg: 'bg-white',
+                    sheen: 'via-white/30'
+                };
             case 'blue':
             case 'sky':
                 return {

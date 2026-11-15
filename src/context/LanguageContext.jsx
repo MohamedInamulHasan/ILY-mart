@@ -422,10 +422,14 @@ export const LanguageProvider = ({ children }) => {
             return key[langField] || key[enField] || key[field] || '';
         }
 
+        // Defensive guard: if key is an object without field, extract title/name or return string to prevent React child crash
+        if (typeof key === 'object' && key !== null) {
+            return key.title || key.name || key.adTitle || '';
+        }
+
         // Handle static label translation
         if (!translations[key]) {
-            console.warn(`Translation missing for key: "${key}"`);
-            return key;
+            return typeof key === 'string' ? key : '';
         }
 
         // Return translation for current language, fallback to English, then to key
