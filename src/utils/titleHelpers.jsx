@@ -31,7 +31,11 @@ export const getSelectedUnitDisplay = (item) => {
  * 5. Do not alter or swap the name logic.
  */
 export const renderBilingualTitle = (fullTitle, language, options = {}) => {
-    if (!fullTitle || typeof fullTitle !== 'string') return fullTitle || '';
+    if (!fullTitle) return '';
+    if (typeof fullTitle === 'object' && fullTitle !== null) {
+        fullTitle = fullTitle.title || fullTitle.name || fullTitle.adTitle || '';
+    }
+    if (typeof fullTitle !== 'string') return '';
 
     const {
         mainClassName = '',

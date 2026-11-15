@@ -391,7 +391,7 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
                         const customerPhone = order.shippingAddress?.mobile || '';
                         const street = order.shippingAddress?.street || '';
                         const city = order.shippingAddress?.city || 'Ilayangudi';
-                        const addressText = [street, city].filter(Boolean).join(', ');
+                        const addressText = [street, city].filter(s => typeof s === 'string' && s.trim()).join(', ');
                         const rawScheduleTime = order.scheduledDeliveryTime || order.deliveryTime || order.shippingAddress?.deliveryTime;
                         const scheduleBanner = formatDeliveryRangeFromDate(rawScheduleTime) || rawScheduleTime;
 
@@ -506,7 +506,7 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
                                                         )}
                                                         <div className="min-w-0 flex-1">
                                                             <p className="font-bold text-gray-900 dark:text-white truncate">
-                                                                {renderBilingualTitle(item, language) || item.title || item.name}
+                                                                {renderBilingualTitle(item.name || item.title || item.adTitle || '', language) || item.title || item.name || ''}
                                                             </p>
                                                             {(item.unit || item.size) && (
                                                                 <span className="text-[11px] text-gray-500 font-medium">
@@ -533,7 +533,7 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
                                     <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
                                         <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
                                             <CreditCard size={14} className="text-gray-400" />
-                                            <span>{order.paymentMethod?.type || t('Cash on Delivery')}</span>
+                                            <span>{typeof order.paymentMethod === 'string' ? order.paymentMethod : (order.paymentMethod?.type || t('Cash on Delivery'))}</span>
                                         </div>
 
                                         {/* Action Buttons */}
@@ -638,7 +638,7 @@ const StoreOrdersPanel = ({ selectedOrderId = null }) => {
                                     <div className="flex items-center gap-2">
                                         {it.image && <img src={it.image} alt="" className="w-9 h-9 rounded-lg object-cover" />}
                                         <div>
-                                            <p className="font-bold text-gray-900 dark:text-white">{renderBilingualTitle(it, language) || it.title || it.name}</p>
+                                            <p className="font-bold text-gray-900 dark:text-white">{renderBilingualTitle(it.name || it.title || it.adTitle || '', language) || it.title || it.name || ''}</p>
                                             <p className="text-[11px] text-gray-400">{it.unit || it.size}</p>
                                         </div>
                                     </div>
