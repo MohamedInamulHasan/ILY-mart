@@ -10,6 +10,7 @@ import Product from '../models/Product.js';
 import Store from '../models/Store.js';
 import { getIO } from '../socket.js';
 import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
+import { isOwnerUser } from '../middleware/authMiddleware.js';
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -157,10 +158,11 @@ export const getProduct = async (req, res, next) => {
 // @access  Private/Admin
 export const createProduct = async (req, res, next) => {
     try {
-        // Store Admin Restriction: Enforce storeId
+        // Store Admin Restriction: Enforce storeId (only for non-superadmin store admins)
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        if (roles.includes('store_admin')) {
-            req.body.storeId = req.user.storeId;
+        const isSuperAdmin = roles.includes('admin') || isOwnerUser(req.user);
+        if (!isSuperAdmin && roles.includes('store_admin')) {
+            req.body.storeId = req.user?.storeId;
         }
 
         if (!req.body.image) {
@@ -211,10 +213,13 @@ export const updateProduct = async (req, res, next) => {
             throw new Error('Product not found');
         }
 
-        // Store Admin Restriction: Verify ownership
+        // Store Admin Restriction: Verify ownership (Super Admin can update any product)
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        if (roles.includes('store_admin')) {
-            if (product.storeId && product.storeId.toString() !== req.user.storeId.toString()) {
+        const isSuperAdmin = roles.includes('admin') || isOwnerUser(req.user);
+        if (!isSuperAdmin && roles.includes('store_admin')) {
+            const productStoreId = (product.storeId?._id || product.storeId || '').toString();
+            const userStoreId = (req.user?.storeId?._id || req.user?.storeId || '').toString();
+            if (productStoreId && (!userStoreId || productStoreId !== userStoreId)) {
                 res.status(403);
                 throw new Error('Not authorized to update this product');
             }
@@ -298,10 +303,13 @@ export const deleteProduct = async (req, res, next) => {
             throw new Error('Product not found');
         }
 
-        // Store Admin Restriction: Verify ownership
+        // Store Admin Restriction: Verify ownership (Super Admin can delete any product)
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        if (roles.includes('store_admin')) {
-            if (productToCheck.storeId && productToCheck.storeId.toString() !== req.user.storeId.toString()) {
+        const isSuperAdmin = roles.includes('admin') || isOwnerUser(req.user);
+        if (!isSuperAdmin && roles.includes('store_admin')) {
+            const productStoreId = (productToCheck.storeId?._id || productToCheck.storeId || '').toString();
+            const userStoreId = (req.user?.storeId?._id || req.user?.storeId || '').toString();
+            if (productStoreId && (!userStoreId || productStoreId !== userStoreId)) {
                 res.status(403);
                 throw new Error('Not authorized to delete this product');
             }
@@ -632,10 +640,11 @@ export const updateProductsOrder = async (req, res, next) => {
 
         // Store Admin Restriction: Verify that ALL orderedIds belong to the user's store
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        if (roles.includes('store_admin')) {
+        const isSuperAdmin = roles.includes('admin') || isOwnerUser(req.user);
+        if (!isSuperAdmin && roles.includes('store_admin')) {
             const count = await Product.countDocuments({
                 _id: { $in: orderedIds },
-                storeId: req.user.storeId
+                storeId: req.user?.storeId
             });
 
             if (count !== orderedIds.length) {

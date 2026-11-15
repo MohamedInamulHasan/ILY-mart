@@ -8,6 +8,7 @@ import axios from 'axios';
 import { sendPasswordResetEmail, sendDeleteAccountRequestEmail, sendOTPEmail } from '../services/emailService.js';
 import { OAuth2Client } from 'google-auth-library';
 import { getIO } from '../socket.js';
+import { isOwnerUser } from '../middleware/authMiddleware.js';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -31,6 +32,14 @@ const sendTokenResponse = (user, statusCode, res) => {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // CSRF protection
     };
 
+    let resolvedRole = user.role;
+    if (isOwnerUser(user)) {
+        let rList = Array.isArray(user.role) ? [...user.role] : [user.role || 'customer'];
+        rList = rList.filter(r => r !== 'delivery_boy');
+        if (!rList.includes('admin')) rList.unshift('admin');
+        resolvedRole = rList;
+    }
+
     res.status(statusCode)
         .cookie('jwt', token, options)
         .json({
@@ -40,7 +49,7 @@ const sendTokenResponse = (user, statusCode, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role,
+                role: resolvedRole,
                 address: user.address,
                 location: user.location,
                 mobile: user.mobile,
@@ -409,13 +418,19 @@ export const getUserProfile = async (req, res, next) => {
                 }
             }
 
+            let resolvedRoles = Array.isArray(user.role) ? [...user.role] : [user.role || 'customer'];
+            if (isOwnerUser(user)) {
+                resolvedRoles = resolvedRoles.filter(r => r !== 'delivery_boy');
+                if (!resolvedRoles.includes('admin')) resolvedRoles.unshift('admin');
+            }
+
             res.status(200).json({
                 success: true,
                 data: {
                     _id: user._id,
                     name: user.name,
                     email: user.email,
-                    role: Array.isArray(user.role) ? user.role : [user.role || 'customer'],
+                    role: resolvedRoles,
                     mobile: user.mobile,
                     address: finalAddress,
                     location: finalLocation,

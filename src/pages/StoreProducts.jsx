@@ -337,27 +337,28 @@ const StoreProducts = () => {
 
     const normKey = (s) => stripEmojis(String(s || '')).trim().toLowerCase();
 
-    // Resolves category display name with uploaded emoji for the store page
-    const getCategoryDisplayName = (name) => {
+    // Resolves category display name with uploaded emoji for the store page (removes emoji/icon if image is present)
+    const getCategoryDisplayName = (name, hasImage = false) => {
         if (!name) return '';
+        const keepEmoji = !hasImage;
         if (normSubcategoryKey(name) === 'all') {
-            return getCleanCategoryName('All', language, null, { keepEmoji: true });
+            return getCleanCategoryName('All', language, null, { keepEmoji });
         }
         // Check if matching official subcategory in categories
         for (const cat of categories) {
             if (Array.isArray(cat?.subcategories)) {
                 const foundSub = cat.subcategories.find(s => areSubcategoriesMatching(s, name));
                 if (foundSub) {
-                    return getCleanCategoryName(foundSub, language, null, { keepEmoji: true });
+                    return getCleanCategoryName(foundSub, language, null, { keepEmoji });
                 }
             }
         }
         // Or if matching category
         const foundCat = findCanonicalCategory(name, categories);
         if (foundCat) {
-            return getCleanCategoryName(foundCat, language, null, { keepEmoji: true });
+            return getCleanCategoryName(foundCat, language, null, { keepEmoji });
         }
-        return getCleanCategoryName(name, language, null, { keepEmoji: true });
+        return getCleanCategoryName(name, language, null, { keepEmoji });
     };
 
     const getSubcategoryImage = (subName) => {
@@ -845,7 +846,7 @@ const StoreProducts = () => {
                                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                         />
                                     )}
-                                    <span>{getCategoryDisplayName(name)}</span>
+                                    <span>{getCategoryDisplayName(name, Boolean(subImg))}</span>
                                 </button>
                             );
                         })}
