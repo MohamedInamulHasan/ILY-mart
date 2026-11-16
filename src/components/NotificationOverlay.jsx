@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useOrders } from '../hooks/queries/useOrders';
 import { useStores } from '../hooks/queries/useStores';
 import IncomingOrderModal from './IncomingOrderModal';
-import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound } from '../utils/soundHelper';
+import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound, stopIncomingOrderAlertSound } from '../utils/soundHelper';
 import { isNativeAndroid, setOverlayOrdersState, triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
 import { apiService } from '../utils/api';
 import { registerModalBackHandler } from '../utils/useBackButton';
@@ -190,16 +190,14 @@ const NotificationOverlay = () => {
     const pendingIndexRef = useRef(0);
     const [repeatTick, setRepeatTick] = useState(0);
 
-    // Continuous Alert for processing cards in delivery panel / store panel:
-    // Alerts and rings loudly, repeats every 5s if skipped/timed out until accepted or cancelled!
+    // For delivery boy: inside the app do NOT show popup alert; only show alert when closed (handled by native background service)
+    // For store owner: show alert for their store's orders
     useEffect(() => {
-        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
         const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-
-        const canDeliveryAlert = isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled;
         const canStoreAlert = isStoreAdmin && myStore && isFloatingEnabled;
 
-        if (!canDeliveryAlert && !canStoreAlert) return;
+        // Inside the app, delivery boy does NOT get modal alert (only alerted when app is closed)
+        if (!canStoreAlert) return;
         if (allOrders.length === 0) return;
 
         // If an incoming modal is currently showing or we are in the 5s gap pause, wait
@@ -209,18 +207,13 @@ const NotificationOverlay = () => {
             ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
             : null;
 
-        // Find all pending/processing orders waiting for action
+        // Find all pending/processing orders waiting for this store
         const pendingOrders = allOrders.filter(o => {
             const oId = String(o._id || o.id || '');
             if (!oId) return false;
             if (activePageOrderId && oId === activePageOrderId) return false;
             if (!isProcessingStatus(o.status)) return false;
-
-            // For store admin: strictly check that order belongs to their store
-            if (!canDeliveryAlert && canStoreAlert) {
-                return isOrderForMyStore(o);
-            }
-            return true;
+            return isOrderForMyStore(o);
         });
 
         if (pendingOrders.length > 0) {
@@ -238,7 +231,7 @@ const NotificationOverlay = () => {
                 showPorterOrderCard(targetOrder);
             }
         }
-    }, [isDeliveryBoy, isStoreAdmin, myStore, myStoreId, myStoreName, isDeliveryPage, incomingOrder, allOrders, repeatTick, location.pathname]);
+    }, [isStoreAdmin, myStore, myStoreId, myStoreName, incomingOrder, allOrders, repeatTick, location.pathname]);
 
     // Auto-dismiss popup immediately if the current order is accepted or cancelled
     useEffect(() => {
@@ -530,21 +523,11 @@ const NotificationOverlay = () => {
             // Invalidate orders cache so new order list card immediately appears in the Delivery Panel screen
             queryClient.invalidateQueries({ queryKey: ['orders'] });
 
-            // Strictly ONLY show popup in delivery panel, orders list, and accept / delivery order page
-            // Do NOT show in home, orders, profile, or other customer pages
-            if (!isDeliveryPage) {
-                return;
-            }
-
-            // Pop up the new incoming order card modal for the delivery boy and trigger alert
-            setStartWithAcceptView(false);
-            setIncomingOrder(order);
-            triggerIncomingOrderAlert();
-
-            // Play notification chime and vibrate to notify the delivery boy without disrupting their screen
+            // Inside the app, do NOT show popup alert over the screen for delivery boy
+            // Soft chime sound so delivery boy knows a card appeared in the panel
             playSuccessSound();
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
+                navigator.vibrate([100, 50, 100]);
             }
 
             // Only show OS desktop/mobile push notification if the app is minimized/hidden in background
@@ -588,7 +571,7 @@ const NotificationOverlay = () => {
 
     return (
         <>
-            {isDeliveryBoy && isDeliveryPage && incomingOrder && (
+            {isStoreAdmin && incomingOrder && (
                 <IncomingOrderModal
                     key={incomingOrder._id || incomingOrder.id}
                     order={incomingOrder}
