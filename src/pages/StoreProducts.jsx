@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Clock, Phone, ChevronRight, AlertCircle, Zap, Search, ListFilter, ShoppingCart, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Phone, ChevronRight, AlertCircle, Zap, Search, ListFilter, ShoppingCart, X, Store } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -184,7 +184,7 @@ const StoreAdsBanner = ({ ads, t }) => {
 
 const StoreProducts = () => {
     const { id } = useParams();
-    const { products: dataProducts, stores: dataStores, categories: dataCategories, loading, fastMode, toggleFastMode, globalSortOrder, setGlobalSortOrder, refreshData } = useData();
+    const { products: dataProducts, stores: dataStores, categories: dataCategories, loading, fastMode, toggleFastMode, globalSortOrder, setGlobalSortOrder, refreshData, settings } = useData();
     const { data: rawProducts = [], isLoading: loadingProducts, refetch: refetchProducts } = useProducts();
     const { data: rawStores = [], refetch: refetchStores } = useStores();
     const { data: rawCategories = [], refetch: refetchCategories } = useCategories();
@@ -364,14 +364,16 @@ const StoreProducts = () => {
     const getSubcategoryImage = (subName) => {
         if (!subName || normSubcategoryKey(subName) === 'all') return null;
 
-        // 1. If subName is a category (or matches one), return its storeImage (falling back to image)
+        // 1. If subName is a category (or matches one)
         const directCat = findCanonicalCategory(subName, categories);
-        if (directCat && (directCat.storeImage || directCat.image)) {
-            return directCat.storeImage || directCat.image;
+        if (directCat) {
+            if (directCat.storeImage) return directCat.storeImage;
+            if (directCat.image) return directCat.image;
+            const cid = directCat._id || directCat.id;
+            if (cid) return `${API_BASE_URL}/categories/${cid}/image`;
         }
 
         // 2. Check if subName matches any subcategory and has a store-specific image:
-        // 2a. Direct subcategoryStoreImages
         for (const cat of categories) {
             if (cat?.subcategoryStoreImages && typeof cat.subcategoryStoreImages === 'object') {
                 for (const [key, url] of Object.entries(cat.subcategoryStoreImages)) {
@@ -380,7 +382,6 @@ const StoreProducts = () => {
                     }
                 }
             }
-            // 2b. Dual-saved store image under '__store__' or 'store:' prefix in subcategoryImages
             if (cat?.subcategoryImages && typeof cat.subcategoryImages === 'object') {
                 for (const [key, url] of Object.entries(cat.subcategoryImages)) {
                     if (url && (key.startsWith('__store__') || key.startsWith('store:'))) {
@@ -393,14 +394,7 @@ const StoreProducts = () => {
             }
         }
 
-        // 3. Fallback: Check parent category storeImage if this subName belongs to a category
-        for (const cat of categories) {
-            if (Array.isArray(cat?.subcategories) && cat.subcategories.some(s => areSubcategoriesMatching(s, subName))) {
-                if (cat.storeImage) return cat.storeImage;
-            }
-        }
-
-        // 4. Fallback: Product category page subcategory image
+        // 3. Product category page subcategory image
         for (const cat of categories) {
             if (cat?.subcategoryImages && typeof cat.subcategoryImages === 'object') {
                 for (const [key, url] of Object.entries(cat.subcategoryImages)) {
@@ -411,12 +405,22 @@ const StoreProducts = () => {
             }
         }
 
-        // 5. Final fallback: Parent category image
+        // 4. Fallback: Check parent category storeImage or image
         for (const cat of categories) {
             if (Array.isArray(cat?.subcategories) && cat.subcategories.some(s => areSubcategoriesMatching(s, subName))) {
+                if (cat.storeImage) return cat.storeImage;
                 if (cat.image) return cat.image;
+                const cid = cat._id || cat.id;
+                if (cid) return `${API_BASE_URL}/categories/${cid}/image`;
             }
         }
+
+        // 5. Final fallback: Product image from this category/subcategory
+        const prodMatch = groupedStoreProducts.find(p => {
+            const subs = Array.isArray(p.subcategory) ? p.subcategory : [p.subcategory];
+            return subs.some(s => areSubcategoriesMatching(s, subName)) || areCategoriesMatching(p.category, subName);
+        });
+        if (prodMatch?.image) return prodMatch.image;
 
         return null;
     };
@@ -531,10 +535,8 @@ const StoreProducts = () => {
             return indexA - indexB;
         });
 
-        // If there are 2 or more subcategories in that store, prepend "All" as first option
-        const finalData = sorted.length >= 2 
-            ? [{ name: 'All', count: groupedStoreProducts.length }, ...sorted]
-            : sorted;
+        // Return categories/subcategories directly without prepending 'All'
+        const finalData = sorted;
 
         return { 
             subcategoryData: finalData, 
@@ -546,7 +548,7 @@ const StoreProducts = () => {
     const totalProductCount = useMemo(() => groupedStoreProducts.length, [groupedStoreProducts]);
 
     const effectiveSubcategory = useMemo(() => {
-        if (subcategoryData.length >= 2) {
+        if (subcategoryData.length > 0) {
             if (selectedSubcategory && subcategoryData.some(s => areSubcategoriesMatching(s.name, selectedSubcategory) || areCategoriesMatching(s.name, selectedSubcategory))) {
                 return selectedSubcategory;
             }
@@ -602,7 +604,7 @@ const StoreProducts = () => {
                     .filter(s => s && typeof s === 'string' && s.trim() !== '');
                 const matchSub = rawSubs.some(s => areSubcategoriesMatching(s, effectiveSubcategory));
                 const matchCat = areCategoriesMatching(p.category, effectiveSubcategory);
-                return matchSub || (rawSubs.length === 0 && matchCat);
+                return matchSub || matchCat;
             })
             .sort((a, b) => {
                 if (globalSortOrder !== 'none') {
@@ -817,36 +819,66 @@ const StoreProducts = () => {
                 </div>
             </section>
 
-            {subcategoryData.length >= 2 && (
-                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-3.5">
-                    <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
+            {subcategoryData.length >= 1 && (
+                <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-4">
+                    <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide py-1">
                         {subcategoryData.map(({ name }) => {
                             const isSelected = normSubcategoryKey(effectiveSubcategory) === normSubcategoryKey(name) || areCategoriesMatching(effectiveSubcategory, name);
                             const subImg = getSubcategoryImage(name);
+                            const cleanTitle = getCategoryDisplayName(name, true);
+
                             return (
                                 <button
                                     key={name}
                                     id={isSelected ? 'active-sub-pill' : undefined}
                                     type="button"
                                     onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         handleSelectCategory(name);
                                         e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                                     }}
-                                    className={`text-[13px] sm:text-[14px] transition-all whitespace-nowrap flex items-center justify-center py-1.5 rounded-xl border cursor-pointer select-none ${
-                                        isSelected 
-                                            ? 'px-3.5 bg-gray-800 text-white font-bold shadow-xs border-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white' 
-                                            : 'px-2.5 bg-transparent border-transparent text-gray-950 dark:text-white font-semibold hover:text-black dark:hover:text-white'
+                                    className={`w-[calc((100%-24px)/4)] min-w-[calc((100%-24px)/4)] max-w-[calc((100%-24px)/4)] sm:w-auto sm:min-w-[88px] h-[114px] sm:h-[126px] px-1 pt-2 pb-1.5 sm:px-2.5 sm:pt-2.5 sm:pb-2 rounded-xl flex flex-col items-center justify-start flex-shrink-0 cursor-pointer select-none active:scale-95 transition-all border outline-none ${
+                                        isSelected
+                                            ? 'bg-white dark:bg-gray-800 shadow-xs border-gray-200/90 dark:border-gray-700'
+                                            : 'bg-transparent border-transparent hover:bg-white/40 dark:hover:bg-gray-800/40'
                                     }`}
                                 >
-                                    {subImg && (
-                                        <img
-                                            src={subImg}
-                                            alt={name}
-                                            className="w-4 h-4 sm:w-5 sm:h-5 rounded-md object-cover flex-shrink-0 mr-1.5 -ml-0.5"
-                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                        />
-                                    )}
-                                    <span>{getCategoryDisplayName(name, Boolean(subImg))}</span>
+                                    <div className="w-[62px] h-[62px] sm:w-[70px] sm:h-[70px] aspect-square flex items-center justify-center bg-transparent pointer-events-none flex-shrink-0">
+                                        {subImg ? (
+                                            <img
+                                                src={subImg}
+                                                alt={cleanTitle}
+                                                draggable={false}
+                                                className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none"
+                                                onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
+                                            />
+                                        ) : (
+                                            <Store size={26} className={isSelected ? "text-[#2E5A2E] dark:text-[#CBF9B2]" : "text-gray-500 dark:text-gray-400"} />
+                                        )}
+                                    </div>
+                                    <div className="flex items-start justify-center text-center mt-1.5 w-full px-0.5 pointer-events-none h-[28px] sm:h-[32px] overflow-hidden">
+                                        <span 
+                                            className={`leading-[14px] sm:leading-[15px] text-center w-full transition-colors text-[11px] sm:text-[12px] ${
+                                                isSelected 
+                                                    ? 'font-bold text-gray-900 dark:text-white' 
+                                                    : 'font-semibold text-gray-700 dark:text-gray-300'
+                                            }`} 
+                                            style={{
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                wordBreak: 'break-word',
+                                                maxHeight: '28px',
+                                                lineHeight: '14px'
+                                            }}
+                                            title={cleanTitle}
+                                        >
+                                            {cleanTitle}
+                                        </span>
+                                    </div>
                                 </button>
                             );
                         })}

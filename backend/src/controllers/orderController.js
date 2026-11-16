@@ -10,7 +10,7 @@ import { sendOrderNtfyAlert } from '../services/ntfyService.js';
 import { sendOrderWhatsAppNotification } from '../services/whatsappService.js';
 import { sendN8nOrderEvent } from '../services/n8nService.js';
 import { getIO } from '../socket.js';
-import { sendOrderPushNotification } from '../services/fcmService.js';
+import { sendOrderPushNotification, sendStaffNewOrderNotification } from '../services/fcmService.js';
 
 
 
@@ -229,6 +229,10 @@ export const createOrder = async (req, res, next) => {
             sendOrderPushNotification(customerUserId, order._id.toString(), 'Processing')
                 .catch(err => console.error('❌ Failed to send FCM order created notification:', err));
         }
+
+        // Send high-priority FCM push alert to Delivery Boys, Store Admin, and Super Admins
+        sendStaffNewOrderNotification(order)
+            .catch(err => console.error('❌ Failed to send staff FCM new order alert:', err));
 
         // Emit real-time event for admin
         getIO().emit('order:created', order);

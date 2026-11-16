@@ -117,18 +117,10 @@ public class FloatingOverlayPlugin extends Plugin {
     @PluginMethod
     public void hide(PluginCall call) {
         try {
-            SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-            prefs.edit().putBoolean("floating_enabled", false).apply();
-
             if (FloatingLogoService.instance != null) {
-                FloatingLogoService.instance.stopServiceAndHide();
+                FloatingLogoService.instance.hideCircleBubble();
+                FloatingLogoService.instance.dismissPorterOrderCard();
             }
-            try {
-                Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
-                stopIntent.setAction("STOP_SERVICE");
-                getContext().stopService(stopIntent);
-            } catch (Exception ignored) {}
-
             JSObject ret = new JSObject();
             ret.put("success", true);
             call.resolve(ret);
@@ -148,7 +140,10 @@ public class FloatingOverlayPlugin extends Plugin {
                 .putString("store_id", storeId != null ? storeId.trim() : "")
                 .putString("store_name", storeName != null ? storeName.trim().toLowerCase() : "")
                 .apply();
-        if (!active && !prefs.getBoolean("delivery_session_active", false)) {
+
+        if (active) {
+            prefs.edit().putBoolean("floating_enabled", true).apply();
+        } else if (!prefs.getBoolean("delivery_session_active", false)) {
             prefs.edit().putBoolean("floating_enabled", false).apply();
             if (FloatingLogoService.instance != null) {
                 FloatingLogoService.instance.stopServiceAndHide();
@@ -169,7 +164,10 @@ public class FloatingOverlayPlugin extends Plugin {
         boolean active = call.getBoolean("active", false);
         SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         prefs.edit().putBoolean("delivery_session_active", active).apply();
-        if (!active) {
+
+        if (active) {
+            prefs.edit().putBoolean("floating_enabled", true).apply();
+        } else if (!prefs.getBoolean("store_session_active", false)) {
             prefs.edit().putBoolean("floating_enabled", false).apply();
             if (FloatingLogoService.instance != null) {
                 FloatingLogoService.instance.stopServiceAndHide();

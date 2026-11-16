@@ -224,3 +224,63 @@ export const sendOrderPushNotification = async (userId, orderId, status) => {
         console.error('❌ sendOrderPushNotification error:', err.message);
     }
 };
+
+/**
+ * Send high-priority FCM push notification to staff (Store Admin, Delivery Boys, Super Admins)
+ * when a new order is placed so their Android device sounds alert even when app is closed!
+ */
+export const sendStaffNewOrderNotification = async (order) => {
+    try {
+        if (getApps().length === 0) return;
+        if (!order) return;
+
+        const tokensSet = new Set();
+        const shortId = (order._id || order.id || '').toString().slice(-6).toUpperCase();
+        const total = Number(order.totalAmount || order.totalPrice || 0).toFixed(0);
+
+        // 1. Find delivery boys and admins and store owners
+        const staffUsers = await User.find({
+            $or: [
+                { role: { $in: ['delivery_boy', 'admin', 'store_admin'] } },
+                { mobile: { $in: ['9500171980', '9500171958', '9500171989', '9578654411', '9500179180'] } },
+                { storeId: order.storeId }
+            ]
+        }).select('fcmTokens role storeId mobile');
+
+        staffUsers.forEach(u => {
+            if (Array.isArray(u?.fcmTokens)) {
+                u.fcmTokens.forEach(t => { if (t) tokensSet.add(t); });
+            }
+        });
+
+        const tokens = Array.from(tokensSet);
+        if (tokens.length === 0) return;
+
+        const message = {
+            tokens,
+            notification: {
+                title: '🚨 New Order Received! #' + shortId,
+                body: `New order for ₹${total}. Tap to view details.`
+            },
+            data: {
+                orderId: (order._id || order.id || '').toString(),
+                type: 'NEW_ORDER',
+                channelId: 'order_updates'
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    channelId: 'order_updates',
+                    sound: 'default',
+                    priority: 'max',
+                    visibility: 'public'
+                }
+            }
+        };
+
+        const response = await getMessaging().sendEachForMulticast(message);
+        console.log(`📲 Staff FCM alert sent for order #${shortId}: ${response.successCount} success across ${tokens.length} staff device(s)`);
+    } catch (err) {
+        console.warn('⚠️ sendStaffNewOrderNotification error:', err.message);
+    }
+};

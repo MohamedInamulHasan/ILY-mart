@@ -467,6 +467,9 @@ public class FloatingLogoService extends Service {
 
         try {
             String orderId = order.optString("_id", order.optString("id", ""));
+            if (!orderId.isEmpty()) {
+                alertedOrderIds.add(orderId);
+            }
             String shortId = orderId.length() >= 6 ? orderId.substring(orderId.length() - 6).toUpperCase() : orderId;
 
             JSONObject shippingAddress = order.optJSONObject("shippingAddress");
@@ -1049,8 +1052,16 @@ public class FloatingLogoService extends Service {
         }
         synchronized (pendingOrdersQueue) {
             if (pendingOrdersQueue.isEmpty()) return;
-            int idx = currentPendingOrderIndex % pendingOrdersQueue.size();
-            JSONObject nextOrder = pendingOrdersQueue.get(idx);
+            JSONObject nextOrder = null;
+            for (int i = 0; i < pendingOrdersQueue.size(); i++) {
+                JSONObject o = pendingOrdersQueue.get(i);
+                if (o == null) continue;
+                String oid = o.optString("_id", o.optString("id", "")).trim();
+                if (!oid.isEmpty() && !alertedOrderIds.contains(oid)) {
+                    nextOrder = o;
+                    break;
+                }
+            }
             if (nextOrder != null) {
                 showPorterOrderCard(nextOrder);
             }
@@ -1333,6 +1344,20 @@ public class FloatingLogoService extends Service {
                         pendingOrdersQueue.clear();
                     }
                 }
+
+                // Clean up alertedOrderIds for completed/cancelled orders
+                if (ordersArray != null) {
+                    Set<String> currentIds = new HashSet<>();
+                    for (int i = 0; i < ordersArray.length(); i++) {
+                        JSONObject o = ordersArray.optJSONObject(i);
+                        if (o != null) {
+                            String oid = o.optString("_id", o.optString("id", "")).trim();
+                            if (!oid.isEmpty()) currentIds.add(oid);
+                        }
+                    }
+                    alertedOrderIds.retainAll(currentIds);
+                }
+
                 final boolean finalActive = foundAccepted;
                 final boolean finalPending = foundPending;
                 mainHandler.post(() -> updateOrdersState(finalActive, finalPending));

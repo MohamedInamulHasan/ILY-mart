@@ -17,7 +17,6 @@ import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
 
 const ShopCategoryItem = ({ item, isActive, onClick, settings, language }) => {
-    const [imgError, setImgError] = useState(false);
     const isAll = (item?.name || '').toLowerCase() === 'all';
 
     // Clean name without truncation or Tamil brackets
@@ -29,75 +28,18 @@ const ShopCategoryItem = ({ item, isActive, onClick, settings, language }) => {
         return getCleanCategoryName(item?.name || '', language);
     }, [item, isAll, settings, language]);
 
-    const emoji = useMemo(() => {
-        if (isAll) return '';
-        return item?.emoji || item?.icon || extractEmojis(item?.name) || '';
-    }, [item, isAll]);
-
-    const imageUrl = useMemo(() => {
-        if (isAll) {
-            return settings?.allStoreCategoryImage || settings?.allCategoryImage || null;
-        }
-        // 1. Direct storeImage URL if present
-        if (item?.storeImage) return item.storeImage;
-
-        // 2. Prioritize dedicated category store-image endpoint
-        const catId = item?._id || item?.id;
-        if (catId) {
-            return `${API_BASE_URL}/categories/${catId}/store-image?t=${Math.floor((item.updatedAt ? new Date(item.updatedAt).getTime() : Date.now()) / 60000)}`;
-        }
-
-        // 3. Fallback to general category image if no store-specific image exists
-        if (item?.image) return item.image;
-        return null;
-    }, [item, isAll, settings]);
-
     return (
         <button
             id={isActive ? "active-category-pill" : undefined}
             type="button"
             onClick={onClick}
-            className="flex flex-col items-center justify-start flex-shrink-0 relative pb-2 pt-0.5 px-1 cursor-pointer select-none min-w-[62px] sm:min-w-[70px] max-w-[84px] sm:max-w-[92px] transition-all group outline-none"
+            className={`text-[13px] sm:text-[14px] transition-all whitespace-nowrap flex items-center justify-center py-1.5 rounded-xl border cursor-pointer select-none outline-none ${
+                isActive 
+                    ? 'px-3.5 bg-gray-800 text-white font-bold shadow-xs border-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white' 
+                    : 'px-2.5 bg-transparent border-transparent text-gray-950 dark:text-white font-semibold hover:text-black dark:hover:text-white'
+            }`}
         >
-            {/* Image above - Clean transparent container without card background */}
-            <div className="w-9 h-9 sm:w-10 sm:h-10 aspect-square flex items-center justify-center bg-transparent mb-1.5 transition-transform group-hover:scale-105 pointer-events-none">
-                {imageUrl && !imgError ? (
-                    <img
-                        src={imageUrl}
-                        alt={displayName}
-                        draggable={false}
-                        className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none transition-transform"
-                        onError={(e) => {
-                            if (item?.image && e.target.src !== item.image) {
-                                e.target.src = item.image;
-                            } else {
-                                setImgError(true);
-                            }
-                        }}
-                    />
-                ) : emoji ? (
-                    <span className="text-xl sm:text-[22px] leading-none select-none pointer-events-none">{emoji}</span>
-                ) : (
-                    <Store size={18} className={isActive ? "text-[#2E5A2E] dark:text-[#CBF9B2]" : "text-gray-600 dark:text-gray-400"} />
-                )}
-            </div>
-
-            {/* Name below */}
-            <span 
-                className={`text-[12px] sm:text-[13px] text-center leading-tight whitespace-nowrap truncate block w-full px-0.5 transition-colors pointer-events-none ${
-                    isActive 
-                        ? 'font-bold text-gray-950 dark:text-white' 
-                        : 'font-semibold text-gray-700 dark:text-gray-300 group-hover:text-gray-950 dark:group-hover:text-white'
-                }`}
-                title={displayName}
-            >
-                {displayName}
-            </span>
-
-            {/* Line effect 50% */}
-            {isActive && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-[#2E5A2E] dark:bg-[#CBF9B2] rounded-full animate-in fade-in zoom-in-75 duration-200" />
-            )}
+            <span>{displayName}</span>
         </button>
     );
 };
@@ -463,21 +405,18 @@ const Shop = () => {
                         </div>
 
 
-                        {/* Categories Horizontal Scroller with Image Above, Name Below & 50% Line Indicator */}
+                        {/* Categories Horizontal Scroller: Rectangular bar matching store products */}
                         {viewType === 'store' && (
                             isCategoriesLoading ? (
-                                <div className="max-w-7xl mx-auto mb-3 px-1 border-b border-gray-200/50 dark:border-gray-800/60 pb-1.5">
-                                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                                <div className="max-w-7xl mx-auto mb-3 sm:mb-3.5 px-4">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
-                                            <div key={i} className="flex flex-col items-center flex-shrink-0 min-w-[62px] sm:min-w-[70px] gap-2 pb-2">
-                                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl blinkit-shimmer"></div>
-                                                <div className="h-3 w-10 rounded-full blinkit-shimmer"></div>
-                                            </div>
+                                            <div key={i} className="h-8 w-16 sm:w-20 rounded-xl blinkit-shimmer flex-shrink-0" />
                                         ))}
                                     </div>
                                 </div>
                             ) : (
-                                <div className="max-w-7xl mx-auto mb-3 px-1 border-b border-gray-200/50 dark:border-gray-800/60 pb-1.5">
+                                <div className="max-w-7xl mx-auto mb-3 sm:mb-3.5 px-4">
                                     <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
                                         {categoryData.map((item) => {
                                             const isActive = normKey(item.name) === normKey(categoryFilter);

@@ -48,7 +48,7 @@ import { useAuth } from './context/AuthContext';
 import { initFCM, syncFcmTokenWithUser } from './utils/fcm';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import useBackButton from './utils/useBackButton';
-import { setOverlayAuthToken, hideFloatingOverlay, setOverlayDeliverySessionActive } from './utils/floatingOverlay';
+import { setOverlayAuthToken, hideFloatingOverlay, setOverlayDeliverySessionActive, setOverlayStoreSessionActive } from './utils/floatingOverlay';
 import PrivateRoute from './components/PrivateRoute';
 import OfflineScreen from './components/OfflineScreen';
 import ConnectionStatus from './components/ConnectionStatus';
@@ -157,25 +157,32 @@ const Layout = ({ children, onRefresh }) => {
     useEffect(() => {
         const roles = getUserRoles(user);
         const isDeliveryUser = roles.includes('delivery_boy') || roles.includes('deliveryboy');
-        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
-        const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-        const isDeliveryMode = isDeliveryUser && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
-
+        const isStoreAdmin = roles.includes('store_admin');
+        const isAdmin = roles.includes('admin');
         const token = localStorage.getItem('authToken');
-        if (token && isDeliveryMode) {
+
+        // Always sync auth token with native Android overlay so background polling works for staff!
+        if (token && (isDeliveryUser || isStoreAdmin || isAdmin)) {
             setOverlayAuthToken(token);
         }
+
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
+        const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
+        const isDeliveryMode = isDeliveryUser && (!isDeliveryBoyLoggedOut || isDeliverySessionActive);
+
+        const myStoreId = localStorage.getItem('my_store_id') || user?.storeId?._id || user?.storeId || '';
 
         if (isDeliveryMode) {
             try {
                 setOverlayDeliverySessionActive(true);
             } catch (e) {}
-        } else {
+        }
+        if (isStoreAdmin || isAdmin) {
             try {
-                setOverlayDeliverySessionActive(false);
+                setOverlayStoreSessionActive(true, String(myStoreId || ''), '');
             } catch (e) {}
         }
-    }, [user, location.pathname]);
+    }, [user]);
     // Only hide footer on order confirmation and auth pages
     const isAuthPage = location.pathname === '/forgot-password' ||
         location.pathname.startsWith('/reset-password');
