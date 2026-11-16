@@ -549,7 +549,7 @@ const StoreProducts = () => {
     const totalProductCount = useMemo(() => groupedStoreProducts.length, [groupedStoreProducts]);
 
     const effectiveSubcategory = useMemo(() => {
-        if (subcategoryData.length > 0) {
+        if (subcategoryData.length > 1) {
             if (selectedSubcategory && subcategoryData.some(s => areSubcategoriesMatching(s.name, selectedSubcategory) || areCategoriesMatching(s.name, selectedSubcategory))) {
                 return selectedSubcategory;
             }
@@ -820,7 +820,7 @@ const StoreProducts = () => {
                 </div>
             </section>
 
-            {subcategoryData.length >= 1 && (
+            {subcategoryData.length > 1 && (
                 <div className="max-w-7xl mx-auto px-4 mb-3 sm:mb-4">
                     <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide py-1">
                         {subcategoryData.map(({ name }) => {
