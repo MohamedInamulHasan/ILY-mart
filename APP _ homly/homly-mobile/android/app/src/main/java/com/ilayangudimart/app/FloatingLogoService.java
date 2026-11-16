@@ -164,6 +164,14 @@ public class FloatingLogoService extends Service {
         instance = this;
         isRunning = true;
 
+        // CRITICAL: Always post foreground notification immediately on onCreate
+        // to satisfy Android 8.0+ startForegroundService contract and avoid RemoteServiceException.
+        try {
+            startForegroundNotification();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
@@ -176,11 +184,10 @@ public class FloatingLogoService extends Service {
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = isSessionActive(prefs);
         if (!enabled || !sessionActive) {
-            stopSelf();
+            stopServiceAndHide();
             return;
         }
 
-        startForegroundNotification();
         createFloatingCircleView();
         startOrderPolling();
     }
@@ -1395,10 +1402,18 @@ public class FloatingLogoService extends Service {
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(2001, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+        if (Build.VERSION.SDK_INT >= 34) { // Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+            try {
+                startForeground(2001, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } catch (Throwable t) {
+                try {
+                    startForeground(2001, notification);
+                } catch (Throwable ignored) {}
+            }
         } else {
-            startForeground(2001, notification);
+            try {
+                startForeground(2001, notification);
+            } catch (Throwable ignored) {}
         }
     }
 

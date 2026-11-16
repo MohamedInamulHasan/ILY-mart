@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     xmlns:amazon="http://schemas.amazon.com/apk/res/android">
     
     <!-- Permissions -->
@@ -70,11 +71,16 @@
                 android:value="Floating screen overlay for delivery partner" />
         </service>
 
+        <!-- Replace default capacitor push messaging service with high-priority IlyMartMessagingService -->
+        <service
+            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+            tools:node="remove" />
+
         <!-- High Priority Firebase Messaging Service for Background Order Alerts -->
         <service
             android:name=".IlyMartMessagingService"
             android:exported="false">
-            <intent-filter android:priority="1000">
+            <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>

@@ -144,39 +144,45 @@ public class MainActivity extends BridgeActivity {
             this::handlePermissionResult
         );
 
-        checkAndRequestLocationPermissions();
-        startFloatingServiceIfPermitted();
-        FloatingLogoService.setAppForegroundState(true);
-        handleIncomingOrderIntent(getIntent());
+        try {
+            checkAndRequestLocationPermissions();
+        } catch (Throwable ignored) {}
+
+        try {
+            FloatingLogoService.setAppForegroundState(true);
+        } catch (Throwable ignored) {}
+
+        try {
+            handleIncomingOrderIntent(getIntent());
+        } catch (Throwable ignored) {}
     }
 
     @Override
     public void onDestroy() {
-        startFloatingServiceIfPermitted();
-        FloatingLogoService.setAppForegroundState(false);
+        try {
+            startFloatingServiceIfPermitted();
+            FloatingLogoService.setAppForegroundState(false);
+        } catch (Throwable ignored) {}
         super.onDestroy();
     }
 
     private void startFloatingServiceIfPermitted() {
-        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        String token = prefs.getString("authToken", null);
-        boolean hasToken = token != null && !token.trim().isEmpty();
-        boolean enabled = prefs.getBoolean("floating_enabled", false) || hasToken;
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false) 
-                || prefs.getBoolean("store_session_active", false) 
-                || hasToken;
+        try {
+            SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            boolean enabled = prefs.getBoolean("floating_enabled", false);
+            boolean sessionActive = prefs.getBoolean("delivery_session_active", false) 
+                    || prefs.getBoolean("store_session_active", false);
 
-        if (enabled && sessionActive && (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this))) {
-            try {
+            if (enabled && sessionActive && (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this))) {
                 Intent serviceIntent = new Intent(this, FloatingLogoService.class);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(serviceIntent);
+                    ContextCompat.startForegroundService(this, serviceIntent);
                 } else {
                     startService(serviceIntent);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (Throwable e) {
+            e.printStackTrace();
         }
     }
 
@@ -184,17 +190,20 @@ public class MainActivity extends BridgeActivity {
     public void onPause() {
         super.onPause();
         // Start floating service & show floating bubble when app is in background / closed
-        startFloatingServiceIfPermitted();
-        FloatingLogoService.setAppForegroundState(false);
+        try {
+            startFloatingServiceIfPermitted();
+            FloatingLogoService.setAppForegroundState(false);
+        } catch (Throwable ignored) {}
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Start floating service if enabled & hide circle bubble while inside the app
-        startFloatingServiceIfPermitted();
-        FloatingLogoService.setAppForegroundState(true);
-        handleIncomingOrderIntent(getIntent());
+        // Notify service that app is in foreground so overlay icon hides while inside app
+        try {
+            FloatingLogoService.setAppForegroundState(true);
+            handleIncomingOrderIntent(getIntent());
+        } catch (Throwable ignored) {}
     }
 
     @Override
