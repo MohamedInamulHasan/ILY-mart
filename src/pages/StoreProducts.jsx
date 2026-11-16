@@ -397,22 +397,22 @@ const StoreProducts = () => {
             }
         }
 
-        // 3. If subName is a direct category, use its category image
+        // 3. Category image - Prioritize category storeImage as requested ("put the category store image")
         const directCat = findCanonicalCategory(subName, categories);
         if (directCat) {
-            if (directCat.image) return directCat.image;
             if (directCat.storeImage) return directCat.storeImage;
             const cid = directCat._id || directCat.id;
-            if (cid) return `${API_BASE_URL}/categories/${cid}/image`;
+            if (cid) return `${API_BASE_URL}/categories/${cid}/store-image`;
+            if (directCat.image) return directCat.image;
         }
 
-        // 4. Fallback: Check parent category image
+        // 4. Parent category storeImage or image
         for (const cat of categories) {
             if (Array.isArray(cat?.subcategories) && cat.subcategories.some(s => areSubcategoriesMatching(s, subName))) {
-                if (cat.image) return cat.image;
                 if (cat.storeImage) return cat.storeImage;
                 const cid = cat._id || cat.id;
-                if (cid) return `${API_BASE_URL}/categories/${cid}/image`;
+                if (cid) return `${API_BASE_URL}/categories/${cid}/store-image`;
+                if (cat.image) return cat.image;
             }
         }
 
@@ -826,6 +826,10 @@ const StoreProducts = () => {
                         {subcategoryData.map(({ name }) => {
                             const isSelected = normSubcategoryKey(effectiveSubcategory) === normSubcategoryKey(name) || areCategoriesMatching(effectiveSubcategory, name);
                             const subImg = getSubcategoryImage(name);
+                            const matchedCat = findCanonicalCategory(name, categories) || categories.find(c => Array.isArray(c?.subcategories) && c.subcategories.some(s => areSubcategoriesMatching(s, name)));
+                            const catId = matchedCat?._id || matchedCat?.id;
+                            const categoryStoreImg = matchedCat?.storeImage || (catId ? `${API_BASE_URL}/categories/${catId}/store-image` : matchedCat?.image);
+                            const finalCardImg = subImg || categoryStoreImg;
                             const cleanTitle = getCategoryDisplayName(name, true);
 
                             return (
@@ -846,16 +850,23 @@ const StoreProducts = () => {
                                     }`}
                                 >
                                     <div className="w-[62px] h-[62px] sm:w-[70px] sm:h-[70px] aspect-square flex items-center justify-center bg-transparent pointer-events-none flex-shrink-0">
-                                        {subImg ? (
+                                        {finalCardImg ? (
                                             <img
-                                                src={subImg}
+                                                src={finalCardImg}
                                                 alt={cleanTitle}
                                                 draggable={false}
                                                 className="w-full h-full object-contain filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.06)] pointer-events-none select-none"
-                                                onError={(e) => { e.target.onerror = null; e.target.style.opacity = '0'; }}
+                                                onError={(e) => {
+                                                    if (categoryStoreImg && e.target.src !== categoryStoreImg) {
+                                                        e.target.src = categoryStoreImg;
+                                                    } else {
+                                                        e.target.onerror = null;
+                                                        e.target.style.opacity = '0';
+                                                    }
+                                                }}
                                             />
                                         ) : (
-                                            <Store size={26} className={isSelected ? "text-[#2E5A2E] dark:text-[#CBF9B2]" : "text-gray-500 dark:text-gray-400"} />
+                                            <div className="w-full h-full rounded-lg bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center" />
                                         )}
                                     </div>
                                     <div className="flex items-start justify-center text-center mt-1.5 w-full px-0.5 pointer-events-none h-[28px] sm:h-[32px] overflow-hidden">

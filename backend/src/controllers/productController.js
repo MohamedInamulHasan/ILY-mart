@@ -160,9 +160,19 @@ export const createProduct = async (req, res, next) => {
     try {
         // Store Admin Restriction: Enforce storeId (only for non-superadmin store admins)
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        const isSuperAdmin = roles.includes('admin') || isOwnerUser(req.user);
+        const isSuperAdmin = roles.includes('admin') || roles.includes('super_admin') || Boolean(req.user?.isAdmin) || isOwnerUser(req.user);
         if (!isSuperAdmin && roles.includes('store_admin')) {
-            req.body.storeId = req.user?.storeId;
+            let userStoreId = (req.user?.storeId?._id || req.user?.storeId || '').toString();
+            if (!userStoreId && req.user?.mobile) {
+                const cleanMob = req.user.mobile.toString().replace(/\D/g, '').slice(-10);
+                if (cleanMob) {
+                    const matchedStore = await Store.findOne({ mobile: { $regex: cleanMob } }).select('_id').lean();
+                    if (matchedStore) userStoreId = matchedStore._id.toString();
+                }
+            }
+            if (userStoreId) {
+                req.body.storeId = userStoreId;
+            }
         }
 
         if (!req.body.image) {
@@ -215,11 +225,19 @@ export const updateProduct = async (req, res, next) => {
 
         // Store Admin Restriction: Verify ownership (Super Admin can update any product)
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        const isSuperAdmin = roles.includes('admin') || isOwnerUser(req.user);
+        const isSuperAdmin = roles.includes('admin') || roles.includes('super_admin') || Boolean(req.user?.isAdmin) || isOwnerUser(req.user);
         if (!isSuperAdmin && roles.includes('store_admin')) {
             const productStoreId = (product.storeId?._id || product.storeId || '').toString();
-            const userStoreId = (req.user?.storeId?._id || req.user?.storeId || '').toString();
-            if (productStoreId && (!userStoreId || productStoreId !== userStoreId)) {
+            let userStoreId = (req.user?.storeId?._id || req.user?.storeId || '').toString();
+            if (!userStoreId && req.user?.mobile) {
+                const cleanMob = req.user.mobile.toString().replace(/\D/g, '').slice(-10);
+                if (cleanMob) {
+                    const matchedStore = await Store.findOne({ mobile: { $regex: cleanMob } }).select('_id').lean();
+                    if (matchedStore) userStoreId = matchedStore._id.toString();
+                }
+            }
+            // Only block if both productStoreId and userStoreId are known and they belong to different stores
+            if (productStoreId && userStoreId && productStoreId !== userStoreId) {
                 res.status(403);
                 throw new Error('Not authorized to update this product');
             }
@@ -305,11 +323,18 @@ export const deleteProduct = async (req, res, next) => {
 
         // Store Admin Restriction: Verify ownership (Super Admin can delete any product)
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        const isSuperAdmin = roles.includes('admin') || isOwnerUser(req.user);
+        const isSuperAdmin = roles.includes('admin') || roles.includes('super_admin') || Boolean(req.user?.isAdmin) || isOwnerUser(req.user);
         if (!isSuperAdmin && roles.includes('store_admin')) {
             const productStoreId = (productToCheck.storeId?._id || productToCheck.storeId || '').toString();
-            const userStoreId = (req.user?.storeId?._id || req.user?.storeId || '').toString();
-            if (productStoreId && (!userStoreId || productStoreId !== userStoreId)) {
+            let userStoreId = (req.user?.storeId?._id || req.user?.storeId || '').toString();
+            if (!userStoreId && req.user?.mobile) {
+                const cleanMob = req.user.mobile.toString().replace(/\D/g, '').slice(-10);
+                if (cleanMob) {
+                    const matchedStore = await Store.findOne({ mobile: { $regex: cleanMob } }).select('_id').lean();
+                    if (matchedStore) userStoreId = matchedStore._id.toString();
+                }
+            }
+            if (productStoreId && userStoreId && productStoreId !== userStoreId) {
                 res.status(403);
                 throw new Error('Not authorized to delete this product');
             }
@@ -640,16 +665,26 @@ export const updateProductsOrder = async (req, res, next) => {
 
         // Store Admin Restriction: Verify that ALL orderedIds belong to the user's store
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        const isSuperAdmin = roles.includes('admin') || isOwnerUser(req.user);
+        const isSuperAdmin = roles.includes('admin') || roles.includes('super_admin') || Boolean(req.user?.isAdmin) || isOwnerUser(req.user);
         if (!isSuperAdmin && roles.includes('store_admin')) {
-            const count = await Product.countDocuments({
-                _id: { $in: orderedIds },
-                storeId: req.user?.storeId
-            });
+            let userStoreId = (req.user?.storeId?._id || req.user?.storeId || '').toString();
+            if (!userStoreId && req.user?.mobile) {
+                const cleanMob = req.user.mobile.toString().replace(/\D/g, '').slice(-10);
+                if (cleanMob) {
+                    const matchedStore = await Store.findOne({ mobile: { $regex: cleanMob } }).select('_id').lean();
+                    if (matchedStore) userStoreId = matchedStore._id.toString();
+                }
+            }
+            if (userStoreId) {
+                const count = await Product.countDocuments({
+                    _id: { $in: orderedIds },
+                    storeId: userStoreId
+                });
 
-            if (count !== orderedIds.length) {
-                res.status(403);
-                throw new Error('Not authorized to reorder products from other stores');
+                if (count !== orderedIds.length) {
+                    res.status(403);
+                    throw new Error('Not authorized to reorder products from other stores');
+                }
             }
         }
 

@@ -4,16 +4,14 @@ import User from '../models/User.js';
 // Centralized helper to check if a user is the platform owner/super-admin
 export const isOwnerUser = (user) => {
     if (!user) return false;
-    const cleanMobile = (user.mobile || '').toString().replace(/\D/g, '');
-    const isOwnerMobile = cleanMobile.endsWith('9500171980') || 
-                          cleanMobile === '9500171980' || 
-                          cleanMobile === '9500171958' || 
-                          cleanMobile === '9500171989';
+    const cleanMobile = (user.mobile || '').toString().replace(/\D/g, '').slice(-10);
+    const isOwnerMobile = ['9500171980', '9500171958', '9500171989'].includes(cleanMobile);
     const email = (user.email || '').toLowerCase().trim();
     const isOwnerEmail = email.includes('mohamedinamulhasan') || 
                          email.includes('inamul') ||
+                         email.startsWith('admin') ||
                          email === 'admin@ilayangudimart.com';
-    return Boolean(isOwnerMobile || isOwnerEmail);
+    return Boolean(isOwnerMobile || isOwnerEmail || user.isAdmin === true);
 };
 
 export const protect = async (req, res, next) => {
