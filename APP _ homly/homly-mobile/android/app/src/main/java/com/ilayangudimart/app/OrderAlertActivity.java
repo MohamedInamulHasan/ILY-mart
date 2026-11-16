@@ -358,10 +358,14 @@ public class OrderAlertActivity extends AppCompatActivity {
         View.OnClickListener openOrderClick = v -> {
             isFinished = true; // User viewed/accepted order: stop repeating!
             stopAlertEffects();
+            SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            boolean isStore = prefs.getBoolean("store_session_active", false);
             Intent intent = new Intent(OrderAlertActivity.this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             intent.putExtra("open_incoming_order", true);
             intent.putExtra("order_id", finalOrderId);
+            intent.putExtra("open_panel_from_floating", true);
+            intent.putExtra("target_panel", isStore ? "/my-store" : "/delivery-dashboard");
             startActivity(intent);
             finish();
         };

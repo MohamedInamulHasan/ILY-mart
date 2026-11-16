@@ -105,7 +105,7 @@ const AdminDashboard = () => {
         if (isAdmin) return; // Global admins have access to all tabs
 
         const isTabAllowed = 
-            (isStoreAdmin && ['stores', 'products'].includes(activeTab)) ||
+            (isStoreAdmin && ['stores', 'products', 'orders'].includes(activeTab)) ||
             (isServiceAdmin && ['services'].includes(activeTab)) ||
             (isDeliveryBoy && ['orders'].includes(activeTab));
         

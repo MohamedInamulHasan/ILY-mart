@@ -214,24 +214,51 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void handleIncomingOrderIntent(Intent intent) {
-        if (intent != null && intent.getBooleanExtra("open_incoming_order", false)) {
-            String orderId = intent.getStringExtra("order_id");
-            if (orderId != null && getBridge() != null && getBridge().getWebView() != null) {
+        if (intent == null) return;
+        boolean openIncoming = intent.getBooleanExtra("open_incoming_order", false);
+        String orderId = intent.getStringExtra("order_id");
+        boolean openPanel = intent.getBooleanExtra("open_panel_from_floating", false);
+        String targetPanel = intent.getStringExtra("target_panel");
+
+        if (openIncoming || openPanel || (targetPanel != null && !targetPanel.isEmpty())) {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                String safeOrderId = orderId != null ? orderId.replace("'", "") : "";
+                String safeTarget = targetPanel != null ? targetPanel.replace("'", "") : "";
+
                 String js = "(function() {" +
-                            "  var id = '" + orderId + "';" +
-                            "  window.__pendingNativeOrderId = id;" +
-                            "  window.dispatchEvent(new CustomEvent('native:open-order', { detail: { id: id } }));" +
+                            "  var orderId = '" + safeOrderId + "';" +
+                            "  var target = '" + safeTarget + "';" +
+                            "  var isStore = (localStorage.getItem('store_session_active') === 'true');" +
+                            "  var isDelivery = (localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true');" +
+                            "  if (!target || target === '') {" +
+                            "    target = isStore ? '/my-store' : (isDelivery ? '/delivery-dashboard' : '');" +
+                            "  }" +
+                            "  if (orderId && orderId !== '') {" +
+                            "    window.__pendingNativeOrderId = orderId;" +
+                            "    window.dispatchEvent(new CustomEvent('native:open-order', { detail: { id: orderId } }));" +
+                            "  }" +
+                            "  if (target && target !== '') {" +
+                            "    window.dispatchEvent(new CustomEvent('native:navigate-panel', { detail: { path: target } }));" +
+                            "    if (window.location.pathname !== target) {" +
+                            "      window.location.href = target;" +
+                            "    }" +
+                            "  }" +
                             "})();";
+
                 getBridge().getWebView().postDelayed(() -> {
                     try { getBridge().getWebView().evaluateJavascript(js, null); } catch (Exception ignored) {}
-                }, 300);
+                }, 250);
                 getBridge().getWebView().postDelayed(() -> {
                     try { getBridge().getWebView().evaluateJavascript(js, null); } catch (Exception ignored) {}
-                }, 800);
+                }, 750);
                 getBridge().getWebView().postDelayed(() -> {
                     try { getBridge().getWebView().evaluateJavascript(js, null); } catch (Exception ignored) {}
-                }, 1600);
+                }, 1500);
             }
+            intent.removeExtra("open_panel_from_floating");
+            intent.removeExtra("target_panel");
+            intent.removeExtra("open_incoming_order");
+            intent.removeExtra("order_id");
         }
     }
 

@@ -30,7 +30,7 @@ import { useDriverLocation, optimizeDeliveryRoute } from '../../utils/deliveryRo
 import DeliveryRouteTimeline from '../../components/DeliveryRouteTimeline';
 import { playSuccessSound } from '../../utils/soundHelper';
 import { openExternalLink } from '../../utils/linkHelper';
-import { isNativeAndroid, setOverlayOrdersState, setOverlayHasAcceptedOrder, hideFloatingOverlay } from '../../utils/floatingOverlay';
+import { isNativeAndroid, setOverlayOrdersState, setOverlayHasAcceptedOrder, hideFloatingOverlay, dismissPorterOrderCard } from '../../utils/floatingOverlay';
 
 
 const DeliveryActiveOrder = () => {
@@ -299,6 +299,7 @@ const DeliveryActiveOrder = () => {
 
             localStorage.setItem('active_delivery_order_id', id);
             localStorage.setItem('active_delivery_stay', 'true');
+            dismissPorterOrderCard();
 
             // Update local states with confirmed backend status
             setLocalStatus('Out for Delivery');
@@ -310,7 +311,7 @@ const DeliveryActiveOrder = () => {
                 type: 'accepted',
                 title: t('Order Accepted!'),
                 subtitle: t('Order is ready for delivery'),
-                duration: 900
+                duration: 700
             });
         } catch (error) {
             console.error('Failed to accept order:', error);
@@ -348,6 +349,7 @@ const DeliveryActiveOrder = () => {
             // Clean active order from storage immediately
             localStorage.removeItem('active_delivery_order_id');
             localStorage.setItem('active_delivery_stay', 'false');
+            dismissPorterOrderCard();
 
             // Trigger real green flower popup
             setPopupState({
@@ -355,7 +357,7 @@ const DeliveryActiveOrder = () => {
                 type: 'delivered',
                 title: t('Delivered Successfully!'),
                 subtitle: t('Order has been delivered'),
-                duration: 1200
+                duration: 700
             });
         } catch (error) {
             console.error('Failed to mark order as delivered:', error);
@@ -388,6 +390,7 @@ const DeliveryActiveOrder = () => {
             localStorage.removeItem('active_delivery_order_id');
             localStorage.removeItem('active_delivery_stay');
             localStorage.removeItem('delivery_order_from_store');
+            dismissPorterOrderCard();
 
             // Trigger red flower popup
             setPopupState({
@@ -395,7 +398,7 @@ const DeliveryActiveOrder = () => {
                 type: 'cancelled',
                 title: t('Order Cancelled'),
                 subtitle: t('Order has been cancelled'),
-                duration: 1200
+                duration: 700
             });
         } catch (error) {
             console.error('Failed to cancel order:', error);

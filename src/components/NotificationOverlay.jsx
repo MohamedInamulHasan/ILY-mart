@@ -186,8 +186,12 @@ const NotificationOverlay = () => {
         incomingOrderRef.current = incomingOrder;
     }, [incomingOrder]);
 
-    // Only alert for NEW orders placed in real-time while in the app!
-    // Shows in delivery panel, orders list, and accept & delivery order page
+    const isGapPauseRef = useRef(false);
+    const pendingIndexRef = useRef(0);
+    const [repeatTick, setRepeatTick] = useState(0);
+
+    // Continuous Alert for processing cards in delivery panel / store panel:
+    // Alerts and rings loudly, repeats every 5s if skipped/timed out until accepted or cancelled!
     useEffect(() => {
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
         const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
@@ -198,30 +202,18 @@ const NotificationOverlay = () => {
         if (!canDeliveryAlert && !canStoreAlert) return;
         if (allOrders.length === 0) return;
 
-        // On first load of orders, record all existing order IDs as known so we never alert old past orders
-        if (!initialOrdersLoadedRef.current) {
-            allOrders.forEach(o => {
-                const oId = String(o._id || o.id || '');
-                if (oId) knownOrderIdsRef.current.add(oId);
-            });
-            initialOrdersLoadedRef.current = true;
-            return;
-        }
-
-        // If an incoming order modal is currently showing, wait until user explicitly accepts or skips
-        if (incomingOrder) return;
+        // If an incoming modal is currently showing or we are in the 5s gap pause, wait
+        if (incomingOrder || isGapPauseRef.current) return;
 
         const activePageOrderId = location.pathname.startsWith('/admin/delivery-order/')
             ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
             : null;
 
-        // Check if any brand new processing order was placed during this active session
-        const newRealtimeOrder = allOrders.find(o => {
+        // Find all pending/processing orders waiting for action
+        const pendingOrders = allOrders.filter(o => {
             const oId = String(o._id || o.id || '');
             if (!oId) return false;
             if (activePageOrderId && oId === activePageOrderId) return false;
-            if (knownOrderIdsRef.current.has(oId)) return false;
-            if (skippedOrderIds.has(oId)) return false;
             if (!isProcessingStatus(o.status)) return false;
 
             // For store admin: strictly check that order belongs to their store
@@ -231,11 +223,10 @@ const NotificationOverlay = () => {
             return true;
         });
 
-        if (newRealtimeOrder) {
-            const oId = String(newRealtimeOrder._id || newRealtimeOrder.id || '');
-            knownOrderIdsRef.current.add(oId);
+        if (pendingOrders.length > 0) {
+            const targetOrder = pendingOrders[pendingIndexRef.current % pendingOrders.length];
             setStartWithAcceptView(false);
-            setIncomingOrder(newRealtimeOrder);
+            setIncomingOrder(targetOrder);
             triggerIncomingOrderAlert();
             try {
                 playSuccessSound();
@@ -244,47 +235,63 @@ const NotificationOverlay = () => {
                 navigator.vibrate([200, 100, 200]);
             }
             if (isNativeAndroid()) {
-                showPorterOrderCard(newRealtimeOrder);
+                showPorterOrderCard(targetOrder);
             }
         }
-    }, [isDeliveryBoy, isStoreAdmin, myStore, myStoreId, myStoreName, isDeliveryPage, incomingOrder, allOrders, skippedOrderIds, location.pathname]);
+    }, [isDeliveryBoy, isStoreAdmin, myStore, myStoreId, myStoreName, isDeliveryPage, incomingOrder, allOrders, repeatTick, location.pathname]);
 
-    // Auto-dismiss popup if the current order is accepted or cancelled
+    // Auto-dismiss popup immediately if the current order is accepted or cancelled
     useEffect(() => {
         if (incomingOrder) {
             const id = String(incomingOrder._id || incomingOrder.id || '');
             const currentInDb = allOrders.find(o => String(o._id || o.id || '') === id);
             if (currentInDb && !isProcessingStatus(currentInDb.status)) {
+                stopIncomingOrderAlertSound();
                 setIncomingOrder(null);
+                dismissPorterOrderCard();
             }
         }
     }, [allOrders, incomingOrder]);
 
+    // Also listen for real-time order status update to dismiss alert immediately
+    useEffect(() => {
+        const handleStatusUpdated = (e) => {
+            const updated = e.detail;
+            if (updated && ['accepted', 'out for delivery', 'delivered', 'cancelled'].includes(String(updated.status || '').toLowerCase())) {
+                dismissPorterOrderCard();
+                if (incomingOrder && (String(incomingOrder._id || incomingOrder.id) === String(updated.id))) {
+                    stopIncomingOrderAlertSound();
+                    setIncomingOrder(null);
+                }
+            }
+        };
+        window.addEventListener('orders:status_updated', handleStatusUpdated);
+        return () => window.removeEventListener('orders:status_updated', handleStatusUpdated);
+    }, [incomingOrder]);
+
     const handleOrderSkip = (orderToSkip) => {
-        const currentId = String((orderToSkip?._id || orderToSkip?.id) || (incomingOrder ? (incomingOrder._id || incomingOrder.id) : ''));
-        if (currentId) {
-            setSkippedOrderIds(prev => new Set([...prev, currentId]));
-            knownOrderIdsRef.current.add(currentId);
-        }
-        // Mark all currently present orders as known so skipping NEVER cascades to older orders
-        allOrders.forEach(o => {
-            const oId = String(o._id || o.id || '');
-            if (oId) knownOrderIdsRef.current.add(oId);
-        });
+        stopIncomingOrderAlertSound();
         setIncomingOrder(null);
+        dismissPorterOrderCard();
+        // 5s breather, then repeat alert until order is accepted or cancelled
+        isGapPauseRef.current = true;
+        pendingIndexRef.current += 1;
+        setTimeout(() => {
+            isGapPauseRef.current = false;
+            setRepeatTick(prev => prev + 1);
+        }, 5000);
     };
 
     const handleModalClose = () => {
-        const currentId = incomingOrder ? String(incomingOrder._id || incomingOrder.id || '') : '';
-        if (currentId) {
-            setSkippedOrderIds(prev => new Set([...prev, currentId]));
-            knownOrderIdsRef.current.add(currentId);
-        }
-        allOrders.forEach(o => {
-            const oId = String(o._id || o.id || '');
-            if (oId) knownOrderIdsRef.current.add(oId);
-        });
+        stopIncomingOrderAlertSound();
         setIncomingOrder(null);
+        dismissPorterOrderCard();
+        isGapPauseRef.current = true;
+        pendingIndexRef.current += 1;
+        setTimeout(() => {
+            isGapPauseRef.current = false;
+            setRepeatTick(prev => prev + 1);
+        }, 5000);
     };
 
     const handleAcceptViewOpened = () => {
@@ -572,7 +579,7 @@ const NotificationOverlay = () => {
         setNotifications(prev => [...prev, notif]);
         setTimeout(() => {
             removeNotification(notif.id);
-        }, 5000);
+        }, 2500);
     };
 
     const removeNotification = (id) => {

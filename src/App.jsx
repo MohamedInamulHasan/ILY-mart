@@ -142,6 +142,18 @@ const Layout = ({ children, onRefresh }) => {
     // Use back button handler for Android navigation
     useBackButton();
 
+    // Handle navigation when floating icon or native alert is clicked
+    useEffect(() => {
+        const handleNativeNavigate = (e) => {
+            const targetPath = e.detail?.path;
+            if (targetPath && location.pathname !== targetPath) {
+                navigate(targetPath, { replace: true });
+            }
+        };
+        window.addEventListener('native:navigate-panel', handleNativeNavigate);
+        return () => window.removeEventListener('native:navigate-panel', handleNativeNavigate);
+    }, [navigate, location.pathname]);
+
     // Initialize Firebase Push Notifications on native Android
     useEffect(() => {
         initFCM(navigate);

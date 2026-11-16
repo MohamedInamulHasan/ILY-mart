@@ -306,6 +306,9 @@ public class FloatingLogoService extends Service {
         if (instance != null) {
             instance.mainHandler.post(instance::dismissPorterOrderCard);
         }
+        if (OrderAlertActivity.currentInstance != null) {
+            OrderAlertActivity.currentInstance.dismissAlert();
+        }
     }
 
     private int dp(int value) {
@@ -1142,6 +1145,11 @@ public class FloatingLogoService extends Service {
 
     public synchronized void dismissPorterOrderCard() {
         stopAlertEffects();
+        if (orderCardTimer != null) {
+            orderCardTimer.cancel();
+            orderCardTimer = null;
+        }
+        isGapWaiting = false;
         dismissPorterOrderCardInternal();
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean hasActive = prefs.getBoolean("has_active_orders", false);
@@ -1233,10 +1241,16 @@ public class FloatingLogoService extends Service {
 
     private void openApp(String orderId) {
         try {
+            SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            boolean isStore = prefs.getBoolean("store_session_active", false);
+            String targetPanel = isStore ? "/my-store" : "/delivery-dashboard";
+
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                     | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                     | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            intent.putExtra("open_panel_from_floating", true);
+            intent.putExtra("target_panel", targetPanel);
             if (orderId != null) {
                 intent.putExtra("open_incoming_order", true);
                 intent.putExtra("order_id", orderId);

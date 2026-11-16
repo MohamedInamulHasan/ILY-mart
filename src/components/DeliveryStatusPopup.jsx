@@ -10,7 +10,7 @@ const DeliveryStatusPopup = ({
     title,
     subtitle,
     onComplete,
-    duration = 1800
+    duration = 800
 }) => {
     const { t } = useLanguage();
 
@@ -68,15 +68,19 @@ const DeliveryStatusPopup = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[120000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md select-none"
-                    onClick={(e) => e.stopPropagation()}
+                    className="fixed inset-0 z-[120000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md select-none cursor-pointer"
+                    onClick={() => onComplete?.()}
                 >
                     <motion.div
                         initial={{ scale: 0.4, opacity: 0, y: 30 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.7, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 450, damping: 22 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                         className="bg-white dark:bg-gray-800 rounded-3xl sm:rounded-[2rem] shadow-2xl max-w-sm w-full p-6 sm:p-7 relative overflow-hidden"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onComplete?.();
+                        }}
                     >
                         <div className="text-center">
                             <div className="relative w-32 h-32 sm:w-36 sm:h-36 mx-auto mb-3 flex items-center justify-center">

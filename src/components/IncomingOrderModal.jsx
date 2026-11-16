@@ -54,17 +54,33 @@ const IncomingOrderModal = ({
 
     // Mobile alert card shows the compact incoming view and navigates directly to the Accept Page
     const [viewMode, setViewMode] = useState('view');
+    const [secondsLeft, setSecondsLeft] = useState(12);
 
     useEffect(() => {
         setViewMode('view');
     }, [order?._id, order?.status]);
 
-    // Only play alert sound for fresh pending/processing orders
+    // 12-second countdown: repeats alert after finish until order is accepted or cancelled
     useEffect(() => {
-        // Alert card stays active until delivery boy accepts or skips; not dismissed by back button
-    }, []);
-
-// In-app alert shows until skipped or viewed (no 8s auto-countdown)
+        if (!order || !isProcessing) return;
+        setSecondsLeft(12);
+        const interval = setInterval(() => {
+            setSecondsLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    stopIncomingOrderAlertSound();
+                    if (onSkip) {
+                        onSkip(order);
+                    } else if (onClose) {
+                        onClose();
+                    }
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [order?._id, order?.id, isProcessing, onSkip, onClose]);
 
 
     useEffect(() => {
@@ -280,7 +296,7 @@ const IncomingOrderModal = ({
                     title={popupState.title}
                     subtitle={popupState.subtitle}
                     onComplete={handlePopupComplete}
-                    duration={1800}
+                    duration={800}
                 />
             <motion.div
                 initial={{ opacity: 0 }}
@@ -409,7 +425,7 @@ const IncomingOrderModal = ({
                     <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-750">
                         <SwipeActionButton
                             variant="yellow"
-                            label={t('VIEW ORDER')}
+                            label={`${t('VIEW ORDER')}  ${secondsLeft}s`}
                             loadingLabel={t('Opening...')}
                             allowTap={true}
                             heightClass="h-[56px] sm:h-[60px]"
