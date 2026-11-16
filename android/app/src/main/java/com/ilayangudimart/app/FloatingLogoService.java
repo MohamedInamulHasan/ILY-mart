@@ -1052,16 +1052,8 @@ public class FloatingLogoService extends Service {
         }
         synchronized (pendingOrdersQueue) {
             if (pendingOrdersQueue.isEmpty()) return;
-            JSONObject nextOrder = null;
-            for (int i = 0; i < pendingOrdersQueue.size(); i++) {
-                JSONObject o = pendingOrdersQueue.get(i);
-                if (o == null) continue;
-                String oid = o.optString("_id", o.optString("id", "")).trim();
-                if (!oid.isEmpty() && !alertedOrderIds.contains(oid)) {
-                    nextOrder = o;
-                    break;
-                }
-            }
+            int idx = currentPendingOrderIndex % pendingOrdersQueue.size();
+            JSONObject nextOrder = pendingOrdersQueue.get(idx);
             if (nextOrder != null) {
                 showPorterOrderCard(nextOrder);
             }

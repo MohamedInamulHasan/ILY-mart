@@ -364,16 +364,19 @@ const StoreProducts = () => {
     const getSubcategoryImage = (subName) => {
         if (!subName || normSubcategoryKey(subName) === 'all') return null;
 
-        // 1. If subName is a category (or matches one)
-        const directCat = findCanonicalCategory(subName, categories);
-        if (directCat) {
-            if (directCat.storeImage) return directCat.storeImage;
-            if (directCat.image) return directCat.image;
-            const cid = directCat._id || directCat.id;
-            if (cid) return `${API_BASE_URL}/categories/${cid}/image`;
+        // 1. Check subcategory images from categories (category subcat image)
+        for (const cat of categories) {
+            if (cat?.subcategoryImages && typeof cat.subcategoryImages === 'object') {
+                if (cat.subcategoryImages[subName]) return cat.subcategoryImages[subName];
+                for (const [key, url] of Object.entries(cat.subcategoryImages)) {
+                    if (url && !key.startsWith('__store__') && !key.startsWith('store:') && areSubcategoriesMatching(key, subName)) {
+                        return url;
+                    }
+                }
+            }
         }
 
-        // 2. Check if subName matches any subcategory and has a store-specific image:
+        // 2. Check store-specific subcategory image
         for (const cat of categories) {
             if (cat?.subcategoryStoreImages && typeof cat.subcategoryStoreImages === 'object') {
                 for (const [key, url] of Object.entries(cat.subcategoryStoreImages)) {
@@ -394,22 +397,20 @@ const StoreProducts = () => {
             }
         }
 
-        // 3. Product category page subcategory image
-        for (const cat of categories) {
-            if (cat?.subcategoryImages && typeof cat.subcategoryImages === 'object') {
-                for (const [key, url] of Object.entries(cat.subcategoryImages)) {
-                    if (url && !key.startsWith('__store__') && !key.startsWith('store:') && areSubcategoriesMatching(key, subName)) {
-                        return url;
-                    }
-                }
-            }
+        // 3. If subName is a direct category, use its category image
+        const directCat = findCanonicalCategory(subName, categories);
+        if (directCat) {
+            if (directCat.image) return directCat.image;
+            if (directCat.storeImage) return directCat.storeImage;
+            const cid = directCat._id || directCat.id;
+            if (cid) return `${API_BASE_URL}/categories/${cid}/image`;
         }
 
-        // 4. Fallback: Check parent category storeImage or image
+        // 4. Fallback: Check parent category image
         for (const cat of categories) {
             if (Array.isArray(cat?.subcategories) && cat.subcategories.some(s => areSubcategoriesMatching(s, subName))) {
-                if (cat.storeImage) return cat.storeImage;
                 if (cat.image) return cat.image;
+                if (cat.storeImage) return cat.storeImage;
                 const cid = cat._id || cat.id;
                 if (cid) return `${API_BASE_URL}/categories/${cid}/image`;
             }
