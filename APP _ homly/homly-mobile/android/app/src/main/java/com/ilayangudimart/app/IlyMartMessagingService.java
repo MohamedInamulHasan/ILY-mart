@@ -164,11 +164,6 @@ public class IlyMartMessagingService extends MessagingService {
         }
     }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void postFullScreenOrderNotification(Map<String, String> data, String orderJsonStr) {
         String orderId = data.get("orderId");
         if (orderId == null) orderId = "";
