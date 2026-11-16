@@ -69,6 +69,11 @@ public class FloatingLogoService extends Service {
 
     private static boolean isOrderForStore(JSONObject order, String filterStoreId, String filterStoreName) {
         if (order == null) return false;
+        boolean hasFilterId = filterStoreId != null && !filterStoreId.trim().isEmpty();
+        boolean hasFilterName = filterStoreName != null && !filterStoreName.trim().isEmpty();
+        if (!hasFilterId && !hasFilterName) {
+            return true; // No store filter specified (e.g. Admin or all stores): allow order
+        }
 
         // 1. Check order level storeId
         Object storeIdObj = order.opt("storeId");

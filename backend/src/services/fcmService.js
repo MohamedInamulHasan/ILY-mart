@@ -236,7 +236,8 @@ export const sendStaffNewOrderNotification = async (order) => {
 
         const tokensSet = new Set();
         const shortId = (order._id || order.id || '').toString().slice(-6).toUpperCase();
-        const total = Number(order.totalAmount || order.totalPrice || 0).toFixed(0);
+        const rawTotal = order.total ?? order.totalAmount ?? order.totalPrice ?? 0;
+        const total = Number(rawTotal).toFixed(0);
 
         // 1. Find delivery boys and admins and store owners
         const staffUsers = await User.find({

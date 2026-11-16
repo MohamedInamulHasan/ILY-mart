@@ -3,6 +3,8 @@ const recentCancelledOrderAlerts = new Set();
 
 import Order from '../models/Order.js';
 import User from '../models/User.js';
+import Store from '../models/Store.js';
+import { isOwnerUser } from '../middleware/authMiddleware.js';
 import { sendOrderNotificationEmail, sendCustomerOrderConfirmationEmail } from '../services/emailService.js';
 import { sendOrderTelegramNotification } from '../services/telegramService.js';
 import { sendOrderVoiceAlert } from '../services/voiceService.js';
@@ -252,7 +254,8 @@ export const createOrder = async (req, res, next) => {
 export const getOrders = async (req, res, next) => {
     try {
         const roles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role || 'customer'];
-        const isAdmin = roles.includes('admin');
+        const isSuperAdmin = roles.includes('admin') || roles.includes('super_admin') || Boolean(req.user?.isAdmin) || isOwnerUser(req.user);
+        const isAdmin = isSuperAdmin;
         const isMyOrders = req.query.myOrders === 'true';
         let query = {};
 
@@ -303,14 +306,26 @@ export const getOrders = async (req, res, next) => {
         } else if (roles.includes('delivery_boy')) {
             // Delivery boy panel: Sees all orders for delivery dispatch
             query = {};
-        } else if (roles.includes('store_admin') && req.user?.storeId) {
+        } else if (roles.includes('store_admin')) {
             // Store Admin: Sees orders with their products OR their own purchases
-            query = {
-                $or: [
-                    { 'items.storeId': req.user.storeId },
-                    { user: req.user._id }
-                ]
-            };
+            let storeId = req.user?.storeId;
+            if (!storeId && req.user?.mobile) {
+                const cleanMob = req.user.mobile.toString().replace(/\D/g, '').slice(-10);
+                if (cleanMob) {
+                    const matchedStore = await Store.findOne({ mobile: { $regex: cleanMob } }).select('_id').lean();
+                    if (matchedStore) storeId = matchedStore._id;
+                }
+            }
+            if (storeId) {
+                query = {
+                    $or: [
+                        { 'items.storeId': storeId },
+                        { user: req.user._id }
+                    ]
+                };
+            } else {
+                query = {};
+            }
         } else {
             // Standard Customers: ONLY see their own personal orders
             query = getPersonalOrderQuery();
