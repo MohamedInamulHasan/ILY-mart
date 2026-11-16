@@ -71,7 +71,7 @@ public class FloatingLogoService extends Service {
                 || hasToken;
     }
 
-    private static boolean isOrderForStore(JSONObject order, String filterStoreId, String filterStoreName) {
+    public static boolean isOrderForStore(JSONObject order, String filterStoreId, String filterStoreName) {
         if (order == null) return false;
         boolean hasFilterId = filterStoreId != null && !filterStoreId.trim().isEmpty();
         boolean hasFilterName = filterStoreName != null && !filterStoreName.trim().isEmpty();
