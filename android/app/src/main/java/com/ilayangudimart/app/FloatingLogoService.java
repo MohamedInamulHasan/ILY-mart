@@ -63,8 +63,12 @@ public class FloatingLogoService extends Service {
 
     private static boolean isSessionActive(SharedPreferences prefs) {
         if (prefs == null) return false;
+        String token = prefs.getString("authToken", null);
+        boolean hasToken = token != null && !token.trim().isEmpty();
         return prefs.getBoolean("delivery_session_active", false)
-                || prefs.getBoolean("store_session_active", false);
+                || prefs.getBoolean("store_session_active", false)
+                || prefs.getBoolean("floating_enabled", false)
+                || hasToken;
     }
 
     private static boolean isOrderForStore(JSONObject order, String filterStoreId, String filterStoreName) {
@@ -1451,6 +1455,8 @@ public class FloatingLogoService extends Service {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setFullScreenIntent(pi, true)
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .build();

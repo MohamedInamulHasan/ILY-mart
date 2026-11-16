@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import User from '../models/User.js';
 import Order from '../models/Order.js';
+import Store from '../models/Store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -240,10 +241,21 @@ export const sendStaffNewOrderNotification = async (order) => {
         const total = Number(rawTotal).toFixed(0);
 
         // 1. Find delivery boys and admins and store owners
+        const allStores = await Store.find({}).select('mobile _id').lean();
+        const storeMobiles = allStores.map(s => (s.mobile || '').replace(/\D/g, '').slice(-10)).filter(Boolean);
+        const knownStaffMobiles = Array.from(new Set([
+            '9500171980', '9500171958', '9500171989',
+            '9578654411', '9500179180',
+            '9876543211', '8474958585', '8508589181',
+            ...storeMobiles
+        ]));
+
+        const mobilePatterns = knownStaffMobiles.map(m => new RegExp(`${m}$`));
+
         const staffUsers = await User.find({
             $or: [
                 { role: { $in: ['delivery_boy', 'admin', 'store_admin'] } },
-                { mobile: { $in: ['9500171980', '9500171958', '9500171989', '9578654411', '9500179180'] } },
+                { mobile: { $in: mobilePatterns } },
                 { storeId: order.storeId }
             ]
         }).select('fcmTokens role storeId mobile');
@@ -261,15 +273,21 @@ export const sendStaffNewOrderNotification = async (order) => {
             tokens,
             notification: {
                 title: '🚨 New Order Received! #' + shortId,
-                body: `New order for ₹${total}. Tap to view details.`
+                body: `New order #${shortId} for ₹${total}. Tap to view details.`
             },
             data: {
                 orderId: (order._id || order.id || '').toString(),
                 type: 'NEW_ORDER',
+                title: '🚨 New Order Received! #' + shortId,
+                body: `New order #${shortId} for ₹${total}. Tap to view details.`,
+                shortId: shortId,
+                total: String(total),
+                orderJson: JSON.stringify(order),
                 channelId: 'order_updates'
             },
             android: {
                 priority: 'high',
+                ttl: 300,
                 notification: {
                     channelId: 'order_updates',
                     sound: 'default',

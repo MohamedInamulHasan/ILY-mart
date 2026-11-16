@@ -159,9 +159,14 @@ public class MainActivity extends BridgeActivity {
 
     private void startFloatingServiceIfPermitted() {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = prefs.getBoolean("delivery_session_active", false) || prefs.getBoolean("store_session_active", false);
-        if (enabled && sessionActive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+        String token = prefs.getString("authToken", null);
+        boolean hasToken = token != null && !token.trim().isEmpty();
+        boolean enabled = prefs.getBoolean("floating_enabled", false) || hasToken;
+        boolean sessionActive = prefs.getBoolean("delivery_session_active", false) 
+                || prefs.getBoolean("store_session_active", false) 
+                || hasToken;
+
+        if (enabled && sessionActive && (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this))) {
             try {
                 Intent serviceIntent = new Intent(this, FloatingLogoService.class);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -172,12 +177,6 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else {
-            try {
-                Intent stopIntent = new Intent(this, FloatingLogoService.class);
-                stopIntent.setAction("STOP_SERVICE");
-                stopService(stopIntent);
-            } catch (Exception ignored) {}
         }
     }
 
