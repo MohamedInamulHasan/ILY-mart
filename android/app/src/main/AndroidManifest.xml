@@ -44,6 +44,16 @@
 
         </activity>
 
+        <!-- Porter Order Alert Pop-Up Activity (Shows full card over screen even outside app or when locked) -->
+        <activity
+            android:name=".OrderAlertActivity"
+            android:exported="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:theme="@style/AppTheme.TransparentDialog" />
+
         <!-- Default Notification Channel and Icon for Firebase Push Notifications -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

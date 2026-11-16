@@ -52,15 +52,13 @@ public class IlyMartMessagingService extends MessagingService {
                                 | PowerManager.ON_AFTER_RELEASE,
                         "ILYMart:IncomingOrderWakeLock"
                 );
-                wakeLock.acquire(15000);
+                wakeLock.acquire(20000);
             }
 
             // 2. Persist active state in ILYMartPrefs so background service stays alive
             SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
             prefs.edit()
                     .putBoolean("floating_enabled", true)
-                    .putBoolean("delivery_session_active", true)
-                    .putBoolean("store_session_active", true)
                     .putBoolean("has_pending_orders", true)
                     .apply();
 
@@ -81,29 +79,42 @@ public class IlyMartMessagingService extends MessagingService {
                 }
             }
 
-            // 4. Trigger FloatingLogoService to show Porter card overlay & ring continuous alarm
-            Intent serviceIntent = new Intent(this, FloatingLogoService.class);
-            serviceIntent.setAction("SHOW_ORDER_CARD");
-            serviceIntent.putExtra("order_json", orderObj.toString());
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    ContextCompat.startForegroundService(this, serviceIntent);
-                } else {
-                    startService(serviceIntent);
+            // 4. If overlay permission is granted, trigger FloatingLogoService to show floating overlay card
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this)) {
+                Intent serviceIntent = new Intent(this, FloatingLogoService.class);
+                serviceIntent.setAction("SHOW_ORDER_CARD");
+                serviceIntent.putExtra("order_json", orderObj.toString());
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        ContextCompat.startForegroundService(this, serviceIntent);
+                    } else {
+                        startService(serviceIntent);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+            }
+
+            // 5. Directly launch OrderAlertActivity over screen so order alert card pops up outside the app
+            try {
+                Intent alertIntent = new Intent(this, OrderAlertActivity.class);
+                alertIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                alertIntent.putExtra("order_json", orderObj.toString());
+                alertIntent.putExtra("order_id", data.get("orderId"));
+                startActivity(alertIntent);
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            // 5. Post Heads-Up Full Screen Intent Notification with loud alarm sound
-            postFullScreenOrderNotification(data);
+            // 6. Post Heads-Up Full Screen Intent Notification with loud alarm sound
+            postFullScreenOrderNotification(data, orderObj.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void postFullScreenOrderNotification(Map<String, String> data) {
+    private void postFullScreenOrderNotification(Map<String, String> data, String orderJsonStr) {
         String orderId = data.get("orderId");
         if (orderId == null) orderId = "";
         String shortId = data.containsKey("shortId") ? data.get("shortId") : (orderId.length() >= 6 ? orderId.substring(orderId.length() - 6).toUpperCase() : orderId);
@@ -139,9 +150,9 @@ public class IlyMartMessagingService extends MessagingService {
             nm.createNotificationChannel(channel);
         }
 
-        Intent fullScreenIntent = new Intent(this, MainActivity.class);
+        Intent fullScreenIntent = new Intent(this, OrderAlertActivity.class);
         fullScreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        fullScreenIntent.putExtra("open_incoming_order", true);
+        fullScreenIntent.putExtra("order_json", orderJsonStr);
         fullScreenIntent.putExtra("order_id", orderId);
 
         PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(

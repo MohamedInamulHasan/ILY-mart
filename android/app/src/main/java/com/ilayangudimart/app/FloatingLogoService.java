@@ -194,14 +194,6 @@ public class FloatingLogoService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = isSessionActive(prefs);
-        if (!enabled || !sessionActive) {
-            stopServiceAndHide();
-            return START_NOT_STICKY;
-        }
-
         if (intent != null) {
             String action = intent.getAction();
             if ("STOP_SERVICE".equals(action)) {
@@ -218,10 +210,21 @@ public class FloatingLogoService extends Service {
                         e.printStackTrace();
                     }
                 }
+                return START_STICKY;
             } else if ("DISMISS_CARD".equals(action)) {
                 mainHandler.post(this::dismissPorterOrderCard);
+                return START_STICKY;
             }
         }
+
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("floating_enabled", false);
+        boolean sessionActive = isSessionActive(prefs);
+        if (!enabled || !sessionActive) {
+            stopServiceAndHide();
+            return START_NOT_STICKY;
+        }
+
         return START_STICKY;
     }
 
@@ -461,13 +464,6 @@ public class FloatingLogoService extends Service {
      */
     public synchronized void showPorterOrderCard(JSONObject order) {
         if (order == null || isAppInForeground) return;
-        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = isSessionActive(prefs);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
-        if (!enabled || !sessionActive || hasActive) {
-            return;
-        }
 
         // Wake screen up
         wakeUpScreen();

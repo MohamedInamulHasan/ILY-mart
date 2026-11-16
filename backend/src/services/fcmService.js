@@ -252,11 +252,15 @@ export const sendStaffNewOrderNotification = async (order) => {
 
         const mobilePatterns = knownStaffMobiles.map(m => new RegExp(`${m}$`));
 
+        const orderStoreId = order.storeId ? (order.storeId._id || order.storeId).toString() : null;
+        const itemStoreIds = (order.items || []).map(it => it.storeId ? (it.storeId._id || it.storeId).toString() : null).filter(Boolean);
+        const allTargetStoreIds = Array.from(new Set([orderStoreId, ...itemStoreIds].filter(Boolean)));
+
         const staffUsers = await User.find({
             $or: [
                 { role: { $in: ['delivery_boy', 'admin', 'store_admin'] } },
                 { mobile: { $in: mobilePatterns } },
-                { storeId: order.storeId }
+                { storeId: { $in: allTargetStoreIds } }
             ]
         }).select('fcmTokens role storeId mobile');
 
@@ -266,39 +270,38 @@ export const sendStaffNewOrderNotification = async (order) => {
             }
         });
 
-        const tokens = Array.from(tokensSet);
-        if (tokens.length === 0) return;
+        const tokens = Array.from(tokensSet).filter(Boolean);
+        if (tokens.length === 0) {
+            console.log(`ℹ️ [FCM Staff] No staff FCM tokens found for order #${shortId}`);
+            return;
+        }
 
+        // CRITICAL FOR ANDROID BACKGROUND EXECUTION:
+        // Do NOT include a top-level 'notification' block for staff background alerts!
+        // When 'notification' is included, Android System Tray intercepts the push and
+        // NEVER invokes FirebaseMessagingService.onMessageReceived() when the app is in the background or closed!
+        // A pure DATA-ONLY message with priority 'high' wakes up IlyMartMessagingService.onMessageReceived()
+        // so it can acquire WakeLock, play continuous alarm, and display the Porter Order Alert Card over the screen!
         const message = {
             tokens,
-            notification: {
-                title: '🚨 New Order Received! #' + shortId,
-                body: `New order #${shortId} for ₹${total}. Tap to view details.`
-            },
             data: {
                 orderId: (order._id || order.id || '').toString(),
                 type: 'NEW_ORDER',
                 title: '🚨 New Order Received! #' + shortId,
                 body: `New order #${shortId} for ₹${total}. Tap to view details.`,
-                shortId: shortId,
+                shortId: String(shortId),
                 total: String(total),
                 orderJson: JSON.stringify(order),
                 channelId: 'order_updates'
             },
             android: {
                 priority: 'high',
-                ttl: 300,
-                notification: {
-                    channelId: 'order_updates',
-                    sound: 'default',
-                    priority: 'max',
-                    visibility: 'public'
-                }
+                ttl: 300
             }
         };
 
         const response = await getMessaging().sendEachForMulticast(message);
-        console.log(`📲 Staff FCM alert sent for order #${shortId}: ${response.successCount} success across ${tokens.length} staff device(s)`);
+        console.log(`📲 Staff FCM data alert sent for order #${shortId}: ${response.successCount} success across ${tokens.length} staff device(s)`);
     } catch (err) {
         console.warn('⚠️ sendStaffNewOrderNotification error:', err.message);
     }

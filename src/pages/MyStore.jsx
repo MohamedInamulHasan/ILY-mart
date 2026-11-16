@@ -57,13 +57,20 @@ const MyStore = () => {
     const [showOrdersFeed, setShowOrdersFeed] = useState(false);
     const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
 
-    // Check overlay permission on mount
+    // Check overlay permission on mount & prompt if needed
     useEffect(() => {
         let isMounted = true;
         const initOverlay = async () => {
             if (!isNativeAndroid()) return;
             const granted = await checkOverlayPermission();
             if (isMounted) setHasOverlayPermission(granted);
+            if (!granted) {
+                const askedBefore = sessionStorage.getItem('asked_store_overlay_permission');
+                if (!askedBefore) {
+                    sessionStorage.setItem('asked_store_overlay_permission', 'true');
+                    requestOverlayPermission();
+                }
+            }
         };
         initOverlay();
         return () => { isMounted = false; };
