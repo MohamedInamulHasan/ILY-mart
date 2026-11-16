@@ -240,29 +240,37 @@ export const sendStaffNewOrderNotification = async (order) => {
         const rawTotal = order.total ?? order.totalAmount ?? order.totalPrice ?? 0;
         const total = Number(rawTotal).toFixed(0);
 
-        // 1. Find delivery boys and admins and store owners
-        const allStores = await Store.find({}).select('mobile _id').lean();
-        const storeMobiles = allStores.map(s => (s.mobile || '').replace(/\D/g, '').slice(-10)).filter(Boolean);
-        const knownStaffMobiles = Array.from(new Set([
-            '9500171980', '9500171958', '9500171989',
-            '9578654411', '9500179180',
-            '9876543211', '8474958585', '8508589181',
-            ...storeMobiles
-        ]));
-
-        const mobilePatterns = knownStaffMobiles.map(m => new RegExp(`${m}$`));
-
+        // 1. Identify all store IDs and store details for THIS specific order
         const orderStoreId = order.storeId ? (order.storeId._id || order.storeId).toString() : null;
         const itemStoreIds = (order.items || []).map(it => it.storeId ? (it.storeId._id || it.storeId).toString() : null).filter(Boolean);
-        const allTargetStoreIds = Array.from(new Set([orderStoreId, ...itemStoreIds].filter(Boolean)));
+        const orderStoreIds = Array.from(new Set([orderStoreId, ...itemStoreIds].filter(Boolean)));
 
-        const staffUsers = await User.find({
+        // Fetch mobiles only for stores in this specific order
+        const targetStores = await Store.find({ _id: { $in: orderStoreIds } }).select('mobile _id name').lean();
+        const orderStoreMobiles = targetStores.map(s => (s.mobile || '').replace(/\D/g, '').slice(-10)).filter(Boolean);
+        const orderStoreMobilePatterns = orderStoreMobiles.map(m => new RegExp(`${m}$`));
+
+        // 2. Super Admins and Delivery Boys (they need to see all orders to dispatch delivery)
+        const superAdminAndDeliveryMobiles = [
+            '9500171980', '9500171958', '9500171989', // Super Admins
+            '9578654411', '9500179180'                // Delivery Boys
+        ];
+        const platformStaffPatterns = superAdminAndDeliveryMobiles.map(m => new RegExp(`${m}$`));
+
+        // 3. Find recipients:
+        // - Platform Delivery Boys and Super Admins (by role or known mobile)
+        // - AND ONLY the Store Owners / Store Admins belonging to THIS order's store!
+        const staffQuery = {
             $or: [
-                { role: { $in: ['delivery_boy', 'admin', 'store_admin'] } },
-                { mobile: { $in: mobilePatterns } },
-                { storeId: { $in: allTargetStoreIds } }
+                { role: { $in: ['delivery_boy', 'admin'] } },
+                { mobile: { $in: platformStaffPatterns } },
+                // Store owners for THIS order only:
+                { storeId: { $in: orderStoreIds } },
+                ...(orderStoreMobilePatterns.length > 0 ? [{ mobile: { $in: orderStoreMobilePatterns } }] : [])
             ]
-        }).select('fcmTokens role storeId mobile');
+        };
+
+        const staffUsers = await User.find(staffQuery).select('fcmTokens role storeId mobile');
 
         staffUsers.forEach(u => {
             if (Array.isArray(u?.fcmTokens)) {
@@ -304,5 +312,66 @@ export const sendStaffNewOrderNotification = async (order) => {
         console.log(`📲 Staff FCM data alert sent for order #${shortId}: ${response.successCount} success across ${tokens.length} staff device(s)`);
     } catch (err) {
         console.warn('⚠️ sendStaffNewOrderNotification error:', err.message);
+    }
+};
+
+/**
+ * Dismiss the order alert card on staff devices when an order is accepted, cancelled, or delivered
+ */
+export const sendStaffOrderStatusNotification = async (order, status) => {
+    try {
+        if (getApps().length === 0) return;
+        if (!order) return;
+
+        const orderId = (order._id || order.id || '').toString();
+        const shortId = orderId.slice(-6).toUpperCase();
+
+        const orderStoreId = order.storeId ? (order.storeId._id || order.storeId).toString() : null;
+        const itemStoreIds = (order.items || []).map(it => it.storeId ? (it.storeId._id || it.storeId).toString() : null).filter(Boolean);
+        const orderStoreIds = Array.from(new Set([orderStoreId, ...itemStoreIds].filter(Boolean)));
+
+        const targetStores = await Store.find({ _id: { $in: orderStoreIds } }).select('mobile _id').lean();
+        const orderStoreMobiles = targetStores.map(s => (s.mobile || '').replace(/\D/g, '').slice(-10)).filter(Boolean);
+        const orderStoreMobilePatterns = orderStoreMobiles.map(m => new RegExp(`${m}$`));
+
+        const staffMobiles = ['9500171980', '9500171958', '9500171989', '9578654411', '9500179180', ...orderStoreMobiles];
+        const mobilePatterns = staffMobiles.map(m => new RegExp(`${m}$`));
+
+        const staffUsers = await User.find({
+            $or: [
+                { role: { $in: ['delivery_boy', 'admin'] } },
+                { mobile: { $in: mobilePatterns } },
+                { storeId: { $in: orderStoreIds } }
+            ]
+        }).select('fcmTokens');
+
+        const tokensSet = new Set();
+        staffUsers.forEach(u => {
+            if (Array.isArray(u?.fcmTokens)) {
+                u.fcmTokens.forEach(t => { if (t) tokensSet.add(t); });
+            }
+        });
+
+        const tokens = Array.from(tokensSet).filter(Boolean);
+        if (tokens.length === 0) return;
+
+        const message = {
+            tokens,
+            data: {
+                orderId: orderId,
+                type: 'DISMISS_ORDER',
+                status: String(status || ''),
+                shortId: shortId
+            },
+            android: {
+                priority: 'high',
+                ttl: 60
+            }
+        };
+
+        await getMessaging().sendEachForMulticast(message);
+        console.log(`📲 Sent staff DISMISS_ORDER FCM for order #${shortId} (status: ${status})`);
+    } catch (err) {
+        console.warn('⚠️ sendStaffOrderStatusNotification error:', err.message);
     }
 };

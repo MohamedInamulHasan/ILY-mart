@@ -12,7 +12,7 @@ import { sendOrderNtfyAlert } from '../services/ntfyService.js';
 import { sendOrderWhatsAppNotification } from '../services/whatsappService.js';
 import { sendN8nOrderEvent } from '../services/n8nService.js';
 import { getIO } from '../socket.js';
-import { sendOrderPushNotification, sendStaffNewOrderNotification } from '../services/fcmService.js';
+import { sendOrderPushNotification, sendStaffNewOrderNotification, sendStaffOrderStatusNotification } from '../services/fcmService.js';
 
 
 
@@ -569,6 +569,12 @@ export const updateOrderStatus = async (req, res, next) => {
         // Send FCM push notification to customer
         sendOrderPushNotification(updatedOrder.user, updatedOrder._id.toString(), updatedOrder.status)
             .catch(err => console.error('❌ FCM push failed:', err));
+
+        // Dismiss alert card on staff devices when status changes to Accepted, Out for Delivery, Delivered, or Cancelled
+        if (['Accepted', 'Out for Delivery', 'Delivered', 'Cancelled'].includes(updatedOrder.status)) {
+            sendStaffOrderStatusNotification(updatedOrder, updatedOrder.status)
+                .catch(err => console.error('❌ Staff dismiss push failed:', err));
+        }
 
         // Emit real-time event for user
         getIO().emit('order:updated', updatedOrder);

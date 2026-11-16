@@ -34,35 +34,51 @@ public class IlyMartMessagingService extends MessagingService {
         Map<String, String> data = remoteMessage.getData();
         if (data != null && !data.isEmpty()) {
             String type = data.get("type");
+            String status = data.get("status");
             String orderId = data.get("orderId");
-            if ("NEW_ORDER".equalsIgnoreCase(type) || (orderId != null && !orderId.trim().isEmpty())) {
+
+            // 1. If order was accepted, delivered, or cancelled: dismiss alert immediately
+            if ("DISMISS_ORDER".equalsIgnoreCase(type)
+                    || "order_update".equalsIgnoreCase(type)
+                    || (status != null && (status.equalsIgnoreCase("accepted")
+                    || status.equalsIgnoreCase("out for delivery")
+                    || status.equalsIgnoreCase("delivered")
+                    || status.equalsIgnoreCase("cancelled")))) {
+
+                handleDismissOrderAlert(orderId);
+                return;
+            }
+
+            // 2. ONLY show new order alert when type is explicitly "NEW_ORDER"
+            if ("NEW_ORDER".equalsIgnoreCase(type)) {
                 handleNewOrderAlert(data);
             }
         }
     }
 
+    private void handleDismissOrderAlert(String orderId) {
+        try {
+            if (FloatingLogoService.instance != null) {
+                FloatingLogoService.instance.dismissPorterOrderCard();
+                if (orderId != null && !orderId.trim().isEmpty()) {
+                    FloatingLogoService.instance.removePendingOrder(orderId.trim());
+                }
+            }
+            if (OrderAlertActivity.currentInstance != null) {
+                OrderAlertActivity.currentInstance.dismissAlert();
+            }
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(3002);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void handleNewOrderAlert(Map<String, String> data) {
         try {
-            // 1. Wake up screen
-            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            if (pm != null) {
-                PowerManager.WakeLock wakeLock = pm.newWakeLock(
-                        PowerManager.FULL_WAKE_LOCK
-                                | PowerManager.ACQUIRE_CAUSES_WAKEUP
-                                | PowerManager.ON_AFTER_RELEASE,
-                        "ILYMart:IncomingOrderWakeLock"
-                );
-                wakeLock.acquire(20000);
-            }
-
-            // 2. Persist active state in ILYMartPrefs so background service stays alive
-            SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-            prefs.edit()
-                    .putBoolean("floating_enabled", true)
-                    .putBoolean("has_pending_orders", true)
-                    .apply();
-
-            // 3. Build order JSON
+            // 1. Build order JSON
             String orderJsonStr = data.get("orderJson");
             JSONObject orderObj = null;
             if (orderJsonStr != null && !orderJsonStr.trim().isEmpty()) {
@@ -79,8 +95,43 @@ public class IlyMartMessagingService extends MessagingService {
                 }
             }
 
-            // 4. If overlay permission is granted, trigger FloatingLogoService to show floating overlay card
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this)) {
+            // 2. CRITICAL STORE OWNER ISOLATION:
+            // If the user on this phone is a Store Owner, verify if the order belongs to THEIR store!
+            SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            boolean isStoreSession = prefs.getBoolean("store_session_active", false);
+            String myStoreId = prefs.getString("store_id", "");
+            String myStoreName = prefs.getString("store_name", "");
+
+            if (isStoreSession && (!myStoreId.isEmpty() || !myStoreName.isEmpty())) {
+                if (!FloatingLogoService.isOrderForStore(orderObj, myStoreId, myStoreName)) {
+                    // This order belongs to another store! Do NOT alert this store owner!
+                    return;
+                }
+            }
+
+            // 3. Wake up screen
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null) {
+                PowerManager.WakeLock wakeLock = pm.newWakeLock(
+                        PowerManager.FULL_WAKE_LOCK
+                                | PowerManager.ACQUIRE_CAUSES_WAKEUP
+                                | PowerManager.ON_AFTER_RELEASE,
+                        "ILYMart:IncomingOrderWakeLock"
+                );
+                wakeLock.acquire(20000);
+            }
+
+            // 4. Persist active state in ILYMartPrefs so background service stays alive
+            prefs.edit()
+                    .putBoolean("floating_enabled", true)
+                    .putBoolean("has_pending_orders", true)
+                    .apply();
+
+            // 5. Show EXACTLY ONE alert card:
+            // If overlay permission is granted -> display FloatingLogoService Porter Card overlay over screen.
+            // If overlay permission is NOT granted -> fallback to OrderAlertActivity dialog!
+            boolean hasOverlay = (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this));
+            if (hasOverlay) {
                 Intent serviceIntent = new Intent(this, FloatingLogoService.class);
                 serviceIntent.setAction("SHOW_ORDER_CARD");
                 serviceIntent.putExtra("order_json", orderObj.toString());
@@ -93,21 +144,25 @@ public class IlyMartMessagingService extends MessagingService {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }
-
-            // 5. Directly launch OrderAlertActivity over screen so order alert card pops up outside the app
-            try {
-                Intent alertIntent = new Intent(this, OrderAlertActivity.class);
-                alertIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                alertIntent.putExtra("order_json", orderObj.toString());
-                alertIntent.putExtra("order_id", data.get("orderId"));
-                startActivity(alertIntent);
-            } catch (Exception e) {
-                e.printStackTrace();
+            } else {
+                try {
+                    Intent alertIntent = new Intent(this, OrderAlertActivity.class);
+                    alertIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    alertIntent.putExtra("order_json", orderObj.toString());
+                    alertIntent.putExtra("order_id", data.get("orderId"));
+                    startActivity(alertIntent);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             // 6. Post Heads-Up Full Screen Intent Notification with loud alarm sound
             postFullScreenOrderNotification(data, orderObj.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
         } catch (Exception e) {
             e.printStackTrace();

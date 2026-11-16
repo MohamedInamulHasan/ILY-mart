@@ -36,6 +36,8 @@ import org.json.JSONObject;
 
 public class OrderAlertActivity extends AppCompatActivity {
 
+    public static OrderAlertActivity currentInstance;
+
     private MediaPlayer alertMediaPlayer;
     private Vibrator vibrator;
     private CountDownTimer cardTimer;
@@ -44,6 +46,7 @@ public class OrderAlertActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        currentInstance = this;
 
         // Turn on screen & show over lock screen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -158,6 +161,7 @@ public class OrderAlertActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (currentInstance == this) currentInstance = null;
         stopAlertEffects();
         super.onDestroy();
     }
@@ -343,7 +347,8 @@ public class OrderAlertActivity extends AppCompatActivity {
 
             @Override
             public void onFinish() {
-                dismissAlert();
+                // Keep repeating until viewed or explicitly skipped!
+                start();
             }
         }.start();
 
@@ -376,7 +381,7 @@ public class OrderAlertActivity extends AppCompatActivity {
         return cardLayout;
     }
 
-    private void dismissAlert() {
+    public void dismissAlert() {
         stopAlertEffects();
         finish();
     }

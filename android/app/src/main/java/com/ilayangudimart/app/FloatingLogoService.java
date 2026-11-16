@@ -482,6 +482,17 @@ public class FloatingLogoService extends Service {
             if (!orderId.isEmpty()) {
                 alertedOrderIds.add(orderId);
             }
+            // Enqueue order for automatic repeat until accepted/swiped
+            synchronized (pendingOrdersQueue) {
+                boolean exists = false;
+                for (int i = 0; i < pendingOrdersQueue.size(); i++) {
+                    String eid = pendingOrdersQueue.get(i).optString("_id", pendingOrdersQueue.get(i).optString("id", ""));
+                    if (eid.equals(orderId)) { exists = true; break; }
+                }
+                if (!exists) {
+                    pendingOrdersQueue.add(order);
+                }
+            }
             String shortId = orderId.length() >= 6 ? orderId.substring(orderId.length() - 6).toUpperCase() : orderId;
 
             JSONObject shippingAddress = order.optJSONObject("shippingAddress");
@@ -933,6 +944,7 @@ public class FloatingLogoService extends Service {
                                                     @Override
                                                     public void run() {
                                                         dismissPorterOrderCardInternal();
+                                                        removePendingOrder(orderId);
                                                         openApp(orderId);
                                                     }
                                                 }, 200);
@@ -961,7 +973,7 @@ public class FloatingLogoService extends Service {
                 orderCardTimer.cancel();
                 orderCardTimer = null;
             }
-            orderCardTimer = new CountDownTimer(8000, 1000) {
+            orderCardTimer = new CountDownTimer(12000, 1000) {
                 @Override
                 public void onTick(long millisUntilFinished) {
                     int sec = (int) Math.ceil(millisUntilFinished / 1000.0);
@@ -970,7 +982,7 @@ public class FloatingLogoService extends Service {
 
                 @Override
                 public void onFinish() {
-                    skipPorterOrderCard();
+                    repeatOrNextPendingOrder();
                 }
             }.start();
 
@@ -1023,6 +1035,43 @@ public class FloatingLogoService extends Service {
         }
     }
 
+    public synchronized void repeatOrNextPendingOrder() {
+        if (orderCardTimer != null) {
+            orderCardTimer.cancel();
+            orderCardTimer = null;
+        }
+        stopAlertEffects();
+        dismissPorterOrderCardInternal();
+        if (isAppInForeground) return;
+
+        // 4-second breather, then repeat alert with sound & card
+        isGapWaiting = true;
+        mainHandler.postDelayed(() -> {
+            isGapWaiting = false;
+            if (!isAppInForeground) {
+                showNextPendingOrderIfAny();
+            }
+        }, 4000);
+    }
+
+    public synchronized void removePendingOrder(String orderId) {
+        if (orderId == null || orderId.trim().isEmpty()) return;
+        synchronized (pendingOrdersQueue) {
+            for (int i = pendingOrdersQueue.size() - 1; i >= 0; i--) {
+                JSONObject o = pendingOrdersQueue.get(i);
+                if (o != null) {
+                    String oid = o.optString("_id", o.optString("id", ""));
+                    if (oid.equalsIgnoreCase(orderId.trim())) {
+                        pendingOrdersQueue.remove(i);
+                    }
+                }
+            }
+            if (pendingOrdersQueue.isEmpty()) {
+                dismissPorterOrderCard();
+            }
+        }
+    }
+
     public synchronized void skipPorterOrderCard() {
         if (orderCardTimer != null) {
             orderCardTimer.cancel();
@@ -1037,7 +1086,7 @@ public class FloatingLogoService extends Service {
         if (!isAppInForeground && hasActiveOrPending) {
             showCircleBubble();
         }
-        // 5s gap before showing the next pending processing order (only if no accepted order in progress)
+        // 8s gap before showing next pending order when skipped
         if (!hasActive) {
             isGapWaiting = true;
             mainHandler.postDelayed(() -> {
@@ -1046,26 +1095,20 @@ public class FloatingLogoService extends Service {
                 if (!isAppInForeground) {
                     showNextPendingOrderIfAny();
                 }
-            }, 5000);
+            }, 8000);
         }
     }
 
     public synchronized void showNextPendingOrderIfAny() {
         if (orderCardView != null || isGapWaiting || isAppInForeground) return;
-        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("floating_enabled", false);
-        boolean sessionActive = isSessionActive(prefs);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
-        if (!enabled || !sessionActive || hasActive) {
-            if (!enabled || !sessionActive) {
-                stopServiceAndHide();
-            }
-            return;
-        }
         synchronized (pendingOrdersQueue) {
             if (pendingOrdersQueue.isEmpty()) return;
+            if (currentPendingOrderIndex >= pendingOrdersQueue.size()) {
+                currentPendingOrderIndex = 0;
+            }
             int idx = currentPendingOrderIndex % pendingOrdersQueue.size();
             JSONObject nextOrder = pendingOrdersQueue.get(idx);
+            currentPendingOrderIndex = (currentPendingOrderIndex + 1) % pendingOrdersQueue.size();
             if (nextOrder != null) {
                 showPorterOrderCard(nextOrder);
             }
