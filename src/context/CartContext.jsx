@@ -327,12 +327,8 @@ export const CartProvider = ({ children }) => {
                             className="flex flex-col items-center group cursor-pointer"
                             aria-label="View cart"
                         >
-                            {/* Glowing Cart Button */}
+                            {/* Highlighted Cart Button (No wave / ping effect) */}
                             <div className="relative">
-                                {/* Glowing ring / spotlight animation */}
-                                <span className="absolute -inset-2 rounded-full bg-[#CBF9B2] opacity-80 animate-ping pointer-events-none" />
-                                <span className="absolute -inset-1.5 rounded-full bg-white/60 blur-xs pointer-events-none" />
-
                                 <div className="w-[40px] h-[40px] bg-white rounded-full flex items-center justify-center shadow-[0_0_24px_rgba(203,249,178,0.95)] border-2 border-[#2E5A2E] relative group-active:scale-95 transition-transform">
                                     <ShoppingCart size={20} className="text-[#2E5A2E]" strokeWidth={2.2} />
 
@@ -389,7 +385,7 @@ export const CartProvider = ({ children }) => {
                         {/* Label with Forest Green accent */}
                         <div className="flex items-center gap-1.5 mb-2.5">
                             <p className="text-[13.5px] sm:text-[14px] font-extrabold text-[#2E5A2E] dark:text-[#CBF9B2] uppercase tracking-wide flex items-center gap-1">
-                                <span>{language === 'ta' ? '⚠️ ஒரு சிறிய நினைவூட்டல்!' : '⚠️ Oru chinna Reminder!'}</span>
+                                <span>{language === 'ta' ? '⚠️ ஒரு சிறிய நினைவூட்டல்!' : '⚠️ Oru Chinna Reminder!'}</span>
                             </p>
                         </div>
 
@@ -398,40 +394,38 @@ export const CartProvider = ({ children }) => {
                             <p>
                                 {language === 'ta' ? (
                                     <>
-                                        நீங்கள் ஏற்கனவே <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.current || 'Store'}</strong> கடையிலிருந்து பொருட்களை உங்கள் கார்ட்டில் சேர்த்துள்ளீர்கள்.
+                                        நீங்கள் ஏற்கனவே <strong className="font-black text-gray-950 dark:text-white">{reminderStoreNames.current || 'Store'}</strong> கடையிலிருந்து பொருட்களை Cart-ல் சேர்த்துள்ளீர்கள்.
                                     </>
                                 ) : (
                                     <>
-                                        Neenga already <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.current || 'Store'}</strong> la irundhu products ah Cart la add pannirukeenga.
+                                        Neenga already <strong className="font-black text-gray-950 dark:text-white">{reminderStoreNames.current || 'Store'}</strong> la irundhu products Cart la add pannirukeenga.
                                     </>
                                 )}
                             </p>
                             <p>
                                 {language === 'ta' ? (
                                     <>
-                                        இப்போது <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.selected || 'Store'}</strong> கடையிலிருந்து பொருட்களைச் சேர்க்க முடியாது.
+                                        ஒரு நேரத்தில் ஒரு கடையின் தயாரிப்புகளை மட்டுமே Cart-ல் சேர்க்க முடியும்.
                                     </>
                                 ) : (
                                     <>
-                                        Ippo <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.selected || 'Store'}</strong> la irundhu products add panna mudiyadhu.
+                                        Oru time la oru store products mattum dhaan Cart la add panna mudiyum.
                                     </>
                                 )}
                             </p>
                             <p>
                                 {language === 'ta' ? (
                                     <>
-                                        <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.selected || 'Store'}</strong> கடையிலிருந்து பொருட்கள் வாங்க விரும்பினால், முதலில் கார்ட்டில் உள்ள <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.current || 'Store'}</strong> பொருட்களை நீக்கிவிட்டு, புதிய கடையிலிருந்து பொருட்களைச் சேர்க்கவும்.
+                                        வேறு கடையிலிருந்து பொருட்கள் வாங்க, முதலில் Cart-ல் உள்ள பொருட்களை remove பண்ணிட்டு, புதுக் கடையில் products add பண்ணுங்க.
                                     </>
                                 ) : (
                                     <>
-                                        <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.selected || 'Store'}</strong> la irundhu products vaanga virumbina, first Cart la irukkura <strong className="font-black text-gray-950 dark:text-white underline decoration-[#2E5A2E]/50 underline-offset-2">{reminderStoreNames.current || 'Store'}</strong> products ah remove pannitu, pudhu store la irundhu products add pannunga.
+                                        Vera store la irundhu products vaanga, first Cart la irukkura products remove pannitu, pudhu store la products add pannunga.
                                     </>
                                 )}
                             </p>
-                            <p className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black">
-                                {language === 'ta'
-                                    ? 'ஒரு ஆர்டரில் ஒரு கடையிலிருந்து மட்டுமே பொருட்களை வாங்க முடியும்'
-                                    : 'Oru order la oru store la irundhu mattum dhaan products vaanga mudiyum!'}
+                            <p className="text-[#2E5A2E] dark:text-[#CBF9B2] font-black pt-0.5">
+                                {language === 'ta' ? 'நன்றி! ❤️' : 'Thank you! ❤️'}
                             </p>
                         </div>
                     </motion.div>
