@@ -1079,24 +1079,16 @@ public class FloatingLogoService extends Service {
         }
         stopAlertEffects();
         dismissPorterOrderCardInternal();
-        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
-        boolean hasPending = prefs.getBoolean("has_pending_orders", false);
-        boolean hasActiveOrPending = hasActive || hasPending;
-        if (!isAppInForeground && hasActiveOrPending) {
-            showCircleBubble();
-        }
-        // 8s gap before showing next pending order when skipped
-        if (!hasActive) {
-            isGapWaiting = true;
-            mainHandler.postDelayed(() -> {
-                isGapWaiting = false;
-                currentPendingOrderIndex++;
-                if (!isAppInForeground) {
-                    showNextPendingOrderIfAny();
-                }
-            }, 8000);
-        }
+
+        // 5s gap before repeating alert even when user taps SKIP
+        isGapWaiting = true;
+        mainHandler.postDelayed(() -> {
+            isGapWaiting = false;
+            currentPendingOrderIndex++;
+            if (!isAppInForeground) {
+                showNextPendingOrderIfAny();
+            }
+        }, 5000);
     }
 
     public synchronized void showNextPendingOrderIfAny() {

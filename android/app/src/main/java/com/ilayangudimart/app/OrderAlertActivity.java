@@ -15,6 +15,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.DisplayMetrics;
@@ -354,6 +356,7 @@ public class OrderAlertActivity extends AppCompatActivity {
 
         final String finalOrderId = orderId;
         View.OnClickListener openOrderClick = v -> {
+            isFinished = true; // User viewed/accepted order: stop repeating!
             stopAlertEffects();
             Intent intent = new Intent(OrderAlertActivity.this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -366,22 +369,39 @@ public class OrderAlertActivity extends AppCompatActivity {
         swipeTrack.setOnClickListener(openOrderClick);
         bodyLayout.addView(swipeTrack);
 
-        // SKIP Button
+        // SKIP Button: Pauses for 5s then repeats alert until accepted or cancelled!
         TextView skipBtn = new TextView(this);
-        skipBtn.setText("DISMISS");
+        skipBtn.setText("SKIP");
         skipBtn.setTextColor(Color.parseColor("#9CA3AF"));
         skipBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         skipBtn.setTypeface(Typeface.DEFAULT_BOLD);
         skipBtn.setGravity(Gravity.CENTER);
         skipBtn.setPadding(dp(8), dp(12), dp(8), dp(4));
-        skipBtn.setOnClickListener(v -> dismissAlert());
+        skipBtn.setOnClickListener(v -> skipAndRepeat(order));
         bodyLayout.addView(skipBtn);
 
         cardLayout.addView(bodyLayout);
         return cardLayout;
     }
 
+    private void skipAndRepeat(JSONObject order) {
+        stopAlertEffects();
+        finish();
+
+        // Repeat alert after 5s pause until order is accepted or cancelled
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                if (isFinished) return;
+                Intent repeatIntent = new Intent(getApplicationContext(), OrderAlertActivity.class);
+                repeatIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                repeatIntent.putExtra("order_json", order != null ? order.toString() : "");
+                startActivity(repeatIntent);
+            } catch (Exception ignored) {}
+        }, 5000);
+    }
+
     public void dismissAlert() {
+        isFinished = true;
         stopAlertEffects();
         finish();
     }
