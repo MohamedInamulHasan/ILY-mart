@@ -135,7 +135,12 @@ const Cart = () => {
                                                 {getStoreName(item.storeId, stores) || "ILY mart Direct"}
                                             </p>
                                        </div>
-                                       <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 p-0.5 transition-colors flex-shrink-0">
+                                       <button onClick={() => {
+                                           removeFromCart(item.id);
+                                           if (cartItems.length <= 1) {
+                                               navigate('/');
+                                           }
+                                       }} className="text-gray-400 hover:text-red-500 p-0.5 transition-colors flex-shrink-0">
                                             <Trash2 size={16} />
                                        </button>
                                   </div>

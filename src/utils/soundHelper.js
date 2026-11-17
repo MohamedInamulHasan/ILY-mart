@@ -219,6 +219,11 @@ export const stopIncomingOrderAlertSound = () => {
     }
 };
 
+// Global safety fallback so any window or component callback never throws ReferenceError
+if (typeof window !== 'undefined') {
+    window.stopIncomingOrderAlertSound = stopIncomingOrderAlertSound;
+}
+
 // ---- Web Audio synth fallbacks for each notification type ----
 
 const _playSynthNotes = (notes, oscType = 'sine') => {

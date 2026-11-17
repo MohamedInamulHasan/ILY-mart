@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { safeNavigateBack } from '../utils/useBackButton';
+import { safeNavigateBack, markOrderPlaced, registerModalBackHandler } from '../utils/useBackButton';
 import { useData } from '../context/DataContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
 import { renderBilingualTitle, getSelectedUnitDisplay } from '../utils/titleHelpers';
@@ -13,6 +14,7 @@ import { useCategories } from '../hooks/queries/useCategories';
 import { ArrowLeft, ShoppingCart, Banknote, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar, ChevronDown } from 'lucide-react';
 import { checkLocationPermission, requestLocationPermission, getCurrentLocation } from '../utils/locationHelpers';
 import { AnimatePresence, motion } from 'framer-motion';
+import { playOrderPlacedSound, unlockAudio } from '../utils/soundHelper';
 
 import { API_BASE_URL, apiService } from '../utils/api';
 import { openExternalLink } from '../utils/linkHelper';
@@ -26,14 +28,43 @@ const isCityUnavailable = (cityName) => {
 const Checkout = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const queryClient = useQueryClient();
     const directPurchase = location.state?.directPurchase;
     const { cartItems, cartTotal, clearCart, removeFromCart, cartCount } = useCart();
     const { user, setUser, loading: authLoading, updateGuest } = useAuth();
     const { data: userProfile } = useUserProfile(); // Fetch fresh user data with coins
     const { t, language } = useLanguage();
-    const { stores, updateUser, settings, categories: dataCategories, fetchSettings } = useData();
+    const { stores, updateUser, settings, categories: dataCategories, fetchSettings, addOrder, setIsFooterHidden } = useData();
     const { data: queryCategories = [] } = useCategories();
     const categories = (queryCategories && queryCategories.length > 0) ? queryCategories : (dataCategories || []);
+
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [createdOrderId, setCreatedOrderId] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Hide navbar when modals are open
+    useEffect(() => {
+        if (setIsFooterHidden) {
+            setIsFooterHidden(showSuccessModal);
+        }
+        return () => {
+            if (setIsFooterHidden) setIsFooterHidden(false);
+        };
+    }, [showSuccessModal, setIsFooterHidden]);
+
+    // Intercept back button when success modal is open to ensure back goes to Home
+    useEffect(() => {
+        if (!showSuccessModal) return;
+        return registerModalBackHandler(() => {
+            markOrderPlaced();
+            navigate('/', { replace: true });
+        });
+    }, [showSuccessModal, navigate]);
+
+    const handleCloseSuccess = () => {
+        markOrderPlaced();
+        navigate('/orders', { replace: true });
+    };
 
     // Ensure delivery timing settings update to users immediately in Checkout
     useEffect(() => {
@@ -518,26 +549,112 @@ const Checkout = () => {
                     } catch (e) {}
                 }
 
-                // Step D: Navigate instantly to Order Confirmation!
-                navigate('/order-confirmation', {
-                    state: {
-                        formData: {
-                            ...formData,
-                            name: formData.fullName,
-                            pincode: formData.zip,
-                            location: formData.location,
-                            deliveryTime: deliveryTimeParam
-                        },
-                        cartItems: displayItems,
-                        cartTotal: displayTotal,
-                        deliveryCharge: finalDeliveryCharge,
-                        isDirectPurchase: !!directPurchase
+                // Step D: Confirm Order Directly & Place Instantly
+                unlockAudio();
+                setIsSubmitting(true);
+
+                // Pre-generate instant Order ID
+                const instantOrderId = (() => {
+                    const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+                    const random = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                    return (timestamp + random).toLowerCase();
+                })();
+                setCreatedOrderId(instantOrderId);
+
+                // Create order object matching backend schema
+                const newOrder = {
+                    _id: instantOrderId,
+                    items: displayItems.map(item => ({
+                        product: item._id || item.id,
+                        name: item.title || item.name || 'Product',
+                        quantity: item.quantity,
+                        price: item.price,
+                        image: (item.image && item.image.length < 1000) ? item.image : null,
+                        storeId: item.storeId?._id || item.storeId || null,
+                        storeName: item.storeName || null,
+                        unit: item.unit,
+                        isFromAd: item.isFromAd || false,
+                        adTitle: item.adTitle || null
+                    })),
+                    subtotal: displayTotal,
+                    shipping: finalDeliveryCharge === 0 ? baseDeliveryCharge : finalDeliveryCharge,
+                    tax: 0,
+                    discount: 0,
+                    total: finalDeliveryCharge === 0 ? ((displayTotal || 0) + baseDeliveryCharge) : ((displayTotal || 0) + finalDeliveryCharge),
+                    shippingAddress: {
+                        name: formData.fullName,
+                        street: formData.address,
+                        city: formData.city,
+                        state: '',
+                        zip: formData.zip || '',
+                        country: 'India',
+                        mobile: formData.mobile,
+                        location: formData.location,
+                        deliveryTime: deliveryTimeParam
+                    },
+                    paymentMethod: {
+                        type: 'Cash on Delivery',
+                        last4: ''
+                    },
+                    deliveryTime: deliveryTimeParam,
+                    fcmToken: localStorage.getItem('fcm_token') || undefined,
+                    scheduledDeliveryTime: deliveryTimeParam ? (() => {
+                        const deliveryDate = new Date();
+                        let timeStr = deliveryTimeParam;
+                        if (deliveryTimeParam.includes('|')) {
+                            const [period, time] = deliveryTimeParam.split('|');
+                            timeStr = time;
+                            if (period === 'tomorrow') {
+                                deliveryDate.setDate(deliveryDate.getDate() + 1);
+                            }
+                        }
+                        const [hours, minutes] = timeStr.split(':');
+                        deliveryDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                        return deliveryDate.toISOString();
+                    })() : null
+                };
+
+                // INSTANT UPDATE: Immediately play sound, mark order placed, show success modal & clear cart
+                playOrderPlacedSound();
+                markOrderPlaced();
+                setShowSuccessModal(true);
+                if (!directPurchase) {
+                    clearCart();
+                }
+
+                if (finalDeliveryCharge === 0 && !isOnlyFreeProducts) {
+                    setUser(prev => ({
+                        ...prev,
+                        coins: Math.max((prev?.coins || 0) - 1, 0),
+                        location: newOrder.shippingAddress.location || prev?.location
+                    }));
+                    queryClient.invalidateQueries(['user-profile']);
+                } else if (newOrder.shippingAddress.location) {
+                    setUser(prev => ({ ...prev, location: newOrder.shippingAddress.location }));
+                }
+
+                try {
+                    const createdOrder = await addOrder(newOrder);
+                    const finalId = createdOrder?._id || createdOrder?.id || instantOrderId;
+                    setCreatedOrderId(finalId);
+                } catch (error) {
+                    console.error('❌ Failed to create order:', error);
+                    let errorMessage = t('Failed to place order. Please try again.');
+                    if (error.response?.data?.message) {
+                        errorMessage = error.response.data.message;
+                    } else if (error.message) {
+                        errorMessage = error.message;
                     }
-                });
+                    alert(`${t('Error')}: ${errorMessage}`);
+                } finally {
+                    setIsSubmitting(false);
+                    setIsNavigating(false);
+                }
             } catch (err) {
                 console.error('❌ Checkout submit error:', err);
                 alert(t('Checkout failed. Please try again.'));
                 setIsNavigating(false);
+                setIsSubmitting(false);
             }
         };
 
@@ -546,7 +663,7 @@ const Checkout = () => {
 
     useEffect(() => {
         if (displayItems.length === 0) {
-            navigate('/cart');
+            navigate('/');
         }
     }, [displayItems.length, navigate]);
 
@@ -1127,12 +1244,14 @@ const Checkout = () => {
     
                             <button
                                 type="submit"
-                                disabled={isNavigating}
-                                className="w-full bg-black text-white rounded-full py-3 sm:py-3.5 flex items-center justify-center font-normal text-sm active:scale-[0.98] transition-transform disabled:opacity-50"
+                                disabled={isNavigating || isSubmitting}
+                                className="w-full bg-black text-white rounded-full py-3 sm:py-3.5 flex items-center justify-center font-medium text-sm active:scale-[0.98] transition-transform disabled:opacity-50"
                             >
-                                {isNavigating ? (
+                                {(isNavigating || isSubmitting) ? (
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                ) : t('Continue')}
+                                ) : (
+                                    t('Confirm Order')
+                                )}
                             </button>
                         </div>
                     </div>
@@ -1300,6 +1419,117 @@ const Checkout = () => {
                             </div>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            {/* Order Confirmation Success Modal */}
+            <AnimatePresence>
+                {showSuccessModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.16, ease: 'easeOut' }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/75 transform-gpu"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.88, opacity: 0, y: 12 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.88, opacity: 0, y: 12 }}
+                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                            className="bg-white dark:bg-gray-800 rounded-3xl sm:rounded-[2rem] shadow-2xl max-w-sm w-full p-6 sm:p-7 relative overflow-hidden transform-gpu will-change-transform"
+                        >
+                            <div className="text-center">
+                                <div className="relative w-32 h-32 sm:w-36 sm:h-36 mx-auto mb-3 flex items-center justify-center">
+                                    {/* Green star burst rotating ONLY during the entrance movement like GPay */}
+                                    <motion.div
+                                        initial={{ rotate: -40, scale: 0.2, opacity: 0 }}
+                                        animate={{ rotate: 30, scale: 1, opacity: 1 }}
+                                        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                                        className="absolute inset-0 pointer-events-none flex items-center justify-center"
+                                    >
+                                        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                                            <motion.div
+                                                key={angle}
+                                                initial={{ scale: 0, opacity: 0 }}
+                                                animate={{ scale: [0, 1.25, 1], opacity: [0, 1, 0.95] }}
+                                                transition={{ duration: 0.5, delay: 0.1 + i * 0.02, ease: "easeOut" }}
+                                                style={{
+                                                    transform: `rotate(${angle}deg) translateY(-76px)`,
+                                                    transformOrigin: 'center center'
+                                                }}
+                                                className="absolute"
+                                            >
+                                                {/* 4-point green star (GPay style) */}
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#22C55E">
+                                                    <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
+                                                </svg>
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
+
+                                    {/* Expanding soft ring */}
+                                    <motion.div
+                                        initial={{ scale: 0.8, opacity: 0.8 }}
+                                        animate={{ scale: 1.45, opacity: 0 }}
+                                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+                                        className="absolute w-32 h-32 sm:w-36 sm:h-36 rounded-full border-2 border-green-500/40 pointer-events-none"
+                                    />
+
+                                    {/* GPay Scalloped Flower Badge */}
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: [0, 1.15, 1] }}
+                                        transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1], delay: 0.05 }}
+                                        className="w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center relative z-10"
+                                    >
+                                        <svg
+                                            viewBox="16 16 68 68"
+                                            className="w-full h-full"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            {/* Large Scalloped Flower Base */}
+                                            <path
+                                                d="M 79.70 42.04 A 11.5 11.5 0 0 1 79.70 57.96 A 11.5 11.5 0 0 1 71.74 71.74 A 11.5 11.5 0 0 1 57.96 79.70 A 11.5 11.5 0 0 1 42.04 79.70 A 11.5 11.5 0 0 1 28.26 71.74 A 11.5 11.5 0 0 1 20.30 57.96 A 11.5 11.5 0 0 1 20.30 42.04 A 11.5 11.5 0 0 1 28.26 28.26 A 11.5 11.5 0 0 1 42.04 20.30 A 11.5 11.5 0 0 1 57.96 20.30 A 11.5 11.5 0 0 1 71.74 28.26 A 11.5 11.5 0 0 1 79.70 42.04 Z"
+                                                fill="#1EA34B"
+                                            />
+                                            {/* Animated Checkmark Tick */}
+                                            <motion.path
+                                                d="M 36 50.5 L 45.5 59 L 63 41.5"
+                                                stroke="#FFFFFF"
+                                                strokeWidth="6.5"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                initial={{ pathLength: 0, opacity: 0 }}
+                                                animate={{ pathLength: 1, opacity: 1 }}
+                                                transition={{ duration: 0.45, delay: 0.25, ease: "easeOut" }}
+                                            />
+                                        </svg>
+                                    </motion.div>
+                                </div>
+                                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                                    {t('Order Placed!')}
+                                </h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 font-medium">
+                                    {t('Your order has been placed successfully.')}
+                                </p>
+                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-3 sm:p-3.5 mb-4 sm:mb-5 border border-gray-100 dark:border-gray-600/50">
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5 tracking-widest uppercase font-bold">{t('Order ID')}</p>
+                                    <p className="font-mono font-bold text-gray-900 dark:text-white text-lg sm:text-xl">
+                                        #{String(createdOrderId || '000').slice(-6).toUpperCase()}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleCloseSuccess}
+                                    className="w-full bg-black text-white py-3 sm:py-3.5 px-6 rounded-full font-medium text-sm sm:text-base shadow-lg shadow-gray-200 dark:shadow-gray-900/20 active:scale-[0.98] transition-transform"
+                                >
+                                    {t('Go to Orders')}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>
