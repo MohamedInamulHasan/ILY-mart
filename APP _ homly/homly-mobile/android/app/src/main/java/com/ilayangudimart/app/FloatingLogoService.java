@@ -448,7 +448,7 @@ public class FloatingLogoService extends Service {
         }
     }
 
-    private void hideCircleBubble() {
+    public void hideCircleBubble() {
         if (floatingCircleView != null && floatingCircleView.isAttachedToWindow()) {
             try {
                 windowManager.removeView(floatingCircleView);
@@ -456,7 +456,7 @@ public class FloatingLogoService extends Service {
         }
     }
 
-    private void showCircleBubble() {
+    public void showCircleBubble() {
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("floating_enabled", false);
         boolean sessionActive = isSessionActive(prefs);
