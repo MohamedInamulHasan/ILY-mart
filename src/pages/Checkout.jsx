@@ -57,12 +57,18 @@ const Checkout = () => {
         if (!showSuccessModal) return;
         return registerModalBackHandler(() => {
             markOrderPlaced();
+            if (!directPurchase) {
+                clearCart();
+            }
             navigate('/', { replace: true });
         });
-    }, [showSuccessModal, navigate]);
+    }, [showSuccessModal, navigate, directPurchase, clearCart]);
 
     const handleCloseSuccess = () => {
         markOrderPlaced();
+        if (!directPurchase) {
+            clearCart();
+        }
         navigate('/orders', { replace: true });
     };
 
@@ -78,8 +84,23 @@ const Checkout = () => {
         return () => window.removeEventListener('focus', onFocus);
     }, [fetchSettings]);
 
-    const displayItems = directPurchase ? directPurchase.items : cartItems;
-    const displayTotal = directPurchase ? directPurchase.total : cartTotal;
+    const liveDisplayItems = directPurchase ? directPurchase.items : cartItems;
+    const itemsSnapshotRef = useRef(liveDisplayItems);
+    if (liveDisplayItems && liveDisplayItems.length > 0) {
+        itemsSnapshotRef.current = liveDisplayItems;
+    }
+    const displayItems = (liveDisplayItems && liveDisplayItems.length > 0)
+        ? liveDisplayItems
+        : (showSuccessModal ? itemsSnapshotRef.current : []);
+
+    const liveDisplayTotal = directPurchase ? directPurchase.total : cartTotal;
+    const totalSnapshotRef = useRef(liveDisplayTotal);
+    if (liveDisplayTotal && liveDisplayTotal > 0) {
+        totalSnapshotRef.current = liveDisplayTotal;
+    }
+    const displayTotal = (liveDisplayTotal && liveDisplayTotal > 0)
+        ? liveDisplayTotal
+        : (showSuccessModal ? totalSnapshotRef.current : 0);
 
     const hasPreviewItems = Boolean(
         displayItems && displayItems.length > 0 && displayItems.some(item => 
@@ -614,13 +635,10 @@ const Checkout = () => {
                     })() : null
                 };
 
-                // INSTANT UPDATE: Immediately play sound, mark order placed, show success modal & clear cart
+                // INSTANT UPDATE: Immediately play sound, mark order placed & show success modal
                 playOrderPlacedSound();
                 markOrderPlaced();
                 setShowSuccessModal(true);
-                if (!directPurchase) {
-                    clearCart();
-                }
 
                 if (finalDeliveryCharge === 0 && !isOnlyFreeProducts) {
                     setUser(prev => ({
@@ -662,12 +680,12 @@ const Checkout = () => {
     };
 
     useEffect(() => {
-        if (displayItems.length === 0) {
+        if (!showSuccessModal && displayItems.length === 0) {
             navigate('/');
         }
-    }, [displayItems.length, navigate]);
+    }, [displayItems.length, navigate, showSuccessModal]);
 
-    if (!user || displayItems.length === 0) {
+    if (!user || (!showSuccessModal && displayItems.length === 0)) {
         return null;
     }
 

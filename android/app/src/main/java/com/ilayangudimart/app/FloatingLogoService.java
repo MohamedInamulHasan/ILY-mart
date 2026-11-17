@@ -285,9 +285,6 @@ public class FloatingLogoService extends Service {
                     }
                 } else {
                     // Out of the app with active or pending orders: show floating icon
-                    if (hasActive && instance.orderCardView != null) {
-                        instance.dismissPorterOrderCard();
-                    }
                     if (instance.orderCardView == null) {
                         instance.showCircleBubble();
                     }
@@ -1292,10 +1289,6 @@ public class FloatingLogoService extends Service {
                     dismissPorterOrderCard();
                 }
             } else {
-                // If there is an accepted order, dismiss any repeating pending order card immediately
-                if (hasActive && orderCardView != null) {
-                    dismissPorterOrderCard();
-                }
                 if (orderCardView == null) {
                     showCircleBubble();
                 }
@@ -1415,8 +1408,8 @@ public class FloatingLogoService extends Service {
                 final boolean finalPending = foundPending;
                 mainHandler.post(() -> updateOrdersState(finalActive, finalPending));
 
-                // Alert pending/processing orders if any outside the app (only when NO accepted order in progress)
-                if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty() && !foundAccepted) {
+                // Alert pending/processing orders if any outside the app
+                if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
                     mainHandler.post(() -> showNextPendingOrderIfAny());
                 }
             }
