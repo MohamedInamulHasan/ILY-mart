@@ -5,7 +5,7 @@ import Order from '../models/Order.js';
 import User from '../models/User.js';
 import Store from '../models/Store.js';
 import { isOwnerUser } from '../middleware/authMiddleware.js';
-import { sendOrderNotificationEmail, sendCustomerOrderConfirmationEmail } from '../services/emailService.js';
+import { sendOrderNotificationEmail } from '../services/emailService.js';
 import { sendOrderTelegramNotification } from '../services/telegramService.js';
 import { sendOrderVoiceAlert } from '../services/voiceService.js';
 import { sendOrderNtfyAlert } from '../services/ntfyService.js';
@@ -190,12 +190,6 @@ export const createOrder = async (req, res, next) => {
         sendOrderNotificationEmail(order)
             .then(result => console.log('📧 Email service result:', result))
             .catch(err => console.error('❌ Failed to send email notification:', err));
-
-        // Send email confirmation to customer (non-blocking)
-        console.log('📧 Sending order confirmation to customer...');
-        sendCustomerOrderConfirmationEmail(order)
-            .then(result => console.log('📧 Customer email result:', result))
-            .catch(err => console.error('❌ Failed to send customer email:', err));
 
         // Send Telegram notification to admin (non-blocking)
         console.log('📱 Attempting to send Telegram notification...');
