@@ -61,12 +61,43 @@ public class FloatingOverlayPlugin extends Plugin {
                         Uri.parse("package:" + getContext().getPackageName())
                 );
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                getContext().startActivity(intent);
+                try {
+                    getContext().startActivity(intent);
+                } catch (Exception e) {
+                    Intent fallback = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+                    fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    getContext().startActivity(fallback);
+                }
             }
         }
         JSObject ret = new JSObject();
         ret.put("granted", granted);
         call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void openOverlaySettings(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Intent intent = new Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getContext().getPackageName())
+                );
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    getContext().startActivity(intent);
+                } catch (Exception e) {
+                    Intent fallback = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+                    fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    getContext().startActivity(fallback);
+                }
+            }
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("FAILED_TO_OPEN_SETTINGS", e.getMessage());
+        }
     }
 
     @PluginMethod
@@ -117,18 +148,10 @@ public class FloatingOverlayPlugin extends Plugin {
     @PluginMethod
     public void hide(PluginCall call) {
         try {
-            SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-            prefs.edit().putBoolean("floating_enabled", false).apply();
-
             if (FloatingLogoService.instance != null) {
-                FloatingLogoService.instance.stopServiceAndHide();
+                FloatingLogoService.instance.hideCircleBubble();
+                FloatingLogoService.instance.dismissPorterOrderCard();
             }
-            try {
-                Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
-                stopIntent.setAction("STOP_SERVICE");
-                getContext().stopService(stopIntent);
-            } catch (Exception ignored) {}
-
             JSObject ret = new JSObject();
             ret.put("success", true);
             call.resolve(ret);
@@ -148,7 +171,10 @@ public class FloatingOverlayPlugin extends Plugin {
                 .putString("store_id", storeId != null ? storeId.trim() : "")
                 .putString("store_name", storeName != null ? storeName.trim().toLowerCase() : "")
                 .apply();
-        if (!active && !prefs.getBoolean("delivery_session_active", false)) {
+
+        if (active) {
+            prefs.edit().putBoolean("floating_enabled", true).apply();
+        } else if (!prefs.getBoolean("delivery_session_active", false)) {
             prefs.edit().putBoolean("floating_enabled", false).apply();
             if (FloatingLogoService.instance != null) {
                 FloatingLogoService.instance.stopServiceAndHide();
@@ -169,7 +195,10 @@ public class FloatingOverlayPlugin extends Plugin {
         boolean active = call.getBoolean("active", false);
         SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         prefs.edit().putBoolean("delivery_session_active", active).apply();
-        if (!active) {
+
+        if (active) {
+            prefs.edit().putBoolean("floating_enabled", true).apply();
+        } else if (!prefs.getBoolean("store_session_active", false)) {
             prefs.edit().putBoolean("floating_enabled", false).apply();
             if (FloatingLogoService.instance != null) {
                 FloatingLogoService.instance.stopServiceAndHide();

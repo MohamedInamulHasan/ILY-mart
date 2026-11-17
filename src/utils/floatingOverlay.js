@@ -40,6 +40,21 @@ export const requestOverlayPermission = async () => {
 };
 
 /**
+ * Directly open Android System Settings for "Display Over Other Apps"
+ * Allows user to toggle permission ON or OFF.
+ */
+export const openOverlaySettings = async () => {
+    if (!isNativeAndroid()) return false;
+    try {
+        const res = await FloatingOverlay.openOverlaySettings();
+        return !!res?.success;
+    } catch (err) {
+        console.warn('Error opening overlay settings:', err);
+        return false;
+    }
+};
+
+/**
  * Show the Porter-style floating draggable logo on phone screen
  */
 export const showFloatingOverlay = async () => {

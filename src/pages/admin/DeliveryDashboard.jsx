@@ -51,6 +51,7 @@ import {
     isNativeAndroid, 
     checkOverlayPermission, 
     requestOverlayPermission, 
+    openOverlaySettings,
     showFloatingOverlay, 
     hideFloatingOverlay,
     setOverlayAuthToken,
@@ -157,25 +158,37 @@ const DeliveryDashboard = () => {
     }, [showLogoutModal]);
 
     const toggleFloatingOverlay = async () => {
-        const nextState = !isFloatingEnabled;
-        setIsFloatingEnabled(nextState);
-        localStorage.setItem('delivery_floating_overlay_enabled', String(nextState));
-        window.dispatchEvent(new Event('delivery:floating-toggle'));
-
-        if (!nextState) {
+        const currentlyEnabled = isFloatingEnabled;
+        if (currentlyEnabled) {
+            // User swiped "Swipe to Disable": Turn off overlay and open Display over other apps settings
+            setIsFloatingEnabled(false);
+            localStorage.setItem('delivery_floating_overlay_enabled', 'false');
+            window.dispatchEvent(new Event('delivery:floating-toggle'));
             await hideFloatingOverlay();
+
+            if (isNativeAndroid()) {
+                await openOverlaySettings();
+            }
         } else {
-            // When swipe to enable: DO NOT push user out of the app!
-            const granted = await checkOverlayPermission();
-            setHasOverlayPermission(granted);
-            if (granted) {
-                const currentToken = localStorage.getItem('authToken');
-                if (currentToken) {
-                    await setOverlayAuthToken(currentToken);
+            // User swiped "Swipe to Enable": Set enabled and open Display over other apps settings to turn on again
+            setIsFloatingEnabled(true);
+            localStorage.setItem('delivery_floating_overlay_enabled', 'true');
+            window.dispatchEvent(new Event('delivery:floating-toggle'));
+
+            if (isNativeAndroid()) {
+                const granted = await checkOverlayPermission();
+                setHasOverlayPermission(granted);
+                if (granted) {
+                    const currentToken = localStorage.getItem('authToken');
+                    if (currentToken) {
+                        await setOverlayAuthToken(currentToken);
+                    }
+                    await setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
+                    await setOverlayHasAcceptedOrder(hasAcceptedCard);
+                    await showFloatingOverlay();
                 }
-                await setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
-                await setOverlayHasAcceptedOrder(hasAcceptedCard);
-                await showFloatingOverlay();
+                // Open Android Settings so user can turn on Display over other apps
+                await openOverlaySettings();
             }
         }
     };
@@ -198,39 +211,56 @@ const DeliveryDashboard = () => {
         setOverlayHasAcceptedOrder(hasAcceptedCard);
     }, [hasAcceptedCard, hasPendingOrders]);
 
-    // Porter Partner Style Floating Logo: check permission & sync initial auth token on mount
+    // Porter Partner Style Floating Logo: check permission & sync state on mount and whenever user returns from Settings
+    const syncOverlayPermissionState = async () => {
+        if (!isNativeAndroid()) return;
+        const granted = await checkOverlayPermission();
+        setHasOverlayPermission(granted);
+
+        if (!granted) {
+            // If user turned OFF permission in Android Settings:
+            setIsFloatingEnabled(false);
+            localStorage.setItem('delivery_floating_overlay_enabled', 'false');
+            await hideFloatingOverlay();
+        } else {
+            // If permission is granted in Android Settings:
+            const savedState = localStorage.getItem('delivery_floating_overlay_enabled');
+            const shouldBeEnabled = savedState !== 'false';
+            setIsFloatingEnabled(shouldBeEnabled);
+
+            if (shouldBeEnabled) {
+                const currentToken = localStorage.getItem('authToken');
+                if (currentToken) {
+                    await setOverlayAuthToken(currentToken);
+                }
+                await setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
+                await setOverlayHasAcceptedOrder(hasAcceptedCard);
+                await showFloatingOverlay();
+            }
+        }
+    };
+
     useEffect(() => {
-        let isMounted = true;
+        syncOverlayPermissionState();
 
-        const initOverlay = async () => {
-            if (!isNativeAndroid()) return;
-
-            const granted = await checkOverlayPermission();
-            if (isMounted) {
-                setHasOverlayPermission(granted);
-            }
-
-            // Sync auth token with native background service so orders poll when closed
-            const currentToken = localStorage.getItem('authToken');
-            if (currentToken) {
-                setOverlayAuthToken(currentToken);
-            }
-
-            setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
-            setOverlayHasAcceptedOrder(hasAcceptedCard);
-
-            const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-            if (enabled && granted) {
-                showFloatingOverlay();
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                syncOverlayPermissionState();
             }
         };
 
-        initOverlay();
+        const handleWindowFocus = () => {
+            syncOverlayPermissionState();
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleWindowFocus);
 
         return () => {
-            isMounted = false;
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleWindowFocus);
         };
-    }, []);
+    }, [hasAcceptedCard, hasPendingOrders]);
 
     const getItemImage = (item) => {
         if (item.image && typeof item.image === 'string' && (item.image.startsWith('http') || item.image.startsWith('/') || item.image.startsWith('data:'))) {
@@ -573,7 +603,7 @@ const DeliveryDashboard = () => {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={requestOverlayPermission}
+                                    onClick={openOverlaySettings}
                                     className="shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
                                 >
                                     {t('Allow')}
