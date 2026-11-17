@@ -194,7 +194,7 @@ const Checkout = () => {
 
     // Security Details for Admin (Moh@2004) and Delivery Boy (ILYmart@2026)
     const [showSecurityModal, setShowSecurityModal] = useState(false);
-    const [securityRole, setSecurityRole] = useState('admin'); // 'admin' | 'delivery_boy'
+    const [securityRole, setSecurityRole] = useState('admin'); // 'admin' | 'delivery_boy' | 'store_admin'
     const [securityPassword, setSecurityPassword] = useState('');
     const [showPasswordText, setShowPasswordText] = useState(false);
     const [securityError, setSecurityError] = useState('');
@@ -204,14 +204,17 @@ const Checkout = () => {
         e?.preventDefault();
         const isAdminPass = securityPassword === 'Moh@2004';
         const isDeliveryPass = securityPassword === 'ILYmart@2026';
+        const isStorePass = securityPassword === 'ILYmartstore@2026';
 
         let isValid = false;
         if (securityRole === 'admin') {
             isValid = isAdminPass;
         } else if (securityRole === 'delivery_boy') {
             isValid = isDeliveryPass || isAdminPass;
+        } else if (securityRole === 'store_admin') {
+            isValid = isStorePass || isAdminPass;
         } else {
-            isValid = isAdminPass || isDeliveryPass;
+            isValid = isAdminPass || isDeliveryPass || isStorePass;
         }
 
         if (isValid) {
@@ -412,6 +415,8 @@ const Checkout = () => {
 
         const isAdminMobile = cleanMobile.endsWith('9500171980') || cleanMobile.endsWith('9500171958') || cleanMobile.endsWith('9500171989');
         const isDeliveryBoyMobile = cleanMobile.endsWith('9578654411') || cleanMobile === '9578654411';
+        const userRolesList = Array.isArray(user?.role) ? user.role : [user?.role || ''];
+        const isStoreManagerMobile = ['9876543211', '8474958585'].some(m => cleanMobile.endsWith(m)) || userRolesList.includes('store_admin') || Boolean(user?.storeId) || Boolean(localStorage.getItem('my_store_id'));
 
         if (!securityVerified && isAddressChanged) {
             if (isAdminMobile) {
@@ -421,6 +426,11 @@ const Checkout = () => {
             }
             if (isDeliveryBoyMobile) {
                 setSecurityRole('delivery_boy');
+                setShowSecurityModal(true);
+                return;
+            }
+            if (isStoreManagerMobile) {
+                setSecurityRole('store_admin');
                 setShowSecurityModal(true);
                 return;
             }
@@ -1150,6 +1160,10 @@ const Checkout = () => {
                                     ? (language === 'ta'
                                         ? 'டெலிவரி பாய் கணக்கிற்கான விவரங்களை மாற்ற கடவுச்சொல்லை உள்ளிடவும்.'
                                         : 'Security verification required for Delivery Boy account to update details.')
+                                    : securityRole === 'store_admin'
+                                    ? (language === 'ta'
+                                        ? 'ஸ்டோர் மேனேஜர் கணக்கிற்கான முகவரியை மாற்ற கடவுச்சொல்லை உள்ளிடவும்.'
+                                        : 'Security verification required for Store Manager account to update address.')
                                     : (language === 'ta' 
                                         ? 'அட்மின் எண்ணிற்கு முகவரியை மாற்ற கடவுச்சொல்லை உள்ளிடவும்.'
                                         : 'Security verification required for Admin account to add/update address.')}

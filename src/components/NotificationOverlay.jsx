@@ -190,48 +190,11 @@ const NotificationOverlay = () => {
     const pendingIndexRef = useRef(0);
     const [repeatTick, setRepeatTick] = useState(0);
 
-    // For delivery boy: inside the app do NOT show popup alert; only show alert when closed (handled by native background service)
-    // For store owner: show alert for their store's orders
+    // Inside the app, do NOT show alert popups for both store managers and delivery boys.
+    // Alert popups and loud repeating alarms are strictly reserved for when the app is closed/in background (handled by native FloatingLogoService / FCM).
     useEffect(() => {
-        const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        const canStoreAlert = isStoreAdmin && myStore && isFloatingEnabled;
-
-        // Inside the app, delivery boy does NOT get modal alert (only alerted when app is closed)
-        if (!canStoreAlert) return;
-        if (allOrders.length === 0) return;
-
-        // If an incoming modal is currently showing or we are in the 5s gap pause, wait
-        if (incomingOrder || isGapPauseRef.current) return;
-
-        const activePageOrderId = location.pathname.startsWith('/admin/delivery-order/')
-            ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
-            : null;
-
-        // Find all pending/processing orders waiting for this store
-        const pendingOrders = allOrders.filter(o => {
-            const oId = String(o._id || o.id || '');
-            if (!oId) return false;
-            if (activePageOrderId && oId === activePageOrderId) return false;
-            if (!isProcessingStatus(o.status)) return false;
-            return isOrderForMyStore(o);
-        });
-
-        if (pendingOrders.length > 0) {
-            const targetOrder = pendingOrders[pendingIndexRef.current % pendingOrders.length];
-            setStartWithAcceptView(false);
-            setIncomingOrder(targetOrder);
-            triggerIncomingOrderAlert();
-            try {
-                playSuccessSound();
-            } catch (_) {}
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
-            }
-            if (isNativeAndroid()) {
-                showPorterOrderCard(targetOrder);
-            }
-        }
-    }, [isStoreAdmin, myStore, myStoreId, myStoreName, incomingOrder, allOrders, repeatTick, location.pathname]);
+        // In-app alert popup suppressed for both roles
+    }, []);
 
     // Auto-dismiss popup immediately if the current order is accepted or cancelled
     useEffect(() => {
@@ -334,14 +297,13 @@ const NotificationOverlay = () => {
                 }
                 if (oId && !skippedOrderIds.has(oId) && !knownOrderIdsRef.current.has(oId) && isProcessingStatus(newOrder.status)) {
                     knownOrderIdsRef.current.add(oId);
-                    setStartWithAcceptView(false);
-                    setIncomingOrder(newOrder);
-                    triggerIncomingOrderAlert();
+                    // Inside the app: NO pop up alert over screen for both store managers and delivery boys.
+                    // Just soft chime and subtle vibration so they know their order feed updated.
                     try {
                         playSuccessSound();
                     } catch (_) {}
                     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                        navigator.vibrate([200, 100, 200]);
+                        navigator.vibrate([100, 50, 100]);
                     }
                 }
             }
@@ -571,36 +533,6 @@ const NotificationOverlay = () => {
 
     return (
         <>
-            {isStoreAdmin && incomingOrder && (
-                <IncomingOrderModal
-                    key={incomingOrder._id || incomingOrder.id}
-                    order={incomingOrder}
-                    startWithViewCard={!startWithAcceptView}
-                    onAccepted={(acceptedOrder) => {
-                        const currentId = String((acceptedOrder?._id || acceptedOrder?.id) || '');
-                        if (currentId) {
-                            knownOrderIdsRef.current.add(currentId);
-                        }
-                        allOrders.forEach(o => {
-                            const oId = String(o._id || o.id || '');
-                            if (oId) knownOrderIdsRef.current.add(oId);
-                        });
-                        setStartWithAcceptView(false);
-                        setIncomingOrder(null);
-                        queryClient.invalidateQueries({ queryKey: ['orders'] });
-                    }}
-                    onClose={() => {
-                        setStartWithAcceptView(false);
-                        handleModalClose();
-                    }}
-                    onSkip={(skippedOrder) => {
-                        setStartWithAcceptView(false);
-                        handleOrderSkip(skippedOrder);
-                    }}
-                    onAcceptViewOpened={handleAcceptViewOpened}
-                />
-            )}
-
             <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-sm px-4 pointer-events-none">
                 <AnimatePresence>
                     {notifications.map((notif) => (

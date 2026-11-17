@@ -244,6 +244,14 @@ export const LanguageProvider = ({ children }) => {
         'News': { en: 'News', ta: 'செய்தி' },
         'Games': { en: 'Games', ta: 'விளையாட்டுகள்' },
         'My Store': { en: 'My Store', ta: 'எனது கடை' },
+        'Swipe to Enable': { en: 'Swipe to Enable', ta: 'செயல்படுத்த ஸ்வைப் செய்யவும்' },
+        'Swipe to Disable': { en: 'Swipe to Disable', ta: 'முடக்க ஸ்வைப் செய்யவும்' },
+        'Enabling...': { en: 'Enabling...', ta: 'செயல்படுத்துகிறது...' },
+        'Disabling...': { en: 'Disabling...', ta: 'முடக்குகிறது...' },
+        'Security verification required for Store Manager account to update address.': {
+            en: 'Security verification required for Store Manager account to update address.',
+            ta: 'ஸ்டோர் மேனேஜர் கணக்கிற்கான முகவரியை மாற்ற பாதுகாப்பு சரிபார்ப்பு கடவுச்சொல் தேவை.'
+        },
         'Settings': { en: 'Settings', ta: 'செட்டிங்ஸ்' },
         'Help Center': { en: 'Help Center', ta: 'ஹெல்ப்' },
         'Manage account': { en: 'Manage account', ta: 'அக்கவுண்ட்' },

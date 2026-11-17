@@ -22,6 +22,7 @@ import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { CartoonCoin, CartoonCoinBadge } from '../components/CartoonCoin';
 import api, { apiService } from '../utils/api';
 import { getUserRoles } from '../utils/userHelpers';
+import { setOverlayDeliverySessionActive } from '../utils/floatingOverlay';
 
 const MenuLink = ({ icon, title, subtitle, to, onClick, isRed = false, disabled = false, badge = null }) => {
     const Wrapper = to && !disabled ? Link : 'button';
@@ -523,27 +524,14 @@ const Profile = () => {
                                         <CartoonCoin count={user?.coins} size={24} />
                                     )}
                                 </div>
-                                {/* Mobile number + Role Badge */}
-                                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                    {(activeMobile || user?.mobile) && (
+                                {/* Mobile number */}
+                                {(activeMobile || user?.mobile) && (
+                                    <div className="flex items-center gap-2 mt-1">
                                         <p className="text-[12px] sm:text-[12.5px] text-gray-500 dark:text-gray-400 font-medium">
                                             {activeMobile || user?.mobile}
                                         </p>
-                                    )}
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                        isAdmin ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' :
-                                        isDeliveryBoy ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
-                                        isStoreAdmin ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' :
-                                        isServiceAdmin ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' :
-                                        'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                                    }`}>
-                                        {isAdmin ? t('Admin') :
-                                         isDeliveryBoy ? t('Delivery Boy') :
-                                         isStoreAdmin ? t('Store Admin') :
-                                         isServiceAdmin ? t('Service Admin') :
-                                         t('Customer')}
-                                    </span>
-                                </div>
+                                    </div>
+                                )}
                            </div>
                      </div>
                 </div>
@@ -571,11 +559,12 @@ const Profile = () => {
                             {isDeliveryBoy && (
                                 <MenuLink 
                                     onClick={() => {
-                                        setDeliveryAuthId(authUser?.deliveryId || user?.deliveryId || user?.mobile || '');
-                                        setDeliveryAuthPassword('');
-                                        setDeliveryAuthError('');
-                                        setShowDeliveryPassword(false);
-                                        setShowDeliveryAuthModal(true);
+                                        localStorage.removeItem('delivery_boy_logged_out');
+                                        localStorage.setItem('delivery_session_active', 'true');
+                                        try {
+                                            setOverlayDeliverySessionActive(true);
+                                        } catch (_) {}
+                                        navigate('/delivery-dashboard');
                                     }}
                                     icon={<Truck size={17} strokeWidth={2} />} 
                                     title={t('Delivery Boy')}
@@ -729,101 +718,6 @@ const Profile = () => {
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.985c-.002 5.45-4.437 9.884-9.887 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                 </svg>
             </button>
-
-            {/* Delivery Auth Modal (Popup to enter delivery panel) */}
-            {showDeliveryAuthModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-                    <div
-                        className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
-                        onClick={() => setShowDeliveryAuthModal(false)}
-                    />
-                    <div className="relative bg-white dark:bg-gray-900 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-5 sm:p-6">
-                            <div className="flex items-center justify-between mb-5">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="w-10 h-10 rounded-2xl bg-[#CBF9B2] dark:bg-[#2E5A2E]/40 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center shadow-xs">
-                                        <Truck size={20} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
-                                            {t('Delivery Login')}
-                                        </h3>
-                                        <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                                            {t('Enter credentials to access delivery panel')}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowDeliveryAuthModal(false)}
-                                    className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                                >
-                                    <XCircle size={18} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleDeliveryLogin} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">{t('Delivery ID')}</label>
-                                    <input
-                                        type="text"
-                                        value={deliveryAuthId}
-                                        onChange={(e) => setDeliveryAuthId(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
-                                        placeholder={t('Enter your Delivery ID')}
-                                        autoComplete="off"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">{t('Password')}</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showDeliveryPassword ? "text" : "password"}
-                                            value={deliveryAuthPassword}
-                                            onChange={(e) => setDeliveryAuthPassword(e.target.value)}
-                                            className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#2E5A2E] outline-none"
-                                            placeholder={t('Enter your password')}
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowDeliveryPassword(!showDeliveryPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 transition-colors cursor-pointer"
-                                            title={showDeliveryPassword ? "Hide password" : "Show password"}
-                                        >
-                                            {showDeliveryPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {deliveryAuthError && (
-                                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-600 dark:text-red-400">
-                                        {deliveryAuthError}
-                                    </div>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={deliveryAuthLoading}
-                                    className="w-full py-3 bg-[#2E5A2E] text-white font-semibold rounded-xl hover:bg-[#245024] active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                                >
-                                    {deliveryAuthLoading ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>{t('Signing in...')}</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Truck size={17} />
-                                            <span>{t('Login to Delivery Panel')}</span>
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Avatar Selection Modal */}
             {showAvatarModal && (

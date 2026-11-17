@@ -4,9 +4,9 @@ import { useData } from '../../context/DataContext';
 import { API_BASE_URL, apiService } from '../../utils/api';
 import { openExternalLink } from '../../utils/linkHelper';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { isStoreOpen, formatTime12h, isProductScheduled } from '../../utils/storeHelpers';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Store,
     Plus,
@@ -56,11 +56,12 @@ import {
     setOverlayOrdersState
 } from '../../utils/floatingOverlay';
 
-const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
+const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStoreId, fixedStore: propFixedStore }) => {
     const { user } = useAuth();
     const { t } = useLanguage();
     const { refreshData } = useData();
     const navigate = useNavigate();
+    const location = useLocation();
 
     // NEW HOOKS
     const { data: stores = [] } = useStores();
@@ -81,6 +82,34 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
         window.addEventListener('delivery:floating-toggle', handleFloatingToggle);
         return () => window.removeEventListener('delivery:floating-toggle', handleFloatingToggle);
     }, []);
+
+    // Security verification for Store Manager updating address (password: ILYmartstore@2026)
+    const [showSecurityModal, setShowSecurityModal] = useState(false);
+    const [securityPassword, setSecurityPassword] = useState('');
+    const [showPasswordText, setShowPasswordText] = useState(false);
+    const [securityError, setSecurityError] = useState('');
+    const [securityVerified, setSecurityVerified] = useState(false);
+
+    const handleVerifySecurityPassword = (e) => {
+        e?.preventDefault();
+        const isStorePass = securityPassword === 'ILYmartstore@2026';
+        const isAdminPass = securityPassword === 'Moh@2004';
+
+        if (isStorePass || isAdminPass) {
+            setSecurityVerified(true);
+            setShowSecurityModal(false);
+            setSecurityError('');
+            setTimeout(() => {
+                const formElem = document.querySelector('form#store-edit-form') || document.querySelector('form.space-y-6');
+                if (formElem) {
+                    const submitBtn = formElem.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.click();
+                }
+            }, 100);
+        } else {
+            setSecurityError(t('Incorrect security password! Access denied.'));
+        }
+    };
 
     // Check overlay permission on mount for store admin
     useEffect(() => {
@@ -221,23 +250,27 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
     // ────────────────────────────────────────────────────────────────────
 
     const userRoles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
-    const explicitStoreId = localStorage.getItem('my_store_id');
+    const explicitStoreId = propStoreId || localStorage.getItem('my_store_id');
     let savedMobile = '';
     try {
         const saved = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
         savedMobile = (saved?.mobile || saved?.phone || '').toString().replace(/\D/g, '').slice(-10);
     } catch {}
     const activeMobile = (savedMobile || user?.mobile || user?.phone || '').toString().replace(/\D/g, '').slice(-10);
-    const isStoreAdmin = userRoles.includes('store_admin') || activeMobile === '9876543211' || activeMobile === '8474958585' || Boolean(explicitStoreId);
-    const myStoreId = explicitStoreId || user?.storeId?._id || user?.storeId;
-    const myStore = isStoreAdmin ? stores.find(s => {
+    
+    // Check if inside My Store mode or if user is a Store Manager
+    const isInsideMyStore = Boolean(propFixedStore) || Boolean(propStoreId) || hideHeader || (location.pathname && location.pathname.includes('/my-store'));
+    const isStoreAdmin = isInsideMyStore || userRoles.includes('store_admin') || activeMobile === '9876543211' || activeMobile === '8474958585' || Boolean(explicitStoreId) || Boolean(user?.storeId);
+    const myStoreId = String(propStoreId || explicitStoreId || user?.storeId?._id || user?.storeId || '');
+    
+    const myStore = propFixedStore || (isStoreAdmin ? stores.find(s => {
         const sId = String(s._id || s.id || '');
-        if (myStoreId && sId === String(myStoreId)) return true;
+        if (myStoreId && sId === myStoreId) return true;
         const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
         if (activeMobile && sMobile && sMobile === activeMobile) return true;
         if (activeMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
         return false;
-    }) : null;
+    }) : null) || (isInsideMyStore && stores.length > 0 ? (stores.find(s => String(s._id || s.id || '') === myStoreId) || stores[0]) : null);
 
     const { storeHasActive, storeHasPending } = useMemo(() => {
         if (!isStoreAdmin || !myStore) return { storeHasActive: false, storeHasPending: false };
@@ -305,9 +338,9 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Determine stores to display
-    const displayedStores = isStoreAdmin
-        ? (myStore ? [myStore] : [])
+    // Determine stores to display - strictly show their store only for Store Managers or inside My Store
+    const displayedStores = (isStoreAdmin || isInsideMyStore)
+        ? (myStore ? [myStore] : (propFixedStore ? [propFixedStore] : []))
         : stores.filter(s =>
             s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (s.address && s.address.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -490,6 +523,13 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
     const handleStoreSubmit = async (e) => {
         e.preventDefault();
 
+        // Security verification check when Store Manager updates store address (password: ILYmartstore@2026)
+        const isAddressChanged = !editingStore || storeForm.address !== (editingStore.address || '');
+        if ((isStoreAdmin || isInsideMyStore) && isAddressChanged && !securityVerified) {
+            setShowSecurityModal(true);
+            return;
+        }
+
         // Generate timing string from time fields for backward compatibility
         const formatTime = (time24) => {
             const [hours, minutes] = time24.split(':');
@@ -540,6 +580,7 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
             setStoreForm({ name: '', address: '', mobile: '', image: '', rating: 4.5, openingTime: '09:00', closingTime: '21:00', timingType: 'daily', category: [], location: '' });
             setEditingStore(null);
             setView('list');
+            setSecurityVerified(false);
         } catch (error) {
             alert(t('Failed to save store. Please try again.'));
             console.error('Error saving store:', error);
@@ -1084,7 +1125,7 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
 
             {view === 'form' && (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                    <form onSubmit={handleStoreSubmit} className="space-y-6">
+                    <form id="store-edit-form" onSubmit={handleStoreSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Store Name')}</label>
@@ -2081,6 +2122,79 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false }) => {
                     </form>
                 </div>
             )}
+
+            {/* Security Password Verification Modal for Store Address Update */}
+            <AnimatePresence>
+                {showSecurityModal && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="bg-white dark:bg-gray-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-gray-800 text-center"
+                        >
+                            <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                                🔒
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                                {t('Security Verification')}
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
+                                {t('Security verification required for Store Manager account to update address.')}
+                            </p>
+
+                            <form onSubmit={handleVerifySecurityPassword} className="space-y-4">
+                                <div className="relative">
+                                    <input
+                                        type={showPasswordText ? 'text' : 'password'}
+                                        value={securityPassword}
+                                        onChange={(e) => {
+                                            setSecurityPassword(e.target.value);
+                                            setSecurityError('');
+                                        }}
+                                        placeholder={t('Enter Security Password')}
+                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium text-gray-900 dark:text-white"
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPasswordText(!showPasswordText)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-semibold px-1"
+                                    >
+                                        {showPasswordText ? t('Hide') : t('Show')}
+                                    </button>
+                                </div>
+
+                                {securityError && (
+                                    <p className="text-xs font-bold text-red-500">
+                                        {securityError}
+                                    </p>
+                                )}
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowSecurityModal(false);
+                                            setSecurityPassword('');
+                                            setSecurityError('');
+                                        }}
+                                        className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs active:scale-95 transition-transform"
+                                    >
+                                        {t('Cancel')}
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow-md shadow-amber-600/30 active:scale-95 transition-transform"
+                                    >
+                                        {t('Verify')}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

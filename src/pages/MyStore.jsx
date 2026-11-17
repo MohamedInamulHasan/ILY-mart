@@ -32,6 +32,7 @@ import {
     setOverlayAuthToken, 
     setOverlayOrdersState, 
     showFloatingOverlay, 
+    hideFloatingOverlay,
     checkOverlayPermission,
     requestOverlayPermission,
     isNativeAndroid 
@@ -56,6 +57,19 @@ const MyStore = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showOrdersFeed, setShowOrdersFeed] = useState(false);
     const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
+    const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
+        const saved = localStorage.getItem('delivery_floating_overlay_enabled');
+        return saved !== null ? saved === 'true' : true;
+    });
+
+    useEffect(() => {
+        const handleFloatingToggle = () => {
+            const saved = localStorage.getItem('delivery_floating_overlay_enabled');
+            setIsFloatingEnabled(saved !== null ? saved === 'true' : true);
+        };
+        window.addEventListener('delivery:floating-toggle', handleFloatingToggle);
+        return () => window.removeEventListener('delivery:floating-toggle', handleFloatingToggle);
+    }, []);
 
     // Check overlay permission on mount & prompt if needed
     useEffect(() => {
@@ -86,18 +100,25 @@ const MyStore = () => {
         const explicitStoreId = localStorage.getItem('my_store_id');
         const targetStoreId = String(explicitStoreId || user?.storeId?._id || user?.storeId || '');
         const cleanMobile = (savedMobile || user?.mobile || user?.phone || '').toString().replace(/\D/g, '').slice(-10);
-        return stores.find(s => {
+        const matched = stores.find(s => {
             const sId = String(s._id || s.id || '');
             if (targetStoreId && sId === targetStoreId) return true;
             const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
             if (cleanMobile && sMobile && sMobile === cleanMobile) return true;
             if (cleanMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
             return false;
-        }) || null;
+        }) || (stores.length > 0 ? (targetStoreId ? (stores.find(s => String(s._id || s.id) === targetStoreId) || stores[0]) : stores[0]) : null);
+        return matched;
     }, [user, stores]);
 
     const myStoreId = String(myStore?._id || myStore?.id || user?.storeId?._id || user?.storeId || '');
     const myStoreName = (myStore?.name || '').trim().toLowerCase();
+
+    useEffect(() => {
+        if (myStore?._id || myStore?.id) {
+            localStorage.setItem('my_store_id', String(myStore._id || myStore.id));
+        }
+    }, [myStore]);
 
     // Check if an order item belongs to this store
     const isItemFromMyStore = (item) => {
@@ -155,6 +176,37 @@ const MyStore = () => {
             });
         }
     }, [myStore, myStoreId, storeOrders]);
+
+    const toggleFloatingOverlay = async () => {
+        const nextState = !isFloatingEnabled;
+        setIsFloatingEnabled(nextState);
+        localStorage.setItem('delivery_floating_overlay_enabled', String(nextState));
+        window.dispatchEvent(new Event('delivery:floating-toggle'));
+
+        const sId = String(myStore?._id || myStore?.id || myStoreId || '');
+        const sName = myStore?.name || '';
+
+        if (!nextState) {
+            await setOverlayStoreSessionActive(false, '', '');
+            await hideFloatingOverlay();
+        } else {
+            await setOverlayStoreSessionActive(true, sId, sName);
+            const granted = await checkOverlayPermission();
+            setHasOverlayPermission(granted);
+            if (granted) {
+                const currentToken = localStorage.getItem('authToken');
+                if (currentToken) await setOverlayAuthToken(currentToken);
+                const hasActive = storeOrders.some(o => ['accepted', 'out for delivery', 'shipped'].includes(String(o.status || '').toLowerCase().trim()));
+                const hasPending = storeOrders.some(o => ['pending', 'processing', 'order placed', 'confirmed'].includes(String(o.status || '').toLowerCase().trim()));
+                await setOverlayOrdersState({ hasActive, hasPending });
+                if (hasActive || hasPending) {
+                    await showFloatingOverlay();
+                }
+            } else {
+                await requestOverlayPermission();
+            }
+        }
+    };
 
     // Check if store admin has an active order they should stay on
     useEffect(() => {
@@ -334,11 +386,19 @@ const MyStore = () => {
                             <ArrowLeft size={22} className="stroke-[2.5]" />
                         </button>
 
-                        <h1 className="text-[16px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center truncate max-w-[220px]">
+                        <h1 className="text-[16px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center truncate max-w-[200px]">
                             {myStore?.name || t('My Store')}
                         </h1>
 
-                        <div className="w-[30px]" />
+                        <button
+                            type="button"
+                            onClick={() => navigate('/')}
+                            title={t('Home')}
+                            className="relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1B4332] hover:bg-[#143226] text-white text-xs font-bold active:scale-95 transition-all shadow-xs cursor-pointer select-none"
+                        >
+                            <Home size={15} className="relative z-10 text-white shrink-0" />
+                            <span className="relative z-10 whitespace-nowrap">{t('Home')}</span>
+                        </button>
                     </div>
                 </div>
 
@@ -346,6 +406,8 @@ const MyStore = () => {
                     <StoreManagement 
                         onBackToOrders={() => setShowStoreManagement(false)} 
                         hideHeader={true}
+                        storeId={myStoreId}
+                        fixedStore={myStore}
                     />
                 </div>
             </div>
@@ -385,31 +447,32 @@ const MyStore = () => {
                     )}
 
                     {/* Center: Title (Delivery Panel when cards exist, Orders List when no cards) */}
-                    <h1 className="text-[16px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center">
+                    <h1 className="text-[15px] sm:text-[16px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center truncate px-1">
                         {hasActiveCards ? t('Delivery Panel') : t('Orders List')}
                     </h1>
 
-                    {/* Right: Home button with shining sheen wave in dark blue like call button */}
-                    <button
-                        type="button"
-                        onClick={() => navigate('/')}
-                        title={t('Home')}
-                        className="relative overflow-hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#172554] text-white text-xs font-bold active:scale-95 transition-all shadow-xs cursor-pointer select-none"
-                    >
-                        {/* Animated gleam/sheen wave like call button */}
-                        <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"
-                            animate={{ x: ['-100%', '200%'] }}
-                            transition={{
-                                repeat: Infinity,
-                                duration: 2.2,
-                                ease: 'easeInOut',
-                                repeatDelay: 0.5
-                            }}
-                        />
-                        <Home size={15} className="relative z-10 text-white" />
-                        <span className="relative z-10">{t('Home')}</span>
-                    </button>
+                    {/* Right: Both rectangular, forest green buttons - "My Store" and "Home" */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setShowStoreManagement(true)}
+                            title={t('My Store')}
+                            className="relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1B4332] hover:bg-[#143226] text-white text-xs font-bold active:scale-95 transition-all shadow-xs cursor-pointer select-none"
+                        >
+                            <Store size={15} className="relative z-10 text-white shrink-0" />
+                            <span className="relative z-10 whitespace-nowrap">{t('My Store')}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate('/')}
+                            title={t('Home')}
+                            className="relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1B4332] hover:bg-[#143226] text-white text-xs font-bold active:scale-95 transition-all shadow-xs cursor-pointer select-none"
+                        >
+                            <Home size={15} className="relative z-10 text-white shrink-0" />
+                            <span className="relative z-10 whitespace-nowrap">{t('Home')}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -667,17 +730,18 @@ const MyStore = () => {
                 </div>
             </PullToRefreshLayout>
 
-            {/* Attached Bottom Rectangle Footer - Swipe to Edit Store */}
+            {/* Attached Bottom Rectangle Footer - Matches Delivery Panel Footer Size */}
             <div 
                 className="fixed bottom-0 inset-x-0 z-40 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] pointer-events-auto select-none"
                 style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 16px))', paddingTop: '0.85rem' }}
             >
                 <div className="max-w-md mx-auto px-4">
                     <SwipeActionButton
-                        variant="dark-blue"
-                        label={t('Swipe to Edit Store')}
-                        loadingLabel={t('Opening Store...')}
-                        onSuccess={() => setShowStoreManagement(true)}
+                        key={isFloatingEnabled ? 'disable-floating' : 'enable-floating'}
+                        variant={isFloatingEnabled ? 'black-shine' : 'outline-white'}
+                        label={isFloatingEnabled ? t('Swipe to Disable') : t('Swipe to Enable')}
+                        loadingLabel={isFloatingEnabled ? t('Disabling...') : t('Enabling...')}
+                        onSuccess={toggleFloatingOverlay}
                         autoReset={true}
                         heightClass="h-[58px] sm:h-[62px]"
                         knobSizeClass="w-[46px] h-[46px] sm:w-[50px] sm:h-[50px]"
