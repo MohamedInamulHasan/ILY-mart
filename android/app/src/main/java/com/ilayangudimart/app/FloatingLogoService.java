@@ -285,7 +285,14 @@ public class FloatingLogoService extends Service {
                     }
                 } else {
                     // Out of the app with active or pending orders: show floating icon
-                    if (instance.orderCardView == null) {
+                    boolean isStore = prefs.getBoolean("store_session_active", false);
+                    if (hasActive && !isStore) {
+                        // When an order is accepted in delivery panel: dismiss any alert cards and just show floating icon
+                        if (instance.orderCardView != null) {
+                            instance.dismissPorterOrderCard();
+                        }
+                        instance.showCircleBubble();
+                    } else if (instance.orderCardView == null) {
                         instance.showCircleBubble();
                     }
                 }
@@ -295,6 +302,17 @@ public class FloatingLogoService extends Service {
 
     public static void triggerCardFromJS(JSONObject orderJson) {
         if (instance != null && !isAppInForeground) {
+            SharedPreferences prefs = instance.getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            boolean hasActive = prefs.getBoolean("has_active_orders", false);
+            boolean isStore = prefs.getBoolean("store_session_active", false);
+            if (hasActive && !isStore) {
+                // When there is an accepted order in delivery panel: don't show alert card, just show floating icon
+                instance.mainHandler.post(() -> {
+                    instance.dismissPorterOrderCard();
+                    instance.showCircleBubble();
+                });
+                return;
+            }
             instance.mainHandler.post(() -> instance.showPorterOrderCard(orderJson));
         }
     }
@@ -464,6 +482,15 @@ public class FloatingLogoService extends Service {
      */
     public synchronized void showPorterOrderCard(JSONObject order) {
         if (order == null || isAppInForeground) return;
+
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        if (hasActive && !isStore) {
+            // When an accepted order exists in delivery mode, do not show alert popups; just show floating icon
+            showCircleBubble();
+            return;
+        }
 
         // Wake screen up
         wakeUpScreen();
@@ -1093,6 +1120,14 @@ public class FloatingLogoService extends Service {
 
     public synchronized void showNextPendingOrderIfAny() {
         if (orderCardView != null || isGapWaiting || isAppInForeground) return;
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        if (hasActive && !isStore) {
+            // When an accepted order exists in delivery mode, do not show alert popups; just show floating icon
+            showCircleBubble();
+            return;
+        }
         synchronized (pendingOrdersQueue) {
             if (pendingOrdersQueue.isEmpty()) return;
             if (currentPendingOrderIndex >= pendingOrdersQueue.size()) {
@@ -1289,7 +1324,14 @@ public class FloatingLogoService extends Service {
                     dismissPorterOrderCard();
                 }
             } else {
-                if (orderCardView == null) {
+                boolean isStore = prefs.getBoolean("store_session_active", false);
+                if (hasActive && !isStore) {
+                    // When order is accepted in delivery panel: dismiss any alert cards and just show floating bubble
+                    if (orderCardView != null) {
+                        dismissPorterOrderCard();
+                    }
+                    showCircleBubble();
+                } else if (orderCardView == null) {
                     showCircleBubble();
                 }
             }
@@ -1408,8 +1450,10 @@ public class FloatingLogoService extends Service {
                 final boolean finalPending = foundPending;
                 mainHandler.post(() -> updateOrdersState(finalActive, finalPending));
 
-                // Alert pending/processing orders if any outside the app
-                if (orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
+                boolean suppressAlertsForAccepted = foundAccepted && !isStoreMode;
+
+                // Alert pending/processing orders if any outside the app (suppressed when delivery boy has an accepted order)
+                if (!suppressAlertsForAccepted && orderCardView == null && !isAppInForeground && !isGapWaiting && !pendingOrdersQueue.isEmpty()) {
                     mainHandler.post(() -> showNextPendingOrderIfAny());
                 }
             }

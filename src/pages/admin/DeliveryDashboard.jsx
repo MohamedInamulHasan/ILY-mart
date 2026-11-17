@@ -483,7 +483,7 @@ const DeliveryDashboard = () => {
                 isOpen={showLogoutModal}
                 isLoggingOut={isLoggingOut}
                 onClose={() => !isLoggingOut && setShowLogoutModal(false)}
-                title={t('Exit Delivery Mode')}
+                title={t('Exit Delivery Panel')}
                 message={t('Exit delivery panel and return to normal user pages?')}
                 subtitle={t('You will remain logged in as a normal user.')}
                 confirmText={t('Exit to App')}
@@ -511,15 +511,10 @@ const DeliveryDashboard = () => {
                         }
                         localStorage.removeItem('customer_backup_token');
                         localStorage.removeItem('customer_backup_user');
-                        setShowLogoutModal(false);
-                        setIsLoggingOut(false);
-                        navigate('/profile', { replace: true });
-                    } else {
-                        setShowLogoutModal(false);
-                        setIsLoggingOut(false);
-                        if (logout) await logout();
-                        navigate('/login', { replace: true });
                     }
+                    setShowLogoutModal(false);
+                    setIsLoggingOut(false);
+                    navigate('/profile', { replace: true });
                 }}
             />
 
@@ -550,11 +545,11 @@ const DeliveryDashboard = () => {
                         {hasActiveCards ? t('Delivery Panel') : t('Orders List')}
                     </h1>
 
-                    {/* Right: Logout button */}
+                    {/* Right: Exit button */}
                     <button
                         type="button"
                         onClick={() => setShowLogoutModal(true)}
-                        title={t('Logout')}
+                        title={t('Exit Delivery Panel')}
                         className="p-1.5 text-red-500 hover:opacity-70 transition-opacity active:scale-95"
                     >
                         <LogOut size={22} className="stroke-[2.5]" />

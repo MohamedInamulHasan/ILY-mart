@@ -109,6 +109,20 @@ public class IlyMartMessagingService extends MessagingService {
                 }
             }
 
+            // If delivery partner has an active/accepted order, do not show alert pop-up or loud alarm; just ensure floating icon is active
+            boolean hasActive = prefs.getBoolean("has_active_orders", false);
+            if (hasActive && !isStoreSession) {
+                Intent serviceIntent = new Intent(this, FloatingLogoService.class);
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        ContextCompat.startForegroundService(this, serviceIntent);
+                    } else {
+                        startService(serviceIntent);
+                    }
+                } catch (Exception ignored) {}
+                return;
+            }
+
             // 3. Wake up screen
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             if (pm != null) {

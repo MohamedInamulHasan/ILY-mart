@@ -51,6 +51,14 @@ public class OrderAlertActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         currentInstance = this;
 
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        if (hasActive && !isStore) {
+            finish();
+            return;
+        }
+
         // Turn on screen & show over lock screen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);

@@ -180,7 +180,7 @@ const Layout = ({ children, onRefresh }) => {
 
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true';
         const isDeliveryBoyLoggedOut = localStorage.getItem('delivery_boy_logged_out') === 'true';
-        const isDeliveryMode = isDeliveryUser && (!isDeliveryBoyLoggedOut || isDeliverySessionActive);
+        const isDeliveryMode = isDeliveryUser && isDeliverySessionActive && !isDeliveryBoyLoggedOut;
 
         const myStoreId = localStorage.getItem('my_store_id') || user?.storeId?._id || user?.storeId || '';
 

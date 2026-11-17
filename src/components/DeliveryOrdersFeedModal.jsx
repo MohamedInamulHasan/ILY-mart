@@ -34,7 +34,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder, 
                 <LogoutModal
                     isOpen={showLogoutModal}
                     onClose={() => setShowLogoutModal(false)}
-                    title={t('Exit Delivery Mode')}
+                    title={t('Exit Delivery Panel')}
                     message={t('Exit delivery panel and return to normal user pages?')}
                     subtitle={t('You will remain logged in as a normal user.')}
                     confirmText={t('Exit to App')}
@@ -43,6 +43,10 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder, 
                         localStorage.setItem('delivery_boy_logged_out', 'true');
                         localStorage.removeItem('delivery_session_active');
                         localStorage.setItem('delivery_floating_overlay_enabled', 'false');
+                        try {
+                            await setOverlayDeliverySessionActive(false);
+                            await hideFloatingOverlay();
+                        } catch (_) {}
 
                         const backupToken = localStorage.getItem('customer_backup_token');
                         const backupUser = localStorage.getItem('customer_backup_user');
@@ -57,15 +61,10 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder, 
                             }
                             localStorage.removeItem('customer_backup_token');
                             localStorage.removeItem('customer_backup_user');
-                            setShowLogoutModal(false);
-                            if (onClose) onClose();
-                            navigate('/profile', { replace: true });
-                        } else {
-                            setShowLogoutModal(false);
-                            if (onClose) onClose();
-                            if (logout) await logout();
-                            navigate('/login', { replace: true });
                         }
+                        setShowLogoutModal(false);
+                        if (onClose) onClose();
+                        navigate('/profile', { replace: true });
                     }}
                 />
 
@@ -105,7 +104,7 @@ const DeliveryOrdersFeedModal = ({ isOpen, onClose, orders = [], onSelectOrder, 
                             <button
                                 type="button"
                                 onClick={() => setShowLogoutModal(true)}
-                                title={t('Logout')}
+                                title={t('Exit Delivery Panel')}
                                 className="p-1.5 text-red-500 hover:opacity-70 transition-opacity active:scale-95"
                             >
                                 <LogOut size={22} className="stroke-[2.5]" />
