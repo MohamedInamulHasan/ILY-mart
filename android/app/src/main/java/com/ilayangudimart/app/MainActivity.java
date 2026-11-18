@@ -230,12 +230,18 @@ public class MainActivity extends BridgeActivity {
                             "  var target = '" + safeTarget + "';" +
                             "  var isStore = (localStorage.getItem('store_session_active') === 'true');" +
                             "  var isDelivery = (localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true');" +
-                            "  if (!target || target === '') {" +
-                            "    target = isStore ? '/my-store' : (isDelivery ? '/delivery-dashboard' : '');" +
-                            "  }" +
                             "  if (orderId && orderId !== '') {" +
+                            "    localStorage.setItem('active_delivery_order_id', orderId);" +
+                            "    localStorage.setItem('active_delivery_stay', 'true');" +
+                            "    localStorage.setItem('delivery_session_active', 'true');" +
+                            "    localStorage.removeItem('delivery_boy_logged_out');" +
+                            "    if (!target || target === '' || target === '/delivery-dashboard') {" +
+                            "      target = isStore ? '/my-store?tab=orders&orderId=' + orderId : '/admin/delivery-order/' + orderId;" +
+                            "    }" +
                             "    window.__pendingNativeOrderId = orderId;" +
                             "    window.dispatchEvent(new CustomEvent('native:open-order', { detail: { id: orderId } }));" +
+                            "  } else if (!target || target === '') {" +
+                            "    target = isStore ? '/my-store' : (isDelivery ? '/delivery-dashboard' : '');" +
                             "  }" +
                             "  if (target && target !== '') {" +
                             "    window.dispatchEvent(new CustomEvent('native:navigate-panel', { detail: { path: target } }));" +

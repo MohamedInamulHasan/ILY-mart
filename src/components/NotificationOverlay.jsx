@@ -334,6 +334,8 @@ const NotificationOverlay = () => {
                         orderData = res.data;
                     }
                 }
+                localStorage.setItem('active_delivery_order_id', orderId);
+                localStorage.setItem('active_delivery_stay', 'true');
                 if (isStoreOnly) {
                     navigate(`/my-store?tab=orders&orderId=${orderId}`, { state: { order: orderData } });
                 } else {

@@ -141,11 +141,15 @@ public class IlyMartMessagingService extends MessagingService {
                     .putBoolean("has_pending_orders", true)
                     .apply();
 
-            // 5. Show EXACTLY ONE alert card:
-            // If overlay permission is granted -> display FloatingLogoService Porter Card overlay over screen.
-            // If overlay permission is NOT granted -> fallback to OrderAlertActivity dialog!
+            // 5. Check overlay permission and active accepted orders:
+            // Strictly follow rules:
+            // 1. When Display Over Other Apps is turned OFF -> DO NOT show pop up alert or repeat alert!
+            // 2. When there is an accepted order in delivery mode -> DO NOT show pop up alert!
             boolean hasOverlay = (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this));
-            if (hasOverlay) {
+            boolean hasAcceptedOrder = prefs.getBoolean("has_active_orders", false);
+            boolean isStoreMode = prefs.getBoolean("store_session_active", false);
+
+            if (hasOverlay && (!hasAcceptedOrder || isStoreMode)) {
                 Intent serviceIntent = new Intent(this, FloatingLogoService.class);
                 serviceIntent.setAction("SHOW_ORDER_CARD");
                 serviceIntent.putExtra("order_json", orderObj.toString());
@@ -158,27 +162,17 @@ public class IlyMartMessagingService extends MessagingService {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            } else {
-                try {
-                    Intent alertIntent = new Intent(this, OrderAlertActivity.class);
-                    alertIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                    alertIntent.putExtra("order_json", orderObj.toString());
-                    alertIntent.putExtra("order_id", data.get("orderId"));
-                    startActivity(alertIntent);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
             }
 
-            // 6. Post Heads-Up Full Screen Intent Notification with loud alarm sound
-            postFullScreenOrderNotification(data, orderObj.toString());
+            // 6. Post standard single notification (tap opens order detail directly)
+            postOrderNotification(data, orderObj.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void postFullScreenOrderNotification(Map<String, String> data, String orderJsonStr) {
+    private void postOrderNotification(Map<String, String> data, String orderJsonStr) {
         String orderId = data.get("orderId");
         if (orderId == null) orderId = "";
         String shortId = data.containsKey("shortId") ? data.get("shortId") : (orderId.length() >= 6 ? orderId.substring(orderId.length() - 6).toUpperCase() : orderId);
@@ -214,15 +208,24 @@ public class IlyMartMessagingService extends MessagingService {
             nm.createNotificationChannel(channel);
         }
 
-        Intent fullScreenIntent = new Intent(this, OrderAlertActivity.class);
-        fullScreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        fullScreenIntent.putExtra("order_json", orderJsonStr);
-        fullScreenIntent.putExtra("order_id", orderId);
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        String targetPanel = isStore
+                ? (!orderId.isEmpty() ? "/my-store?tab=orders&orderId=" + orderId : "/my-store")
+                : (!orderId.isEmpty() ? "/admin/delivery-order/" + orderId : "/delivery-dashboard");
 
-        PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
+        // Tapping notification opens MainActivity directly to order details
+        Intent appIntent = new Intent(this, MainActivity.class);
+        appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        appIntent.putExtra("open_incoming_order", true);
+        appIntent.putExtra("order_id", orderId);
+        appIntent.putExtra("open_panel_from_floating", true);
+        appIntent.putExtra("target_panel", targetPanel);
+
+        PendingIntent contentPendingIntent = PendingIntent.getActivity(
                 this,
                 (int) System.currentTimeMillis(),
-                fullScreenIntent,
+                appIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
@@ -233,7 +236,7 @@ public class IlyMartMessagingService extends MessagingService {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_EVENT)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setContentIntent(fullScreenPendingIntent)
+                .setContentIntent(contentPendingIntent)
                 .setAutoCancel(true)
                 .setSound(alertSound)
                 .setVibrate(new long[]{0, 250, 150, 250})

@@ -51,10 +51,11 @@ public class OrderAlertActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         currentInstance = this;
 
+        boolean hasOverlay = (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this));
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean hasActive = prefs.getBoolean("has_active_orders", false);
         boolean isStore = prefs.getBoolean("store_session_active", false);
-        if (hasActive && !isStore) {
+        if (!hasOverlay || (hasActive && !isStore)) {
             finish();
             return;
         }
@@ -356,6 +357,39 @@ public class OrderAlertActivity extends AppCompatActivity {
 
         swipeTrack.addView(swipeKnob);
 
+        // Swipe touch handler for swipeKnob
+        final float[] initialX = new float[1];
+        swipeKnob.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    initialX[0] = event.getRawX();
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float deltaX = event.getRawX() - initialX[0];
+                    if (deltaX > 0) {
+                        float maxDrag = swipeTrack.getWidth() - swipeKnob.getWidth() - dp(10);
+                        if (maxDrag > 0) {
+                            swipeKnob.setTranslationX(Math.min(deltaX, maxDrag));
+                        }
+                    }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    float finalDelta = event.getRawX() - initialX[0];
+                    float maxDrag = swipeTrack.getWidth() - swipeKnob.getWidth() - dp(10);
+                    if (maxDrag > 0 && finalDelta >= maxDrag * 0.5f) {
+                        openOrderClick.onClick(v);
+                    } else if (Math.abs(finalDelta) < dp(10)) {
+                        // Regular tap also opens order
+                        openOrderClick.onClick(v);
+                    } else {
+                        swipeKnob.animate().translationX(0).setDuration(200).start();
+                    }
+                    return true;
+            }
+            return false;
+        });
+
         // Countdown timer for 12 seconds
         cardTimer = new CountDownTimer(12000, 1000) {
             @Override
@@ -366,23 +400,28 @@ public class OrderAlertActivity extends AppCompatActivity {
 
             @Override
             public void onFinish() {
-                // Keep repeating until viewed or explicitly skipped!
-                start();
+                isFinished = true;
+                stopAlertEffects();
+                finish();
             }
         }.start();
 
         final String finalOrderId = orderId;
-        View.OnClickListener openOrderClick = v -> {
-            isFinished = true; // User viewed/accepted order: stop repeating!
+        openOrderClick = v -> {
+            isFinished = true; // User viewed/accepted order
             stopAlertEffects();
             SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
             boolean isStore = prefs.getBoolean("store_session_active", false);
+            String targetPanel = isStore
+                    ? (finalOrderId != null && !finalOrderId.isEmpty() ? "/my-store?tab=orders&orderId=" + finalOrderId : "/my-store")
+                    : (finalOrderId != null && !finalOrderId.isEmpty() ? "/admin/delivery-order/" + finalOrderId : "/delivery-dashboard");
+
             Intent intent = new Intent(OrderAlertActivity.this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             intent.putExtra("open_incoming_order", true);
             intent.putExtra("order_id", finalOrderId);
             intent.putExtra("open_panel_from_floating", true);
-            intent.putExtra("target_panel", isStore ? "/my-store" : "/delivery-dashboard");
+            intent.putExtra("target_panel", targetPanel);
             startActivity(intent);
             finish();
         };
@@ -390,7 +429,7 @@ public class OrderAlertActivity extends AppCompatActivity {
         swipeTrack.setOnClickListener(openOrderClick);
         bodyLayout.addView(swipeTrack);
 
-        // SKIP Button: Pauses for 5s then repeats alert until accepted or cancelled!
+        // SKIP Button: Cleanly dismisses alert without repeat
         TextView skipBtn = new TextView(this);
         skipBtn.setText("SKIP");
         skipBtn.setTextColor(Color.parseColor("#9CA3AF"));
@@ -406,19 +445,9 @@ public class OrderAlertActivity extends AppCompatActivity {
     }
 
     private void skipAndRepeat(JSONObject order) {
+        isFinished = true;
         stopAlertEffects();
         finish();
-
-        // Repeat alert after 5s pause until order is accepted or cancelled
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            try {
-                if (isFinished) return;
-                Intent repeatIntent = new Intent(getApplicationContext(), OrderAlertActivity.class);
-                repeatIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                repeatIntent.putExtra("order_json", order != null ? order.toString() : "");
-                startActivity(repeatIntent);
-            } catch (Exception ignored) {}
-        }, 5000);
     }
 
     public void dismissAlert() {

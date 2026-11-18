@@ -483,6 +483,10 @@ public class FloatingLogoService extends Service {
     public synchronized void showPorterOrderCard(JSONObject order) {
         if (order == null || isAppInForeground) return;
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !android.provider.Settings.canDrawOverlays(this)) {
+            return;
+        }
+
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean hasActive = prefs.getBoolean("has_active_orders", false);
         boolean isStore = prefs.getBoolean("store_session_active", false);
@@ -1009,7 +1013,10 @@ public class FloatingLogoService extends Service {
 
                 @Override
                 public void onFinish() {
-                    repeatOrNextPendingOrder();
+                    // Do not repeat pop-up alert or alarms; peacefully dismiss and show circle bubble
+                    stopAlertEffects();
+                    dismissPorterOrderCardInternal();
+                    showCircleBubble();
                 }
             }.start();
 
@@ -1069,16 +1076,7 @@ public class FloatingLogoService extends Service {
         }
         stopAlertEffects();
         dismissPorterOrderCardInternal();
-        if (isAppInForeground) return;
-
-        // 4-second breather, then repeat alert with sound & card
-        isGapWaiting = true;
-        mainHandler.postDelayed(() -> {
-            isGapWaiting = false;
-            if (!isAppInForeground) {
-                showNextPendingOrderIfAny();
-            }
-        }, 4000);
+        showCircleBubble();
     }
 
     public synchronized void removePendingOrder(String orderId) {
@@ -1106,20 +1104,14 @@ public class FloatingLogoService extends Service {
         }
         stopAlertEffects();
         dismissPorterOrderCardInternal();
-
-        // 5s gap before repeating alert even when user taps SKIP
-        isGapWaiting = true;
-        mainHandler.postDelayed(() -> {
-            isGapWaiting = false;
-            currentPendingOrderIndex++;
-            if (!isAppInForeground) {
-                showNextPendingOrderIfAny();
-            }
-        }, 5000);
+        showCircleBubble();
     }
 
     public synchronized void showNextPendingOrderIfAny() {
         if (orderCardView != null || isGapWaiting || isAppInForeground) return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !android.provider.Settings.canDrawOverlays(this)) {
+            return;
+        }
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         boolean hasActive = prefs.getBoolean("has_active_orders", false);
         boolean isStore = prefs.getBoolean("store_session_active", false);
@@ -1276,7 +1268,9 @@ public class FloatingLogoService extends Service {
         try {
             SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
             boolean isStore = prefs.getBoolean("store_session_active", false);
-            String targetPanel = isStore ? "/my-store" : "/delivery-dashboard";
+            String targetPanel = isStore
+                    ? (orderId != null && !orderId.trim().isEmpty() ? "/my-store?tab=orders&orderId=" + orderId : "/my-store")
+                    : (orderId != null && !orderId.trim().isEmpty() ? "/admin/delivery-order/" + orderId : "/delivery-dashboard");
 
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -1535,8 +1529,16 @@ public class FloatingLogoService extends Service {
             }
         }
 
+        SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        String targetPanel = isStore
+                ? (orderId != null && !orderId.trim().isEmpty() ? "/my-store?tab=orders&orderId=" + orderId : "/my-store")
+                : (orderId != null && !orderId.trim().isEmpty() ? "/admin/delivery-order/" + orderId : "/delivery-dashboard");
+
         Intent openOrderIntent = new Intent(this, MainActivity.class);
         openOrderIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        openOrderIntent.putExtra("open_panel_from_floating", true);
+        openOrderIntent.putExtra("target_panel", targetPanel);
         openOrderIntent.putExtra("open_incoming_order", true);
         openOrderIntent.putExtra("order_id", orderId);
 
@@ -1551,10 +1553,9 @@ public class FloatingLogoService extends Service {
                 .setContentTitle("🚨 New Order #" + shortId + " (" + earning + ")")
                 .setContentText(pickup + " ➔ " + drop)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_EVENT)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setFullScreenIntent(pi, true)
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .build();

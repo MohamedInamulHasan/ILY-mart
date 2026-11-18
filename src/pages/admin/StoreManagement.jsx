@@ -27,7 +27,8 @@ import {
     Copy,
     Camera,
     Eye,
-    EyeOff
+    EyeOff,
+    CheckCircle
 } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { useAuth } from '../../context/AuthContext';
@@ -49,6 +50,7 @@ import {
     isNativeAndroid, 
     checkOverlayPermission, 
     requestOverlayPermission,
+    openOverlaySettings,
     showFloatingOverlay, 
     hideFloatingOverlay, 
     setOverlayAuthToken,
@@ -111,16 +113,22 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
         }
     };
 
-    // Check overlay permission on mount for store admin
+    // Check overlay permission on mount and app focus for store admin
     useEffect(() => {
         let isMounted = true;
-        const initOverlay = async () => {
+        const checkPermission = async () => {
             if (!isNativeAndroid()) return;
             const granted = await checkOverlayPermission();
             if (isMounted) setHasOverlayPermission(granted);
         };
-        initOverlay();
-        return () => { isMounted = false; };
+        checkPermission();
+        window.addEventListener('focus', checkPermission);
+        document.addEventListener('visibilitychange', checkPermission);
+        return () => { 
+            isMounted = false; 
+            window.removeEventListener('focus', checkPermission);
+            document.removeEventListener('visibilitychange', checkPermission);
+        };
     }, []);
 
     const { mutateAsync: addStore } = useCreateStore();
@@ -905,23 +913,45 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
 
             {view === 'list' && (
                 <>
-                    {/* Permission Warning Banner if Display Over Other Apps is missing */}
-                    {isStoreAdmin && !hasOverlayPermission && (
-                        <div className="mb-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">⚠️</span>
-                                <div className="text-left">
-                                    <p className="text-xs font-bold text-amber-900 dark:text-amber-200">{t('Display Over Other Apps Required')}</p>
-                                    <p className="text-[11px] text-amber-700 dark:text-amber-300">{t('Enable permission so floating screen image and order alerts appear')}</p>
+                    {/* Display Over Other Apps Status Card (Allow when OFF, Turn Off when ON) */}
+                    {isNativeAndroid() && isStoreAdmin && (
+                        !hasOverlayPermission ? (
+                            <div className="mb-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="text-xl shrink-0">⚠️</span>
+                                    <div className="text-left min-w-0">
+                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200 truncate">{t('Display Over Other Apps Required')}</p>
+                                        <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-tight mt-0.5">{t('Enable permission so floating screen image and order alerts appear')}</p>
+                                    </div>
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={openOverlaySettings}
+                                    className="shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                                >
+                                    {t('Allow')}
+                                </button>
                             </div>
-                            <button
-                                onClick={requestOverlayPermission}
-                                className="shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-                            >
-                                {t('Allow')}
-                            </button>
-                        </div>
+                        ) : (
+                            <div className="mb-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                        <CheckCircle size={16} />
+                                    </div>
+                                    <div className="text-left min-w-0">
+                                        <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200 truncate">{t('Display Over Other Apps Active')}</p>
+                                        <p className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-tight mt-0.5">{t('Floating icon and alerts will show when outside the app')}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={openOverlaySettings}
+                                    className="shrink-0 px-3.5 py-1.5 bg-red-500 hover:bg-red-600 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                                >
+                                    {t('Turn Off')}
+                                </button>
+                            </div>
+                        )
                     )}
 
                     {/* Search Bar - Hide for Store Admin */}
@@ -942,7 +972,7 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
 
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                         <SortableContext items={displayedStores.map(s => s.id || s._id)} strategy={rectSortingStrategy}>
-                            <div className={isStoreAdmin ? "max-w-md mx-auto w-full pb-32" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
+                            <div className={isStoreAdmin ? "max-w-md mx-auto w-full pb-12" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
                                 {displayedStores.map(store => {
                                     const isTimeOpen = isStoreOpen({ ...store, isManuallyClosed: false });
                                     const isOpen = isStoreOpen(store);
@@ -1076,59 +1106,6 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            {/* Fixed Bottom Rectangle Footer for Store Admin like Delivery Boy */}
-                                            {isStoreAdmin && view === 'list' && (
-                                                <div 
-                                                    className="fixed bottom-0 inset-x-0 z-40 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] pointer-events-auto select-none"
-                                                    style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 16px))', paddingTop: '0.85rem' }}
-                                                >
-                                                    <div className="max-w-md mx-auto px-4">
-                                                        <SwipeActionButton
-                                                            key={isFloatingEnabled ? 'store-disable' : 'store-enable'}
-                                                            variant={isFloatingEnabled ? 'black-shine' : 'outline-white'}
-                                                            label={isFloatingEnabled ? t('Swipe to Disable') : t('Swipe to Enable')}
-                                                            loadingLabel={isFloatingEnabled ? t('Disabling...') : t('Enabling...')}
-                                                            onSuccess={async () => {
-                                                                const nextState = !isFloatingEnabled;
-
-                                                                // Mobile alert and floating overlay toggle strictly like Delivery Boy
-                                                                setIsFloatingEnabled(nextState);
-                                                                localStorage.setItem('delivery_floating_overlay_enabled', String(nextState));
-                                                                window.dispatchEvent(new Event('delivery:floating-toggle'));
-
-                                                                const sId = String(store.id || store._id || myStoreId || '');
-                                                                const sName = store.name || '';
-
-                                                                if (!nextState) {
-                                                                    await setOverlayStoreSessionActive(false, '', '');
-                                                                    await hideFloatingOverlay();
-                                                                } else {
-                                                                    await setOverlayStoreSessionActive(true, sId, sName);
-                                                                    const granted = await checkOverlayPermission();
-                                                                    setHasOverlayPermission(granted);
-                                                                    if (granted) {
-                                                                        const currentToken = localStorage.getItem('authToken');
-                                                                        if (currentToken) await setOverlayAuthToken(currentToken);
-                                                                        await setOverlayOrdersState({ hasActive: storeHasActive, hasPending: storeHasPending });
-                                                                        if (hasAnyStoreOrder) {
-                                                                            await showFloatingOverlay();
-                                                                        }
-                                                                    } else {
-                                                                        // Ask permission and open Android Settings so floating icon and order alerts appear
-                                                                        await requestOverlayPermission();
-                                                                    }
-                                                                }
-                                                            }}
-                                                            autoReset={true}
-                                                            heightClass="h-[58px] sm:h-[62px]"
-                                                            knobSizeClass="w-[46px] h-[46px] sm:w-[50px] sm:h-[50px]"
-                                                            textSizeClass="text-sm sm:text-base font-black"
-                                                            iconSize={22}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
                                         </SortableStoreCard>
                                     );
                                 })}
