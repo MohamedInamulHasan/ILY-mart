@@ -10,7 +10,14 @@ import { useOrders } from '../hooks/queries/useOrders';
 import { useStores } from '../hooks/queries/useStores';
 import IncomingOrderModal from './IncomingOrderModal';
 import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound, stopIncomingOrderAlertSound } from '../utils/soundHelper';
-import { isNativeAndroid, setOverlayOrdersState, triggerIncomingOrderAlert, showPorterOrderCard, dismissPorterOrderCard } from '../utils/floatingOverlay';
+import { 
+    isNativeAndroid, 
+    setOverlayOrdersState, 
+    triggerIncomingOrderAlert, 
+    showPorterOrderCard, 
+    dismissPorterOrderCard,
+    checkOverlayPermission 
+} from '../utils/floatingOverlay';
 import { apiService } from '../utils/api';
 import { registerModalBackHandler } from '../utils/useBackButton';
 import { getUserRoles } from '../utils/userHelpers';
@@ -31,8 +38,22 @@ const NotificationOverlay = () => {
     const location = useLocation();
 
     const isDeliveryPage = useMemo(() => {
-        return location.pathname.startsWith('/admin') || location.pathname.startsWith('/my-store');
+        return location.pathname.startsWith('/admin') || location.pathname.startsWith('/my-store') || location.pathname.startsWith('/delivery-dashboard');
     }, [location.pathname]);
+
+    const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
+    useEffect(() => {
+        if (isNativeAndroid()) {
+            checkOverlayPermission().then(res => setHasOverlayPermission(!!res));
+        }
+        const handleFocus = () => {
+            if (isNativeAndroid()) {
+                checkOverlayPermission().then(res => setHasOverlayPermission(!!res));
+            }
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, []);
 
     const roles = useMemo(() => getUserRoles(user), [user]);
     const { data: stores = [] } = useStores();
@@ -46,8 +67,8 @@ const NotificationOverlay = () => {
     const explicitStoreId = localStorage.getItem('my_store_id');
 
     const isStoreAdmin = useMemo(() => {
-        return roles.includes('store_admin') || Boolean(user?.storeId) || Boolean(explicitStoreId) || activeMobile === '9876543211' || activeMobile === '8474958585';
-    }, [roles, user, explicitStoreId, activeMobile]);
+        return roles.includes('store_admin') || (roles.includes('admin') && location.pathname.startsWith('/my-store')) || Boolean(user?.storeId) || Boolean(explicitStoreId) || activeMobile === '9876543211' || activeMobile === '8474958585';
+    }, [roles, user, explicitStoreId, activeMobile, location.pathname]);
 
     const myStore = useMemo(() => {
         if (!isStoreAdmin) return null;
@@ -59,7 +80,7 @@ const NotificationOverlay = () => {
             if (activeMobile && sMobile && sMobile === activeMobile) return true;
             if (activeMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
             return false;
-        }) || null;
+        }) || (stores.length > 0 ? (targetStoreId ? (stores.find(s => String(s._id || s.id) === targetStoreId) || stores[0]) : stores[0]) : null);
     }, [isStoreAdmin, user, stores, explicitStoreId, activeMobile]);
 
     const myStoreId = String(myStore?._id || myStore?.id || explicitStoreId || user?.storeId?._id || user?.storeId || '');
@@ -81,11 +102,9 @@ const NotificationOverlay = () => {
         return false;
     };
     const isDeliveryBoy = useMemo(() => {
-        const hasDeliveryRole = roles.includes('delivery_boy') || roles.includes('deliveryboy');
+        const hasDeliveryRole = roles.includes('delivery_boy') || roles.includes('deliveryboy') || roles.includes('admin');
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-        const cleanMobile = (user?.mobile || user?.phone || '').toString().replace(/\D/g, '').slice(-10);
-        // Strictly show delivery notifications ONLY for users whose account role is delivery_boy with active session and phone number
-        return hasDeliveryRole && isDeliverySessionActive && Boolean(cleanMobile);
+        return hasDeliveryRole && isDeliverySessionActive;
     }, [roles, user]);
     const isAdmin = useMemo(() => roles.includes('admin'), [roles]);
 
@@ -142,6 +161,15 @@ const NotificationOverlay = () => {
         return allOrders.filter(o => isUndeliveredStatus(o.status) && isOrderForMyStore(o));
     }, [allOrders, isStoreAdmin, myStoreId, myStoreName]);
 
+    // Check if store admin has an active accepted order currently in progress
+    const storeHasActiveAcceptedOrder = useMemo(() => {
+        if (!isStoreAdmin || (!myStoreId && !myStoreName)) return false;
+        return allOrders.some(o => {
+            const s = String(o.status || '').toLowerCase().trim();
+            return (s === 'accepted' || s === 'out for delivery' || s === 'shipped') && isOrderForMyStore(o);
+        });
+    }, [allOrders, isStoreAdmin, myStoreId, myStoreName]);
+
     // Sync order state (active/pending) with native floating overlay
     useEffect(() => {
         if (!isNativeAndroid()) return;
@@ -150,11 +178,11 @@ const NotificationOverlay = () => {
             const hasPending = processingOrders.length > 0;
             setOverlayOrdersState({ hasActive, hasPending });
         } else if (isStoreAdmin && myStore) {
-            const hasActive = storeUndeliveredOrders.some(o => ['accepted', 'out for delivery', 'shipped'].includes(String(o.status || '').toLowerCase().trim()));
-            const hasPending = storeUndeliveredOrders.some(o => ['pending', 'processing', 'order placed', 'confirmed'].includes(String(o.status || '').toLowerCase().trim()));
+            const hasActive = storeHasActiveAcceptedOrder;
+            const hasPending = storeProcessingOrders.length > 0;
             setOverlayOrdersState({ hasActive, hasPending });
         }
-    }, [hasActiveAcceptedOrder, processingOrders.length, storeUndeliveredOrders.length, isDeliveryBoy, isStoreAdmin, myStore]);
+    }, [hasActiveAcceptedOrder, processingOrders.length, storeHasActiveAcceptedOrder, storeProcessingOrders.length, isDeliveryBoy, isStoreAdmin, myStore]);
 
     const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
         return localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
@@ -190,11 +218,102 @@ const NotificationOverlay = () => {
     const pendingIndexRef = useRef(0);
     const [repeatTick, setRepeatTick] = useState(0);
 
-    // Inside the app, do NOT show alert popups for both store managers and delivery boys.
-    // Alert popups and loud repeating alarms are strictly reserved for when the app is closed/in background (handled by native FloatingLogoService / FCM).
+    // Repeating popup alert for pending/processing orders (for both Store Admin and Delivery Boy)
+    // 1. If Display Over Other Apps is turned OFF (or floating disabled): DO NOT show popup alert or repeating notifications!
+    // 2. If there is an accepted order in progress (delivery boy has accepted, or store has accepted): DO NOT show repeat popup alerts!
+    // 3. When there is NO accepted order, and there ARE pending/processing cards:
+    //    Show ONE order at a time with alarm/sound and 12s timer.
+    //    If skipped or timed out: wait 5s breather, then cycle to the next pending order (repeating alerts until accepted)!
     useEffect(() => {
-        // In-app alert popup suppressed for both roles
-    }, []);
+        // If native Android and overlay permission is missing: DO NOT show popup alert
+        if (isNativeAndroid() && !hasOverlayPermission) {
+            if (incomingOrder) {
+                stopIncomingOrderAlertSound();
+                setIncomingOrder(null);
+                dismissPorterOrderCard();
+            }
+            return;
+        }
+
+        const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
+        if (!isFloatingEnabled) {
+            if (incomingOrder) {
+                stopIncomingOrderAlertSound();
+                setIncomingOrder(null);
+                dismissPorterOrderCard();
+            }
+            return;
+        }
+
+        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
+        const isDeliveryRole = isDeliveryBoy && isDeliverySessionActive && isDeliveryPage;
+        const isStoreRole = isStoreAdmin && myStore;
+
+        if (!isDeliveryRole && !isStoreRole) return;
+
+        // If delivery boy has accepted order, or store has accepted order -> suppress repeat popup alerts
+        const hasAccepted = isDeliveryRole ? hasActiveAcceptedOrder : storeHasActiveAcceptedOrder;
+        if (hasAccepted) {
+            if (incomingOrder) {
+                stopIncomingOrderAlertSound();
+                setIncomingOrder(null);
+                dismissPorterOrderCard();
+            }
+            return;
+        }
+
+        if (allOrders.length === 0) return;
+
+        // If an incoming modal is currently showing or we are in the 5s gap pause, wait
+        if (incomingOrder || isGapPauseRef.current) return;
+
+        const activePageOrderId = location.pathname.startsWith('/admin/delivery-order/')
+            ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
+            : null;
+
+        // Get the relevant pending orders (one order at a time)
+        const pendingList = isDeliveryRole
+            ? processingOrders.filter(o => {
+                const oId = String(o._id || o.id || '');
+                return oId && oId !== activePageOrderId;
+            })
+            : storeProcessingOrders.filter(o => {
+                const oId = String(o._id || o.id || '');
+                return oId && oId !== activePageOrderId;
+            });
+
+        if (pendingList.length > 0) {
+            const targetOrder = pendingList[pendingIndexRef.current % pendingList.length];
+            setStartWithAcceptView(false);
+            setIncomingOrder(targetOrder);
+            triggerIncomingOrderAlert();
+            try {
+                playSuccessSound();
+            } catch (_) {}
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+            if (isNativeAndroid()) {
+                showPorterOrderCard(targetOrder);
+            }
+        }
+    }, [
+        isDeliveryBoy, 
+        isStoreAdmin, 
+        myStore, 
+        myStoreId, 
+        myStoreName, 
+        isDeliveryPage,
+        incomingOrder, 
+        allOrders, 
+        repeatTick, 
+        hasActiveAcceptedOrder, 
+        storeHasActiveAcceptedOrder, 
+        processingOrders, 
+        storeProcessingOrders, 
+        hasOverlayPermission, 
+        location.pathname
+    ]);
 
     // Auto-dismiss popup immediately if the current order is accepted or cancelled
     useEffect(() => {
@@ -295,15 +414,31 @@ const NotificationOverlay = () => {
                 if (activePageOrderId && oId === activePageOrderId) {
                     return;
                 }
-                if (oId && !skippedOrderIds.has(oId) && !knownOrderIdsRef.current.has(oId) && isProcessingStatus(newOrder.status)) {
+                const hasAccepted = canDeliveryAlert ? hasActiveAcceptedOrder : storeHasActiveAcceptedOrder;
+                const isPermissionOk = !isNativeAndroid() || hasOverlayPermission;
+
+                if (oId && !skippedOrderIds.has(oId) && isProcessingStatus(newOrder.status)) {
                     knownOrderIdsRef.current.add(oId);
-                    // Inside the app: NO pop up alert over screen for both store managers and delivery boys.
-                    // Just soft chime and subtle vibration so they know their order feed updated.
-                    try {
-                        playSuccessSound();
-                    } catch (_) {}
-                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                        navigator.vibrate([100, 50, 100]);
+                    if (!hasAccepted && isPermissionOk && !incomingOrder && !isGapPauseRef.current) {
+                        setStartWithAcceptView(false);
+                        setIncomingOrder(newOrder);
+                        triggerIncomingOrderAlert();
+                        try {
+                            playSuccessSound();
+                        } catch (_) {}
+                        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                            navigator.vibrate([200, 100, 200]);
+                        }
+                        if (isNativeAndroid()) {
+                            showPorterOrderCard(newOrder);
+                        }
+                    } else {
+                        try {
+                            playSuccessSound();
+                        } catch (_) {}
+                        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                            navigator.vibrate([100, 50, 100]);
+                        }
                     }
                 }
             }
@@ -311,7 +446,7 @@ const NotificationOverlay = () => {
 
         window.addEventListener('orders:refresh', handleOrdersRefresh);
         return () => window.removeEventListener('orders:refresh', handleOrdersRefresh);
-    }, [isDeliveryBoy, isStoreAdmin, myStore, myStoreId, myStoreName, isDeliveryPage, skippedOrderIds, queryClient, location.pathname]);
+    }, [isDeliveryBoy, isStoreAdmin, myStore, myStoreId, myStoreName, isDeliveryPage, skippedOrderIds, hasActiveAcceptedOrder, storeHasActiveAcceptedOrder, hasOverlayPermission, incomingOrder, queryClient, location.pathname]);
 
     // Listen for native intent/card clicks when app was closed/backgrounded
     useEffect(() => {

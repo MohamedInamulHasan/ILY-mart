@@ -45,7 +45,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { SortableStoreCard, SortableProductRow, DragHandle } from './AdminDashboard_Sortables';
 import { areCategoriesMatching, findCanonicalCategory, areSubcategoriesMatching, normCategoryKey } from '../../utils/categoryHelpers';
 
-import SwipeActionButton from '../../components/SwipeActionButton';
+
 import { 
     isNativeAndroid, 
     checkOverlayPermission, 
