@@ -274,9 +274,9 @@ export const useBackButton = () => {
                 return true;
             }
 
-            // 3.2. Store Products page: Android back goes directly to Stores list ('/store')
+            // 3.2. Store Products page: go back safely to prior page or Home
             if (currentPath.startsWith('/store/')) {
-                navigate('/store');
+                safeNavigateBack(navigate, '/');
                 return true;
             }
 

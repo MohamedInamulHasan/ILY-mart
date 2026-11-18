@@ -7,6 +7,7 @@ export const invalidateStoreCache = () => {
     storeCache = null;
     storeCacheTimestamp = 0;
 };
+import mongoose from 'mongoose';
 import Store from '../models/Store.js';
 import bcrypt from 'bcryptjs';
 import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
@@ -149,6 +150,24 @@ export const updateStore = async (req, res, next) => {
         if (!store) {
             res.status(404);
             throw new Error('Store not found');
+        }
+
+        // When store is hidden/unhidden, sync availability of all its products
+        if (typeof updateData.isActive === 'boolean') {
+            try {
+                const Product = await import('../models/Product.js').then(m => m.default);
+                const storeObjId = mongoose.Types.ObjectId.isValid(req.params.id) 
+                    ? new mongoose.Types.ObjectId(req.params.id) 
+                    : req.params.id;
+                await Product.updateMany(
+                    { $or: [{ storeId: req.params.id }, { storeId: storeObjId }] },
+                    { $set: { isAvailable: updateData.isActive } }
+                );
+                const { invalidateProductCache } = await import('./productController.js');
+                if (invalidateProductCache) invalidateProductCache();
+            } catch (prodErr) {
+                console.error('Error updating store products on store toggle:', prodErr);
+            }
         }
 
         res.status(200).json({

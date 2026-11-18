@@ -630,17 +630,20 @@ const StoreProducts = () => {
     }, [effectiveSubcategory]);
 
     const handleHeaderBack = useCallback(() => {
-        navigate('/store');
+        safeNavigateBack(navigate, '/');
     }, [navigate]);
 
     if (!store || store.isActive === false) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t('Store not found')}</h2>
-                <Link to="/store" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-2">
+                <button 
+                    onClick={handleHeaderBack}
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-2 cursor-pointer font-medium"
+                >
                     <ArrowLeft size={20} />
                     {t('Back to Stores')}
-                </Link>
+                </button>
             </div>
         );
     }

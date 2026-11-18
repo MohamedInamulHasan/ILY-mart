@@ -387,10 +387,10 @@ const Profile = () => {
 
     const { data: allOrders = [] } = useOrders({}, { enabled: Boolean(isDeliveryBoy || isAdmin || isStoreAdmin) });
     const pendingOrdersCount = useMemo(() => {
-        if (!isDeliveryBoy) return 0;
+        if (!isDeliveryBoy && !isAdmin) return 0;
         const list = Array.isArray(allOrders) ? allOrders : (allOrders?.data || []);
         return list.filter(o => ['Processing', 'Pending', 'Order Placed'].includes(o.status)).length;
-    }, [isDeliveryBoy, allOrders]);
+    }, [isDeliveryBoy, isAdmin, allOrders]);
 
     const explicitStoreId = localStorage.getItem('my_store_id');
     const myStore = useMemo(() => {
@@ -553,10 +553,10 @@ const Profile = () => {
                                     title={t('Admin Dashboard')}
                                 />
                             )}
-                            {isAdmin && isDeliveryBoy && (
+                            {isAdmin && (
                                 <div className="h-[1px] w-[calc(100%-4rem)] ml-auto bg-gray-200/60 dark:bg-gray-700/60 mr-3.5" />
                             )}
-                            {isDeliveryBoy && (
+                            {(isDeliveryBoy || isAdmin) && (
                                 <MenuLink 
                                     onClick={() => {
                                         localStorage.removeItem('delivery_boy_logged_out');

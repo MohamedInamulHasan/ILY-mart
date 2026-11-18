@@ -716,14 +716,34 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
     const handleToggleActive = async (store) => {
         const currentActive = store.isActive !== false;
         const newActive = !currentActive;
+        const sId = store.id || store._id;
+
+        // Optimistically update products belonging to this store
+        queryClient.setQueriesData({ queryKey: ['products'] }, (old) => {
+            const updateList = (list) => {
+                if (!Array.isArray(list)) return list;
+                return list.map(p => {
+                    const pStoreId = p.storeId?._id || p.storeId;
+                    if (String(pStoreId) === String(sId)) {
+                        return { ...p, isAvailable: newActive };
+                    }
+                    return p;
+                });
+            };
+            if (Array.isArray(old)) return updateList(old);
+            if (old && Array.isArray(old.data)) return { ...old, data: updateList(old.data) };
+            return old;
+        });
 
         try {
             await updateStore({
-                id: store.id || store._id,
+                id: sId,
                 data: { isActive: newActive }
             });
+            queryClient.invalidateQueries(['products']);
         } catch (error) {
             console.error('Error toggling store active status:', error);
+            queryClient.invalidateQueries(['products']);
             alert(t('Failed to update store status.'));
         }
     };

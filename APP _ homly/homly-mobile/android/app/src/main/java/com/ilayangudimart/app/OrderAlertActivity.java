@@ -119,17 +119,17 @@ public class OrderAlertActivity extends AppCompatActivity {
         try {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             if (vibrator != null) {
-                long[] pattern = {0, 600, 200, 600, 200, 600};
+                long[] pattern = {0, 300, 150, 300};
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, 1));
+                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1)); // -1 = play once, no repeat
                 } else {
-                    vibrator.vibrate(pattern, 1);
+                    vibrator.vibrate(pattern, -1);
                 }
             }
         } catch (Exception ignored) {}
 
         try {
-            Uri alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            Uri alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             if (alertSound == null) {
                 alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             }
@@ -137,10 +137,18 @@ public class OrderAlertActivity extends AppCompatActivity {
                 alertMediaPlayer = new MediaPlayer();
                 alertMediaPlayer.setDataSource(this, alertSound);
                 alertMediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build());
-                alertMediaPlayer.setLooping(true);
+                alertMediaPlayer.setLooping(false);
+                alertMediaPlayer.setOnCompletionListener(mp -> {
+                    if (alertMediaPlayer != null) {
+                        try {
+                            alertMediaPlayer.release();
+                        } catch (Exception ignored) {}
+                        alertMediaPlayer = null;
+                    }
+                });
                 alertMediaPlayer.prepare();
                 alertMediaPlayer.start();
             }

@@ -189,9 +189,9 @@ public class IlyMartMessagingService extends MessagingService {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
 
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        if (alarmSound == null) {
-            alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+        Uri alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        if (alertSound == null) {
+            alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -204,12 +204,12 @@ public class IlyMartMessagingService extends MessagingService {
             channel.enableLights(true);
             channel.setLightColor(Color.RED);
             channel.enableVibration(true);
-            channel.setVibrationPattern(new long[]{0, 600, 200, 600, 200, 600});
+            channel.setVibrationPattern(new long[]{0, 250, 150, 250});
             AudioAttributes audioAttributes = new AudioAttributes.Builder()
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                     .build();
-            channel.setSound(alarmSound, audioAttributes);
+            channel.setSound(alertSound, audioAttributes);
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             nm.createNotificationChannel(channel);
         }
@@ -230,14 +230,13 @@ public class IlyMartMessagingService extends MessagingService {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(body)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_EVENT)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setFullScreenIntent(fullScreenPendingIntent, true)
                 .setContentIntent(fullScreenPendingIntent)
                 .setAutoCancel(true)
-                .setSound(alarmSound)
-                .setVibrate(new long[]{0, 600, 200, 600, 200, 600})
+                .setSound(alertSound)
+                .setVibrate(new long[]{0, 250, 150, 250})
                 .setOngoing(false);
 
         nm.notify(3002, builder.build());

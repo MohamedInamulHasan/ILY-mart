@@ -43,6 +43,18 @@ export const getProducts = async (req, res, next) => {
 
         if (!isAdmin) {
             query.isAvailable = true;
+            // Also exclude products belonging to inactive/hidden stores
+            const inactiveStores = await Store.find({ isActive: false }).select('_id').lean();
+            if (inactiveStores.length > 0) {
+                const inactiveStoreIds = inactiveStores.map(s => s._id);
+                if (req.query.storeId) {
+                    if (inactiveStoreIds.some(id => id.toString() === req.query.storeId.toString())) {
+                        query.storeId = new mongoose.Types.ObjectId();
+                    }
+                } else {
+                    query.storeId = { $nin: inactiveStoreIds };
+                }
+            }
         } else {
             // If admin, they can filter by availability if they want, 
             // but if they don't specify, maybe we show all?
@@ -142,6 +154,14 @@ export const getProduct = async (req, res, next) => {
         if (!product.isAvailable && !isAdmin) {
             res.status(404);
             throw new Error('Product not found');
+        }
+
+        if (!isAdmin && product.storeId) {
+            const productStore = await Store.findById(product.storeId).select('isActive').lean();
+            if (productStore && productStore.isActive === false) {
+                res.status(404);
+                throw new Error('Product not found');
+            }
         }
 
         res.status(200).json({
