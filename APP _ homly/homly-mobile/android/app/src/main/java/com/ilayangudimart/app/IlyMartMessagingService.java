@@ -144,12 +144,11 @@ public class IlyMartMessagingService extends MessagingService {
             // 5. Check overlay permission and active accepted orders:
             // Strictly follow rules:
             // 1. When Display Over Other Apps is turned OFF -> DO NOT show pop up alert or repeat alert!
-            // 2. When there is an accepted order in delivery mode -> DO NOT show pop up alert!
+            // 2. When there is an accepted order (for delivery boy or store admin) -> DO NOT show pop up alert!
             boolean hasOverlay = (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this));
             boolean hasAcceptedOrder = prefs.getBoolean("has_active_orders", false);
-            boolean isStoreMode = prefs.getBoolean("store_session_active", false);
 
-            if (hasOverlay && (!hasAcceptedOrder || isStoreMode)) {
+            if (hasOverlay && !hasAcceptedOrder) {
                 Intent serviceIntent = new Intent(this, FloatingLogoService.class);
                 serviceIntent.setAction("SHOW_ORDER_CARD");
                 serviceIntent.putExtra("order_json", orderObj.toString());
