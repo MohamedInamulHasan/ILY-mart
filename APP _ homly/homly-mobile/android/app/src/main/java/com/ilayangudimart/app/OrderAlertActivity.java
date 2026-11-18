@@ -356,6 +356,26 @@ public class OrderAlertActivity extends AppCompatActivity {
 
         swipeTrack.addView(swipeKnob);
 
+        final String finalOrderId = orderId;
+        final View.OnClickListener openOrderClick = v -> {
+            isFinished = true; // User viewed/accepted order
+            stopAlertEffects();
+            SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+            boolean isStore = prefs.getBoolean("store_session_active", false);
+            String targetPanel = isStore
+                    ? (finalOrderId != null && !finalOrderId.isEmpty() ? "/my-store?tab=orders&orderId=" + finalOrderId : "/my-store")
+                    : (finalOrderId != null && !finalOrderId.isEmpty() ? "/admin/delivery-order/" + finalOrderId : "/delivery-dashboard");
+
+            Intent intent = new Intent(OrderAlertActivity.this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            intent.putExtra("open_incoming_order", true);
+            intent.putExtra("order_id", finalOrderId);
+            intent.putExtra("open_panel_from_floating", true);
+            intent.putExtra("target_panel", targetPanel);
+            startActivity(intent);
+            finish();
+        };
+
         // Swipe touch handler for swipeKnob
         final float[] initialX = new float[1];
         swipeKnob.setOnTouchListener((v, event) -> {
@@ -404,26 +424,6 @@ public class OrderAlertActivity extends AppCompatActivity {
                 finish();
             }
         }.start();
-
-        final String finalOrderId = orderId;
-        openOrderClick = v -> {
-            isFinished = true; // User viewed/accepted order
-            stopAlertEffects();
-            SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-            boolean isStore = prefs.getBoolean("store_session_active", false);
-            String targetPanel = isStore
-                    ? (finalOrderId != null && !finalOrderId.isEmpty() ? "/my-store?tab=orders&orderId=" + finalOrderId : "/my-store")
-                    : (finalOrderId != null && !finalOrderId.isEmpty() ? "/admin/delivery-order/" + finalOrderId : "/delivery-dashboard");
-
-            Intent intent = new Intent(OrderAlertActivity.this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("open_incoming_order", true);
-            intent.putExtra("order_id", finalOrderId);
-            intent.putExtra("open_panel_from_floating", true);
-            intent.putExtra("target_panel", targetPanel);
-            startActivity(intent);
-            finish();
-        };
 
         swipeTrack.setOnClickListener(openOrderClick);
         bodyLayout.addView(swipeTrack);

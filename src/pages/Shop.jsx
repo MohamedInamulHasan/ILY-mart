@@ -33,13 +33,21 @@ const ShopCategoryItem = ({ item, isActive, onClick, settings, language }) => {
             id={isActive ? "active-category-pill" : undefined}
             type="button"
             onClick={onClick}
-            className={`text-[13px] sm:text-[14px] transition-all whitespace-nowrap flex items-center justify-center py-1.5 rounded-xl border cursor-pointer select-none outline-none ${
+            className={`relative flex flex-col items-center justify-center pt-1.5 pb-2 px-2 sm:px-2.5 text-[13.5px] sm:text-[14.5px] whitespace-nowrap transition-all cursor-pointer select-none outline-none ${
                 isActive 
-                    ? 'px-3.5 bg-gray-800 text-white font-bold shadow-xs border-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white' 
-                    : 'px-2.5 bg-transparent border-transparent text-gray-950 dark:text-white font-semibold hover:text-black dark:hover:text-white'
+                    ? 'text-gray-950 dark:text-white font-extrabold' 
+                    : 'text-gray-500 dark:text-gray-400 font-semibold hover:text-gray-800 dark:hover:text-gray-200'
             }`}
         >
-            <span>{displayName}</span>
+            <span className="leading-tight">{displayName}</span>
+            {/* 50% sleek underline indicator */}
+            <span 
+                className={`absolute bottom-0 w-1/2 h-[2px] rounded-full transition-all duration-200 ${
+                    isActive 
+                        ? 'bg-[#2E5A2E] dark:bg-[#CBF9B2] opacity-100 scale-x-100' 
+                        : 'bg-transparent opacity-0 scale-x-50'
+                }`} 
+            />
         </button>
     );
 };
@@ -405,19 +413,19 @@ const Shop = () => {
                         </div>
 
 
-                        {/* Categories Horizontal Scroller: Rectangular bar matching store products */}
+                        {/* Categories Horizontal Scroller */}
                         {viewType === 'store' && (
                             isCategoriesLoading ? (
-                                <div className="max-w-7xl mx-auto mb-3 sm:mb-3.5 px-4">
-                                    <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
+                                <div className="mb-3 sm:mb-3.5">
+                                    <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide py-1 border-b border-gray-100 dark:border-gray-800/80">
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
-                                            <div key={i} className="h-8 w-16 sm:w-20 rounded-xl blinkit-shimmer flex-shrink-0" />
+                                            <div key={i} className="h-7 w-16 sm:w-20 rounded-md blinkit-shimmer flex-shrink-0 mb-1" />
                                         ))}
                                     </div>
                                 </div>
                             ) : (
-                                <div className="max-w-7xl mx-auto mb-3 sm:mb-3.5 px-4">
-                                    <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
+                                <div className="mb-3 sm:mb-3.5">
+                                    <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide py-0.5 border-b border-gray-100 dark:border-gray-800/80">
                                         {categoryData.map((item) => {
                                             const isActive = normKey(item.name) === normKey(categoryFilter);
                                             return (
