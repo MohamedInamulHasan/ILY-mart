@@ -38,7 +38,7 @@ const NotificationOverlay = () => {
     const location = useLocation();
 
     const isDeliveryPage = useMemo(() => {
-        return location.pathname.startsWith('/admin') || location.pathname.startsWith('/my-store') || location.pathname.startsWith('/delivery-dashboard');
+        return location.pathname.startsWith('/admin') || location.pathname.startsWith('/my-store') || location.pathname.startsWith('/delivery-dashboard') || location.pathname.includes('/delivery');
     }, [location.pathname]);
 
     const [hasOverlayPermission, setHasOverlayPermission] = useState(true);
@@ -122,21 +122,15 @@ const NotificationOverlay = () => {
         setIncomingOrder(null);
     }, [user?.id || user?._id]);
 
-    // Check if delivery boy has an active accepted order currently in progress
+    // Check if THIS delivery boy has an active accepted order currently in progress
     const hasActiveAcceptedOrder = useMemo(() => {
         if (!isDeliveryBoy) return false;
         const activeOrderId = localStorage.getItem('active_delivery_order_id');
-        const hasAcceptedInDb = allOrders.some(o => {
-            const s = String(o.status || '').toLowerCase().trim();
+        if (!activeOrderId) return false;
+        const activeOrder = allOrders.find(o => String(o._id || o.id) === String(activeOrderId));
+        if (activeOrder) {
+            const s = String(activeOrder.status || '').toLowerCase().trim();
             return s === 'accepted' || s === 'out for delivery' || s === 'shipped';
-        });
-        if (hasAcceptedInDb) return true;
-        if (activeOrderId) {
-            const activeOrder = allOrders.find(o => String(o._id || o.id) === String(activeOrderId));
-            if (activeOrder) {
-                const s = String(activeOrder.status || '').toLowerCase().trim();
-                return s === 'accepted' || s === 'out for delivery' || s === 'shipped';
-            }
         }
         return false;
     }, [allOrders, isDeliveryBoy]);
@@ -186,7 +180,8 @@ const NotificationOverlay = () => {
         if (isDeliveryBoy) {
             const hasActive = hasActiveAcceptedOrder;
             const hasPending = processingOrders.length > 0;
-            setOverlayOrdersState({ hasActive, hasPending });
+            const activeId = localStorage.getItem('active_delivery_order_id') || '';
+            setOverlayOrdersState({ hasActive, hasPending, activeOrderId: activeId });
         } else if (isStoreAdmin && myStore) {
             const hasActive = storeHasActiveAcceptedOrder;
             const hasPending = storeProcessingOrders.length > 0;
@@ -228,33 +223,23 @@ const NotificationOverlay = () => {
     const pendingIndexRef = useRef(0);
     const [repeatTick, setRepeatTick] = useState(0);
 
+    // Continuous interval: constantly check every 3 seconds if there are pending processing orders
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (!incomingOrderRef.current && !isGapPauseRef.current) {
+                setRepeatTick(t => t + 1);
+            }
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
     // Repeating popup alert for pending/processing orders (for both Store Admin and Delivery Boy)
-    // 1. If Display Over Other Apps is turned OFF (or floating disabled): DO NOT show popup alert or repeating notifications!
-    // 2. If there is an accepted order in progress (delivery boy has accepted, or store has accepted): DO NOT show repeat popup alerts!
-    // 3. When there is NO accepted order, and there ARE pending/processing cards:
+    // 1. If there is an accepted order in progress (delivery boy has accepted, or store has accepted): DO NOT show repeat popup alerts!
+    // 2. When there is NO accepted order, and there ARE pending/processing cards:
     //    Show ONE order at a time with alarm/sound and 12s timer.
     //    If skipped or timed out: wait 5s breather, then cycle to the next pending order (repeating alerts until accepted)!
     useEffect(() => {
-        // If native Android and overlay permission is missing: DO NOT show popup alert
-        if (isNativeAndroid() && !hasOverlayPermission) {
-            if (incomingOrder) {
-                stopIncomingOrderAlertSound();
-                setIncomingOrder(null);
-                dismissPorterOrderCard();
-            }
-            return;
-        }
-
         const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        if (!isFloatingEnabled) {
-            if (incomingOrder) {
-                stopIncomingOrderAlertSound();
-                setIncomingOrder(null);
-                dismissPorterOrderCard();
-            }
-            return;
-        }
-
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
         const isDeliveryRole = isDeliveryBoy && isDeliverySessionActive && isDeliveryPage;
         const isStoreRole = isStoreAdmin && myStore;
@@ -304,7 +289,7 @@ const NotificationOverlay = () => {
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate([200, 100, 200]);
             }
-            if (isNativeAndroid()) {
+            if (isNativeAndroid() && hasOverlayPermission && isFloatingEnabled) {
                 showPorterOrderCard(targetOrder);
             }
         }

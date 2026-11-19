@@ -183,8 +183,9 @@ const DeliveryDashboard = () => {
                     if (currentToken) {
                         await setOverlayAuthToken(currentToken);
                     }
-                    await setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
-                    await setOverlayHasAcceptedOrder(hasAcceptedCard);
+                    const activeOrderId = localStorage.getItem('active_delivery_order_id') || '';
+                    await setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders, activeOrderId });
+                    await setOverlayHasAcceptedOrder(hasAcceptedCard, activeOrderId);
                     await showFloatingOverlay();
                 }
                 // Open Android Settings so user can turn on Display over other apps
@@ -194,9 +195,16 @@ const DeliveryDashboard = () => {
     };
 
     // Check if there is an accepted delivery card in the panel (Out for Delivery, Shipped, Accepted)
-    // Only 'Accepted', 'Out for Delivery', and 'Shipped' are accepted cards
+    // Only 'Accepted', 'Out for Delivery', and 'Shipped' are accepted cards FOR THIS DELIVERY BOY
     const hasAcceptedCard = useMemo(() => {
-        return orders.some(o => ['Accepted', 'Out for Delivery', 'Shipped'].includes(o.status));
+        const activeOrderId = localStorage.getItem('active_delivery_order_id');
+        if (!activeOrderId) return false;
+        const activeOrder = orders.find(o => String(o._id || o.id) === String(activeOrderId));
+        if (activeOrder) {
+            const s = String(activeOrder.status || '').toLowerCase().trim();
+            return s === 'accepted' || s === 'out for delivery' || s === 'shipped';
+        }
+        return false;
     }, [orders]);
 
     // Check if there are pending/processing orders waiting
@@ -207,8 +215,9 @@ const DeliveryDashboard = () => {
     // Keep native overlay synced: hide floating icon when no active and no pending orders
     useEffect(() => {
         if (!isNativeAndroid()) return;
-        setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
-        setOverlayHasAcceptedOrder(hasAcceptedCard);
+        const activeOrderId = localStorage.getItem('active_delivery_order_id') || '';
+        setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders, activeOrderId });
+        setOverlayHasAcceptedOrder(hasAcceptedCard, activeOrderId);
     }, [hasAcceptedCard, hasPendingOrders]);
 
     // Porter Partner Style Floating Logo: check permission & sync state on mount and whenever user returns from Settings
@@ -233,8 +242,9 @@ const DeliveryDashboard = () => {
                 if (currentToken) {
                     await setOverlayAuthToken(currentToken);
                 }
-                await setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders });
-                await setOverlayHasAcceptedOrder(hasAcceptedCard);
+                const activeOrderId = localStorage.getItem('active_delivery_order_id') || '';
+                await setOverlayOrdersState({ hasActive: hasAcceptedCard, hasPending: hasPendingOrders, activeOrderId });
+                await setOverlayHasAcceptedOrder(hasAcceptedCard, activeOrderId);
                 await showFloatingOverlay();
             }
         }

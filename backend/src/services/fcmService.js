@@ -290,6 +290,28 @@ export const sendStaffNewOrderNotification = async (order) => {
         // NEVER invokes FirebaseMessagingService.onMessageReceived() when the app is in the background or closed!
         // A pure DATA-ONLY message with priority 'high' wakes up IlyMartMessagingService.onMessageReceived()
         // so it can acquire WakeLock, play continuous alarm, and display the Porter Order Alert Card over the screen!
+        //
+        // Keep order payload clean and compact to NEVER hit FCM's strict 4096-byte limit:
+        const compactOrder = {
+            _id: (order._id || order.id || '').toString(),
+            shortId: String(shortId),
+            total: Number(rawTotal || 0),
+            status: order.status || 'Processing',
+            customerName: order.shippingAddress?.fullName || order.user?.name || 'Customer',
+            customerPhone: order.shippingAddress?.phone || order.shippingAddress?.mobile || order.user?.mobile || '',
+            dropAddress: [
+                order.shippingAddress?.addressLine1 || order.shippingAddress?.address,
+                order.shippingAddress?.landmark,
+                order.shippingAddress?.city
+            ].filter(Boolean).join(', '),
+            pickupStore: targetStores[0]?.name || order.storeId?.name || 'Store',
+            storeId: orderStoreId || '',
+            storeName: targetStores[0]?.name || order.storeId?.name || '',
+            itemCount: Array.isArray(order.items) ? order.items.length : 1,
+            deliveryCharge: Number(order.deliveryCharge || 0),
+            createdAt: order.createdAt || new Date().toISOString()
+        };
+
         const message = {
             tokens,
             data: {
@@ -299,7 +321,7 @@ export const sendStaffNewOrderNotification = async (order) => {
                 body: `New order #${shortId} for ₹${total}. Tap to view details.`,
                 shortId: String(shortId),
                 total: String(total),
-                orderJson: JSON.stringify(order),
+                orderJson: JSON.stringify(compactOrder),
                 channelId: 'order_updates'
             },
             android: {

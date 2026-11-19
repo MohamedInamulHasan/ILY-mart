@@ -285,10 +285,12 @@ public class FloatingOverlayPlugin extends Plugin {
     public void setOrdersState(PluginCall call) {
         boolean hasActive = call.getBoolean("hasActive", false);
         boolean hasPending = call.getBoolean("hasPending", false);
+        String activeOrderId = call.getString("activeOrderId", "");
         SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
         prefs.edit()
                 .putBoolean("has_active_orders", hasActive)
                 .putBoolean("has_pending_orders", hasPending)
+                .putString("active_order_id", activeOrderId != null ? activeOrderId : "")
                 .apply();
         if (FloatingLogoService.instance != null) {
             FloatingLogoService.instance.updateOrdersState(hasActive, hasPending);
@@ -301,8 +303,12 @@ public class FloatingOverlayPlugin extends Plugin {
     @PluginMethod
     public void setHasAcceptedOrder(PluginCall call) {
         boolean hasAcceptedOrder = call.getBoolean("hasAcceptedOrder", false);
+        String activeOrderId = call.getString("activeOrderId", "");
         SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        prefs.edit().putBoolean("has_active_orders", hasAcceptedOrder).apply();
+        prefs.edit()
+                .putBoolean("has_active_orders", hasAcceptedOrder)
+                .putString("active_order_id", activeOrderId != null ? activeOrderId : "")
+                .apply();
         if (FloatingLogoService.instance != null) {
             boolean hasPending = prefs.getBoolean("has_pending_orders", false);
             FloatingLogoService.instance.updateOrdersState(hasAcceptedOrder, hasPending);

@@ -302,7 +302,9 @@ public class FloatingLogoService extends Service {
     public static void triggerCardFromJS(JSONObject orderJson) {
         if (instance != null && !isAppInForeground) {
             SharedPreferences prefs = instance.getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-            boolean hasActive = prefs.getBoolean("has_active_orders", false);
+            boolean isStore = prefs.getBoolean("store_session_active", false);
+            String activeOrderId = prefs.getString("active_order_id", "").trim();
+            boolean hasActive = prefs.getBoolean("has_active_orders", false) && (isStore || !activeOrderId.isEmpty());
             if (hasActive) {
                 // When there is an accepted order: don't show alert card, just show floating icon
                 instance.mainHandler.post(() -> {
@@ -486,7 +488,9 @@ public class FloatingLogoService extends Service {
         }
 
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        String activeOrderId = prefs.getString("active_order_id", "").trim();
+        boolean hasActive = prefs.getBoolean("has_active_orders", false) && (isStore || !activeOrderId.isEmpty());
         if (hasActive) {
             // When an accepted order exists (for either delivery boy or store admin), do not show alert popups; just show floating icon
             showCircleBubble();
@@ -1073,7 +1077,9 @@ public class FloatingLogoService extends Service {
         if (isAppInForeground) return;
 
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        String activeOrderId = prefs.getString("active_order_id", "").trim();
+        boolean hasActive = prefs.getBoolean("has_active_orders", false) && (isStore || !activeOrderId.isEmpty());
         if (hasActive) {
             // When an accepted order exists: do not show repeat alarms, show quiet circle bubble
             showCircleBubble();
@@ -1120,7 +1126,9 @@ public class FloatingLogoService extends Service {
         if (isAppInForeground) return;
 
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        String activeOrderId = prefs.getString("active_order_id", "").trim();
+        boolean hasActive = prefs.getBoolean("has_active_orders", false) && (isStore || !activeOrderId.isEmpty());
         if (hasActive) {
             showCircleBubble();
             return;
@@ -1143,7 +1151,9 @@ public class FloatingLogoService extends Service {
             return;
         }
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        String activeOrderId = prefs.getString("active_order_id", "").trim();
+        boolean hasActive = prefs.getBoolean("has_active_orders", false) && (isStore || !activeOrderId.isEmpty());
         if (hasActive) {
             // When an accepted order exists (for either delivery boy or store admin), do not show alert popups; just show floating icon
             showCircleBubble();
@@ -1438,8 +1448,19 @@ public class FloatingLogoService extends Service {
                             }
 
                             String status = order.optString("status", "");
-                            if ("Accepted".equalsIgnoreCase(status) || "Out for Delivery".equalsIgnoreCase(status) || "Shipped".equalsIgnoreCase(status)) {
-                                foundAccepted = true;
+                            String oId = order.optString("_id", order.optString("id", "")).trim();
+                            if (isStoreMode) {
+                                if ("Accepted".equalsIgnoreCase(status) || "Out for Delivery".equalsIgnoreCase(status) || "Shipped".equalsIgnoreCase(status)) {
+                                    foundAccepted = true;
+                                }
+                            } else {
+                                SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
+                                String activeOrderId = prefs.getString("active_order_id", "").trim();
+                                if (!activeOrderId.isEmpty() && activeOrderId.equals(oId)) {
+                                    if ("Accepted".equalsIgnoreCase(status) || "Out for Delivery".equalsIgnoreCase(status) || "Shipped".equalsIgnoreCase(status)) {
+                                        foundAccepted = true;
+                                    }
+                                }
                             }
                             if ("Pending".equalsIgnoreCase(status)
                                     || "Processing".equalsIgnoreCase(status)

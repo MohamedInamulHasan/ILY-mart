@@ -53,7 +53,9 @@ public class OrderAlertActivity extends AppCompatActivity {
 
         boolean hasOverlay = (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this));
         SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        boolean hasActive = prefs.getBoolean("has_active_orders", false);
+        boolean isStore = prefs.getBoolean("store_session_active", false);
+        String activeOrderId = prefs.getString("active_order_id", "").trim();
+        boolean hasActive = prefs.getBoolean("has_active_orders", false) && (isStore || !activeOrderId.isEmpty());
         if (!hasOverlay || hasActive) {
             finish();
             return;

@@ -97,12 +97,14 @@ public class IlyMartMessagingService extends MessagingService {
 
             // 2. CRITICAL STORE OWNER ISOLATION:
             // If the user on this phone is a Store Owner, verify if the order belongs to THEIR store!
+            // Delivery boys deliver for ALL stores and must NEVER be filtered by store!
             SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
             boolean isStoreSession = prefs.getBoolean("store_session_active", false);
+            boolean isDeliverySession = prefs.getBoolean("delivery_session_active", false);
             String myStoreId = prefs.getString("store_id", "");
             String myStoreName = prefs.getString("store_name", "");
 
-            if (isStoreSession && (!myStoreId.isEmpty() || !myStoreName.isEmpty())) {
+            if (isStoreSession && !isDeliverySession && (!myStoreId.isEmpty() || !myStoreName.isEmpty())) {
                 if (!FloatingLogoService.isOrderForStore(orderObj, myStoreId, myStoreName)) {
                     // This order belongs to another store! Do NOT alert this store owner!
                     return;
@@ -110,7 +112,8 @@ public class IlyMartMessagingService extends MessagingService {
             }
 
             // If delivery partner has an active/accepted order, do not show alert pop-up or loud alarm; just ensure floating icon is active
-            boolean hasActive = prefs.getBoolean("has_active_orders", false);
+            String activeOrderId = prefs.getString("active_order_id", "").trim();
+            boolean hasActive = prefs.getBoolean("has_active_orders", false) && !activeOrderId.isEmpty();
             if (hasActive && !isStoreSession) {
                 Intent serviceIntent = new Intent(this, FloatingLogoService.class);
                 try {
@@ -146,7 +149,7 @@ public class IlyMartMessagingService extends MessagingService {
             // 1. When Display Over Other Apps is turned OFF -> DO NOT show pop up alert or repeat alert!
             // 2. When there is an accepted order (for delivery boy or store admin) -> DO NOT show pop up alert!
             boolean hasOverlay = (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this));
-            boolean hasAcceptedOrder = prefs.getBoolean("has_active_orders", false);
+            boolean hasAcceptedOrder = prefs.getBoolean("has_active_orders", false) && !activeOrderId.isEmpty();
 
             if (hasOverlay && !hasAcceptedOrder) {
                 Intent serviceIntent = new Intent(this, FloatingLogoService.class);
@@ -228,6 +231,16 @@ public class IlyMartMessagingService extends MessagingService {
                 PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
+        Intent fullScreenIntent = new Intent(this, OrderAlertActivity.class);
+        fullScreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        fullScreenIntent.putExtra("order_json", orderJsonStr);
+        PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
+                this,
+                (int) System.currentTimeMillis() + 1,
+                fullScreenIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+        );
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
@@ -240,6 +253,13 @@ public class IlyMartMessagingService extends MessagingService {
                 .setSound(alertSound)
                 .setVibrate(new long[]{0, 250, 150, 250})
                 .setOngoing(false);
+
+        boolean hasOverlay = (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || android.provider.Settings.canDrawOverlays(this));
+        String activeOrderId = prefs.getString("active_order_id", "").trim();
+        boolean hasAcceptedOrder = prefs.getBoolean("has_active_orders", false) && !activeOrderId.isEmpty();
+        if (hasOverlay && !hasAcceptedOrder) {
+            builder.setFullScreenIntent(fullScreenPendingIntent, true);
+        }
 
         nm.notify(3002, builder.build());
     }
