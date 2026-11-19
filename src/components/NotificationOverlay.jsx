@@ -174,7 +174,7 @@ const NotificationOverlay = () => {
         });
     }, [allOrders, isStoreAdmin, myStoreId, myStoreName]);
 
-    // Sync order state (active/pending) with native floating overlay
+    // Sync order state (active/pending) with native floating overlay every 3 seconds
     useEffect(() => {
         if (!isNativeAndroid()) return;
         if (isDeliveryBoy) {
@@ -187,7 +187,7 @@ const NotificationOverlay = () => {
             const hasPending = storeProcessingOrders.length > 0;
             setOverlayOrdersState({ hasActive, hasPending });
         }
-    }, [hasActiveAcceptedOrder, processingOrders.length, storeHasActiveAcceptedOrder, storeProcessingOrders.length, isDeliveryBoy, isStoreAdmin, myStore]);
+    }, [hasActiveAcceptedOrder, processingOrders.length, storeHasActiveAcceptedOrder, storeProcessingOrders.length, isDeliveryBoy, isStoreAdmin, myStore, repeatTick]);
 
     const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
         return localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
@@ -223,93 +223,22 @@ const NotificationOverlay = () => {
     const pendingIndexRef = useRef(0);
     const [repeatTick, setRepeatTick] = useState(0);
 
-    // Continuous interval: constantly check every 3 seconds if there are pending processing orders
+    // Continuous interval: constantly refresh every 3 seconds to keep native Android overlay state synced
     useEffect(() => {
         const interval = setInterval(() => {
-            if (!incomingOrderRef.current && !isGapPauseRef.current) {
-                setRepeatTick(t => t + 1);
-            }
+            setRepeatTick(t => t + 1);
         }, 3000);
         return () => clearInterval(interval);
     }, []);
 
-    // Repeating popup alert for pending/processing orders (for both Store Admin and Delivery Boy)
-    // 1. If there is an accepted order in progress (delivery boy has accepted, or store has accepted): DO NOT show repeat popup alerts!
-    // 2. When there is NO accepted order, and there ARE pending/processing cards:
-    //    Show ONE order at a time with alarm/sound and 12s timer.
-    //    If skipped or timed out: wait 5s breather, then cycle to the next pending order (repeating alerts until accepted)!
+    // Dismiss any stale incoming order modal if active
     useEffect(() => {
-        const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
-        const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-        const isDeliveryRole = isDeliveryBoy && isDeliverySessionActive && isDeliveryPage;
-        const isStoreRole = isStoreAdmin && myStore;
-
-        if (!isDeliveryRole && !isStoreRole) return;
-
-        // If delivery boy has accepted order, or store has accepted order -> suppress repeat popup alerts
-        const hasAccepted = isDeliveryRole ? hasActiveAcceptedOrder : storeHasActiveAcceptedOrder;
-        if (hasAccepted) {
-            if (incomingOrder) {
-                stopIncomingOrderAlertSound();
-                setIncomingOrder(null);
-                dismissPorterOrderCard();
-            }
-            return;
+        if (incomingOrder) {
+            stopIncomingOrderAlertSound();
+            setIncomingOrder(null);
+            dismissPorterOrderCard();
         }
-
-        if (allOrders.length === 0) return;
-
-        // If an incoming modal is currently showing or we are in the 5s gap pause, wait
-        if (incomingOrder || isGapPauseRef.current) return;
-
-        const activePageOrderId = location.pathname.startsWith('/admin/delivery-order/')
-            ? location.pathname.split('/admin/delivery-order/')[1]?.split('/')[0]?.split('?')[0]
-            : null;
-
-        // Get the relevant pending orders (one order at a time)
-        const pendingList = isDeliveryRole
-            ? processingOrders.filter(o => {
-                const oId = String(o._id || o.id || '');
-                return oId && oId !== activePageOrderId;
-            })
-            : storeProcessingOrders.filter(o => {
-                const oId = String(o._id || o.id || '');
-                return oId && oId !== activePageOrderId;
-            });
-
-        if (pendingList.length > 0) {
-            const targetOrder = pendingList[pendingIndexRef.current % pendingList.length];
-            setStartWithAcceptView(false);
-            setIncomingOrder(targetOrder);
-            triggerIncomingOrderAlert();
-            try {
-                startIncomingOrderAlertSound();
-                playSuccessSound();
-            } catch (_) {}
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
-            }
-            if (isNativeAndroid() && hasOverlayPermission && isFloatingEnabled) {
-                showPorterOrderCard(targetOrder);
-            }
-        }
-    }, [
-        isDeliveryBoy, 
-        isStoreAdmin, 
-        myStore, 
-        myStoreId, 
-        myStoreName, 
-        isDeliveryPage,
-        incomingOrder, 
-        allOrders, 
-        repeatTick, 
-        hasActiveAcceptedOrder, 
-        storeHasActiveAcceptedOrder, 
-        processingOrders, 
-        storeProcessingOrders, 
-        hasOverlayPermission, 
-        location.pathname
-    ]);
+    }, [incomingOrder]);
 
     // Auto-dismiss popup immediately if the current order is accepted or cancelled
     useEffect(() => {
@@ -415,27 +344,13 @@ const NotificationOverlay = () => {
 
                 if (oId && !skippedOrderIds.has(oId) && isProcessingStatus(newOrder.status)) {
                     knownOrderIdsRef.current.add(oId);
-                    if (!hasAccepted && isPermissionOk && !incomingOrder && !isGapPauseRef.current) {
-                        setStartWithAcceptView(false);
-                        setIncomingOrder(newOrder);
-                        triggerIncomingOrderAlert();
-                        try {
-                            startIncomingOrderAlertSound();
-                            playSuccessSound();
-                        } catch (_) {}
-                        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                            navigator.vibrate([200, 100, 200]);
-                        }
-                        if (isNativeAndroid()) {
-                            showPorterOrderCard(newOrder);
-                        }
-                    } else {
-                        try {
-                            playSuccessSound();
-                        } catch (_) {}
-                        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                            navigator.vibrate([100, 50, 100]);
-                        }
+                    // Inside the app: do NOT pop up a blocking modal or siren alarm.
+                    // The dashboard refreshes immediately with the new card. Play single pleasant ping:
+                    try {
+                        playSuccessSound();
+                    } catch (_) {}
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                        navigator.vibrate([100, 50, 100]);
                     }
                 }
             }
