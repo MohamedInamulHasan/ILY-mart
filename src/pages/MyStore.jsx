@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Home } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSocket } from '../context/SocketContext';
@@ -142,12 +142,14 @@ const MyStore = () => {
     const roles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
     const isStoreAdmin = roles.includes('store_admin') || roles.includes('admin') || Boolean(user?.storeId);
 
+    const [currentView, setCurrentView] = useState('list');
+
     if (!user || !isStoreAdmin) {
         setTimeout(() => navigate('/'), 0);
         return null;
     }
 
-    // MAIN VIEW: Direct Store Management (Delivery Panel and duplicate orders feed removed)
+    // MAIN VIEW: Direct Store Management (Delivery Panel, Home button, and Display Over Apps card removed)
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 w-full relative pb-16">
             {/* Top Header */}
@@ -155,7 +157,15 @@ const MyStore = () => {
                 <div className="w-full flex items-center justify-between min-h-[40px]">
                     <button
                         type="button"
-                        onClick={() => safeNavigateBack(navigate, '/profile')}
+                        onClick={() => {
+                            if (currentView === 'addProductToStore') {
+                                setCurrentView('storeProducts');
+                            } else if (currentView === 'storeProducts' || currentView === 'form') {
+                                setCurrentView('list');
+                            } else {
+                                safeNavigateBack(navigate, '/profile');
+                            }
+                        }}
                         title={t('Back')}
                         className="p-1.5 text-gray-900 dark:text-white hover:opacity-70 transition-opacity active:scale-95 cursor-pointer"
                     >
@@ -163,18 +173,15 @@ const MyStore = () => {
                     </button>
 
                     <h1 className="text-[16px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center truncate max-w-[200px]">
-                        {myStore?.name || t('My Store')}
+                        {currentView === 'storeProducts'
+                            ? t('Store Products')
+                            : currentView === 'addProductToStore'
+                                ? t('Add Product')
+                                : (myStore?.name || t('My Store'))}
                     </h1>
 
-                    <button
-                        type="button"
-                        onClick={() => navigate('/')}
-                        title={t('Home')}
-                        className="relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1B4332] hover:bg-[#143226] text-white text-xs font-bold active:scale-95 transition-all shadow-xs cursor-pointer select-none"
-                    >
-                        <Home size={15} className="relative z-10 text-white shrink-0" />
-                        <span className="relative z-10 whitespace-nowrap">{t('Home')}</span>
-                    </button>
+                    {/* Spacer on right to balance back button without Home button */}
+                    <div className="w-[34px] shrink-0" />
                 </div>
             </div>
 
@@ -185,6 +192,8 @@ const MyStore = () => {
                     hideHeader={true}
                     storeId={myStoreId}
                     fixedStore={myStore}
+                    view={currentView}
+                    onViewChange={setCurrentView}
                 />
             </div>
         </div>

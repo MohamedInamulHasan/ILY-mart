@@ -44,7 +44,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from '@dnd-kit/utilities';
 import { SortableStoreCard, SortableProductRow, DragHandle } from './AdminDashboard_Sortables';
 import { areCategoriesMatching, findCanonicalCategory, areSubcategoriesMatching, normCategoryKey } from '../../utils/categoryHelpers';
-
+import { registerModalBackHandler } from '../../utils/useBackButton';
 
 import { 
     isNativeAndroid, 
@@ -58,7 +58,14 @@ import {
     setOverlayOrdersState
 } from '../../utils/floatingOverlay';
 
-const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStoreId, fixedStore: propFixedStore }) => {
+const StoreManagement = ({ 
+    onBackToOrders, 
+    hideHeader = false, 
+    storeId: propStoreId, 
+    fixedStore: propFixedStore,
+    view: controlledView,
+    onViewChange
+}) => {
     const { user } = useAuth();
     const { t } = useLanguage();
     const { refreshData } = useData();
@@ -339,7 +346,22 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
         }
     }, [isStoreAdmin, myStore, myStoreId, storeHasActive, storeHasPending, hasAnyStoreOrder]);
 
-    const [view, setView] = useState('list'); // Default to list view for everyone
+    const [internalView, setInternalView] = useState('list');
+    const view = controlledView !== undefined ? controlledView : internalView;
+    const setView = (nextView) => {
+        setInternalView(nextView);
+        if (onViewChange) onViewChange(nextView);
+    };
+
+    useEffect(() => {
+        if (view === 'addProductToStore') {
+            return registerModalBackHandler(() => setView('storeProducts'));
+        }
+        if (view === 'storeProducts' || view === 'form') {
+            return registerModalBackHandler(() => setView('list'));
+        }
+    }, [view]);
+
     const [selectedStore, setSelectedStore] = useState(myStore);
     const [editingStore, setEditingStore] = useState(myStore);
 
@@ -850,7 +872,7 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
         <div className="max-w-6xl">
             {/* Header */}
             {/* Dynamic Header for all views */}
-            {!(hideHeader && view === 'list') && (
+            {!hideHeader && (
             <div className="flex justify-between items-center mb-6 gap-3">
                 <div className="flex items-center gap-2 min-w-0 flex-1 relative">
                     {(view !== 'list' || isStoreAdmin) && (
@@ -913,47 +935,6 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
 
             {view === 'list' && (
                 <>
-                    {/* Display Over Other Apps Status Card (Allow when OFF, Turn Off when ON) */}
-                    {isNativeAndroid() && isStoreAdmin && (
-                        !hasOverlayPermission ? (
-                            <div className="mb-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="text-xl shrink-0">⚠️</span>
-                                    <div className="text-left min-w-0">
-                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200 truncate">{t('Display Over Other Apps Required')}</p>
-                                        <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-tight mt-0.5">{t('Enable permission so floating screen image and order alerts appear')}</p>
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={openOverlaySettings}
-                                    className="shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
-                                >
-                                    {t('Allow')}
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="mb-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                        <CheckCircle size={16} />
-                                    </div>
-                                    <div className="text-left min-w-0">
-                                        <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200 truncate">{t('Display Over Other Apps Active')}</p>
-                                        <p className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-tight mt-0.5">{t('Floating icon and alerts will show when outside the app')}</p>
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={openOverlaySettings}
-                                    className="shrink-0 px-3.5 py-1.5 bg-red-500 hover:bg-red-600 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
-                                >
-                                    {t('Turn Off')}
-                                </button>
-                            </div>
-                        )
-                    )}
-
                     {/* Search Bar - Hide for Store Admin */}
                     {!isStoreAdmin && (
                         <div className="mb-4">
@@ -1399,7 +1380,29 @@ const StoreManagement = ({ onBackToOrders, hideHeader = false, storeId: propStor
             )}
 
             {view === 'storeProducts' && selectedStore && (
-                <div className="space-y-6">
+                <div className="space-y-4">
+                    {/* Compact Action Bar when header is hidden: Back to Store + Add Product */}
+                    {hideHeader && (
+                        <div className="flex items-center justify-between gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setView('list')}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs hover:bg-gray-50 dark:hover:bg-gray-750 active:scale-95 transition-all cursor-pointer"
+                            >
+                                <ArrowLeft size={16} />
+                                <span>{t('Back to Store')}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleAddProductToStore}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2E5A2E] hover:bg-[#1a3d1a] active:scale-95 text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer"
+                            >
+                                <Plus size={16} />
+                                <span>{t('Add Product')}</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* Bulk Delete Toolbar */}
                     {selectedStoreProductIds.length > 0 && (
