@@ -285,9 +285,8 @@ public class FloatingLogoService extends Service {
                     }
                 } else {
                     // Out of the app with active or pending orders: show floating icon
-                    boolean isStore = prefs.getBoolean("store_session_active", false);
-                    if (hasActive && !isStore) {
-                        // When an order is accepted in delivery panel: dismiss any alert cards and just show floating icon
+                    if (hasActive) {
+                        // When an order is accepted (delivery or store): dismiss any alert cards and just show floating icon
                         if (instance.orderCardView != null) {
                             instance.dismissPorterOrderCard();
                         }
@@ -304,9 +303,8 @@ public class FloatingLogoService extends Service {
         if (instance != null && !isAppInForeground) {
             SharedPreferences prefs = instance.getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
             boolean hasActive = prefs.getBoolean("has_active_orders", false);
-            boolean isStore = prefs.getBoolean("store_session_active", false);
-            if (hasActive && !isStore) {
-                // When there is an accepted order in delivery panel: don't show alert card, just show floating icon
+            if (hasActive) {
+                // When there is an accepted order: don't show alert card, just show floating icon
                 instance.mainHandler.post(() -> {
                     instance.dismissPorterOrderCard();
                     instance.showCircleBubble();
@@ -1239,9 +1237,10 @@ public class FloatingLogoService extends Service {
             alertMediaPlayer = new MediaPlayer();
             alertMediaPlayer.setDataSource(this, alertUri);
             alertMediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build());
+            alertMediaPlayer.setVolume(1.0f, 1.0f);
             alertMediaPlayer.setLooping(false);
             alertMediaPlayer.setOnCompletionListener(mp -> stopAlertEffects());
             alertMediaPlayer.prepare();

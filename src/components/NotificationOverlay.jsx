@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useOrders } from '../hooks/queries/useOrders';
 import { useStores } from '../hooks/queries/useStores';
 import IncomingOrderModal from './IncomingOrderModal';
-import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound, stopIncomingOrderAlertSound } from '../utils/soundHelper';
+import { playSuccessSound, playOrderPlacedSound, playOrderAcceptedSound, playOrderDeliveredSound, playOrderCancelledSound, startIncomingOrderAlertSound, stopIncomingOrderAlertSound } from '../utils/soundHelper';
 import { 
     isNativeAndroid, 
     setOverlayOrdersState, 
@@ -125,10 +125,20 @@ const NotificationOverlay = () => {
     // Check if delivery boy has an active accepted order currently in progress
     const hasActiveAcceptedOrder = useMemo(() => {
         if (!isDeliveryBoy) return false;
-        return allOrders.some(o => {
+        const activeOrderId = localStorage.getItem('active_delivery_order_id');
+        const hasAcceptedInDb = allOrders.some(o => {
             const s = String(o.status || '').toLowerCase().trim();
             return s === 'accepted' || s === 'out for delivery' || s === 'shipped';
         });
+        if (hasAcceptedInDb) return true;
+        if (activeOrderId) {
+            const activeOrder = allOrders.find(o => String(o._id || o.id) === String(activeOrderId));
+            if (activeOrder) {
+                const s = String(activeOrder.status || '').toLowerCase().trim();
+                return s === 'accepted' || s === 'out for delivery' || s === 'shipped';
+            }
+        }
+        return false;
     }, [allOrders, isDeliveryBoy]);
 
     // Helper to check if order is processing
@@ -288,6 +298,7 @@ const NotificationOverlay = () => {
             setIncomingOrder(targetOrder);
             triggerIncomingOrderAlert();
             try {
+                startIncomingOrderAlertSound();
                 playSuccessSound();
             } catch (_) {}
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -424,6 +435,7 @@ const NotificationOverlay = () => {
                         setIncomingOrder(newOrder);
                         triggerIncomingOrderAlert();
                         try {
+                            startIncomingOrderAlertSound();
                             playSuccessSound();
                         } catch (_) {}
                         if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -670,6 +682,36 @@ const NotificationOverlay = () => {
 
     return (
         <>
+            {incomingOrder && (
+                <IncomingOrderModal
+                    key={incomingOrder._id || incomingOrder.id}
+                    order={incomingOrder}
+                    startWithViewCard={!startWithAcceptView}
+                    onAccepted={(acceptedOrder) => {
+                        const currentId = String((acceptedOrder?._id || acceptedOrder?.id) || '');
+                        if (currentId) {
+                            knownOrderIdsRef.current.add(currentId);
+                        }
+                        allOrders.forEach(o => {
+                            const oId = String(o._id || o.id || '');
+                            if (oId) knownOrderIdsRef.current.add(oId);
+                        });
+                        setStartWithAcceptView(false);
+                        setIncomingOrder(null);
+                        queryClient.invalidateQueries({ queryKey: ['orders'] });
+                    }}
+                    onClose={() => {
+                        setStartWithAcceptView(false);
+                        handleModalClose();
+                    }}
+                    onSkip={(skippedOrder) => {
+                        setStartWithAcceptView(false);
+                        handleOrderSkip(skippedOrder);
+                    }}
+                    onAcceptViewOpened={handleAcceptViewOpened}
+                />
+            )}
+
             <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-sm px-4 pointer-events-none">
                 <AnimatePresence>
                     {notifications.map((notif) => (
