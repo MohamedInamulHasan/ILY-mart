@@ -31,6 +31,16 @@ const NotificationOverlay = () => {
     const [incomingOrder, setIncomingOrder] = useState(null);
     const [startWithAcceptView, setStartWithAcceptView] = useState(false);
     const [skippedOrderIds, setSkippedOrderIds] = useState(() => new Set());
+    const [repeatTick, setRepeatTick] = useState(0);
+
+    // Continuous interval: constantly refresh every 3 seconds to keep native Android overlay state synced
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setRepeatTick(t => t + 1);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
     const sessionStartRef = useRef(Date.now());
     const initialOrdersLoadedRef = useRef(false);
     const knownOrderIdsRef = useRef(new Set());
@@ -221,15 +231,6 @@ const NotificationOverlay = () => {
 
     const isGapPauseRef = useRef(false);
     const pendingIndexRef = useRef(0);
-    const [repeatTick, setRepeatTick] = useState(0);
-
-    // Continuous interval: constantly refresh every 3 seconds to keep native Android overlay state synced
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setRepeatTick(t => t + 1);
-        }, 3000);
-        return () => clearInterval(interval);
-    }, []);
 
     // Dismiss any stale incoming order modal if active
     useEffect(() => {

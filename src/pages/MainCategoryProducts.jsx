@@ -310,6 +310,7 @@ const MainCategoryProducts = () => {
                                             const title = product.title;
                                             const storeObj = stores.find(s => (s._id || s.id) === (product.storeId?._id || product.storeId));
                                             const isClosed = !isStoreOpen(storeObj);
+                                            const storeName = storeObj ? (t(storeObj, 'name') || storeObj.name) : (product.storeId?.name || product.storeName || '');
 
                                             return (
                                                 <Link
@@ -336,11 +337,18 @@ const MainCategoryProducts = () => {
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className={`font-normal text-gray-800 dark:text-gray-200 truncate text-[13px] tracking-tight leading-tight ${isClosed ? 'opacity-60' : ''}`}>
-                                                            {title}
-                                                        </p>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className={`text-[#2E5A2E] dark:text-[#CBF9B2] font-medium text-[11px] ${isClosed ? 'grayscale opacity-50' : ''}`}>₹{Number(product.price).toFixed(0)}</span>
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <p className={`font-normal text-gray-800 dark:text-gray-200 truncate text-[13px] tracking-tight leading-tight ${isClosed ? 'opacity-60' : ''}`}>
+                                                                {title}
+                                                            </p>
+                                                            {storeName && (
+                                                                <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate leading-tight font-normal">
+                                                                    {storeName}
+                                                                </p>
+                                                            )}
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <span className={`text-[#2E5A2E] dark:text-[#CBF9B2] font-medium text-[11px] ${isClosed ? 'grayscale opacity-50' : ''}`}>₹{Number(product.price).toFixed(0)}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </Link>

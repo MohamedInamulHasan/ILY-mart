@@ -355,6 +355,7 @@ const Home = () => {
                                         const productOpen = checkOpen(product, productStore);
                                         const isClosed = !productOpen;
                                         const title = t(product, 'title');
+                                        const storeName = productStore ? (t(productStore, 'name') || productStore.name) : (product.storeId?.name || product.storeName || '');
 
                                         return (
                                             <Link
@@ -394,11 +395,16 @@ const Home = () => {
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex flex-col gap-0">
+                                                    <div className="flex flex-col gap-0.5">
                                                         <p className={`font-normal text-gray-800 dark:text-gray-200 truncate text-[13px] tracking-tight leading-tight ${isClosed ? 'opacity-60' : ''}`}>
                                                             {title}
                                                         </p>
-                                                        <div className="flex items-center gap-1.5">
+                                                        {storeName && (
+                                                            <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate leading-tight font-normal">
+                                                                {storeName}
+                                                            </p>
+                                                        )}
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
                                                             <span className={`text-[#2E5A2E] dark:text-[#CBF9B2] font-medium text-[11px] ${isClosed ? 'grayscale opacity-50' : ''}`}>₹{Number(product.price).toFixed(0)}</span>
                                                         </div>
                                                     </div>
