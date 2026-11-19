@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation, useSearchParams, Link } from 'reac
 import { useData } from '../context/DataContext';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useCategories } from '../hooks/queries/useCategories';
+import { useStores } from '../hooks/queries/useStores';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Search, ChevronDown, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -13,7 +14,7 @@ import SortDropdown from '../components/SortDropdown';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
-import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
+import { isStoreOpen, isProductScheduled, isProductFromActiveStore } from '../utils/storeHelpers';
 import { getCleanCategoryName, areCategoriesMatching, areSubcategoriesMatching, safeDecodeURIComponent } from '../utils/categoryHelpers';
 import { groupProducts } from '../utils/productGrouping';
 import { API_BASE_URL } from '../utils/api';
@@ -38,6 +39,12 @@ const CategoryProducts = () => {
     // Fetch categories and products
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
     const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
+    const { data: rawStores = [] } = useStores();
+
+    const storesList = useMemo(() => {
+        if (Array.isArray(rawStores) && rawStores.length > 0) return rawStores;
+        return Array.isArray(stores) ? stores : [];
+    }, [rawStores, stores]);
 
     // Find current category object in admin categories list
     const currentCategory = useMemo(() => {
@@ -161,7 +168,9 @@ const CategoryProducts = () => {
 
     // Zepto-style typewriter animated placeholder (cycles through this section's products)
     const searchWords = useMemo(() => {
-        const prodList = (categoryProducts && categoryProducts.length > 0) ? categoryProducts : allProducts;
+        const prodList = (categoryProducts && categoryProducts.length > 0) 
+            ? categoryProducts 
+            : allProducts.filter(p => isProductFromActiveStore(p, storesList));
         const titles = prodList.map(p => {
             const raw = (language === 'ta' && p.title_ta) ? p.title_ta : (p.title || p.name || '');
             return cleanSearchTitle(raw, language);
@@ -356,13 +365,18 @@ const CategoryProducts = () => {
                             <div className="absolute top-[calc(100%+12px)] left-0 right-0 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-[200] animate-in fade-in slide-in-from-top-2 duration-300 shadow-xl">
                                 {(() => {
                                     const filteredDropdown = allProducts
-                                        .filter(p => 
-                                            p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                            p.title_ta?.toLowerCase().includes(searchQuery.toLowerCase())
-                                        )
+                                        .filter(p => {
+                                            if (!isProductFromActiveStore(p, storesList)) {
+                                                return false;
+                                            }
+                                            return (
+                                                p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                p.title_ta?.toLowerCase().includes(searchQuery.toLowerCase())
+                                            );
+                                        })
                                         .sort((a, b) => {
-                                            const aStore = stores.find(s => (s._id || s.id) === (a.storeId?._id || a.storeId));
-                                            const bStore = stores.find(s => (s._id || s.id) === (b.storeId?._id || b.storeId));
+                                            const aStore = storesList.find(s => (s._id || s.id) === (a.storeId?._id || a.storeId));
+                                            const bStore = storesList.find(s => (s._id || s.id) === (b.storeId?._id || b.storeId));
                                             
                                             const checkOpen = (p, s) => {
                                                 if (p.isAvailable === false) return false;
@@ -399,7 +413,7 @@ const CategoryProducts = () => {
 
                                     return filteredDropdown.map((product) => {
                                         const productId = product._id || product.id;
-                                        const productStore = stores.find(s => (s._id || s.id) === (product.storeId?._id || product.storeId));
+                                        const productStore = storesList.find(s => (s._id || s.id) === (product.storeId?._id || product.storeId));
                                         
                                         const checkOpen = (p, s) => {
                                             if (p.isAvailable === false) return false;

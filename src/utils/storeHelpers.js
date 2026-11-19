@@ -303,3 +303,39 @@ export const calculateDeliveryCharge = (items) => {
         return 20;
     }
 };
+
+// Check if a store is active and not hidden
+export const isStoreActiveAndVisible = (store) => {
+    if (!store) return false;
+    if (store.isActive === false) return false;
+    if (store.isHidden === true) return false;
+    if (store.isHomeHidden === true) return false;
+    return true;
+};
+
+// Check if a product belongs to an active, non-hidden store
+export const isProductFromActiveStore = (product, stores = []) => {
+    if (!product) return false;
+    // Check product's own availability/hidden flags
+    if (product.isAvailable === false || product.isHidden === true) return false;
+
+    // Check populated storeId object if available
+    if (product.storeId && typeof product.storeId === 'object') {
+        if (!isStoreActiveAndVisible(product.storeId)) return false;
+    }
+
+    // Check against stores array if available
+    const storeId = String(product.storeId?._id || product.storeId || '');
+    if (storeId && Array.isArray(stores) && stores.length > 0) {
+        const found = stores.find(s => String(s._id || s.id) === storeId);
+        // If the store is explicitly known in stores array and is hidden/inactive:
+        if (found && !isStoreActiveAndVisible(found)) return false;
+        // If stores list has active stores and this store is missing from active stores:
+        const activeStores = stores.filter(isStoreActiveAndVisible);
+        if (activeStores.length > 0 && !activeStores.some(s => String(s._id || s.id) === storeId)) {
+            return false;
+        }
+    }
+
+    return true;
+};

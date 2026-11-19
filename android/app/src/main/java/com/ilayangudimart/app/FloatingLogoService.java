@@ -1455,7 +1455,6 @@ public class FloatingLogoService extends Service {
                                     foundAccepted = true;
                                 }
                             } else {
-                                SharedPreferences prefs = getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
                                 String activeOrderId = prefs.getString("active_order_id", "").trim();
                                 if (!activeOrderId.isEmpty() && activeOrderId.equals(oId)) {
                                     if ("Accepted".equalsIgnoreCase(status) || "Out for Delivery".equalsIgnoreCase(status) || "Shipped".equalsIgnoreCase(status)) {

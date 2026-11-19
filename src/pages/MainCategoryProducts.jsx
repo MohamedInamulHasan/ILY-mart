@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import { useProducts } from '../hooks/queries/useProducts';
 import { useCategories } from '../hooks/queries/useCategories';
 import { useMainCategories } from '../hooks/queries/useMainCategories';
+import { useStores } from '../hooks/queries/useStores';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, ShoppingCart, Search, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -15,7 +16,7 @@ import SortDropdown from '../components/SortDropdown';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
-import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
+import { isStoreOpen, isProductScheduled, isProductFromActiveStore } from '../utils/storeHelpers';
 import { getCleanCategoryName, safeDecodeURIComponent } from '../utils/categoryHelpers';
 import { groupProducts } from '../utils/productGrouping';
 import { API_BASE_URL } from '../utils/api';
@@ -49,13 +50,21 @@ const MainCategoryProducts = () => {
     const { data: mainCategories = [], isLoading: loadingMainCats } = useMainCategories();
     const { data: rawCategories = [], isLoading: loadingCategories } = useCategories();
     const { data: rawProducts = [], isLoading: loadingProducts } = useProducts();
+    const { data: rawStores = [] } = useStores();
+
+    const storesList = useMemo(() => {
+        if (Array.isArray(rawStores) && rawStores.length > 0) return rawStores;
+        return Array.isArray(stores) ? stores : [];
+    }, [rawStores, stores]);
 
     // Zepto-style typewriter animated placeholder
     const searchWords = useMemo(() => {
-        const productTitles = (rawProducts || []).map(p => {
-            const raw = (language === 'ta' && p.title_ta) ? p.title_ta : (p.title || p.name || '');
-            return cleanSearchTitle(raw, language);
-        }).filter(w => w && w.length > 1);
+        const productTitles = (rawProducts || [])
+            .filter(p => isProductFromActiveStore(p, storesList))
+            .map(p => {
+                const raw = (language === 'ta' && p.title_ta) ? p.title_ta : (p.title || p.name || '');
+                return cleanSearchTitle(raw, language);
+            }).filter(w => w && w.length > 1);
 
         const fallbackEn = ['fresh groceries', 'dairy', 'snacks', 'fruits', 'vegetables', 'beverages'];
         const fallbackTa = ['மளிகை', 'பால் பொருட்கள்', 'தின்பண்டங்கள்', 'பழங்கள்', 'காய்கறிகள்'];
@@ -291,7 +300,10 @@ const MainCategoryProducts = () => {
                                     {(() => {
                                         const query = searchQuery.toLowerCase().trim();
                                         const filtered = allProducts.filter(p => {
-                                            const matchTitle = (p.title || '').toLowerCase().includes(query);
+                                            if (!isProductFromActiveStore(p, storesList)) {
+                                                return false;
+                                            }
+                                            const matchTitle = (p.title || '').toLowerCase().includes(query) || (p.title_ta || '').toLowerCase().includes(query);
                                             const matchCat = (p.category || '').toLowerCase().includes(query);
                                             const matchSub = (p.subcategory || '').toLowerCase().includes(query);
                                             return matchTitle || matchCat || matchSub;
@@ -308,7 +320,7 @@ const MainCategoryProducts = () => {
                                         return filtered.map((product) => {
                                             const productId = product.id || product._id;
                                             const title = product.title;
-                                            const storeObj = stores.find(s => (s._id || s.id) === (product.storeId?._id || product.storeId));
+                                            const storeObj = storesList.find(s => (s._id || s.id) === (product.storeId?._id || product.storeId));
                                             const isClosed = !isStoreOpen(storeObj);
                                             const storeName = storeObj ? (t(storeObj, 'name') || storeObj.name) : (product.storeId?.name || product.storeName || '');
 

@@ -734,10 +734,13 @@ const StoreProducts = () => {
                             {(() => {
                                 const q = searchQuery.toLowerCase();
                                 const results = storeProducts
-                                    .filter(p =>
-                                        p.title?.toLowerCase().includes(q) ||
-                                        p.title_ta?.toLowerCase().includes(q)
-                                    )
+                                    .filter(p => {
+                                        if (p.isAvailable === false || p.isHidden === true) return false;
+                                        return (
+                                            p.title?.toLowerCase().includes(q) ||
+                                            p.title_ta?.toLowerCase().includes(q)
+                                        );
+                                    })
                                     .sort((a, b) => {
                                         const aOpen = checkProductOpen(a, store);
                                         const bOpen = checkProductOpen(b, store);

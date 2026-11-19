@@ -12,7 +12,7 @@ import { API_BASE_URL } from '../utils/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useSocket } from '../context/SocketContext';
 import { useData } from '../context/DataContext';
-import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
+import { isStoreOpen, isProductScheduled, isProductFromActiveStore } from '../utils/storeHelpers';
 import HomeHeader from '../components/home/HomeHeader';
 import HeroBanner from '../components/home/HeroBanner';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
@@ -298,10 +298,15 @@ const Home = () => {
                             <div className="absolute top-[calc(100%+12px)] left-0 right-0 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-[200] animate-in fade-in slide-in-from-top-2 duration-300 shadow-xl">
                                 {(() => {
                                     const filteredDropdown = products
-                                        .filter(p => 
-                                            p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                            p.title_ta?.toLowerCase().includes(searchQuery.toLowerCase())
-                                        )
+                                        .filter(p => {
+                                            if (!isProductFromActiveStore(p, (Array.isArray(rawStores) && rawStores.length > 0) ? rawStores : stores)) {
+                                                return false;
+                                            }
+                                            return (
+                                                p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                p.title_ta?.toLowerCase().includes(searchQuery.toLowerCase())
+                                            );
+                                        })
                                         .sort((a, b) => {
                                             const aStore = stores.find(s => (s._id || s.id) === (a.storeId?._id || a.storeId));
                                             const bStore = stores.find(s => (s._id || s.id) === (b.storeId?._id || b.storeId));
