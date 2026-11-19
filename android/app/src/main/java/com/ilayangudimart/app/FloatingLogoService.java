@@ -1429,7 +1429,8 @@ public class FloatingLogoService extends Service {
 
                 String filterStoreId = prefs.getString("store_id", "");
                 String filterStoreName = prefs.getString("store_name", "");
-                boolean isStoreMode = prefs.getBoolean("store_session_active", false);
+                boolean isDeliveryMode = prefs.getBoolean("delivery_session_active", false);
+                boolean isStoreMode = prefs.getBoolean("store_session_active", false) && !isDeliveryMode;
 
                 boolean foundAccepted = false;
                 boolean foundPending = false;

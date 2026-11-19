@@ -194,20 +194,28 @@ public class FloatingOverlayPlugin extends Plugin {
     public void setDeliverySessionActive(PluginCall call) {
         boolean active = call.getBoolean("active", false);
         SharedPreferences prefs = getContext().getSharedPreferences("ILYMartPrefs", Context.MODE_PRIVATE);
-        prefs.edit().putBoolean("delivery_session_active", active).apply();
 
         if (active) {
-            prefs.edit().putBoolean("floating_enabled", true).apply();
-        } else if (!prefs.getBoolean("store_session_active", false)) {
-            prefs.edit().putBoolean("floating_enabled", false).apply();
-            if (FloatingLogoService.instance != null) {
-                FloatingLogoService.instance.stopServiceAndHide();
+            // When delivery session is active, delivery boys deliver for ALL stores:
+            // Ensure store-isolation mode is disabled so orders from all stores ring
+            prefs.edit()
+                    .putBoolean("delivery_session_active", true)
+                    .putBoolean("store_session_active", false)
+                    .putBoolean("floating_enabled", true)
+                    .apply();
+        } else {
+            prefs.edit().putBoolean("delivery_session_active", false).apply();
+            if (!prefs.getBoolean("store_session_active", false)) {
+                prefs.edit().putBoolean("floating_enabled", false).apply();
+                if (FloatingLogoService.instance != null) {
+                    FloatingLogoService.instance.stopServiceAndHide();
+                }
+                try {
+                    Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
+                    stopIntent.setAction("STOP_SERVICE");
+                    getContext().stopService(stopIntent);
+                } catch (Exception ignored) {}
             }
-            try {
-                Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
-                stopIntent.setAction("STOP_SERVICE");
-                getContext().stopService(stopIntent);
-            } catch (Exception ignored) {}
         }
         JSObject ret = new JSObject();
         ret.put("success", true);
