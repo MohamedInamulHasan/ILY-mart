@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Plus } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { API_BASE_URL } from '../../utils/api';
 
 const HeroBanner = ({ slides = [], isLoading = false }) => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { t } = useLanguage();
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loadedImages, setLoadedImages] = useState({});
     const scrollRef = useRef(null);
@@ -49,11 +51,19 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
     const handleBuy = (e, slide) => {
         if (e) e.stopPropagation(); // Don't navigate to store/link
         
-        // If no price, fallback to normal link behavior if available
-        if (!slide.price || slide.price <= 0) {
+        const sId = slide.storeId?._id || slide.storeId;
+        const sName = slide.storeName || slide.storeId?.name;
+
+        // If no price, fallback to normal link behavior or store navigation
+        if (!slide.price || Number(slide.price) <= 0) {
             if (slide.link) {
                 if (slide.link.startsWith('/')) navigate(slide.link);
-                else window.open(slide.link, '_blank');
+                else if (slide.link.startsWith('http')) window.open(slide.link, '_blank');
+                else navigate(slide.link);
+            } else if (sId) {
+                navigate(`/store/${sId}`);
+            } else if (slide.productId) {
+                navigate(`/product/${slide.productId}`);
             }
             return;
         }
@@ -67,8 +77,8 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
             price: Number(slide.price),
             quantity: 1,
             image: slide.image || `${API_BASE_URL}/ads/${slide._id || slide.id}/image`,
-            storeId: slide.storeId,
-            storeName: slide.storeName,
+            storeId: sId,
+            storeName: sName,
             isFromAd: true,
             adTitle: slide.offerTitle || slide.title,
             unit: slide.unit || '' // If ads have units
@@ -141,19 +151,24 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                                 transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
                             />
 
-                            {/* Store Name Badge - Now Very Small */}
-                            {slide.storeName && (
-                                <div className="absolute top-3 left-3 bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 z-10">
-                                    <p className="text-white text-[8px] font-bold tracking-widest uppercase opacity-80">{slide.storeName}</p>
-                                </div>
-                            )}
+                            {/* Bottom subtle gradient for button contrast */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none z-[5]" />
+
+                            {/* Order Now Tag in the right side of image: white card, black thick text */}
+                            <button
+                                type="button"
+                                onClick={(e) => handleBuy(e, slide)}
+                                className="absolute right-3.5 bottom-3.5 sm:right-4 sm:bottom-4 z-20 bg-white text-black font-extrabold text-[11px] sm:text-[12px] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg flex items-center gap-1.5 select-none active:scale-95 transition-transform cursor-pointer border border-black/5"
+                            >
+                                <span>{t('Order Now')}</span>
+                            </button>
                         </div>
                     );})}
                 </div>
                 
                 {/* Dots indicator */}
                 {slides.length > 1 && (
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
                         {slides.map((_, index) => (
                             <button
                                 key={index}
@@ -161,7 +176,7 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                                     e.stopPropagation(); 
                                     scrollToSlide(index);
                                 }}
-                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${index === currentSlide ? 'w-4 bg-white' : 'bg-white/40'}`}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${index === currentSlide ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
                             />
                         ))}
                     </div>

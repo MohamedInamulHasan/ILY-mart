@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -33,6 +34,15 @@ const Cart = () => {
     const handleBackNav = () => {
         safeNavigateBack(navigate, '/');
     };
+
+    const hadItemsRef = useRef(cartItems.length > 0);
+    useEffect(() => {
+        if (cartItems.length > 0) {
+            hadItemsRef.current = true;
+        } else if (hadItemsRef.current && cartItems.length === 0) {
+            safeNavigateBack(navigate, '/');
+        }
+    }, [cartItems.length, navigate]);
 
     if (cartItems.length === 0) {
         return (
@@ -138,7 +148,7 @@ const Cart = () => {
                                        <button onClick={() => {
                                            removeFromCart(item.id);
                                            if (cartItems.length <= 1) {
-                                               navigate('/');
+                                               safeNavigateBack(navigate, '/');
                                            }
                                        }} className="text-gray-400 hover:text-red-500 p-0.5 transition-colors flex-shrink-0">
                                             <Trash2 size={16} />
@@ -163,7 +173,16 @@ const Cart = () => {
                                         </div>
 
                                        <div className="flex items-center gap-2 sm:gap-2.5">
-                                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-1 text-[#2E5A2E] hover:text-[#1E3A1E] active:scale-90 transition-transform">
+                                            <button onClick={() => {
+                                                if (item.quantity <= 1) {
+                                                    removeFromCart(item.id);
+                                                    if (cartItems.length <= 1) {
+                                                        safeNavigateBack(navigate, '/');
+                                                    }
+                                                } else {
+                                                    updateQuantity(item.id, item.quantity - 1);
+                                                }
+                                            }} className="p-1 text-[#2E5A2E] hover:text-[#1E3A1E] active:scale-90 transition-transform">
                                                 <Minus size={13} strokeWidth={2.5} />
                                             </button>
                                             <div className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#2E5A2E] text-white flex items-center justify-center font-bold text-xs">

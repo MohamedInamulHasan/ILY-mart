@@ -681,7 +681,7 @@ const Checkout = () => {
 
     useEffect(() => {
         if (!showSuccessModal && displayItems.length === 0) {
-            navigate('/');
+            navigate('/', { replace: true });
         }
     }, [displayItems.length, navigate, showSuccessModal]);
 
@@ -1167,6 +1167,9 @@ const Checkout = () => {
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
                                                                     removeFromCart(item.id);
+                                                                    if (cartItems.length <= 1) {
+                                                                        navigate('/', { replace: true });
+                                                                    }
                                                                 }}
                                                                 className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                                                 title={t('Remove item')}

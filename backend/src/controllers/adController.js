@@ -7,7 +7,9 @@ import { deleteFromCloudinary } from '../utils/cloudinaryHelper.js';
 // @access  Public
 export const getAds = async (req, res, next) => {
     try {
-        const ads = await Ad.find({ isActive: true }).lean()
+        const ads = await Ad.find({ isActive: true })
+            .populate('storeId', 'name address location phone')
+            .lean()
             .select('-image') // Exclude heavy image data
             .sort({ order: 1, createdAt: -1 });
 

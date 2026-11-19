@@ -65,8 +65,8 @@ const StoreAdsBanner = ({ ads, t }) => {
                 price: Number(ad.price),
                 quantity: 1,
                 image: ad.image || `${API_BASE_URL}/ads/${ad._id || ad.id}/image`,
-                storeId: ad.storeId,
-                storeName: ad.storeName,
+                storeId: ad.storeId?._id || ad.storeId || storeId,
+                storeName: ad.storeName || ad.storeId?.name || store?.name || '',
                 isFromAd: true,
                 adTitle: ad.offerTitle || ad.title,
                 unit: ad.unit || ''
@@ -253,41 +253,47 @@ const StoreProducts = () => {
         return Array.isArray(dataCategories) ? dataCategories : [];
     }, [rawCategories, dataCategories]);
 
-    // Refetch on mount/store change to ensure fresh product & category data
+    const { data: allAds = [], refetch: refetchAds } = useAds();
+
+    // Refetch on mount/store change to ensure fresh product, category, store, and ad data
     useEffect(() => {
         refetchProducts?.();
         refetchCategories?.();
         refetchStores?.();
+        refetchAds?.();
     }, [storeId]);
 
     // Find store and its products
     const store = stores.find(s => (s._id || s.id) === storeId);
 
-    const { data: allAds = [] } = useAds();
-
     // Matching ads mentioning this store
     const storeAds = useMemo(() => {
-        if (!store || !Array.isArray(allAds) || allAds.length === 0) return [];
+        if (!Array.isArray(allAds) || allAds.length === 0) return [];
         const sName = (store?.name || '').toLowerCase().trim();
-        const sId = String(store?._id || store?.id || '');
+        const sId = String(storeId || store?._id || store?.id || '').trim().toLowerCase();
         
         return allAds.filter(ad => {
             if (ad.isActive === false) return false;
-            const adStoreId = String(ad.storeId?._id || ad.storeId || '');
-            if (adStoreId && sId && adStoreId === sId) return true;
             
-            const adStoreName = String(ad.storeName || '').toLowerCase().trim();
-            if (adStoreName && sName && (adStoreName === sName || sName.includes(adStoreName) || adStoreName.includes(sName))) return true;
+            // 1. Direct ID match (ad.storeId can be object or string ID)
+            const adStoreId = String(ad.storeId?._id || ad.storeId || '').trim().toLowerCase();
+            if (sId && adStoreId && adStoreId === sId) return true;
             
+            // 2. Name match (either from ad.storeName or ad.storeId.name)
+            const adStoreName = String(ad.storeName || ad.storeId?.name || '').toLowerCase().trim();
+            if (sName && adStoreName && (adStoreName === sName || sName.includes(adStoreName) || adStoreName.includes(sName))) return true;
+            
+            // 3. Ad Title match
             const adTitle = String(ad.title || ad.offerTitle || '').toLowerCase().trim();
-            if (adTitle && sName && (adTitle.includes(sName) || sName.includes(adTitle))) return true;
+            if (sName && adTitle && (adTitle.includes(sName) || sName.includes(adTitle))) return true;
             
-            const adLink = String(ad.link || '');
-            if (sId && adLink.includes(sId)) return true;
+            // 4. Link match (if link contains store id or store path)
+            const adLink = String(ad.link || '').toLowerCase();
+            if (sId && (adLink.includes(sId) || adLink.includes(`/store/${sId}`))) return true;
             
             return false;
         });
-    }, [allAds, store]);
+    }, [allAds, store, storeId]);
 
     // All products for this store (INCLUDE closed for search)
     const storeProducts = useMemo(() => {

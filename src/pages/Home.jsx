@@ -86,17 +86,10 @@ const Home = () => {
         language === 'ta' ? 'தேடுக' : 'Search'
     );
 
-    // Home page only shows non-mentioned banners (general platform ads that do not mention a specific store)
+    // Show all active ads on the home page (both general platform and store-specific ads)
     const homeAds = useMemo(() => {
         if (!Array.isArray(ads) || ads.length === 0) return [];
-        return ads.filter(ad => {
-            if (ad.isActive === false) return false;
-            const hasStoreId = Boolean(ad.storeId && (ad.storeId._id || String(ad.storeId).trim() !== ''));
-            const hasStoreName = Boolean(ad.storeName && String(ad.storeName).trim() !== '');
-            // Exclude if it mentions a store
-            if (hasStoreId || hasStoreName) return false;
-            return true;
-        });
+        return ads.filter(ad => ad.isActive !== false);
     }, [ads]);
 
     // Remember if home has ads across sessions to avoid flashing skeleton banner when there are no banners
