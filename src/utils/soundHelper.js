@@ -186,7 +186,7 @@ export const startIncomingOrderAlertSound = () => {
                 osc.frequency.setValueAtTime(freq, now + time);
 
                 gain.gain.setValueAtTime(0, now + time);
-                gain.gain.linearRampToValueAtTime(0.5, now + time + 0.02);
+                gain.gain.linearRampToValueAtTime(0.85, now + time + 0.02);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + time + duration);
 
                 osc.connect(gain);
@@ -196,18 +196,18 @@ export const startIncomingOrderAlertSound = () => {
                 osc.stop(now + time + duration);
             });
 
-            // Vibrate device (if mobile)
+            // Vibrate device fully throughout countdown (if mobile)
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate([250, 100, 250, 100, 400]);
+                navigator.vibrate([400, 100, 400, 100, 400]);
             }
         } catch (e) {
             console.warn('Incoming order sound error:', e);
         }
     };
 
-    // Play chime immediately on incoming order alert and repeat every 2.4s while modal is active
+    // Play chime immediately on incoming order alert and repeat every 1.2s fully while 12s popup is active
     playToneBurst();
-    incomingOrderInterval = setInterval(playToneBurst, 2400);
+    incomingOrderInterval = setInterval(playToneBurst, 1200);
 };
 
 export const stopIncomingOrderAlertSound = () => {

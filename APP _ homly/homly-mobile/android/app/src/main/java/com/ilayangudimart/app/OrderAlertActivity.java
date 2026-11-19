@@ -118,37 +118,30 @@ public class OrderAlertActivity extends AppCompatActivity {
     private void startAlertEffects() {
         try {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-            if (vibrator != null) {
-                long[] pattern = {0, 300, 150, 300};
+            if (vibrator != null && vibrator.hasVibrator()) {
+                long[] pattern = {0, 500, 200, 500, 200};
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1)); // -1 = play once, no repeat
+                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0)); // 0 = loop vibration fully
                 } else {
-                    vibrator.vibrate(pattern, -1);
+                    vibrator.vibrate(pattern, 0); // 0 = loop vibration fully
                 }
             }
         } catch (Exception ignored) {}
 
         try {
-            Uri alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Uri alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             if (alertSound == null) {
-                alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+                alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             }
             if (alertSound != null) {
                 alertMediaPlayer = new MediaPlayer();
                 alertMediaPlayer.setDataSource(this, alertSound);
                 alertMediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ALARM)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build());
-                alertMediaPlayer.setLooping(false);
-                alertMediaPlayer.setOnCompletionListener(mp -> {
-                    if (alertMediaPlayer != null) {
-                        try {
-                            alertMediaPlayer.release();
-                        } catch (Exception ignored) {}
-                        alertMediaPlayer = null;
-                    }
-                });
+                alertMediaPlayer.setVolume(1.0f, 1.0f);
+                alertMediaPlayer.setLooping(true); // Loop fully for 12s
                 alertMediaPlayer.prepare();
                 alertMediaPlayer.start();
             }

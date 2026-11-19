@@ -1228,10 +1228,10 @@ public class FloatingLogoService extends Service {
         try {
             stopAlertEffects();
 
-            // Play notification sound once (no looping alarm)
-            Uri alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            // Play alert sound fully in loop for the entire 12s pop up duration
+            Uri alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             if (alertUri == null) {
-                alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+                alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             }
 
             alertMediaPlayer = new MediaPlayer();
@@ -1241,8 +1241,7 @@ public class FloatingLogoService extends Service {
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build());
             alertMediaPlayer.setVolume(1.0f, 1.0f);
-            alertMediaPlayer.setLooping(false);
-            alertMediaPlayer.setOnCompletionListener(mp -> stopAlertEffects());
+            alertMediaPlayer.setLooping(true);
             alertMediaPlayer.prepare();
             alertMediaPlayer.start();
         } catch (Exception e) {
@@ -1251,11 +1250,11 @@ public class FloatingLogoService extends Service {
 
         try {
             if (vibrator != null && vibrator.hasVibrator()) {
-                long[] pattern = {0, 300, 150, 300};
+                long[] pattern = {0, 500, 200, 500, 200};
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1)); // -1 = play once, no repeat
+                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0)); // 0 = loop vibration fully
                 } else {
-                    vibrator.vibrate(pattern, -1);
+                    vibrator.vibrate(pattern, 0); // 0 = loop vibration fully
                 }
             }
         } catch (Exception e) {
