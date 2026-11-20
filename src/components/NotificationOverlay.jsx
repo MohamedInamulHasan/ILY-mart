@@ -31,15 +31,6 @@ const NotificationOverlay = () => {
     const [incomingOrder, setIncomingOrder] = useState(null);
     const [startWithAcceptView, setStartWithAcceptView] = useState(false);
     const [skippedOrderIds, setSkippedOrderIds] = useState(() => new Set());
-    const [repeatTick, setRepeatTick] = useState(0);
-
-    // Continuous interval: constantly refresh every 3 seconds to keep native Android overlay state synced
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setRepeatTick(t => t + 1);
-        }, 3000);
-        return () => clearInterval(interval);
-    }, []);
 
     const sessionStartRef = useRef(Date.now());
     const initialOrdersLoadedRef = useRef(false);
@@ -189,20 +180,25 @@ const NotificationOverlay = () => {
         });
     }, [allOrders, isStoreAdmin, myStoreId, myStoreName]);
 
-    // Sync order state (active/pending) with native floating overlay every 3 seconds
+    // Sync order state (active/pending) with native floating overlay
     useEffect(() => {
         if (!isNativeAndroid()) return;
-        if (isDeliveryBoy) {
-            const hasActive = hasActiveAcceptedOrder;
-            const hasPending = processingOrders.length > 0;
-            const activeId = localStorage.getItem('active_delivery_order_id') || '';
-            setOverlayOrdersState({ hasActive, hasPending, activeOrderId: activeId });
-        } else if (isStoreAdmin && myStore) {
-            const hasActive = storeHasActiveAcceptedOrder;
-            const hasPending = storeProcessingOrders.length > 0;
-            setOverlayOrdersState({ hasActive, hasPending });
-        }
-    }, [hasActiveAcceptedOrder, processingOrders.length, storeHasActiveAcceptedOrder, storeProcessingOrders.length, isDeliveryBoy, isStoreAdmin, myStore, repeatTick]);
+        const syncState = () => {
+            if (isDeliveryBoy) {
+                const hasActive = hasActiveAcceptedOrder;
+                const hasPending = processingOrders.length > 0;
+                const activeId = localStorage.getItem('active_delivery_order_id') || '';
+                setOverlayOrdersState({ hasActive, hasPending, activeOrderId: activeId });
+            } else if (isStoreAdmin && myStore) {
+                const hasActive = storeHasActiveAcceptedOrder;
+                const hasPending = storeProcessingOrders.length > 0;
+                setOverlayOrdersState({ hasActive, hasPending });
+            }
+        };
+        syncState();
+        const interval = setInterval(syncState, 4000);
+        return () => clearInterval(interval);
+    }, [hasActiveAcceptedOrder, processingOrders.length, storeHasActiveAcceptedOrder, storeProcessingOrders.length, isDeliveryBoy, isStoreAdmin, myStore]);
 
     const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
         return localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
