@@ -291,25 +291,50 @@ export const sendStaffNewOrderNotification = async (order) => {
         // A pure DATA-ONLY message with priority 'high' wakes up IlyMartMessagingService.onMessageReceived()
         // so it can acquire WakeLock, play continuous alarm, and display the Porter Order Alert Card over the screen!
         //
-        // Keep order payload clean and compact to NEVER hit FCM's strict 4096-byte limit:
+        // Keep order payload clean and compact to NEVER hit FCM's strict 4096-byte limit,
+        // while including all fields required by FloatingLogoService for instantaneous rich display:
+        const shipping = order.shippingAddress || {};
+        const custName = (shipping.name || shipping.fullName || order.user?.name || 'Customer').trim();
+        const street = (shipping.street || shipping.addressLine1 || shipping.address || '').trim();
+        const city = (shipping.city || 'Ilayangudi').trim();
+        const custPhone = (shipping.mobile || shipping.phone || order.user?.mobile || '').trim();
+        const deliveryFee = Number(order.shipping ?? order.deliveryFee ?? order.deliveryCharge ?? 20);
+        const schedTime = order.scheduledDeliveryTime ? new Date(order.scheduledDeliveryTime).toISOString() : (order.deliveryTime || shipping.deliveryTime || '');
+        const primaryStore = targetStores[0]?.name || order.storeId?.name || (order.items?.[0]?.storeName) || (order.items?.[0]?.storeId?.name) || 'Store';
+
         const compactOrder = {
             _id: (order._id || order.id || '').toString(),
             shortId: String(shortId),
             total: Number(rawTotal || 0),
             status: order.status || 'Processing',
-            customerName: order.shippingAddress?.fullName || order.user?.name || 'Customer',
-            customerPhone: order.shippingAddress?.phone || order.shippingAddress?.mobile || order.user?.mobile || '',
-            dropAddress: [
-                order.shippingAddress?.addressLine1 || order.shippingAddress?.address,
-                order.shippingAddress?.landmark,
-                order.shippingAddress?.city
-            ].filter(Boolean).join(', '),
-            pickupStore: targetStores[0]?.name || order.storeId?.name || 'Store',
+            shipping: deliveryFee,
+            deliveryFee: deliveryFee,
+            deliveryCharge: deliveryFee,
+            scheduledDeliveryTime: schedTime,
+            deliveryTime: schedTime,
+            customerName: custName,
+            customerPhone: custPhone,
+            street: street,
+            city: city,
+            dropAddress: street ? `${street}, ${city}` : city,
+            pickupStore: primaryStore,
             storeId: orderStoreId || '',
-            storeName: targetStores[0]?.name || order.storeId?.name || '',
+            storeName: primaryStore,
             itemCount: Array.isArray(order.items) ? order.items.length : 1,
-            deliveryCharge: Number(order.deliveryCharge || 0),
-            createdAt: order.createdAt || new Date().toISOString()
+            shippingAddress: {
+                name: custName,
+                street: street,
+                city: city,
+                mobile: custPhone,
+                deliveryTime: schedTime
+            },
+            items: (order.items || []).slice(0, 5).map(it => ({
+                name: it.name || 'Item',
+                quantity: it.quantity || 1,
+                price: it.price || 0,
+                storeName: it.storeName || it.storeId?.name || ''
+            })),
+            createdAt: order.createdAt ? new Date(order.createdAt).toISOString() : new Date().toISOString()
         };
 
         const message = {
@@ -321,6 +346,10 @@ export const sendStaffNewOrderNotification = async (order) => {
                 body: `New order #${shortId} for ₹${total}. Tap to view details.`,
                 shortId: String(shortId),
                 total: String(total),
+                customerName: custName,
+                dropAddress: street ? `${street}, ${city}` : city,
+                deliveryCharge: String(deliveryFee),
+                scheduledDeliveryTime: schedTime,
                 orderJson: JSON.stringify(compactOrder),
                 channelId: 'order_updates'
             },

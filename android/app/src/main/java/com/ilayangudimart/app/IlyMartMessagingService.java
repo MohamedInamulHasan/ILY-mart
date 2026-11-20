@@ -95,6 +95,26 @@ public class IlyMartMessagingService extends MessagingService {
                 }
             }
 
+            // Synthesize missing shippingAddress from orderObj/data fields if not present
+            if (orderObj != null) {
+                if (!orderObj.has("shippingAddress")) {
+                    try {
+                        JSONObject ship = new JSONObject();
+                        ship.put("name", orderObj.optString("customerName", data.containsKey("customerName") ? data.get("customerName") : "Customer"));
+                        ship.put("street", orderObj.optString("street", ""));
+                        ship.put("city", orderObj.optString("city", "Ilayangudi"));
+                        ship.put("mobile", orderObj.optString("customerPhone", ""));
+                        ship.put("deliveryTime", orderObj.optString("scheduledDeliveryTime", data.containsKey("scheduledDeliveryTime") ? data.get("scheduledDeliveryTime") : ""));
+                        orderObj.put("shippingAddress", ship);
+                    } catch (Exception ignored) {}
+                }
+                if (!orderObj.has("shipping") && !orderObj.has("deliveryFee") && data.containsKey("deliveryCharge")) {
+                    try {
+                        orderObj.put("shipping", Double.parseDouble(data.get("deliveryCharge")));
+                    } catch (Exception ignored) {}
+                }
+            }
+
             // 2. CRITICAL STORE OWNER ISOLATION:
             // If the user on this phone is a Store Owner, verify if the order belongs to THEIR store!
             // Delivery boys deliver for ALL stores and must NEVER be filtered by store!

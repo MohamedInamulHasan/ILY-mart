@@ -210,6 +210,12 @@ public class FloatingLogoService extends Service {
                         e.printStackTrace();
                     }
                 }
+                // Trigger immediate background polling to ensure database has fully synchronized
+                if (executorService != null && !executorService.isShutdown()) {
+                    try {
+                        executorService.execute(this::pollForPendingOrders);
+                    } catch (Exception ignored) {}
+                }
                 return START_STICKY;
             } else if ("DISMISS_CARD".equals(action)) {
                 mainHandler.post(this::dismissPorterOrderCard);
@@ -528,22 +534,52 @@ public class FloatingLogoService extends Service {
             String shortId = orderId.length() >= 6 ? orderId.substring(orderId.length() - 6).toUpperCase() : orderId;
 
             JSONObject shippingAddress = order.optJSONObject("shippingAddress");
-            String customerName = shippingAddress != null ? shippingAddress.optString("name", "Customer") : "Customer";
-            String street = shippingAddress != null ? shippingAddress.optString("street", "") : "";
-            String city = shippingAddress != null ? shippingAddress.optString("city", "Ilayangudi") : "Ilayangudi";
+            String customerName = "Customer";
+            if (shippingAddress != null && shippingAddress.has("name") && !shippingAddress.optString("name").trim().isEmpty()) {
+                customerName = shippingAddress.optString("name").trim();
+            } else if (shippingAddress != null && shippingAddress.has("fullName") && !shippingAddress.optString("fullName").trim().isEmpty()) {
+                customerName = shippingAddress.optString("fullName").trim();
+            } else if (order.has("customerName") && !order.optString("customerName").trim().isEmpty()) {
+                customerName = order.optString("customerName").trim();
+            }
+
+            String street = "";
+            if (shippingAddress != null) {
+                street = shippingAddress.optString("street", shippingAddress.optString("addressLine1", shippingAddress.optString("address", ""))).trim();
+            }
+            if (street.isEmpty() && order.has("street")) {
+                street = order.optString("street", "").trim();
+            }
+
+            String city = "Ilayangudi";
+            if (shippingAddress != null && !shippingAddress.optString("city", "").trim().isEmpty()) {
+                city = shippingAddress.optString("city").trim();
+            } else if (order.has("city") && !order.optString("city").trim().isEmpty()) {
+                city = order.optString("city").trim();
+            }
+
             String dropAddress = street.isEmpty() ? city : street + ", " + city;
+            if (dropAddress.equals("Ilayangudi") && order.has("dropAddress") && !order.optString("dropAddress").trim().isEmpty()) {
+                dropAddress = order.optString("dropAddress").trim();
+            }
 
             JSONArray items = order.optJSONArray("items");
-            int itemCount = items != null ? items.length() : 0;
-            String pickupStore = "Store Pickup";
+            int itemCount = order.optInt("itemCount", items != null ? items.length() : 0);
+            if (itemCount == 0 && items != null) itemCount = items.length();
+
+            String pickupStore = order.optString("pickupStore", order.optString("storeName", "Store Pickup"));
             if (items != null && items.length() > 0) {
                 JSONObject firstItem = items.optJSONObject(0);
                 if (firstItem != null) {
-                    pickupStore = firstItem.optString("storeName", firstItem.optString("name", "Store Pickup"));
+                    pickupStore = firstItem.optString("storeName", firstItem.optString("name", pickupStore));
                 }
             }
 
-            double deliveryCharge = order.optDouble("shipping", order.optDouble("deliveryCharge", 20.0));
+            double deliveryCharge = -1.0;
+            if (order.has("shipping")) deliveryCharge = order.optDouble("shipping", -1.0);
+            if (deliveryCharge < 0 && order.has("deliveryFee")) deliveryCharge = order.optDouble("deliveryFee", -1.0);
+            if (deliveryCharge < 0 && order.has("deliveryCharge")) deliveryCharge = order.optDouble("deliveryCharge", -1.0);
+            if (deliveryCharge < 0) deliveryCharge = 20.0;
             String deliveryChargeStr = deliveryCharge <= 0 ? "FREE" : "₹" + (int) deliveryCharge;
 
             // --- BUILD THE CARD VIEW PROGRAMMATICALLY (EXACT SAME AS IN-APP CARD) ---
@@ -768,9 +804,9 @@ public class FloatingLogoService extends Service {
             // 6. Time Slot (bold black matching name - formatted range like '6 PM - 7 PM' or 'Not Mentioned')
             String rawScheduledTime = order.optString("scheduledDeliveryTime", order.optString("deliveryTime", ""));
             if (shippingAddress != null && (rawScheduledTime.isEmpty() || rawScheduledTime.equalsIgnoreCase("null"))) {
-                rawScheduledTime = shippingAddress.optString("deliveryTime", "");
+                rawScheduledTime = shippingAddress.optString("deliveryTime", shippingAddress.optString("scheduledDeliveryTime", ""));
             }
-            if (rawScheduledTime == null || rawScheduledTime.equalsIgnoreCase("null")) {
+            if (rawScheduledTime == null || rawScheduledTime.equalsIgnoreCase("null") || rawScheduledTime.equalsIgnoreCase("undefined")) {
                 rawScheduledTime = "";
             }
             boolean isScheduled = !rawScheduledTime.isEmpty() && !rawScheduledTime.toLowerCase().contains("instant") && !rawScheduledTime.equalsIgnoreCase("null") && !rawScheduledTime.equalsIgnoreCase("Not Mentioned");
