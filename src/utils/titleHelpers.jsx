@@ -29,7 +29,7 @@ export const getSelectedUnitDisplay = (item) => {
  * 3. If there is no bracket, the name can occupy and wrap into the second line.
  * 4. No 3D box, no black box, no badge — just plain text [ words ] exactly as typed.
  */
-export const renderBilingualTitle = (fullTitle, language, options = {}) => {
+export const renderBilingualTitle = (fullTitle, language = '', options = {}) => {
     if (!fullTitle) return '';
     if (typeof fullTitle === 'object' && fullTitle !== null) {
         fullTitle = fullTitle.title || fullTitle.name || fullTitle.adTitle || '';
@@ -38,16 +38,12 @@ export const renderBilingualTitle = (fullTitle, language, options = {}) => {
 
     const {
         mainClassName = '',
-        subClassName,
-        hideTag = false
+        subClassName
     } = options;
 
     const resolvedSubClass = subClassName !== undefined ? subClassName : (mainClassName || 'opacity-90 font-medium');
 
-    // If hideTag is explicitly requested (e.g. for ultra-compact cart view)
-    const processedTitle = hideTag
-        ? fullTitle.replace(/\[[^\]]+\]/g, '').replace(/\s{2,}/g, ' ').trim()
-        : fullTitle.trim();
+    const processedTitle = fullTitle.trim();
 
     const bracketIndex = processedTitle.indexOf('(');
 

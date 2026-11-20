@@ -139,7 +139,7 @@ const Cart = () => {
                                   <div className="flex justify-between items-start">
                                        <div className="flex-1 min-w-0 pr-2">
                                             <h3 className="text-[13px] sm:text-[14px] font-semibold text-gray-900 dark:text-white leading-tight">
-                                                {renderBilingualTitle(t(item, 'title') || item.title || item.name, language, { hideTag: true })}
+                                                {renderBilingualTitle(t(item, 'title') || item.title || item.name, language)}
                                             </h3>
                                             <p className="text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                                                 {getStoreName(item.storeId, stores) || "ILY mart Direct"}

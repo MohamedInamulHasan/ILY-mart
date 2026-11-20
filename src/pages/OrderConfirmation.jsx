@@ -307,7 +307,6 @@ const OrderConfirmation = () => {
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                         <h4 className="mb-0.5 leading-tight">
                                                     {renderBilingualTitle(t(item, 'title') || t(item, 'name') || item.adTitle || item.title || item.name, language, {
-                                                        hideTag: true,
                                                         mainClassName: 'text-sm font-medium text-gray-900 dark:text-white leading-snug',
                                                         subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'
                                                     })}

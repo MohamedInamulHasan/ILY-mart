@@ -4524,7 +4524,7 @@ const AdsManagement = () => {
     const { mutateAsync: addAd } = useCreateAd();
     const { mutateAsync: updateAd } = useUpdateAd();
     const { mutateAsync: deleteAd } = useDeleteAd();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [newAdUrl, setNewAdUrl] = useState('');
     const [newAdTitle, setNewAdTitle] = useState('');
     const [storeName, setStoreName] = useState('');
