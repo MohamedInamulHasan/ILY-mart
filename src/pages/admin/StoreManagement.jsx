@@ -265,27 +265,35 @@ const StoreManagement = ({
     // ────────────────────────────────────────────────────────────────────
 
     const userRoles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
-    const explicitStoreId = propStoreId || localStorage.getItem('my_store_id');
+    const isAdmin = userRoles.includes('admin') || user?.isAdmin === true;
+
+    // Check if inside My Store mode or if a specific store is being viewed
+    const isInsideMyStore = Boolean(propFixedStore) || Boolean(propStoreId) || hideHeader || (location.pathname && location.pathname.includes('/my-store'));
+
+    // When viewing inside the Admin Panel (/admin), an Admin must ALWAYS see ALL stores!
+    // isStoreAdmin is only true if:
+    // 1) Explicitly inside /my-store page (isInsideMyStore is true), OR
+    // 2) The user is strictly a store_admin and NOT a platform admin.
+    const isStoreAdmin = isInsideMyStore || (!isAdmin && (userRoles.includes('store_admin') || Boolean(user?.storeId)));
+
     let savedMobile = '';
     try {
         const saved = JSON.parse(localStorage.getItem('user_saved_address') || 'null');
         savedMobile = (saved?.mobile || saved?.phone || '').toString().replace(/\D/g, '').slice(-10);
     } catch {}
     const activeMobile = (savedMobile || user?.mobile || user?.phone || '').toString().replace(/\D/g, '').slice(-10);
-    
-    // Check if inside My Store mode or if user is a Store Manager
-    const isInsideMyStore = Boolean(propFixedStore) || Boolean(propStoreId) || hideHeader || (location.pathname && location.pathname.includes('/my-store'));
-    const isStoreAdmin = isInsideMyStore || userRoles.includes('store_admin') || activeMobile === '9876543211' || activeMobile === '8474958585' || Boolean(explicitStoreId) || Boolean(user?.storeId);
+
+    const explicitStoreId = isInsideMyStore ? (propStoreId || localStorage.getItem('my_store_id')) : propStoreId;
     const myStoreId = String(propStoreId || explicitStoreId || user?.storeId?._id || user?.storeId || '');
-    
+
+    // Only resolve myStore when actually in isStoreAdmin mode; NEVER default to random stores[0]!
     const myStore = propFixedStore || (isStoreAdmin ? stores.find(s => {
         const sId = String(s._id || s.id || '');
         if (myStoreId && sId === myStoreId) return true;
         const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
         if (activeMobile && sMobile && sMobile === activeMobile) return true;
-        if (activeMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
         return false;
-    }) : null) || (isInsideMyStore && stores.length > 0 ? (stores.find(s => String(s._id || s.id || '') === myStoreId) || stores[0]) : null);
+    }) : null) || (isInsideMyStore && myStoreId ? stores.find(s => String(s._id || s.id || '') === myStoreId) : null);
 
     const { storeHasActive, storeHasPending } = useMemo(() => {
         if (!isStoreAdmin || !myStore) return { storeHasActive: false, storeHasPending: false };
@@ -328,9 +336,15 @@ const StoreManagement = ({
 
     const hasAnyStoreOrder = storeHasActive || storeHasPending;
 
-    // Sync store session active with native floating overlay when store admin opens store management
+    // Sync store session active with native floating overlay ONLY when strictly in My Store mode and not an admin in Admin Panel
     useEffect(() => {
-        if (!isStoreAdmin || !myStore) return;
+        if (isAdmin && !isInsideMyStore) {
+            // When Platform Admin is in Admin Panel, ensure overlay is NOT locked to any single store!
+            setOverlayStoreSessionActive(false, '', '');
+            localStorage.removeItem('my_store_id');
+            return;
+        }
+        if (!isInsideMyStore || !myStore) return;
         const sId = String(myStore._id || myStore.id || myStoreId || '');
         const sName = myStore.name || '';
         const enabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
@@ -344,7 +358,7 @@ const StoreManagement = ({
                 if (granted && hasAnyStoreOrder) showFloatingOverlay();
             });
         }
-    }, [isStoreAdmin, myStore, myStoreId, storeHasActive, storeHasPending, hasAnyStoreOrder]);
+    }, [isAdmin, isInsideMyStore, isStoreAdmin, myStore, myStoreId, storeHasActive, storeHasPending, hasAnyStoreOrder]);
 
     const [internalView, setInternalView] = useState('list');
     const view = controlledView !== undefined ? controlledView : internalView;

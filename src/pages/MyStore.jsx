@@ -39,7 +39,7 @@ const MyStore = () => {
         }
     }, [orderIdParam, navigate]);
 
-    // Identify this store admin's store
+    // Identify this store admin's store - never fallback to random stores[0]
     const myStore = useMemo(() => {
         let savedMobile = '';
         try {
@@ -54,10 +54,9 @@ const MyStore = () => {
             if (targetStoreId && sId === targetStoreId) return true;
             const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
             if (cleanMobile && sMobile && sMobile === cleanMobile) return true;
-            if (cleanMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
             return false;
-        }) || (stores.length > 0 ? (targetStoreId ? (stores.find(s => String(s._id || s.id) === targetStoreId) || stores[0]) : stores[0]) : null);
-        return matched;
+        });
+        return matched || null;
     }, [user, stores]);
 
     const myStoreId = String(myStore?._id || myStore?.id || user?.storeId?._id || user?.storeId || '');

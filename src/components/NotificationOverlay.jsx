@@ -76,22 +76,28 @@ const NotificationOverlay = () => {
     const activeMobile = (savedMobile || user?.mobile || user?.phone || '').toString().replace(/\D/g, '').slice(-10);
     const explicitStoreId = localStorage.getItem('my_store_id');
 
+    const isAdmin = useMemo(() => roles.includes('admin'), [roles]);
+    const isInsideMyStore = useMemo(() => location.pathname.startsWith('/my-store'), [location.pathname]);
+
+    // An admin is ONLY in store admin mode if specifically viewing /my-store
     const isStoreAdmin = useMemo(() => {
-        return roles.includes('store_admin') || (roles.includes('admin') && location.pathname.startsWith('/my-store')) || Boolean(user?.storeId) || Boolean(explicitStoreId) || activeMobile === '9876543211' || activeMobile === '8474958585';
-    }, [roles, user, explicitStoreId, activeMobile, location.pathname]);
+        if (isAdmin) {
+            return isInsideMyStore;
+        }
+        return roles.includes('store_admin') || Boolean(user?.storeId);
+    }, [roles, user, isAdmin, isInsideMyStore]);
 
     const myStore = useMemo(() => {
         if (!isStoreAdmin) return null;
-        const targetStoreId = String(explicitStoreId || user?.storeId?._id || user?.storeId || '');
+        const targetStoreId = String((isInsideMyStore ? explicitStoreId : '') || user?.storeId?._id || user?.storeId || '');
         return stores.find(s => {
             const sId = String(s._id || s.id || '');
             if (targetStoreId && sId === targetStoreId) return true;
             const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
             if (activeMobile && sMobile && sMobile === activeMobile) return true;
-            if (activeMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
             return false;
-        }) || (stores.length > 0 ? (targetStoreId ? (stores.find(s => String(s._id || s.id) === targetStoreId) || stores[0]) : stores[0]) : null);
-    }, [isStoreAdmin, user, stores, explicitStoreId, activeMobile]);
+        }) || null;
+    }, [isStoreAdmin, user, stores, explicitStoreId, activeMobile, isInsideMyStore]);
 
     const myStoreId = String(myStore?._id || myStore?.id || explicitStoreId || user?.storeId?._id || user?.storeId || '');
     const myStoreName = (myStore?.name || '').trim().toLowerCase();
@@ -114,9 +120,8 @@ const NotificationOverlay = () => {
     const isDeliveryBoy = useMemo(() => {
         const hasDeliveryRole = roles.includes('delivery_boy') || roles.includes('deliveryboy') || roles.includes('admin');
         const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
-        return hasDeliveryRole && isDeliverySessionActive;
-    }, [roles, user]);
-    const isAdmin = useMemo(() => roles.includes('admin'), [roles]);
+        return hasDeliveryRole && (isDeliverySessionActive || isAdmin);
+    }, [roles, user, isAdmin]);
 
     const { data: rawOrders = [] } = useOrders();
     const allOrders = useMemo(() => {
@@ -324,11 +329,12 @@ const NotificationOverlay = () => {
             const isDeliverySessionActive = localStorage.getItem('delivery_session_active') === 'true' && localStorage.getItem('delivery_boy_logged_out') !== 'true';
             const isFloatingEnabled = localStorage.getItem('delivery_floating_overlay_enabled') !== 'false';
 
-            const canDeliveryAlert = isDeliveryBoy && isDeliveryPage && isDeliverySessionActive && isFloatingEnabled;
+            const canDeliveryAlert = (isDeliveryBoy || isAdmin) && isDeliveryPage && isFloatingEnabled;
             const canStoreAlert = isStoreAdmin && myStore && isFloatingEnabled;
 
             if (newOrder && (canDeliveryAlert || canStoreAlert)) {
                 // For store admin: strictly check if this new order belongs to their store!
+                // Delivery boys and platform admins deliver and manage ALL stores: NEVER filter by store!
                 if (!canDeliveryAlert && canStoreAlert && !isOrderForMyStore(newOrder)) {
                     return;
                 }

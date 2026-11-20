@@ -174,16 +174,22 @@ public class FloatingOverlayPlugin extends Plugin {
 
         if (active) {
             prefs.edit().putBoolean("floating_enabled", true).apply();
-        } else if (!prefs.getBoolean("delivery_session_active", false)) {
-            prefs.edit().putBoolean("floating_enabled", false).apply();
-            if (FloatingLogoService.instance != null) {
-                FloatingLogoService.instance.stopServiceAndHide();
+        } else {
+            prefs.edit()
+                    .putString("store_id", "")
+                    .putString("store_name", "")
+                    .apply();
+            if (!prefs.getBoolean("delivery_session_active", false)) {
+                prefs.edit().putBoolean("floating_enabled", false).apply();
+                if (FloatingLogoService.instance != null) {
+                    FloatingLogoService.instance.stopServiceAndHide();
+                }
+                try {
+                    Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
+                    stopIntent.setAction("STOP_SERVICE");
+                    getContext().stopService(stopIntent);
+                } catch (Exception ignored) {}
             }
-            try {
-                Intent stopIntent = new Intent(getContext(), FloatingLogoService.class);
-                stopIntent.setAction("STOP_SERVICE");
-                getContext().stopService(stopIntent);
-            } catch (Exception ignored) {}
         }
         JSObject ret = new JSObject();
         ret.put("success", true);
@@ -201,6 +207,8 @@ public class FloatingOverlayPlugin extends Plugin {
             prefs.edit()
                     .putBoolean("delivery_session_active", true)
                     .putBoolean("store_session_active", false)
+                    .putString("store_id", "")
+                    .putString("store_name", "")
                     .putBoolean("floating_enabled", true)
                     .apply();
         } else {

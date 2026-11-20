@@ -402,7 +402,6 @@ const Profile = () => {
             if (targetId && sId === String(targetId)) return true;
             const sMobile = String(s.mobile || s.phone || '').replace(/\D/g, '').slice(-10);
             if (activeMobile && sMobile && sMobile === activeMobile) return true;
-            if (activeMobile === '9876543211' && s.name?.toLowerCase().includes('arabian')) return true;
             return false;
         }) || null;
     }, [isStoreAdmin, stores, dataStores, explicitStoreId, user, activeMobile]);
