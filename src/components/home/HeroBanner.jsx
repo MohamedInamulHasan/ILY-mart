@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Plus } from 'lucide-react';
+import { ShoppingBag, Plus, Store } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useStores } from '../../hooks/queries/useStores';
 import { API_BASE_URL } from '../../utils/api';
 
 const HeroBanner = ({ slides = [], isLoading = false }) => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
     const { t } = useLanguage();
+    const { data: rawStores = [] } = useStores();
+    const stores = Array.isArray(rawStores) ? rawStores : (rawStores?.data || []);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loadedImages, setLoadedImages] = useState({});
     const scrollRef = useRef(null);
@@ -121,6 +124,14 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                     {slides.map((slide, index) => {
                         const slideKey = slide._id || slide.id || index;
                         const isLoaded = !!loadedImages[slideKey];
+                        const sId = slide.storeId?._id || slide.storeId;
+                        let sName = slide.storeName || slide.storeId?.name;
+                        if (!sName && sId && stores.length > 0) {
+                            const matchedStore = stores.find(s => String(s._id || s.id) === String(sId));
+                            if (matchedStore) {
+                                sName = matchedStore.name;
+                            }
+                        }
                         return (
                         <div
                             key={slideKey}
@@ -150,6 +161,26 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                                 animate={{ x: ['-100%', '150%'] }}
                                 transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
                             />
+
+                            {/* Glassmorphism Store Name Tag */}
+                            {sName && (
+                                <div
+                                    onClick={(e) => {
+                                        if (sId) {
+                                            e.stopPropagation();
+                                            navigate(`/store/${sId}`);
+                                        } else {
+                                            e.stopPropagation();
+                                        }
+                                    }}
+                                    className="absolute top-3 left-3 sm:top-3.5 sm:left-3.5 z-20 backdrop-blur-md bg-black/40 dark:bg-black/60 border border-white/25 text-white rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 flex items-center gap-1.5 shadow-md max-w-[70%] cursor-pointer hover:bg-black/55 active:scale-95 transition-all select-none"
+                                >
+                                    <Store size={12} className="text-white flex-shrink-0" />
+                                    <span className="text-[11px] sm:text-[12px] font-semibold text-white tracking-wide truncate drop-shadow-sm">
+                                        {sName}
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Bottom subtle gradient for button contrast */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none z-[5]" />

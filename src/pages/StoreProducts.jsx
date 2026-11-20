@@ -432,6 +432,21 @@ const StoreProducts = () => {
         return null;
     };
 
+    // All active official subcategories defined in Admin categories (excluding hidden categories)
+    const officialSubcategories = useMemo(() => {
+        const result = [];
+        (categories || []).forEach(cat => {
+            if (!cat.isHidden && !cat.isHomeHidden && Array.isArray(cat?.subcategories)) {
+                cat.subcategories.forEach(sub => {
+                    if (sub && typeof sub === 'string' && sub.trim() !== '' && !result.some(os => areSubcategoriesMatching(os, sub))) {
+                        result.push(sub.trim());
+                    }
+                });
+            }
+        });
+        return result;
+    }, [categories]);
+
     // Extract unique categories and subcategories for the store page category scroller
     const { subcategoryData, subcategorySortOrder, getSubcategorySortIndex } = useMemo(() => {
         const itemMap = new Map();
@@ -454,7 +469,6 @@ const StoreProducts = () => {
 
         // 2. Build ordered list of official subcategories and categories
         const sortOrder = [];
-        const officialSubcategories = [];
 
         orderedCats.forEach(cat => {
             if (Array.isArray(cat?.subcategories)) {
@@ -463,9 +477,6 @@ const StoreProducts = () => {
                         const n = normSubcategoryKey(sub);
                         if (n && !sortOrder.includes(n)) {
                             sortOrder.push(n);
-                        }
-                        if (!officialSubcategories.some(os => areSubcategoriesMatching(os, sub))) {
-                            officialSubcategories.push(sub);
                         }
                     }
                 });
@@ -494,10 +505,15 @@ const StoreProducts = () => {
             const rawSubs = (Array.isArray(p.subcategory) ? p.subcategory : [p.subcategory])
                 .filter(s => s && typeof s === 'string' && s.trim() !== '');
 
-            if (rawSubs.length > 0) {
+            // Only recognize subcategories that exist in officialSubcategories!
+            // If a subcategory was deleted from the admin category, it must NOT appear in the store page!
+            const validSubs = rawSubs
+                .map(s => officialSubcategories.find(os => areSubcategoriesMatching(os, s)))
+                .filter(Boolean);
+
+            if (validSubs.length > 0) {
                 const seenForThisProduct = new Set();
-                rawSubs.forEach(s => {
-                    const officialSub = officialSubcategories.find(os => areSubcategoriesMatching(os, s)) || s;
+                validSubs.forEach(officialSub => {
                     const nKey = normSubcategoryKey(officialSub);
                     if (!nKey || seenForThisProduct.has(nKey)) return;
                     seenForThisProduct.add(nKey);
@@ -509,13 +525,18 @@ const StoreProducts = () => {
                     }
                 });
             } else if (p.category) {
-                const canonicalCat = findCanonicalCategory(p.category, categories)?.name || p.category;
-                const nKey = normCategoryKey(canonicalCat);
-                if (nKey) {
-                    if (!itemMap.has(nKey)) {
-                        itemMap.set(nKey, { name: canonicalCat, count: 1 });
-                    } else {
-                        itemMap.get(nKey).count += 1;
+                // If product has no active subcategories (or its subcategory was deleted),
+                // fall back to its active parent category!
+                const canonicalCat = findCanonicalCategory(p.category, categories);
+                if (canonicalCat && !canonicalCat.isHidden && !canonicalCat.isHomeHidden) {
+                    const catName = canonicalCat.name;
+                    const nKey = normCategoryKey(catName);
+                    if (nKey) {
+                        if (!itemMap.has(nKey)) {
+                            itemMap.set(nKey, { name: catName, count: 1 });
+                        } else {
+                            itemMap.get(nKey).count += 1;
+                        }
                     }
                 }
             }
@@ -550,7 +571,7 @@ const StoreProducts = () => {
             subcategorySortOrder: sortOrder,
             getSubcategorySortIndex: getSortIndex
         };
-    }, [groupedStoreProducts, categories, store]);
+    }, [groupedStoreProducts, categories, store, officialSubcategories]);
 
     const totalProductCount = useMemo(() => groupedStoreProducts.length, [groupedStoreProducts]);
 
@@ -563,6 +584,23 @@ const StoreProducts = () => {
         }
         return null;
     }, [subcategoryData, selectedSubcategory]);
+
+    // Clear stale or deleted subcategories from state and session storage
+    useEffect(() => {
+        if (subcategoryData.length > 0 && selectedSubcategory) {
+            const isValid = subcategoryData.some(s => 
+                areSubcategoriesMatching(s.name, selectedSubcategory) || 
+                areCategoriesMatching(s.name, selectedSubcategory)
+            );
+            if (!isValid) {
+                const fallback = subcategoryData[0]?.name || null;
+                setSelectedSubcategory(fallback);
+                try {
+                    sessionStorage.removeItem(sessionKey);
+                } catch {}
+            }
+        }
+    }, [subcategoryData, selectedSubcategory, sessionKey]);
 
     // Group and sort logic
     const sections = useMemo(() => {
@@ -609,7 +647,8 @@ const StoreProducts = () => {
             .filter(p => {
                 const rawSubs = (Array.isArray(p.subcategory) ? p.subcategory : [p.subcategory])
                     .filter(s => s && typeof s === 'string' && s.trim() !== '');
-                const matchSub = rawSubs.some(s => areSubcategoriesMatching(s, effectiveSubcategory));
+                const validSubs = rawSubs.filter(s => officialSubcategories.some(os => areSubcategoriesMatching(os, s)));
+                const matchSub = validSubs.some(s => areSubcategoriesMatching(s, effectiveSubcategory));
                 const matchCat = areCategoriesMatching(p.category, effectiveSubcategory);
                 return matchSub || matchCat;
             })
@@ -623,7 +662,7 @@ const StoreProducts = () => {
             });
 
         return [[effectiveSubcategory, filteredProducts]];
-    }, [groupedStoreProducts, effectiveSubcategory, globalSortOrder, searchQuery, subcategorySortOrder]);
+    }, [groupedStoreProducts, effectiveSubcategory, globalSortOrder, searchQuery, subcategorySortOrder, officialSubcategories]);
 
     // Keep displayProducts for simple count checks
     const displayProducts = useMemo(() => sections.flatMap(s => s[1]), [sections]);
