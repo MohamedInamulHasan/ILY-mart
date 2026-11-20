@@ -391,8 +391,7 @@ const ProductDetails = () => {
                         <h1 className="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white leading-normal" title={product.title}>
                             {renderBilingualTitle(t(product, 'title') || product.title, language, {
                                 mainClassName: 'leading-snug',
-                                subClassName: 'text-sm sm:text-base text-gray-600 dark:text-gray-300 font-medium leading-normal mt-0.5 pt-0.5 pb-1',
-                                tagClassName: 'inline-flex items-center justify-center text-xs sm:text-sm font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gradient-to-b from-[#FF4B4B] to-[#DC2626] text-white shadow-[0_2.5px_0_#991B1B] border-t border-white/40 tracking-tight leading-none select-none shrink-0 self-center'
+                                subClassName: 'text-sm sm:text-base text-gray-600 dark:text-gray-300 font-medium leading-normal mt-0.5 pt-0.5 pb-1'
                             })}
                         </h1>
                         {product.unit && !isPreview && (

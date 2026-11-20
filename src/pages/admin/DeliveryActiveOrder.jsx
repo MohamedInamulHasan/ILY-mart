@@ -682,7 +682,7 @@ const DeliveryActiveOrder = () => {
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                     <div className="mb-0.5 leading-tight" title={item.name}>
-                                        {renderBilingualTitle(item.name || item.title, language, {
+                                        {renderBilingualTitle(item.name || item.title || item.adTitle, language, {
                                             hideTag: true,
                                             mainClassName: 'text-sm font-medium text-gray-900 dark:text-white leading-snug',
                                             subClassName: 'text-xs text-gray-400 dark:text-gray-500 font-normal leading-tight mt-0.5'

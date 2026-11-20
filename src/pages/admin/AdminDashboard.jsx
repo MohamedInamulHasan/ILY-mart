@@ -4801,13 +4801,17 @@ const AdsManagement = () => {
                                             <p className="text-sm font-bold text-[#2E5A2E] dark:text-[#CBF9B2]">{ad.storeName}</p>
                                         )}
                                         {ad.offerTitle && (
-                                            <p className="font-medium text-gray-900 dark:text-white">{ad.offerTitle}</p>
+                                            <div className="font-medium text-gray-900 dark:text-white">
+                                                {renderBilingualTitle(ad.offerTitle, language)}
+                                            </div>
                                         )}
                                         {ad.price && (
                                             <p className="text-lg font-bold text-green-600 dark:text-green-400">₹{ad.price}</p>
                                         )}
                                         {!ad.storeName && !ad.offerTitle && !ad.price && ad.title && (
-                                            <p className="font-medium text-gray-900 dark:text-white">{ad.title}</p>
+                                            <div className="font-medium text-gray-900 dark:text-white">
+                                                {renderBilingualTitle(ad.title, language)}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
