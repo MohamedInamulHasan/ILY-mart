@@ -211,11 +211,9 @@ public class FloatingLogoService extends Service {
                     }
                 }
                 // Trigger immediate background polling to ensure database has fully synchronized
-                if (executorService != null && !executorService.isShutdown()) {
-                    try {
-                        executorService.execute(this::pollForPendingOrders);
-                    } catch (Exception ignored) {}
-                }
+                try {
+                    new Thread(this::pollForPendingOrders).start();
+                } catch (Exception ignored) {}
                 return START_STICKY;
             } else if ("DISMISS_CARD".equals(action)) {
                 mainHandler.post(this::dismissPorterOrderCard);
