@@ -60,14 +60,22 @@ export const formatTime12h = (time24) => {
     }
 };
 
-// Convert HH:mm or period|HH:mm to 12-hour range format (e.g., "13:00" -> "1 PM - 2 PM", "today|11:00" -> "11 AM - 12 PM")
-export const formatDeliveryRange = (time24) => {
+// Convert HH:mm or period|HH:mm to 12-hour range format (e.g., "13:00" -> "1 PM - 2 PM", "today|11:00" -> "Today, 11 AM - 12 PM")
+export const formatDeliveryRange = (time24, language = 'en') => {
     if (!time24 || String(time24).trim().toLowerCase() === 'null' || String(time24).trim().toLowerCase() === 'undefined') return '';
     try {
         let rawTime = time24;
+        let prefix = '';
+
         if (typeof time24 === 'string' && time24.includes('|')) {
             const parts = time24.split('|');
+            const period = parts[0].trim().toLowerCase();
             rawTime = parts[1];
+            if (period === 'today') {
+                prefix = language === 'ta' ? 'இன்று, ' : 'Today, ';
+            } else if (period === 'tomorrow') {
+                prefix = language === 'ta' ? 'நாளை, ' : 'Tomorrow, ';
+            }
         }
 
         const [hours, minutes] = String(rawTime).split(':');
@@ -86,22 +94,29 @@ export const formatDeliveryRange = (time24) => {
             return `${h12}${mStr}${ampmStr}`;
         };
 
-        return `${formatShortTime(hStart, minutes)} - ${formatShortTime(hEnd, minutes)}`;
+        const range = `${formatShortTime(hStart, minutes)} - ${formatShortTime(hEnd, minutes)}`;
+        return `${prefix}${range}`;
     } catch (e) {
         return '';
     }
 };
 
 // Convert Date or ISO string or period|HH:mm string to 12-hour range format
-export const formatDeliveryRangeFromDate = (date) => {
+export const formatDeliveryRangeFromDate = (date, language = 'en') => {
     if (!date || String(date).trim().toLowerCase() === 'null' || String(date).trim().toLowerCase() === 'undefined') return '';
     try {
         if (typeof date === 'string' && date.includes('|')) {
-            return formatDeliveryRange(date);
+            return formatDeliveryRange(date, language);
         }
 
         const d = new Date(date);
-        if (isNaN(d.getTime())) return formatDeliveryRange(String(date));
+        if (isNaN(d.getTime())) return formatDeliveryRange(String(date), language);
+
+        const now = new Date();
+        const isToday = d.toDateString() === now.toDateString();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const isTomorrow = d.toDateString() === tomorrow.toDateString();
 
         const hStart = d.getHours();
         const mStart = d.getMinutes().toString().padStart(2, '0');
@@ -114,55 +129,93 @@ export const formatDeliveryRangeFromDate = (date) => {
             return `${h12}${mStr}${ampmStr}`;
         };
 
-        return `${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
+        const timeStr = `${formatShortTime(hStart, mStart)} - ${formatShortTime(hEnd, mStart)}`;
+        if (isTomorrow) {
+            return language === 'ta' ? `நாளை, ${timeStr}` : `Tomorrow, ${timeStr}`;
+        }
+        if (isToday) {
+            return language === 'ta' ? `இன்று, ${timeStr}` : `Today, ${timeStr}`;
+        }
+        return timeStr;
     } catch (e) {
         return '';
     }
 };
 
 /**
- * Calculates real-time 4 future delivery time slot options.
+ * Calculates the next 4 real available delivery schedule timing slots.
  * Rules:
- * - If current minute < 30: includes the current hour slot (e.g. 11:21 -> 11:00 slot, i.e. 11 AM - 12 PM).
- * - If current minute >= 30: starts from next hour slot (e.g. 11:30 -> 12:00 slot, i.e. 12 PM - 1 PM).
- * - Always returns exactly the next 4 available options.
+ * - Uses configured delivery times if available, or default operating hours (09:00 - 21:00).
+ * - Slots are sorted chronologically.
+ * - For today: a slot HH:mm is available if current time has at least 30 mins remaining
+ *   in the delivery window (window ends at slot + 60 mins -> currentMinutes <= slotStartMinutes + 30).
+ * - If today has fewer than 4 slots remaining, the remaining slots needed to make 4
+ *   seamlessly roll over to Tomorrow starting from the first configured morning slot.
+ * - If all slots for today have passed (or it's late night), returns the first 4 slots for Tomorrow.
+ * - Always returns exactly 4 available schedule timings with 'today|' or 'tomorrow|' prefix.
  */
 export const getAvailableDeliverySlots = (configuredTimes, period = 'today') => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMin = now.getMinutes();
+    const defaultWorkingHours = [
+        '09:00', '10:00', '11:00', '12:00', '13:00', '14:00',
+        '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'
+    ];
 
-    // Start hour: current hour if min < 30, else next hour
-    const startHour = currentMin < 30 ? currentHour : currentHour + 1;
-
-    if (period === 'today') {
-        let availableToday = [];
-        if (Array.isArray(configuredTimes) && configuredTimes.length > 0) {
-            availableToday = configuredTimes.filter(slot => {
-                const slotHour = parseInt(String(slot).split(':')[0], 10);
-                return slotHour >= startHour;
-            });
-        }
-
-        // If configured times have fewer than 4 slots left today, dynamically generate 4 consecutive hourly slots from startHour
-        if (availableToday.length < 4) {
-            const dynamicSlots = [];
-            for (let i = 0; i < 4; i++) {
-                const hour = (startHour + i) % 24;
-                const hh = String(hour).padStart(2, '0');
-                dynamicSlots.push(`${hh}:00`);
-            }
-            return dynamicSlots;
-        }
-
-        return availableToday.slice(0, 4);
+    let rawTimes = [];
+    if (Array.isArray(configuredTimes) && configuredTimes.length > 0) {
+        rawTimes = [...configuredTimes];
     } else {
-        // Tomorrow: Return first 4 configured slots or 4 morning slots
-        if (Array.isArray(configuredTimes) && configuredTimes.length >= 4) {
-            return configuredTimes.slice(0, 4);
-        }
-        return ['08:00', '09:00', '10:00', '11:00'];
+        rawTimes = defaultWorkingHours;
     }
+
+    // Sort chronologically
+    rawTimes.sort((a, b) => {
+        const cleanA = a.includes('|') ? a.split('|')[1] : a;
+        const cleanB = b.includes('|') ? b.split('|')[1] : b;
+        const [hA, mA] = cleanA.split(':').map(Number);
+        const [hB, mB] = cleanB.split(':').map(Number);
+        return (hA * 60 + (mA || 0)) - (hB * 60 + (mB || 0));
+    });
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Today's available slots:
+    // Slot window is 60 minutes long. A slot is available if there is at least 30 minutes left before window ends
+    // i.e., currentMinutes <= slotStartMinutes + 30
+    const todaySlots = rawTimes.filter(slot => {
+        const cleanSlot = slot.includes('|') ? slot.split('|')[1] : slot;
+        const [h, m] = cleanSlot.split(':').map(Number);
+        const slotStartMinutes = h * 60 + (m || 0);
+        return currentMinutes <= slotStartMinutes + 30;
+    });
+
+    const result = [];
+
+    // If caller specifically requested 'tomorrow'
+    if (period === 'tomorrow') {
+        rawTimes.slice(0, 4).forEach(slot => {
+            const cleanSlot = slot.includes('|') ? slot.split('|')[1] : slot;
+            result.push(`tomorrow|${cleanSlot}`);
+        });
+        return result;
+    }
+
+    // Otherwise, calculate the next 4 available slots starting from today
+    todaySlots.slice(0, 4).forEach(slot => {
+        const cleanSlot = slot.includes('|') ? slot.split('|')[1] : slot;
+        result.push(`today|${cleanSlot}`);
+    });
+
+    // If today has fewer than 4 slots left, fill remainder with tomorrow's slots
+    if (result.length < 4) {
+        const needed = 4 - result.length;
+        rawTimes.slice(0, needed).forEach(slot => {
+            const cleanSlot = slot.includes('|') ? slot.split('|')[1] : slot;
+            result.push(`tomorrow|${cleanSlot}`);
+        });
+    }
+
+    return result.slice(0, 4);
 };
 
 // Get current time in minutes since midnight

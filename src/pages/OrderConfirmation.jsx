@@ -402,7 +402,7 @@ const OrderConfirmation = () => {
                             const strTime = String(rawTime).toLowerCase();
                             if (strTime.includes('instant')) return null;
 
-                            const formattedRange = formatDeliveryRange(rawTime);
+                            const formattedRange = formatDeliveryRange(rawTime, language);
                             if (!formattedRange || formattedRange.toLowerCase().includes('instant')) return null;
 
                             return (

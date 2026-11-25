@@ -495,7 +495,7 @@ const OrderDetails = () => {
                             const isValidTime = rawTime && String(rawTime).trim().toLowerCase() !== 'null' && String(rawTime).trim().toLowerCase() !== 'undefined' && String(rawTime).trim() !== '';
                             const isScheduled = isValidTime && !String(rawTime).toLowerCase().includes('instant');
                             const timeLabel = isScheduled ? t('Scheduled Delivery') : t('Delivery Time');
-                            const formattedRange = isValidTime ? formatDeliveryRangeFromDate(rawTime) : null;
+                            const formattedRange = isValidTime ? formatDeliveryRangeFromDate(rawTime, language) : null;
                             const timeDisplay = isValidTime ? (formattedRange || rawTime) : t('Not Mentioned');
 
                             return (
