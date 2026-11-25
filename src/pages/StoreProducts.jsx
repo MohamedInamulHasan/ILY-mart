@@ -20,6 +20,7 @@ import SimpleProductCard from '../components/SimpleProductCard';
 import SortDropdown from '../components/SortDropdown';
 import CartHeaderButton from '../components/CartHeaderButton';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
+import { getAdButtonText } from '../utils/titleHelpers';
 
 const ProductSkeleton = ({ fastMode }) => (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700/60 flex flex-col justify-between space-y-2.5 h-full">
@@ -153,14 +154,20 @@ const StoreAdsBanner = ({ ads, t }) => {
                             transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
                         />
 
-                        {/* Order Now Tag in the right side of image: white card, black thick text */}
-                        <button
-                            type="button"
-                            onClick={(e) => handleOrderNow(e, ad)}
-                            className="absolute right-3.5 bottom-3.5 sm:right-4 sm:bottom-4 z-20 bg-white text-black font-extrabold text-[11px] sm:text-[12px] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg flex items-center gap-1.5 select-none active:scale-95 transition-transform cursor-pointer border border-black/5"
-                        >
-                            <span>{t('Order Now')}</span>
-                        </button>
+                        {/* Action Button (Order Now or Pre Order) in the right side of image: white card, black thick text */}
+                        {(() => {
+                            const btnText = getAdButtonText(ad);
+                            if (!btnText) return null;
+                            return (
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleOrderNow(e, ad)}
+                                    className="absolute right-3.5 bottom-3.5 sm:right-4 sm:bottom-4 z-20 bg-white text-black font-extrabold text-[11px] sm:text-[12px] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg flex items-center gap-1.5 select-none active:scale-95 transition-transform cursor-pointer border border-black/5"
+                                >
+                                    <span>{btnText === 'Pre Order' ? t('Pre Order') : t('Order Now')}</span>
+                                </button>
+                            );
+                        })()}
                     </div>
                 ))}
             </div>

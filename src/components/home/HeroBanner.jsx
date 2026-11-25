@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Plus, Store } from 'lucide-react';
+import { ShoppingBag, Plus } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useStores } from '../../hooks/queries/useStores';
 import { API_BASE_URL } from '../../utils/api';
+import { getAdButtonText } from '../../utils/titleHelpers';
 
 const HeroBanner = ({ slides = [], isLoading = false }) => {
     const navigate = useNavigate();
@@ -162,37 +163,23 @@ const HeroBanner = ({ slides = [], isLoading = false }) => {
                                 transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
                             />
 
-                            {/* Glassmorphism Store Name Tag */}
-                            {sName && (
-                                <div
-                                    onClick={(e) => {
-                                        if (sId) {
-                                            e.stopPropagation();
-                                            navigate(`/store/${sId}`);
-                                        } else {
-                                            e.stopPropagation();
-                                        }
-                                    }}
-                                    className="absolute top-3 left-3 sm:top-3.5 sm:left-3.5 z-20 backdrop-blur-md bg-black/40 dark:bg-black/60 border border-white/25 text-white rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 flex items-center gap-1.5 shadow-md max-w-[70%] cursor-pointer hover:bg-black/55 active:scale-95 transition-all select-none"
-                                >
-                                    <Store size={12} className="text-white flex-shrink-0" />
-                                    <span className="text-[11px] sm:text-[12px] font-semibold text-white tracking-wide truncate drop-shadow-sm">
-                                        {sName}
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Bottom subtle gradient for button contrast */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none z-[5]" />
-
-                            {/* Order Now Tag in the right side of image: white card, black thick text */}
-                            <button
-                                type="button"
-                                onClick={(e) => handleBuy(e, slide)}
-                                className="absolute right-3.5 bottom-3.5 sm:right-4 sm:bottom-4 z-20 bg-white text-black font-extrabold text-[11px] sm:text-[12px] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg flex items-center gap-1.5 select-none active:scale-95 transition-transform cursor-pointer border border-black/5"
-                            >
-                                <span>{t('Order Now')}</span>
-                            </button>
+                            {/* Action Button (Order Now or Pre Order) in the right side of image: white card, black thick text */}
+                            {(() => {
+                                const btnText = getAdButtonText(slide);
+                                if (!btnText) return null;
+                                return (
+                                    <>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none z-[5]" />
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleBuy(e, slide)}
+                                            className="absolute right-3.5 bottom-3.5 sm:right-4 sm:bottom-4 z-20 bg-white text-black font-extrabold text-[11px] sm:text-[12px] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg flex items-center gap-1.5 select-none active:scale-95 transition-transform cursor-pointer border border-black/5"
+                                        >
+                                            <span>{btnText === 'Pre Order' ? t('Pre Order') : t('Order Now')}</span>
+                                        </button>
+                                    </>
+                                );
+                            })()}
                         </div>
                     );})}
                 </div>

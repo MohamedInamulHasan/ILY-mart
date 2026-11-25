@@ -111,6 +111,10 @@ const Checkout = () => {
             isCategoryPreview(item.category || item.product?.category, categories)
         )
     );
+    const isOrderFromAd = Boolean(
+        (directPurchase?.items && directPurchase.items.some(item => item.isFromAd)) ||
+        (displayItems && displayItems.some(item => item.isFromAd))
+    );
     const [deliveryTimingMode, setDeliveryTimingMode] = useState('instant'); // 'instant' | 'scheduled'
     const [selectedDatePeriod, setSelectedDatePeriod] = useState('today'); // 'today' | 'tomorrow'
     const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
@@ -428,7 +432,7 @@ const Checkout = () => {
             }
         }
         if (!formData.location) errors.location = true;
-        if (settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && !selectedTimeSlot) {
+        if (settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && !isOrderFromAd && !selectedTimeSlot) {
             errors.deliveryTime = true;
         }
 
@@ -548,7 +552,7 @@ const Checkout = () => {
                 const baseDeliveryCharge = calculateDeliveryCharge(nonFreeItems.length > 0 ? nonFreeItems : displayItems);
                 const finalDeliveryCharge = isOnlyFreeProducts ? 0 : baseDeliveryCharge;
 
-                const isScheduledMode = settings?.deliveryTimingType !== 'instant' && !hasPreviewItems;
+                const isScheduledMode = settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && !isOrderFromAd;
                 const deliveryTimeParam = isScheduledMode && selectedTimeSlot 
                     ? (selectedTimeSlot.includes('|') ? selectedTimeSlot : `${selectedDatePeriod}|${selectedTimeSlot}`) 
                     : '';
@@ -1061,71 +1065,14 @@ const Checkout = () => {
                         </div>
 
                         {/* Preferred Order Timing & Delivery Slot Selection */}
-                        {settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && (
-                            <div ref={deliveryTimeRef} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3.5 shadow-xs">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />
-                                        <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">{t('Delivery Timing')}</span>
-                                    </div>
-                                    <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
-                                        {language === 'ta' ? 'அடுத்த 4 நேரங்கள்' : 'Next 4 slots'}
-                                    </span>
+                        {settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && !isOrderFromAd && (
+                            <div ref={deliveryTimeRef} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3 shadow-xs">
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />
+                                    <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">{t('Delivery Timing')}</span>
                                 </div>
 
-                                {/* 4 Available Schedule Timing Cards */}
-                                {availableDeliverySlots && availableDeliverySlots.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
-                                        {availableDeliverySlots.map((slotId) => {
-                                            const isSelected = selectedTimeSlot === slotId;
-                                            const isTomorrow = slotId.startsWith('tomorrow|');
-                                            const formatted = formatDeliveryRange(slotId, language);
-                                            const timeOnly = formatted.replace(/^(Today,\s*|Tomorrow,\s*|இன்று,\s*|நாளை,\s*)/i, '');
-
-                                            return (
-                                                <button
-                                                    key={slotId}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedTimeSlot(slotId);
-                                                        setFieldErrors(prev => ({ ...prev, deliveryTime: false }));
-                                                    }}
-                                                    className={`relative flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
-                                                        isSelected
-                                                            ? 'border-[#2E5A2E] dark:border-[#7CA90E] bg-green-50/80 dark:bg-[#2E5A2E]/25 text-gray-900 dark:text-white shadow-xs'
-                                                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
-                                                    }`}
-                                                >
-                                                    <div className="flex flex-col min-w-0 pr-2">
-                                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                                                            isTomorrow ? 'text-amber-600 dark:text-amber-400' : 'text-[#2E5A2E] dark:text-[#7CA90E]'
-                                                        }`}>
-                                                            {isTomorrow
-                                                                ? (language === 'ta' ? 'நாளை' : 'Tomorrow')
-                                                                : (language === 'ta' ? 'இன்று' : 'Today')}
-                                                        </span>
-                                                        <span className="text-xs sm:text-sm font-bold truncate mt-0.5">
-                                                            {timeOnly}
-                                                        </span>
-                                                    </div>
-                                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                                                        isSelected
-                                                            ? 'border-[#2E5A2E] bg-[#2E5A2E] text-white dark:border-[#7CA90E] dark:bg-[#7CA90E]'
-                                                            : 'border-gray-300 dark:border-gray-600'
-                                                    }`}>
-                                                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="p-3 text-center text-xs text-gray-400 bg-gray-50 dark:bg-gray-750 rounded-xl">
-                                        {t('No delivery slots available')}
-                                    </div>
-                                )}
-
-                                {/* Accessible fallback select for screen readers and compact dropdown option */}
+                                {/* Dropdown only */}
                                 <div className="relative">
                                     <select
                                         value={selectedTimeSlot || ''}
@@ -1133,7 +1080,7 @@ const Checkout = () => {
                                             setSelectedTimeSlot(e.target.value);
                                             setFieldErrors(prev => ({ ...prev, deliveryTime: false }));
                                         }}
-                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-300 text-xs font-medium focus:outline-none appearance-none cursor-pointer pr-8 transition-colors"
+                                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-800 dark:text-gray-200 text-xs sm:text-sm font-medium focus:outline-none appearance-none cursor-pointer pr-9 transition-colors"
                                     >
                                         <option value="" disabled className="bg-white dark:bg-gray-800 text-gray-400">
                                             -- {t('Select Delivery Time Slot')} --
@@ -1144,8 +1091,8 @@ const Checkout = () => {
                                             </option>
                                         ))}
                                     </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-gray-400">
-                                        <ChevronDown size={14} />
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                                        <ChevronDown size={16} />
                                     </div>
                                 </div>
 
@@ -1153,7 +1100,7 @@ const Checkout = () => {
                                     <div className="relative mt-2 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 text-[13px] font-normal flex items-center gap-2.5 w-fit shadow-md z-10">
                                         <div className="absolute -top-[5px] left-4 w-2 h-2 bg-white dark:bg-gray-855 border-t border-l border-gray-300 dark:border-gray-600 rotate-45 transform"></div>
                                         <div className="w-5 h-5 rounded bg-[#F59E0B] text-white flex items-center justify-center text-[12px] font-black flex-shrink-0">!</div>
-                                        <span>{language === 'ta' ? 'தயவுசெய்து டெலிவரி நேரத்தைத் தேர்ந்தெடுக்கவும்.' : 'Please select a delivery time slot.'}</span>
+                                        <span>{t('Please select a delivery time slot')}</span>
                                     </div>
                                 )}
                             </div>

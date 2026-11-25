@@ -61,7 +61,7 @@ import ServiceManagement from './ServiceManagement';
 import useCloudinaryUpload from '../../hooks/useCloudinaryUpload';
 import { isProductScheduled, formatDeliveryRangeFromDate } from '../../utils/storeHelpers';
 import { openExternalLink } from '../../utils/linkHelper';
-import { renderBilingualTitle } from '../../utils/titleHelpers';
+import { renderBilingualTitle, getAdButtonText } from '../../utils/titleHelpers';
 
 // New Query Hooks
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useUpdateProductOrder } from '../../hooks/queries/useProducts';
@@ -4531,6 +4531,7 @@ const AdsManagement = () => {
     const [storeId, setStoreId] = useState(''); // Add storeId state
     const [price, setPrice] = useState('');
     const [offerTitle, setOfferTitle] = useState('');
+    const [buttonText, setButtonText] = useState(''); // Optional: '' (None), 'Order Now', 'Pre Order'
     const [editingAdId, setEditingAdId] = useState(null); // Track editing state
     const { uploadImage, uploading: uploadingAd } = useCloudinaryUpload();
 
@@ -4557,7 +4558,9 @@ const AdsManagement = () => {
             storeName: storeName || '',
             storeId: storeId || null,
             price: price ? parseFloat(price) : null,
-            offerTitle: offerTitle || ''
+            offerTitle: offerTitle || '',
+            buttonText: buttonText || '',
+            link: buttonText ? `btn:${buttonText}` : ''
         };
 
         // Only include image if it's NOT the fallback URL (i.e. user uploaded new one or it's a real external URL)
@@ -4583,6 +4586,7 @@ const AdsManagement = () => {
             setStoreId('');
             setPrice('');
             setOfferTitle('');
+            setButtonText('');
             setEditingAdId(null);
         } catch (error) {
             console.error('Error saving ad:', error);
@@ -4598,6 +4602,7 @@ const AdsManagement = () => {
         setStoreId(ad.storeId?._id || ad.storeId || ''); // Handle populated or raw ID
         setPrice(ad.price || '');
         setOfferTitle(ad.offerTitle || '');
+        setButtonText(getAdButtonText(ad));
 
         // Scroll to form
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4610,6 +4615,7 @@ const AdsManagement = () => {
         setStoreId('');
         setPrice('');
         setOfferTitle('');
+        setButtonText('');
         setEditingAdId(null);
     };
 
@@ -4748,8 +4754,72 @@ const AdsManagement = () => {
                                 placeholder={t('e.g., Special offer shawarma + chicken = 100 offer')}
                             />
                         </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {t('Button Option')} <span className="text-gray-400 text-xs font-normal">({t('Optional')})</span>
+                            </label>
+                            <div className="grid grid-cols-3 gap-2.5 sm:gap-3 max-w-md">
+                                <button
+                                    type="button"
+                                    onClick={() => setButtonText('')}
+                                    className={`px-3 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                                        !buttonText || buttonText === 'none'
+                                            ? 'border-[#2E5A2E] bg-[#E8F5E9] dark:bg-[#2E5A2E]/20 text-[#2E5A2E] dark:text-[#CBF9B2] shadow-xs'
+                                            : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                    }`}
+                                >
+                                    <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                        !buttonText || buttonText === 'none' ? 'border-[#2E5A2E] bg-[#2E5A2E]' : 'border-gray-400'
+                                    }`}>
+                                        {(!buttonText || buttonText === 'none') && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </span>
+                                    <span className="truncate">{t('None')}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setButtonText('Order Now')}
+                                    className={`px-3 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                                        buttonText === 'Order Now'
+                                            ? 'border-[#2E5A2E] bg-[#E8F5E9] dark:bg-[#2E5A2E]/20 text-[#2E5A2E] dark:text-[#CBF9B2] shadow-xs'
+                                            : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                    }`}
+                                >
+                                    <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                        buttonText === 'Order Now' ? 'border-[#2E5A2E] bg-[#2E5A2E]' : 'border-gray-400'
+                                    }`}>
+                                        {buttonText === 'Order Now' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </span>
+                                    <span className="truncate">{t('Order Now')}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setButtonText('Pre Order')}
+                                    className={`px-3 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                                        buttonText === 'Pre Order'
+                                            ? 'border-[#2E5A2E] bg-[#E8F5E9] dark:bg-[#2E5A2E]/20 text-[#2E5A2E] dark:text-[#CBF9B2] shadow-xs'
+                                            : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                    }`}
+                                >
+                                    <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                        buttonText === 'Pre Order' ? 'border-[#2E5A2E] bg-[#2E5A2E]' : 'border-gray-400'
+                                    }`}>
+                                        {buttonText === 'Pre Order' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </span>
+                                    <span className="truncate">{t('Pre Order')}</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-3">
+                        {editingAdId && (
+                            <button
+                                type="button"
+                                onClick={handleCancelEdit}
+                                className="px-5 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium text-sm"
+                            >
+                                {t('Cancel')}
+                            </button>
+                        )}
                         <button
                             type="submit"
                             disabled={!newAdUrl || uploadingAd}
@@ -4779,6 +4849,16 @@ const AdsManagement = () => {
                                             alt={ad.title}
                                             className="w-full h-full object-cover"
                                         />
+                                        {/* Floating preview of the actual button on the ad card image */}
+                                        {(() => {
+                                            const btn = getAdButtonText(ad);
+                                            if (!btn) return null;
+                                            return (
+                                                <div className="absolute right-2.5 bottom-2.5 z-10 bg-white text-black font-extrabold text-[10px] px-2.5 py-1 rounded-lg shadow-md border border-black/5 select-none pointer-events-none">
+                                                    {btn === 'Pre Order' ? t('Pre Order') : t('Order Now')}
+                                                </div>
+                                            );
+                                        })()}
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <div className="flex gap-2">
                                                 <button
@@ -4805,9 +4885,29 @@ const AdsManagement = () => {
                                                 {renderBilingualTitle(ad.offerTitle, language)}
                                             </div>
                                         )}
-                                        {ad.price && (
-                                            <p className="text-lg font-bold text-green-600 dark:text-green-400">₹{ad.price}</p>
-                                        )}
+                                        <div className="flex items-center justify-between gap-2 pt-1">
+                                            {ad.price ? (
+                                                <p className="text-lg font-bold text-green-600 dark:text-green-400">₹{ad.price}</p>
+                                            ) : <div />}
+                                            {(() => {
+                                                const btn = getAdButtonText(ad);
+                                                return (
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                                        btn === 'Pre Order'
+                                                            ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                                            : btn === 'Order Now'
+                                                            ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                                            : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-400'
+                                                    }`}>
+                                                        {btn === 'Pre Order'
+                                                            ? t('Pre Order')
+                                                            : btn === 'Order Now'
+                                                            ? t('Order Now')
+                                                            : t('No Button')}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </div>
                                         {!ad.storeName && !ad.offerTitle && !ad.price && ad.title && (
                                             <div className="font-medium text-gray-900 dark:text-white">
                                                 {renderBilingualTitle(ad.title, language)}

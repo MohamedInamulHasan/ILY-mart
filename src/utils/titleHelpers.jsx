@@ -89,3 +89,16 @@ export const renderBilingualTitle = (fullTitle, language = '', options = {}) => 
         </span>
     );
 };
+
+/**
+ * Resolves the configured button text for an Ad ("Order Now", "Pre Order", or "" for No Button)
+ * Supports both modern buttonText field and link-encoded fallback (btn:...)
+ */
+export const getAdButtonText = (ad) => {
+    if (!ad) return '';
+    if (ad.buttonText === 'Pre Order' || ad.buttonText === 'Order Now') return ad.buttonText;
+    if (ad.link?.startsWith('btn:')) return ad.link.replace('btn:', '');
+    if (ad.link === 'Order Now' || ad.link === 'Pre Order') return ad.link;
+    if (ad.buttonText === 'none') return '';
+    return ad.buttonText || '';
+};

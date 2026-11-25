@@ -21,6 +21,11 @@ const adSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    buttonText: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     image: {
         type: String,
         required: [true, 'Please add an image']

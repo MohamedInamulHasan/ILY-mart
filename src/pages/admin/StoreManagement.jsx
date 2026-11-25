@@ -28,11 +28,16 @@ import {
     Camera,
     Eye,
     EyeOff,
-    CheckCircle
+    CheckCircle,
+    ChevronDown,
+    ChevronUp,
+    FolderTree,
+    Layers
 } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { renderBilingualTitle } from '../../utils/titleHelpers';
 import { useStores, useCreateStore, useUpdateStore, useDeleteStore, useUpdateStoreOrder } from '../../hooks/queries/useStores';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useUpdateProductOrder } from '../../hooks/queries/useProducts';
 import { useCategories } from '../../hooks/queries/useCategories';
@@ -67,7 +72,7 @@ const StoreManagement = ({
     onViewChange
 }) => {
     const { user } = useAuth();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { refreshData } = useData();
     const navigate = useNavigate();
     const location = useLocation();
@@ -381,6 +386,15 @@ const StoreManagement = ({
 
     const [editingProduct, setEditingProduct] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [storeProductSearch, setStoreProductSearch] = useState('');
+    const [collapsedCategories, setCollapsedCategories] = useState({});
+
+    const toggleCategoryCollapse = (catKey) => {
+        setCollapsedCategories(prev => ({
+            ...prev,
+            [catKey]: !prev[catKey]
+        }));
+    };
 
     // Determine stores to display - strictly show their store only for Store Managers or inside My Store
     const displayedStores = (isStoreAdmin || isInsideMyStore)
@@ -880,6 +894,473 @@ const StoreManagement = ({
             const errorMessage = error.response?.data?.message || error.message || t('Failed to save product. Please try again.');
             alert(`${t('Error')}: ${errorMessage}`);
         }
+    };
+
+    // Products for currently selected store
+    const storeProds = useMemo(() => {
+        if (!selectedStore) return [];
+        return products.filter(p => {
+            const pStoreId = p.storeId?._id || p.storeId;
+            const targetId = selectedStore._id || selectedStore.id;
+            return targetId === 'none' 
+                ? (!pStoreId || pStoreId === 'none') 
+                : (pStoreId == targetId || String(pStoreId) === String(targetId));
+        });
+    }, [products, selectedStore]);
+
+    // Products grouped by Category, then by Subcategory
+    const groupedStoreProducts = useMemo(() => {
+        const query = storeProductSearch.trim().toLowerCase();
+        const filtered = storeProds.filter(p => {
+            if (!query) return true;
+            const titleMatch = (p.title || '').toLowerCase().includes(query);
+            const catMatch = (p.category || '').toLowerCase().includes(query);
+            const subMatch = Array.isArray(p.subcategory)
+                ? p.subcategory.some(s => String(s).toLowerCase().includes(query))
+                : String(p.subcategory || '').toLowerCase().includes(query);
+            const descMatch = (p.description || '').toLowerCase().includes(query);
+            const priceMatch = String(p.price || '').includes(query);
+            return titleMatch || catMatch || subMatch || descMatch || priceMatch;
+        });
+
+        const catMap = new Map();
+
+        filtered.forEach(prod => {
+            const rawCat = (prod.category || '').trim();
+            const canonicalCat = findCanonicalCategory(rawCat, categories);
+            const catKey = canonicalCat?.name || rawCat || '__uncategorized__';
+            const catDisplayName = canonicalCat?.name || rawCat || t('Uncategorized');
+
+            if (!catMap.has(catKey)) {
+                catMap.set(catKey, {
+                    categoryKey: catKey,
+                    categoryName: catDisplayName,
+                    canonicalCat,
+                    products: []
+                });
+            }
+            catMap.get(catKey).products.push(prod);
+        });
+
+        // Sort categories: official categories order first, then alphabetical
+        const sortedCategories = Array.from(catMap.values()).sort((a, b) => {
+            const idxA = categories.findIndex(c => areCategoriesMatching(a.categoryKey, c));
+            const idxB = categories.findIndex(c => areCategoriesMatching(b.categoryKey, c));
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.categoryName.localeCompare(b.categoryName);
+        });
+
+        return sortedCategories.map(catGroup => {
+            const subMap = new Map();
+            const officialSubs = catGroup.canonicalCat?.subcategories || [];
+
+            catGroup.products.forEach(prod => {
+                let primarySub = null;
+                if (Array.isArray(prod.subcategory) && prod.subcategory.length > 0) {
+                    primarySub = prod.subcategory.find(s => s && typeof s === 'string' && s.trim() !== '')?.trim() || null;
+                } else if (typeof prod.subcategory === 'string' && prod.subcategory.trim() !== '') {
+                    primarySub = prod.subcategory.trim();
+                }
+
+                let resolvedSubKey = '__general__';
+                let resolvedSubName = t('General / Other');
+
+                if (primarySub) {
+                    const matchedOfficial = officialSubs.find(os => areSubcategoriesMatching(os, primarySub));
+                    resolvedSubKey = matchedOfficial || primarySub;
+                    resolvedSubName = matchedOfficial || primarySub;
+                }
+
+                if (!subMap.has(resolvedSubKey)) {
+                    subMap.set(resolvedSubKey, {
+                        subKey: resolvedSubKey,
+                        subName: resolvedSubName,
+                        isGeneral: resolvedSubKey === '__general__',
+                        products: []
+                    });
+                }
+                subMap.get(resolvedSubKey).products.push(prod);
+            });
+
+            // Sort subcategories: official subcategory order first, then '__general__' at the end
+            const sortedSubs = Array.from(subMap.values()).sort((a, b) => {
+                if (a.isGeneral) return 1;
+                if (b.isGeneral) return -1;
+                const idxA = officialSubs.findIndex(os => areSubcategoriesMatching(os, a.subKey));
+                const idxB = officialSubs.findIndex(os => areSubcategoriesMatching(os, b.subKey));
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return a.subName.localeCompare(b.subName);
+            });
+
+            return {
+                ...catGroup,
+                subcategories: sortedSubs
+            };
+        });
+    }, [storeProds, storeProductSearch, categories, t]);
+
+    // Price update debounce timers to allow rapid stepping without network flooding
+    const priceUpdateTimers = useRef({});
+
+    const handlePriceChange = (product, delta) => {
+        const productId = product._id || product.id;
+        const currentPrice = Number(product.price) || 0;
+        const nextPrice = Math.max(0, currentPrice + delta);
+        if (nextPrice === currentPrice) return;
+
+        // 1. Instant optimistic update in React Query cache
+        queryClient.setQueryData(['products'], (old) => {
+            const oldData = Array.isArray(old) ? old : (old?.data || []);
+            return oldData.map(p =>
+                (p._id || p.id) === productId
+                    ? { ...p, price: nextPrice }
+                    : p
+            );
+        });
+
+        // 2. Debounce API call by 350ms to automatically persist to backend
+        if (priceUpdateTimers.current[productId]) {
+            clearTimeout(priceUpdateTimers.current[productId]);
+        }
+
+        priceUpdateTimers.current[productId] = setTimeout(async () => {
+            try {
+                await updateProduct({
+                    id: productId,
+                    data: { ...product, price: nextPrice }
+                });
+            } catch (error) {
+                console.error('Failed to update product price:', error);
+                queryClient.invalidateQueries(['products']);
+            } finally {
+                delete priceUpdateTimers.current[productId];
+            }
+        }, 350);
+    };
+
+    const handlePriceDirectChange = (product, newPriceVal) => {
+        const productId = product._id || product.id;
+        const nextPrice = Math.max(0, Number(newPriceVal) || 0);
+
+        queryClient.setQueryData(['products'], (old) => {
+            const oldData = Array.isArray(old) ? old : (old?.data || []);
+            return oldData.map(p =>
+                (p._id || p.id) === productId
+                    ? { ...p, price: nextPrice }
+                    : p
+            );
+        });
+
+        if (priceUpdateTimers.current[productId]) {
+            clearTimeout(priceUpdateTimers.current[productId]);
+        }
+
+        priceUpdateTimers.current[productId] = setTimeout(async () => {
+            try {
+                await updateProduct({
+                    id: productId,
+                    data: { ...product, price: nextPrice }
+                });
+            } catch (error) {
+                console.error('Failed to update product price:', error);
+                queryClient.invalidateQueries(['products']);
+            } finally {
+                delete priceUpdateTimers.current[productId];
+            }
+        }, 500);
+    };
+
+    const renderProductRow = (product) => {
+        const isGold = product.isGold || false;
+        const isAvailable = product.isAvailable !== false;
+        const productId = product._id || product.id;
+
+        return (
+            <SortableProductRow key={productId} product={product}>
+                <td className="p-4 w-10">
+                    <input
+                        type="checkbox"
+                        checked={selectedStoreProductIds.includes(productId)}
+                        onChange={() => toggleSelectStoreProduct(productId)}
+                        className="w-4 h-4 rounded accent-red-600 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </td>
+                <td className="p-4">
+                    {!isStoreAdmin && (
+                        <DragHandle className="text-gray-400 hover:text-gray-600">
+                            <GripVertical size={20} />
+                        </DragHandle>
+                    )}
+                </td>
+                <td className="p-4">
+                    <div 
+                        onClick={(e) => handleDirectTableImageClick(product, e)}
+                        title={t('Click to upload new photo')}
+                        className="relative w-12 h-12 rounded-lg overflow-hidden bg-white border border-gray-200 dark:border-gray-700 cursor-pointer group shadow-xs hover:border-[#2E5A2E] dark:hover:border-[#CBF9B2] transition-all"
+                    >
+                        <img
+                            src={product.image || `${API_BASE_URL}/products/${productId}/image`}
+                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
+                            alt={product.title}
+                            className="w-12 h-12 object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                            <Camera size={14} className="drop-shadow-xs" />
+                            <span className="text-[7.5px] font-bold leading-none mt-0.5 uppercase tracking-tighter">Edit</span>
+                        </div>
+                        {uploadingProductId === productId && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        )}
+                        {product.unit && uploadingProductId !== productId && (
+                            <span className="absolute bottom-0 right-0 bg-white/70 backdrop-blur-[2px] text-black text-[9px] font-medium px-1.5 py-0.5 rounded-tl-md shadow-sm z-10 leading-none flex items-center justify-center pointer-events-none">
+                                {product.unit}
+                            </span>
+                        )}
+                    </div>
+                </td>
+                <td className="p-4 font-medium text-gray-900 dark:text-white">
+                    <div className="flex flex-col">
+                        {(() => {
+                            const fullTitle = product.title;
+                            const bracketIndex = fullTitle?.indexOf('(');
+
+                            if (bracketIndex !== -1) {
+                                const mainTitle = fullTitle.substring(0, bracketIndex).trim();
+                                const bracketText = fullTitle.substring(bracketIndex).trim();
+                                return (
+                                    <div className="max-w-[150px] sm:max-w-xs">
+                                        <div className="truncate" title={mainTitle}>{mainTitle}</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={bracketText}>{bracketText}</div>
+                                    </div>
+                                );
+                            }
+                            return (
+                                <div className="max-w-[150px] sm:max-w-xs truncate" title={fullTitle}>
+                                    {fullTitle}
+                                </div>
+                            );
+                        })()}
+                        {product.useTimeLimit && (
+                            <div className={`mt-1 text-[10px] font-black uppercase tracking-wider ${isProductScheduled(product) ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                <span className="flex items-center gap-1">
+                                    <Clock size={10} />
+                                    <span>{t('TIMED')}</span>
+                                </span>
+                                <span className="opacity-70 whitespace-nowrap block font-normal normal-case tracking-normal">{formatTime12h(product.openingTime)} - {formatTime12h(product.closingTime)}</span>
+                            </div>
+                        )}
+                    </div>
+                </td>
+                <td className="p-4 font-medium text-gray-900 dark:text-white">
+                    {(() => {
+                        const fullCat = t(product.category);
+                        const bracketIndex = fullCat?.indexOf('(');
+                        let mainCat = fullCat;
+                        let bracketText = '';
+
+                        if (bracketIndex !== -1) {
+                            mainCat = fullCat.substring(0, bracketIndex).trim();
+                            bracketText = fullCat.substring(bracketIndex).trim();
+                        }
+
+                        return (
+                            <div className="flex flex-col max-w-[150px]">
+                                <span className="text-sm truncate" title={mainCat}>{mainCat}</span>
+                                {bracketText && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate" title={bracketText}>{bracketText}</span>
+                                )}
+                                {selectedStore?.id !== 'none' && product.subcategory && Array.isArray(product.subcategory) && product.subcategory.length > 0 && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5" title={product.subcategory.join(', ')}>
+                                        {product.subcategory.join(', ')}
+                                    </span>
+                                )}
+                                {selectedStore?.id !== 'none' && product.subcategory && typeof product.subcategory === 'string' && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5" title={product.subcategory}>
+                                        {product.subcategory}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })()}
+                </td>
+                <td className="p-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                    <div className="inline-flex items-center gap-1 bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-xl px-1.5 py-1 shadow-2xs">
+                        {/* Left Triangle: Decrease */}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handlePriceChange(product, -1);
+                            }}
+                            className="w-5 h-5 flex items-center justify-center rounded-md text-gray-500 hover:text-white hover:bg-[#2E5A2E] active:scale-90 transition-all cursor-pointer select-none"
+                            title={t('Decrease price')}
+                        >
+                            <svg viewBox="0 0 10 10" className="w-2.5 h-2.5 fill-current">
+                                <polygon points="7,2 2,5 7,8" />
+                            </svg>
+                        </button>
+
+                        {/* Price display with optional direct edit */}
+                        <div className="flex items-center font-bold text-gray-900 dark:text-white text-sm px-0.5 min-w-[48px] justify-center">
+                            <span className="text-xs text-gray-500 mr-0.5 select-none">₹</span>
+                            <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={product.price ?? ''}
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    handlePriceDirectChange(product, isNaN(val) ? 0 : val);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-12 text-center font-bold bg-transparent outline-none border-b border-transparent hover:border-gray-300 focus:border-[#2E5A2E] text-gray-900 dark:text-white text-sm p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                        </div>
+
+                        {/* Right Triangle: Increase */}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handlePriceChange(product, +1);
+                            }}
+                            className="w-5 h-5 flex items-center justify-center rounded-md text-gray-500 hover:text-white hover:bg-[#2E5A2E] active:scale-90 transition-all cursor-pointer select-none"
+                            title={t('Increase price')}
+                        >
+                            <svg viewBox="0 0 10 10" className="w-2.5 h-2.5 fill-current">
+                                <polygon points="3,2 8,5 3,8" />
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+                <td className="p-4">
+                    <button
+                        onClick={async () => {
+                            if (isStoreAdmin) return;
+                            const currentGold = product.isGold || false;
+
+                            // Optimistic update
+                            queryClient.setQueryData(['products'], (old) => {
+                                const oldData = Array.isArray(old) ? old : (old?.data || []);
+                                return oldData.map(p =>
+                                    (p._id || p.id) === productId
+                                        ? { ...p, isGold: !currentGold }
+                                        : p
+                                );
+                            });
+
+                            try {
+                                await updateProduct({
+                                    id: productId,
+                                    data: { ...product, isGold: !currentGold }
+                                });
+                            } catch (error) {
+                                // Rollback
+                                queryClient.setQueryData(['products'], (old) => {
+                                    const oldData = Array.isArray(old) ? old : (old?.data || []);
+                                    return oldData.map(p =>
+                                        (p._id || p.id) === productId
+                                            ? { ...p, isGold: currentGold }
+                                            : p
+                                    );
+                                });
+                                console.error('Failed to toggle gold status:', error);
+                                alert(t('Failed to update status'));
+                            }
+                        }}
+                        disabled={isStoreAdmin}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 ${product.isGold ? 'bg-yellow-400' : 'bg-gray-200 dark:bg-gray-600'} ${isStoreAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        title={isStoreAdmin ? (product.isGold ? t('Free Delivery Product') : t('Standard Product')) : (product.isGold ? t('Disable Free Delivery') : t('Enable Free Delivery'))}
+                    >
+                        <span
+                            className={`${product.isGold ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out`}
+                        />
+                    </button>
+                </td>
+                <td className="p-4">
+                    <button
+                        onClick={async () => {
+                            const currentStatus = product.isAvailable !== false;
+
+                            // Optimistic update - instant UI response
+                            queryClient.setQueryData(['products'], (old) => {
+                                const oldData = Array.isArray(old) ? old : (old?.data || []);
+                                return oldData.map(p =>
+                                    (p._id || p.id) === productId
+                                        ? { ...p, isAvailable: !currentStatus }
+                                        : p
+                                );
+                            });
+
+                            try {
+                                await updateProduct({
+                                    id: productId,
+                                    data: { ...product, isAvailable: !currentStatus }
+                                });
+                            } catch (error) {
+                                // Rollback on error
+                                queryClient.setQueryData(['products'], (old) => {
+                                    const oldData = Array.isArray(old) ? old : (old?.data || []);
+                                    return oldData.map(p =>
+                                        (p._id || p.id) === productId
+                                            ? { ...p, isAvailable: currentStatus }
+                                            : p
+                                    );
+                                });
+                                console.error('Failed to toggle availability:', error);
+                                alert(t('Failed to update status'));
+                            }
+                        }}
+                        className={`p-2 rounded-xl transition-all active:scale-90 flex items-center gap-1.5 text-xs font-semibold ${
+                            product.isAvailable === false
+                                ? 'bg-red-50 dark:bg-red-900/20 text-red-500'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:text-gray-700'
+                        }`}
+                        title={product.isAvailable === false ? t('Unhide Product') : t('Hide Product')}
+                    >
+                        {product.isAvailable === false ? <EyeOff size={18} /> : <Eye size={18} />}
+                        <span>{product.isAvailable === false ? t('Hidden') : t('Hide')}</span>
+                    </button>
+                    {!isProductScheduled(product) && product.isAvailable !== false && (
+                        <div className="mt-1 text-[9px] font-black uppercase text-amber-500 tracking-tighter text-center leading-none">
+                            {t('Auto Off')}
+                        </div>
+                    )}
+                </td>
+                <td className="p-4">
+                    <div className="flex gap-3 justify-end items-center">
+                        <button
+                            onClick={() => handleDuplicateProduct(product)}
+                            className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] dark:hover:bg-[#2E5A2E]/20 rounded-lg transition-colors"
+                            title={t('Duplicate Product')}
+                        >
+                            <Copy size={20} />
+                        </button>
+                        <button
+                            onClick={() => handleEditProduct(product)}
+                            className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] dark:hover:bg-[#2E5A2E]/20 rounded-lg transition-colors"
+                            title={t('Edit Product')}
+                        >
+                            <Edit2 size={20} />
+                        </button>
+                        <button
+                            onClick={() => handleDeleteProduct(productId)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title={t('Delete Product')}
+                        >
+                            <Trash2 size={20} />
+                        </button>
+                    </div>
+                </td>
+            </SortableProductRow>
+        );
     };
 
     return (
@@ -1441,323 +1922,222 @@ const StoreManagement = ({
                         </div>
                     )}
 
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <input
-                            type="file"
-                            ref={directStoreImageInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleDirectTableImageChange}
-                        />
-                        <div className="overflow-x-auto">
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                <table className="w-full text-left">
-                                    <thead className="bg-gray-50 dark:bg-gray-700/50">
-                                        <tr>
-                                            <th className="p-4 w-12"></th>
-                                            <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Image')}</th>
-                                            <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Title')}</th>
-                                            <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Category')}</th>
-                                            <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Price')}</th>
-                                            <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Free Delivery')}</th>
-                                            <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Hide')}</th>
-                                            <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 text-right">{t('Actions')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                        <SortableContext
-                                            items={products.filter(p => {
-                                                const pStoreId = p.storeId?._id || p.storeId;
-                                                const targetId = selectedStore._id || selectedStore.id;
-                                                return targetId === 'none' 
-                                                    ? (!pStoreId || pStoreId === 'none') 
-                                                    : (pStoreId == targetId || String(pStoreId) === String(targetId));
-                                            }).map(p => p._id || p.id)}
-                                            strategy={verticalListSortingStrategy}
-                                        >
-                                            {(() => {
-                                                const storeProds = products.filter(p => {
-                                                    const pStoreId = p.storeId?._id || p.storeId;
-                                                    const targetId = selectedStore._id || selectedStore.id;
-                                                    return targetId === 'none' 
-                                                        ? (!pStoreId || pStoreId === 'none') 
-                                                        : (pStoreId == targetId || String(pStoreId) === String(targetId));
-                                                });
-                                                const spIds = storeProds.map(p => p._id || p.id);
-                                                const allSPSelected = spIds.length > 0 && spIds.every(id => selectedStoreProductIds.includes(id));
-                                                return (<>
-                                                    {storeProds.length > 0 && (
-                                                        <tr className="bg-gray-50/60 dark:bg-gray-700/30">
-                                                            <td className="px-4 py-2" colSpan={8}>
-                                                                <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={allSPSelected}
-                                                                        onChange={() => toggleSelectAllStoreProducts(spIds)}
-                                                                        className="w-4 h-4 rounded accent-red-600 cursor-pointer"
-                                                                    />
-                                                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-                                                                        {allSPSelected ? t('Deselect All') : t('Select All')} ({spIds.length})
-                                                                    </span>
-                                                                </label>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                    {storeProds.map(product => (
-                                                <SortableProductRow key={product._id || product.id} product={product}>
-                                                    <td className="p-4 w-10">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedStoreProductIds.includes(product._id || product.id)}
-                                                            onChange={() => toggleSelectStoreProduct(product._id || product.id)}
-                                                            className="w-4 h-4 rounded accent-red-600 cursor-pointer"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        {!isStoreAdmin && (
-                                                        <DragHandle className="text-gray-400 hover:text-gray-600">
-                                                            <GripVertical size={20} />
-                                                        </DragHandle>
-                                                    )}
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <div 
-                                                            onClick={(e) => handleDirectTableImageClick(product, e)}
-                                                            title={t('Click to upload new photo')}
-                                                            className="relative w-12 h-12 rounded-lg overflow-hidden bg-white border border-gray-200 dark:border-gray-700 cursor-pointer group shadow-xs hover:border-[#2E5A2E] dark:hover:border-[#CBF9B2] transition-all"
-                                                        >
-                                                            <img
-                                                                src={product.image || `${API_BASE_URL}/products/${product.id || product._id}/image`}
-                                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Image'; }}
-                                                                alt={product.title}
-                                                                className="w-12 h-12 object-cover group-hover:scale-105 transition-transform duration-200"
-                                                            />
-                                                            <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                                                                <Camera size={14} className="drop-shadow-xs" />
-                                                                <span className="text-[7.5px] font-bold leading-none mt-0.5 uppercase tracking-tighter">Edit</span>
-                                                            </div>
-                                                            {uploadingProductId === (product._id || product.id) && (
-                                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
-                                                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                                </div>
-                                                            )}
-                                                            {product.unit && uploadingProductId !== (product._id || product.id) && (
-                                                                <span className="absolute bottom-0 right-0 bg-white/70 backdrop-blur-[2px] text-black text-[9px] font-medium px-1.5 py-0.5 rounded-tl-md shadow-sm z-10 leading-none flex items-center justify-center pointer-events-none">
-                                                                    {product.unit}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4 font-medium text-gray-900 dark:text-white">
-                                                        <div className="flex flex-col">
-                                                            {(() => {
-                                                                const fullTitle = product.title;
-                                                                const bracketIndex = fullTitle?.indexOf('(');
+                    {/* Search & Organization Bar */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-800 p-3 sm:p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <div className="relative flex-1 min-w-[200px]">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                            <input
+                                type="text"
+                                value={storeProductSearch}
+                                onChange={(e) => setStoreProductSearch(e.target.value)}
+                                placeholder={t('Search products in this store...')}
+                                className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#2E5A2E] outline-none text-gray-900 dark:text-white"
+                            />
+                            {storeProductSearch && (
+                                <button
+                                    type="button"
+                                    onClick={() => setStoreProductSearch('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 font-bold"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
 
-                                                                if (bracketIndex !== -1) {
-                                                                    const mainTitle = fullTitle.substring(0, bracketIndex).trim();
-                                                                    const bracketText = fullTitle.substring(bracketIndex).trim();
-                                                                    return (
-                                                                        <div className="max-w-[150px] sm:max-w-xs">
-                                                                            <div className="truncate" title={mainTitle}>{mainTitle}</div>
-                                                                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={bracketText}>{bracketText}</div>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return (
-                                                                    <div className="max-w-[150px] sm:max-w-xs truncate" title={fullTitle}>
-                                                                        {fullTitle}
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                            {product.useTimeLimit && (
-                                                                <div className={`mt-1 text-[10px] font-black uppercase tracking-wider ${isProductScheduled(product) ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Clock size={10} />
-                                                                        <span>{t('TIMED')}</span>
-                                                                    </span>
-                                                                    <span className="opacity-70 whitespace-nowrap block font-normal normal-case tracking-normal">{formatTime12h(product.openingTime)} - {formatTime12h(product.closingTime)}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4 font-medium text-gray-900 dark:text-white">
-                                                        {(() => {
-                                                            const fullCat = t(product.category);
-                                                            const bracketIndex = fullCat?.indexOf('(');
-                                                            let mainCat = fullCat;
-                                                            let bracketText = '';
+                        <div className="flex items-center gap-2">
+                            {groupedStoreProducts.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const anyCollapsed = groupedStoreProducts.some(cg => collapsedCategories[cg.categoryKey]);
+                                        if (anyCollapsed) {
+                                            setCollapsedCategories({});
+                                        } else {
+                                            const allCollapsed = {};
+                                            groupedStoreProducts.forEach(cg => { allCollapsed[cg.categoryKey] = true; });
+                                            setCollapsedCategories(allCollapsed);
+                                        }
+                                    }}
+                                    className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                >
+                                    {groupedStoreProducts.some(cg => collapsedCategories[cg.categoryKey]) ? t('Expand All') : t('Collapse All')}
+                                </button>
+                            )}
 
-                                                            if (bracketIndex !== -1) {
-                                                                mainCat = fullCat.substring(0, bracketIndex).trim();
-                                                                bracketText = fullCat.substring(bracketIndex).trim();
-                                                            }
-
-                                                            return (
-                                                                <div className="flex flex-col max-w-[150px]">
-                                                                    <span className="text-sm truncate" title={mainCat}>{mainCat}</span>
-                                                                    {bracketText && (
-                                                                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate" title={bracketText}>{bracketText}</span>
-                                                                    )}
-                                                                    {selectedStore?.id !== 'none' && product.subcategory && Array.isArray(product.subcategory) && product.subcategory.length > 0 && (
-                                                                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5" title={product.subcategory.join(', ')}>
-                                                                            {product.subcategory.join(', ')}
-                                                                        </span>
-                                                                    )}
-                                                                    {selectedStore?.id !== 'none' && product.subcategory && typeof product.subcategory === 'string' && (
-                                                                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5" title={product.subcategory}>
-                                                                            {product.subcategory}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })()}
-                                                    </td>
-                                                    <td className="p-4 font-medium text-gray-900 dark:text-white">₹{product.price}</td>
-                                                    <td className="p-4">
-                                                        <button
-                                                                onClick={async () => {
-                                                                    if (isStoreAdmin) return;
-                                                                    const currentGold = product.isGold || false;
-                                                                    const productId = product._id || product.id;
-
-                                                                    // Optimistic update
-                                                                    queryClient.setQueryData(['products'], (old) => {
-                                                                        const oldData = Array.isArray(old) ? old : (old?.data || []);
-                                                                        return oldData.map(p =>
-                                                                            (p._id || p.id) === productId
-                                                                                ? { ...p, isGold: !currentGold }
-                                                                                : p
-                                                                        );
-                                                                    });
-
-                                                                    try {
-                                                                        await updateProduct({
-                                                                            id: productId,
-                                                                            data: { ...product, isGold: !currentGold }
-                                                                        });
-                                                                    } catch (error) {
-                                                                        // Rollback
-                                                                        queryClient.setQueryData(['products'], (old) => {
-                                                                            const oldData = Array.isArray(old) ? old : (old?.data || []);
-                                                                            return oldData.map(p =>
-                                                                                (p._id || p.id) === productId
-                                                                                    ? { ...p, isGold: currentGold }
-                                                                                    : p
-                                                                        );
-                                                                        });
-                                                                        console.error('Failed to toggle gold status:', error);
-                                                                        alert(t('Failed to update status'));
-                                                                    }
-                                                                }}
-                                                                disabled={isStoreAdmin}
-                                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 ${product.isGold ? 'bg-yellow-400' : 'bg-gray-200 dark:bg-gray-600'} ${isStoreAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                                                title={isStoreAdmin ? (product.isGold ? t('Free Delivery Product') : t('Standard Product')) : (product.isGold ? t('Disable Free Delivery') : t('Enable Free Delivery'))}
-                                                            >
-                                                                <span
-                                                                    className={`${product.isGold ? 'translate-x-6' : 'translate-x-1'
-                                                                        } inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out`}
-                                                                />
-                                                            </button>
-                                                        </td>
-                                                    <td className="p-4">
-                                                        <button
-                                                            onClick={async () => {
-                                                                const currentStatus = product.isAvailable !== false;
-                                                                const productId = product._id || product.id;
-
-                                                                // Optimistic update - instant UI response
-                                                                queryClient.setQueryData(['products'], (old) => {
-                                                                    const oldData = Array.isArray(old) ? old : (old?.data || []);
-                                                                    return oldData.map(p =>
-                                                                        (p._id || p.id) === productId
-                                                                            ? { ...p, isAvailable: !currentStatus }
-                                                                            : p
-                                                                    );
-                                                                });
-
-                                                                try {
-                                                                    await updateProduct({
-                                                                        id: productId,
-                                                                        data: { ...product, isAvailable: !currentStatus }
-                                                                    });
-                                                                } catch (error) {
-                                                                    // Rollback on error
-                                                                    queryClient.setQueryData(['products'], (old) => {
-                                                                        const oldData = Array.isArray(old) ? old : (old?.data || []);
-                                                                        return oldData.map(p =>
-                                                                            (p._id || p.id) === productId
-                                                                                ? { ...p, isAvailable: currentStatus }
-                                                                                : p
-                                                                        );
-                                                                    });
-                                                                    console.error('Failed to toggle availability:', error);
-                                                                    alert(t('Failed to update status'));
-                                                                }
-                                                            }}
-                                                            className={`p-2 rounded-xl transition-all active:scale-90 flex items-center gap-1.5 text-xs font-semibold ${
-                                                                product.isAvailable === false
-                                                                    ? 'bg-red-50 dark:bg-red-900/20 text-red-500'
-                                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:text-gray-700'
-                                                            }`}
-                                                            title={product.isAvailable === false ? t('Unhide Product') : t('Hide Product')}
-                                                        >
-                                                            {product.isAvailable === false ? <EyeOff size={18} /> : <Eye size={18} />}
-                                                            <span>{product.isAvailable === false ? t('Hidden') : t('Hide')}</span>
-                                                        </button>
-                                                        {!isProductScheduled(product) && product.isAvailable !== false && (
-                                                            <div className="mt-1 text-[9px] font-black uppercase text-amber-500 tracking-tighter text-center leading-none">
-                                                                {t('Auto Off')}
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <div className="flex gap-3 justify-end items-center">
-                                                            <button
-                                                                onClick={() => handleDuplicateProduct(product)}
-                                                                className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] dark:hover:bg-[#2E5A2E]/20 rounded-lg transition-colors"
-                                                                title={t('Duplicate Product')}
-                                                            >
-                                                                <Copy size={20} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleEditProduct(product)}
-                                                                className="p-2 text-[#2E5A2E] hover:bg-[#E8F5E9] dark:hover:bg-[#2E5A2E]/20 rounded-lg transition-colors"
-                                                            >
-                                                                <Edit2 size={20} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteProduct(product._id || product.id)}
-                                                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                            >
-                                                                <Trash2 size={20} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </SortableProductRow>
-                                            ))}</>
-                                            );
-                                        })()}
-                                        </SortableContext>
-                                        {products.filter(p => {
-                                            const pStoreId = p.storeId?._id || p.storeId;
-                                            const targetId = selectedStore._id || selectedStore.id;
-                                            return targetId === 'none' 
-                                                ? (!pStoreId || pStoreId === 'none') 
-                                                : (pStoreId == targetId || String(pStoreId) === String(targetId));
-                                        }).length === 0 && (
-                                                <tr>
-                                                    <td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                                        {t('No products found in this store. Add one to get started!')}
-                                                    </td>
-                                                </tr>
-                                            )}
-                                    </tbody>
-                                </table>
-                            </DndContext>
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2.5 py-1.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-100 dark:border-gray-700/60">
+                                {t('Total Products')}: <span className="text-gray-900 dark:text-white font-bold">{storeProds.length}</span>
+                            </span>
                         </div>
                     </div>
+
+                    <input
+                        type="file"
+                        ref={directStoreImageInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleDirectTableImageChange}
+                    />
+
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        {storeProds.length === 0 ? (
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
+                                <Package size={44} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                                <h4 className="font-bold text-gray-800 dark:text-gray-200 text-base mb-1">
+                                    {t('No products found in this store')}
+                                </h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 max-w-sm mx-auto">
+                                    {t('Add products to start displaying items for this store.')}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handleAddProductToStore}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#2E5A2E] hover:bg-[#1a3d1a] text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-all active:scale-95"
+                                >
+                                    <Plus size={16} />
+                                    <span>{t('Add Product')}</span>
+                                </button>
+                            </div>
+                        ) : groupedStoreProducts.length === 0 ? (
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+                                    {t('No products match your search:')} <span className="font-bold text-gray-900 dark:text-white">"{storeProductSearch}"</span>
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setStoreProductSearch('')}
+                                    className="px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 cursor-pointer transition-all"
+                                >
+                                    {t('Clear Search')}
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {groupedStoreProducts.map(catGroup => {
+                                    const isCollapsed = Boolean(collapsedCategories[catGroup.categoryKey]);
+                                    const catProductIds = catGroup.products.map(p => p._id || p.id);
+                                    const catAllSelected = catProductIds.length > 0 && catProductIds.every(id => selectedStoreProductIds.includes(id));
+
+                                    return (
+                                        <div
+                                            key={catGroup.categoryKey}
+                                            className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200/90 dark:border-gray-700 overflow-hidden"
+                                        >
+                                            {/* Category Header Card */}
+                                            <div className="bg-gradient-to-r from-gray-50 via-emerald-50/15 to-gray-50 dark:from-gray-750 dark:via-gray-750 dark:to-gray-750 px-4 sm:px-5 py-3 border-b border-gray-200/80 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <span className="w-8 h-8 rounded-xl bg-[#2E5A2E]/10 dark:bg-[#CBF9B2]/10 text-[#2E5A2E] dark:text-[#CBF9B2] flex items-center justify-center font-bold text-base shadow-2xs shrink-0 select-none">
+                                                        {catGroup.canonicalCat?.emoji || '🍽️'}
+                                                    </span>
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="font-bold text-gray-900 dark:text-white text-base truncate">
+                                                                {catGroup.categoryName}
+                                                            </h3>
+                                                            <span className="text-[11px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2] bg-emerald-100/70 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full shrink-0">
+                                                                {catGroup.products.length} {catGroup.products.length === 1 ? t('product') : t('products')}
+                                                            </span>
+                                                        </div>
+                                                        {catGroup.subcategories.length > 1 && (
+                                                            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                                                {catGroup.subcategories.length} {t('subcategories')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <label className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={catAllSelected}
+                                                            onChange={() => toggleSelectAllStoreProducts(catProductIds)}
+                                                            className="w-3.5 h-3.5 rounded accent-red-600 cursor-pointer"
+                                                        />
+                                                        <span className="hidden sm:inline">
+                                                            {catAllSelected ? t('Deselect Category') : t('Select Category')}
+                                                        </span>
+                                                        <span className="sm:hidden">{t('All')} ({catProductIds.length})</span>
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleCategoryCollapse(catGroup.categoryKey)}
+                                                        className="p-1.5 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                                        title={isCollapsed ? t('Expand Category') : t('Collapse Category')}
+                                                    >
+                                                        {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Subcategory split tables */}
+                                            {!isCollapsed && (
+                                                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                                                    {catGroup.subcategories.map(subGroup => {
+                                                        const isSingleGeneral = catGroup.subcategories.length === 1 && subGroup.isGeneral;
+                                                        const subProductIds = subGroup.products.map(p => p._id || p.id);
+                                                        const subAllSelected = subProductIds.length > 0 && subProductIds.every(id => selectedStoreProductIds.includes(id));
+
+                                                        return (
+                                                            <div key={subGroup.subKey} className="overflow-hidden">
+                                                                {!isSingleGeneral && (
+                                                                    <div className="bg-emerald-50/40 dark:bg-emerald-950/20 px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 dark:border-gray-700/80">
+                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                            <FolderTree size={15} className="text-[#2E5A2E] dark:text-[#CBF9B2] shrink-0" />
+                                                                            <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200 truncate">
+                                                                                {subGroup.subName}
+                                                                            </span>
+                                                                            <span className="text-[10.5px] font-bold text-[#2E5A2E] dark:text-[#CBF9B2] bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/60 shadow-2xs">
+                                                                                {subGroup.products.length} {subGroup.products.length === 1 ? t('item') : t('items')}
+                                                                            </span>
+                                                                        </div>
+                                                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={subAllSelected}
+                                                                                onChange={() => toggleSelectAllStoreProducts(subProductIds)}
+                                                                                className="w-3.5 h-3.5 rounded accent-red-600 cursor-pointer"
+                                                                            />
+                                                                            <span>{t('Select Subcategory')} ({subProductIds.length})</span>
+                                                                        </label>
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="overflow-x-auto">
+                                                                    <table className="w-full text-left">
+                                                                        <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                                                            <tr>
+                                                                                <th className="p-4 w-10"></th>
+                                                                                <th className="p-4 w-12"></th>
+                                                                                <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Image')}</th>
+                                                                                <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Title')}</th>
+                                                                                <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Category')}</th>
+                                                                                <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Price')}</th>
+                                                                                <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Free Delivery')}</th>
+                                                                                <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('Hide')}</th>
+                                                                                <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 text-right">{t('Actions')}</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                                                            <SortableContext
+                                                                                items={subGroup.products.map(p => p._id || p.id)}
+                                                                                strategy={verticalListSortingStrategy}
+                                                                            >
+                                                                                {subGroup.products.map(product => renderProductRow(product))}
+                                                                            </SortableContext>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </DndContext>
                 </div>
             )}
 
