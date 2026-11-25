@@ -29,9 +29,6 @@ const OrderConfirmation = () => {
     const { formData, cartItems, cartTotal, deliveryCharge, isDirectPurchase } = location.state || {};
     const finalTotal = (cartTotal || 0) + (deliveryCharge || 0);
 
-    if (!location.state) {
-        return <Navigate to="/" replace />;
-    }
 
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [createdOrderId, setCreatedOrderId] = useState(null);
@@ -240,6 +237,10 @@ const OrderConfirmation = () => {
             navigate('/', { replace: true });
         });
     }, [showSuccessModal, navigate]);
+
+    if (!location.state) {
+        return <Navigate to="/" replace />;
+    }
 
     return (
         <div className="min-h-screen bg-[#E8EAEF] dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-40 relative">

@@ -46,6 +46,20 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
         return () => clearInterval(interval);
     }, [productsByCategory]);
 
+    const singleStoreProducts = useMemo(() => {
+        if (!singleStore) return [];
+        const grouped = groupProducts(products, contextStores, { forcedStoreId: section.type === 'store' ? section.id : null });
+        
+        // Put timing finished products last in single store view too
+        return [...grouped].sort((a, b) => {
+            const isAScheduled = a.isGroup ? true : isProductScheduled(a);
+            const isBScheduled = b.isGroup ? true : isProductScheduled(b);
+            if (isAScheduled && !isBScheduled) return -1;
+            if (!isAScheduled && isBScheduled) return 1;
+            return 0;
+        });
+    }, [products, singleStore, contextStores, section.type, section.id]);
+
     if (products.length === 0) return null;
 
     const navigateTo = section.type === 'store' 
@@ -96,19 +110,6 @@ const StoreSection = ({ section, products: rawProducts = [], singleStore = false
         });
     })();
 
-    const singleStoreProducts = useMemo(() => {
-        if (!singleStore) return [];
-        const grouped = groupProducts(products, contextStores, { forcedStoreId: section.type === 'store' ? section.id : null });
-        
-        // Put timing finished products last in single store view too
-        return [...grouped].sort((a, b) => {
-            const isAScheduled = a.isGroup ? true : isProductScheduled(a);
-            const isBScheduled = b.isGroup ? true : isProductScheduled(b);
-            if (isAScheduled && !isBScheduled) return -1;
-            if (!isAScheduled && isBScheduled) return 1;
-            return 0;
-        });
-    }, [products, singleStore, contextStores, section.type, section.id]);
 
     return (
         <section className={`px-4 pt-2.5 pb-4 md:py-5 dark:bg-gray-900 transition-opacity duration-300 ${!isOpen ? 'opacity-80' : ''}`}>

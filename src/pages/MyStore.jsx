@@ -28,6 +28,7 @@ const MyStore = () => {
 
     const { data: rawOrders = [] } = useOrders();
     const { data: stores = [] } = useStores();
+    const [currentView, setCurrentView] = useState('list');
 
     // Query params for deep-linking (e.g. ?orderId=...)
     const searchParams = new URLSearchParams(location.search);
@@ -141,7 +142,6 @@ const MyStore = () => {
     const roles = Array.isArray(user?.role) ? user.role : [user?.role || 'customer'];
     const isStoreAdmin = roles.includes('store_admin') || roles.includes('admin') || Boolean(user?.storeId);
 
-    const [currentView, setCurrentView] = useState('list');
 
     if (!user || !isStoreAdmin) {
         setTimeout(() => navigate('/'), 0);

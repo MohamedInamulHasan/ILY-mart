@@ -202,6 +202,8 @@ const Layout = ({ children, onRefresh }) => {
     const isAdminRoute = location.pathname.startsWith('/admin');
 
     const { settings, isFooterHidden, updateMaintenanceMode } = useData();
+    const { cartItems, deliveryCharge } = useCart();
+    const { t } = useLanguage();
     const [showAdminPreview, setShowAdminPreview] = useState(false);
 
     const { isMaintenance: isLiveMaintenance } = useSocket();
@@ -226,9 +228,6 @@ const Layout = ({ children, onRefresh }) => {
     };
     const isDeliveryScreen = location.pathname.startsWith('/admin') || location.pathname.startsWith('/delivery-dashboard');
     const showMobileFooter = isAllowedFooterRoute(location.pathname) && !isFooterHidden && !isDeliveryScreen;
-
-    const { cartItems, deliveryCharge } = useCart();
-    const { t } = useLanguage();
 
     const showFloatingDeliveryBadge = false;
 
