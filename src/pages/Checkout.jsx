@@ -8,9 +8,10 @@ import { safeNavigateBack, markOrderPlaced, registerModalBackHandler } from '../
 import { useData } from '../context/DataContext';
 import { useUserProfile } from '../hooks/queries/useUsers';
 import { renderBilingualTitle, getSelectedUnitDisplay } from '../utils/titleHelpers';
-import { getStoreName, calculateDeliveryCharge, formatDeliveryRange, getAvailableDeliverySlots } from '../utils/storeHelpers';
+import { getStoreName, calculateDeliveryCharge, formatDeliveryRange, getAvailableDeliverySlots, isStoreScheduled } from '../utils/storeHelpers';
 import { isCategoryPreview } from '../utils/categoryHelpers';
 import { useCategories } from '../hooks/queries/useCategories';
+import { useStores } from '../hooks/queries/useStores';
 import { ArrowLeft, ShoppingCart, Banknote, MapPin, CreditCard, ShoppingBag, Truck, AlertCircle, X, Navigation, ShieldCheck, Trash2, Store, Pencil, Package, MoreHorizontal, CheckCircle, Clock, Sparkles, Calendar, ChevronDown } from 'lucide-react';
 import { checkLocationPermission, requestLocationPermission, getCurrentLocation } from '../utils/locationHelpers';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -37,6 +38,9 @@ const Checkout = () => {
     const { stores, updateUser, settings, categories: dataCategories, fetchSettings, addOrder, setIsFooterHidden } = useData();
     const { data: queryCategories = [] } = useCategories();
     const categories = (queryCategories && queryCategories.length > 0) ? queryCategories : (dataCategories || []);
+    const { data: rawStores = [] } = useStores();
+    const queryStores = Array.isArray(rawStores) ? rawStores : (rawStores?.data || []);
+    const allStores = (queryStores && queryStores.length > 0) ? queryStores : (Array.isArray(stores) ? stores : (stores?.data || []));
 
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [createdOrderId, setCreatedOrderId] = useState(null);
@@ -115,6 +119,31 @@ const Checkout = () => {
         (directPurchase?.items && directPurchase.items.some(item => item.isFromAd)) ||
         (displayItems && displayItems.some(item => item.isFromAd))
     );
+
+    // Check if any product in checkout belongs to a store configured for "Schedule Timing"
+    const scheduledStoresInCart = useMemo(() => {
+        if (!displayItems || displayItems.length === 0) return [];
+        const seenStoreIds = new Set();
+        const result = [];
+
+        displayItems.forEach(item => {
+            if (item.isFromAd) return;
+            const sId = item.storeId?._id || item.storeId || item.product?.storeId?._id || item.product?.storeId;
+            if (!sId || seenStoreIds.has(String(sId))) return;
+            seenStoreIds.add(String(sId));
+
+            const matchedStore = allStores.find(s => String(s._id || s.id) === String(sId));
+            if (matchedStore && isStoreScheduled(matchedStore)) {
+                result.push(matchedStore);
+            }
+        });
+
+        return result;
+    }, [displayItems, allStores]);
+
+    const hasScheduledStoreItem = scheduledStoresInCart.length > 0;
+    const isScheduledMode = hasScheduledStoreItem && !hasPreviewItems && !isOrderFromAd;
+
     const [deliveryTimingMode, setDeliveryTimingMode] = useState('instant'); // 'instant' | 'scheduled'
     const [selectedDatePeriod, setSelectedDatePeriod] = useState('today'); // 'today' | 'tomorrow'
     const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
@@ -122,11 +151,8 @@ const Checkout = () => {
     const availableDeliverySlots = getAvailableDeliverySlots(settings?.deliveryTimes, selectedDatePeriod);
 
     useEffect(() => {
-        if (availableDeliverySlots && availableDeliverySlots.length > 0) {
-            if (!selectedTimeSlot || !availableDeliverySlots.includes(selectedTimeSlot)) {
-                setSelectedTimeSlot(availableDeliverySlots[0]);
-            }
-        } else {
+        // Do not auto-select delivery time slot — user must explicitly select their preferred time slot
+        if (selectedTimeSlot && (!availableDeliverySlots || !availableDeliverySlots.includes(selectedTimeSlot))) {
             setSelectedTimeSlot('');
         }
     }, [availableDeliverySlots, selectedTimeSlot]);
@@ -432,7 +458,7 @@ const Checkout = () => {
             }
         }
         if (!formData.location) errors.location = true;
-        if (settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && !isOrderFromAd && !selectedTimeSlot) {
+        if (isScheduledMode && !selectedTimeSlot) {
             errors.deliveryTime = true;
         }
 
@@ -552,7 +578,6 @@ const Checkout = () => {
                 const baseDeliveryCharge = calculateDeliveryCharge(nonFreeItems.length > 0 ? nonFreeItems : displayItems);
                 const finalDeliveryCharge = isOnlyFreeProducts ? 0 : baseDeliveryCharge;
 
-                const isScheduledMode = settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && !isOrderFromAd;
                 const deliveryTimeParam = isScheduledMode && selectedTimeSlot 
                     ? (selectedTimeSlot.includes('|') ? selectedTimeSlot : `${selectedDatePeriod}|${selectedTimeSlot}`) 
                     : '';
@@ -1065,7 +1090,7 @@ const Checkout = () => {
                         </div>
 
                         {/* Preferred Order Timing & Delivery Slot Selection */}
-                        {settings?.deliveryTimingType !== 'instant' && !hasPreviewItems && !isOrderFromAd && (
+                        {isScheduledMode && (
                             <div ref={deliveryTimeRef} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3 shadow-xs">
                                 <div className="flex items-center gap-2">
                                     <Clock size={16} className="text-[#2E5A2E] dark:text-[#7CA90E]" />

@@ -43,7 +43,8 @@ const adSchema = new mongoose.Schema({
         default: 0
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    strict: false
 });
 
 export default mongoose.model('Ad', adSchema);

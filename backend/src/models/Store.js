@@ -65,9 +65,14 @@ const storeSchema = new mongoose.Schema({
     location: {
         type: String,
         default: ''
+    },
+    deliveryType: {
+        type: String,
+        default: 'instant'
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    strict: false
 });
 
 const Store = mongoose.model('Store', storeSchema);

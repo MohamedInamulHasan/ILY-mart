@@ -392,3 +392,15 @@ export const isProductFromActiveStore = (product, stores = []) => {
 
     return true;
 };
+
+/**
+ * Checks whether a store is configured for "Schedule Timing" (versus Instant Delivery).
+ * Supports both modern deliveryType field and fallback timing field encoded tag [scheduled].
+ */
+export const isStoreScheduled = (store) => {
+    if (!store) return false;
+    if (store.deliveryType === 'scheduled') return true;
+    if (store.deliveryType === 'instant') return false;
+    if (typeof store.timing === 'string' && store.timing.includes('[scheduled]')) return true;
+    return false;
+};

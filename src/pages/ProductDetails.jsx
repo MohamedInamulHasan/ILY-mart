@@ -202,6 +202,8 @@ const ProductDetails = () => {
             return;
         }
         const itemToAdd = getProductWithMention();
+        if (!itemToAdd) return;
+
         if (isPreview) {
             // Preview mode: ignore existing cart items and only order this item
             navigate('/checkout', {
@@ -214,7 +216,13 @@ const ProductDetails = () => {
             });
             return;
         }
-        addToCart(itemToAdd, 1);
+
+        const added = addToCart(itemToAdd, 1);
+        if (added === false) {
+            // If another store's product is already in the cart, addToCart triggers the character popup.
+            // Stay on the product details page — do NOT navigate to checkout.
+            return;
+        }
         navigate('/checkout');
     };
 

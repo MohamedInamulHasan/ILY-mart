@@ -207,7 +207,8 @@ export const CartProvider = ({ children }) => {
 
 
 
-    const addToCart = (product) => {
+    const addToCart = (product, quantityToAdd = 1) => {
+        if (!product) return false;
         const productId = product._id || product.id;
         const newStoreId = (product.storeId?._id || product.storeId || '').toString();
 
@@ -228,9 +229,11 @@ export const CartProvider = ({ children }) => {
                     selected: selName
                 });
                 setShowStoreReminder(true);
-                return;
+                return false;
             }
         }
+
+        const addQty = typeof quantityToAdd === 'number' && quantityToAdd > 0 ? quantityToAdd : 1;
 
         // Create a lean object to save space
         const productToSave = {
@@ -239,7 +242,7 @@ export const CartProvider = ({ children }) => {
             price: product.price,
             image: product.image || (product.images && product.images.length > 0 ? product.images[0] : null),
             storeId: product.storeId?._id || product.storeId || null,
-            quantity: 1,
+            quantity: addQty,
             unit: product.unit || product.size || '',
             isGold: Boolean(product.isGold || product.deliveryCharge === 0 || product.isFreeDelivery || product.freeDelivery),
             isFromAd: product.isFromAd || false,
@@ -251,11 +254,13 @@ export const CartProvider = ({ children }) => {
             const existingItem = prevItems.find((item) => item.id === productId);
             if (existingItem) {
                 return prevItems.map((item) =>
-                    item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
+                    item.id === productId ? { ...item, quantity: item.quantity + addQty } : item
                 );
             }
             return [...prevItems, productToSave];
         });
+
+        return true;
     };
 
     const removeFromCart = (productId) => {

@@ -5,7 +5,7 @@ import { API_BASE_URL, apiService } from '../../utils/api';
 import { openExternalLink } from '../../utils/linkHelper';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { isStoreOpen, formatTime12h, isProductScheduled } from '../../utils/storeHelpers';
+import { isStoreOpen, formatTime12h, isProductScheduled, isStoreScheduled } from '../../utils/storeHelpers';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Store,
@@ -32,13 +32,14 @@ import {
     ChevronDown,
     ChevronUp,
     FolderTree,
-    Layers
+    Layers,
+    Zap
 } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { renderBilingualTitle } from '../../utils/titleHelpers';
-import { useStores, useCreateStore, useUpdateStore, useDeleteStore, useUpdateStoreOrder } from '../../hooks/queries/useStores';
+import { useStores, useCreateStore, useUpdateStore, useDeleteStore, useUpdateStoreOrder, storeKeys } from '../../hooks/queries/useStores';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useUpdateProductOrder } from '../../hooks/queries/useProducts';
 import { useCategories } from '../../hooks/queries/useCategories';
 import { useOrders } from '../../hooks/queries/useOrders';
@@ -82,6 +83,9 @@ const StoreManagement = ({
     const { data: products = [] } = useProducts();
     const { data: categories = [] } = useCategories();
     const { data: rawOrders = [] } = useOrders();
+
+    // Fast-responsive local state map for instant UI toggle without waiting for network or refresh
+    const [storeDeliveryOverrides, setStoreDeliveryOverrides] = useState({});
 
     // Floating overlay alert state like Delivery Boy
     const [isFloatingEnabled, setIsFloatingEnabled] = useState(() => {
@@ -806,6 +810,65 @@ const StoreManagement = ({
         }
     };
 
+    const handleToggleStoreDeliveryType = async (store) => {
+        const sId = store.id || store._id;
+        const currentlyScheduled = storeDeliveryOverrides[sId] !== undefined
+            ? storeDeliveryOverrides[sId] === 'scheduled'
+            : isStoreScheduled(store);
+        const newDeliveryType = currentlyScheduled ? 'instant' : 'scheduled';
+        const rawTiming = (store.timing || '9:00 AM - 9:00 PM').replace(/\s*\[scheduled\]/g, '').trim();
+        const newTiming = newDeliveryType === 'scheduled' ? `${rawTiming} [scheduled]` : rawTiming;
+
+        // 1. Instant synchronous local state update (0ms instant UI flip)
+        setStoreDeliveryOverrides(prev => ({ ...prev, [sId]: newDeliveryType }));
+
+        // 2. Also mutate the store object directly in-place so all references reflect it immediately
+        store.deliveryType = newDeliveryType;
+        store.timing = newTiming;
+
+        // 3. Update React Query store lists cache immediately
+        const updateStoreList = (old) => {
+            if (!Array.isArray(old)) return old;
+            return old.map(s => {
+                if (String(s._id || s.id) === String(sId)) {
+                    return { ...s, deliveryType: newDeliveryType, timing: newTiming };
+                }
+                return s;
+            });
+        };
+        queryClient.setQueryData(storeKeys.lists(), updateStoreList);
+        queryClient.setQueriesData({ queryKey: storeKeys.all }, (old) => {
+            if (Array.isArray(old)) return updateStoreList(old);
+            if (old && Array.isArray(old.data)) return { ...old, data: updateStoreList(old.data) };
+            return old;
+        });
+
+        // 4. Update localStorage cache so refresh/reloads retain the new state
+        try {
+            const raw = localStorage.getItem('homly_cached_stores_v1');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    const updated = updateStoreList(parsed);
+                    localStorage.setItem('homly_cached_stores_v1', JSON.stringify(updated));
+                }
+            }
+        } catch (e) {}
+
+        // 5. Persist to backend without disruptive refetch
+        try {
+            await apiService.updateStore(sId, {
+                deliveryType: newDeliveryType,
+                timing: newTiming
+            });
+        } catch (error) {
+            console.error('Error toggling store delivery type:', error);
+            setStoreDeliveryOverrides(prev => ({ ...prev, [sId]: currentlyScheduled ? 'scheduled' : 'instant' }));
+            queryClient.invalidateQueries({ queryKey: storeKeys.all });
+            alert(t('Failed to update delivery timing mode.'));
+        }
+    };
+
     const handleProductSubmit = async (e) => {
         e.preventDefault();
 
@@ -1523,7 +1586,7 @@ const StoreManagement = ({
                                                     </div>
 
                                                     {/* Quick Info */}
-                                                    <div className="space-y-1.5 mb-4">
+                                                    <div className="space-y-1.5 mb-3">
                                                         <div className="flex items-start gap-2 text-gray-500 dark:text-gray-400">
                                                             <MapPin size={14} className="mt-0.5 flex-shrink-0 text-[#2E5A2E] dark:text-[#7CA90E]" />
                                                             <span className="text-[11px] leading-tight line-clamp-1">{store.address || t('No address')}</span>
@@ -1533,6 +1596,47 @@ const StoreManagement = ({
                                                             <span className="text-[11px]">{store.timingType === 'permanent' ? t('Always Open') : `${formatTime12h(store.openingTime)} - ${formatTime12h(store.closingTime)}`}</span>
                                                         </div>
                                                     </div>
+
+                                                    {/* Delivery Mode Toggle: Instant Delivery vs Schedule Timing */}
+                                                    {(() => {
+                                                        const sId = store.id || store._id;
+                                                        const isScheduled = storeDeliveryOverrides[sId] !== undefined
+                                                            ? storeDeliveryOverrides[sId] === 'scheduled'
+                                                            : isStoreScheduled(store);
+                                                        return (
+                                                            <div className="pb-3">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleToggleStoreDeliveryType(store);
+                                                                    }}
+                                                                    className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
+                                                                        isScheduled
+                                                                            ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/25 text-amber-800 dark:text-amber-300 shadow-xs'
+                                                                            : 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/25 text-emerald-800 dark:text-emerald-300 shadow-xs'
+                                                                    }`}
+                                                                    title={isScheduled ? t('Click to switch to Instant Delivery') : t('Click to switch to Schedule Timing')}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        {isScheduled ? (
+                                                                            <Clock size={15} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                                                        ) : (
+                                                                            <Zap size={15} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                                                        )}
+                                                                        <span>{isScheduled ? t('Schedule Timing') : t('Instant Delivery')}</span>
+                                                                    </div>
+                                                                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                                                        isScheduled
+                                                                            ? 'bg-amber-200/70 dark:bg-amber-800/50 text-amber-900 dark:text-amber-200'
+                                                                            : 'bg-emerald-200/70 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-200'
+                                                                    }`}>
+                                                                        {isScheduled ? t('Scheduled') : t('Instant')}
+                                                                    </span>
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })()}
 
                                                     {/* Admin Actions */}
                                                     <div className={`grid grid-cols-2 gap-2 pt-3.5 border-t border-gray-100 dark:border-gray-700/50 ${isStoreAdmin ? '' : 'mt-auto'}`}>
