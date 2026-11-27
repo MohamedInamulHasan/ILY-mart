@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { API_BASE_URL } from '../utils/api';
-import { isStoreOpen, getStoreName, isProductScheduled, getProductTimeLabel, isStoreScheduled } from '../utils/storeHelpers';
+import { isStoreOpen, getStoreName, isProductScheduled, getProductTimeLabel } from '../utils/storeHelpers';
 
 import { useData } from '../context/DataContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
@@ -38,7 +38,6 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
         : isStoreOpen(storeToUse);
     const isAvailable = product.isGroup ? true : product.isAvailable !== false;
     const isScheduled = product.isGroup ? true : isProductScheduled(product);
-    const isStoreScheduledDelivery = isStoreScheduled(storeToUse);
     const timeLabel = !isScheduled ? getProductTimeLabel(product) : null;
     const isPreview = isCategoryPreview(product.category, categories) || product?.isPreview === true || product?.mode === 'preview';
     const canClick = isPreview || (isOpen && isAvailable && isScheduled);
@@ -161,11 +160,6 @@ const ProductCard = ({ product, showCartControls = true, showHeart = false, stor
                         <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 font-medium truncate flex-1 min-w-0">
                            {getStoreName(product.storeId, stores) || "ILY mart Direct"}
                         </p>
-                        {isStoreScheduledDelivery && (
-                            <span className="shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-[#2E5A2E] dark:bg-emerald-950/40 dark:text-[#CBF9B2] border border-emerald-200/50 dark:border-emerald-800/40 uppercase tracking-tighter">
-                                {t('Schedule')}
-                            </span>
-                        )}
                     </div>
                     
                     <div className="flex items-center justify-between w-full gap-1.5 mt-auto mb-0.5">

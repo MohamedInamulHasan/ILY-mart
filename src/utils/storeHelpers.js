@@ -143,16 +143,14 @@ export const formatDeliveryRangeFromDate = (date, language = 'en') => {
 };
 
 /**
- * Calculates the next 4 real available delivery schedule timing slots.
+ * Calculates available delivery schedule timing slots.
  * Rules:
  * - Uses configured delivery times if available, or default operating hours (09:00 - 21:00).
  * - Slots are sorted chronologically.
  * - For today: a slot HH:mm is available if current time has at least 30 mins remaining
  *   in the delivery window (window ends at slot + 60 mins -> currentMinutes <= slotStartMinutes + 30).
- * - If today has fewer than 4 slots remaining, the remaining slots needed to make 4
- *   seamlessly roll over to Tomorrow starting from the first configured morning slot.
- * - If all slots for today have passed (or it's late night), returns the first 4 slots for Tomorrow.
- * - Always returns exactly 4 available schedule timings with 'today|' or 'tomorrow|' prefix.
+ * - If today has available time slots, returns ONLY today's slots (does not show tomorrow).
+ * - If all slots for today have passed (no today slots left), ONLY then returns tomorrow's slots.
  */
 export const getAvailableDeliverySlots = (configuredTimes, period = 'today') => {
     const defaultWorkingHours = [
@@ -193,29 +191,29 @@ export const getAvailableDeliverySlots = (configuredTimes, period = 'today') => 
 
     // If caller specifically requested 'tomorrow'
     if (period === 'tomorrow') {
-        rawTimes.slice(0, 4).forEach(slot => {
+        rawTimes.forEach(slot => {
             const cleanSlot = slot.includes('|') ? slot.split('|')[1] : slot;
             result.push(`tomorrow|${cleanSlot}`);
         });
         return result;
     }
 
-    // Otherwise, calculate the next 4 available slots starting from today
-    todaySlots.slice(0, 4).forEach(slot => {
-        const cleanSlot = slot.includes('|') ? slot.split('|')[1] : slot;
-        result.push(`today|${cleanSlot}`);
-    });
-
-    // If today has fewer than 4 slots left, fill remainder with tomorrow's slots
-    if (result.length < 4) {
-        const needed = 4 - result.length;
-        rawTimes.slice(0, needed).forEach(slot => {
+    // If today has available time slots, show ONLY today's slots (never show tomorrow)
+    if (todaySlots.length > 0) {
+        todaySlots.forEach(slot => {
             const cleanSlot = slot.includes('|') ? slot.split('|')[1] : slot;
-            result.push(`tomorrow|${cleanSlot}`);
+            result.push(`today|${cleanSlot}`);
         });
+        return result;
     }
 
-    return result.slice(0, 4);
+    // If NO today time slots are available (all have passed or none available today), ONLY then show tomorrow
+    rawTimes.forEach(slot => {
+        const cleanSlot = slot.includes('|') ? slot.split('|')[1] : slot;
+        result.push(`tomorrow|${cleanSlot}`);
+    });
+
+    return result;
 };
 
 // Get current time in minutes since midnight

@@ -8,7 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
 import { API_BASE_URL } from '../utils/api';
-import { isStoreOpen, isProductScheduled, getProductTimeLabel, isStoreScheduled } from '../utils/storeHelpers';
+import { isStoreOpen, isProductScheduled, getProductTimeLabel } from '../utils/storeHelpers';
 import { isCategoryPreview } from '../utils/categoryHelpers';
 import { useCategories } from '../hooks/queries/useCategories';
 import { useState, useEffect } from 'react';
@@ -368,11 +368,6 @@ const SimpleProductCard = ({ product, isFastPurchase, stores: propStores, showSa
                             <p className={`text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0`}>
                                 {storeName}
                             </p>
-                            {isStoreScheduled(store) && (
-                                <span className="shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-[#2E5A2E] dark:bg-emerald-950/40 dark:text-[#CBF9B2] border border-emerald-200/50 dark:border-emerald-800/40 uppercase tracking-tighter">
-                                    {t('Schedule')}
-                                </span>
-                            )}
                         </div>
                     )}
 
