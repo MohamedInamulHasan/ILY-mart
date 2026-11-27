@@ -790,7 +790,6 @@ const Checkout = () => {
                     {/* Checkout Form */}
                     <div className="lg:col-span-2 space-y-3 sm:space-y-3.5">
                         {/* Shipping Address */}
-                        {/* Shipping Address */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2.5">
