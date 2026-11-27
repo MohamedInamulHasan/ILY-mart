@@ -148,7 +148,20 @@ const Checkout = () => {
     const [selectedDatePeriod, setSelectedDatePeriod] = useState('today'); // 'today' | 'tomorrow'
     const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
 
-    const availableDeliverySlots = getAvailableDeliverySlots(settings?.deliveryTimes, selectedDatePeriod);
+    // Delivery slots derived directly from the scheduled store(s) in cart (not from overall settings)
+    const storeDeliveryTimes = useMemo(() => {
+        if (!scheduledStoresInCart || scheduledStoresInCart.length === 0) return null;
+        const targetStore = scheduledStoresInCart[0];
+        if (Array.isArray(targetStore.deliveryTimes) && targetStore.deliveryTimes.length > 0) {
+            return targetStore.deliveryTimes;
+        }
+        if (Array.isArray(targetStore.scheduleTimes) && targetStore.scheduleTimes.length > 0) {
+            return targetStore.scheduleTimes;
+        }
+        return null;
+    }, [scheduledStoresInCart]);
+
+    const availableDeliverySlots = getAvailableDeliverySlots(storeDeliveryTimes, selectedDatePeriod);
 
     useEffect(() => {
         // Do not auto-select delivery time slot — user must explicitly select their preferred time slot
@@ -273,10 +286,10 @@ const Checkout = () => {
     const [fieldErrors, setFieldErrors] = useState({});
 
     useEffect(() => {
-        if (settings?.deliveryTimingType === 'instant') {
+        if (!isScheduledMode) {
             setFieldErrors(prev => ({ ...prev, deliveryTime: false }));
         }
-    }, [settings?.deliveryTimingType]);
+    }, [isScheduledMode]);
 
     // Security Details for Admin (Moh@2004) and Delivery Boy (ILYmart@2026)
     const [showSecurityModal, setShowSecurityModal] = useState(false);

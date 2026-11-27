@@ -5,7 +5,7 @@ import { API_BASE_URL, apiService } from '../../utils/api';
 import { openExternalLink } from '../../utils/linkHelper';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { isStoreOpen, formatTime12h, isProductScheduled, isStoreScheduled } from '../../utils/storeHelpers';
+import { isStoreOpen, formatTime12h, isProductScheduled, isStoreScheduled, formatDeliveryRange } from '../../utils/storeHelpers';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Store,
@@ -33,7 +33,9 @@ import {
     ChevronUp,
     FolderTree,
     Layers,
-    Zap
+    Zap,
+    Calendar,
+    Check
 } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { useAuth } from '../../context/AuthContext';
@@ -477,7 +479,28 @@ const StoreManagement = ({
     const handleBackToList = () => {
         if (isStoreAdmin) return; // Store admin doesn't go back to list
         setView('list');
-    };    const [storeForm, setStoreForm] = useState({
+    };
+
+    const defaultWorkingSlots = [
+        '09:00', '10:00', '11:00', '12:00', '13:00', '14:00',
+        '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'
+    ];
+
+    const allDeliverySlots = useMemo(() => {
+        const slots = [];
+        for (let i = 0; i < 24; i++) {
+            for (let j = 0; j < 60; j += 30) {
+                const hour = i.toString().padStart(2, '0');
+                const minute = j.toString().padStart(2, '0');
+                const timeString = `${hour}:${minute}`;
+                const displayTime = formatDeliveryRange(timeString);
+                slots.push({ id: timeString, label: displayTime, hour: i });
+            }
+        }
+        return slots;
+    }, []);
+
+    const [storeForm, setStoreForm] = useState({
         name: '',
         address: '',
         image: '',
@@ -486,6 +509,8 @@ const StoreManagement = ({
         closingTime: '21:00',
         mobile: '',
         timingType: 'daily',
+        deliveryType: 'instant',
+        deliveryTimes: defaultWorkingSlots,
         category: [],
         location: ''
     });
@@ -564,6 +589,10 @@ const StoreManagement = ({
             closingTime: store.closingTime || '21:00',
             mobile: store.mobile || '',
             timingType: store.timingType || 'daily',
+            deliveryType: store.deliveryType || (store.timing?.includes('[scheduled]') ? 'scheduled' : 'instant'),
+            deliveryTimes: Array.isArray(store.deliveryTimes) && store.deliveryTimes.length > 0 
+                ? store.deliveryTimes 
+                : defaultWorkingSlots,
             category: resolvedCats,
             location: store.location || ''
         });
@@ -617,6 +646,8 @@ const StoreManagement = ({
             openingTime: storeForm.openingTime,
             closingTime: storeForm.closingTime,
             timingType: storeForm.timingType,
+            deliveryType: storeForm.deliveryType || 'instant',
+            deliveryTimes: storeForm.deliveryTimes || defaultWorkingSlots,
 
             image: storeForm.image,
             rating: storeForm.rating || 4.5,
@@ -639,7 +670,7 @@ const StoreManagement = ({
                 await addStore(storeData);
                 alert(t('Store added successfully!'));
             }
-            setStoreForm({ name: '', address: '', mobile: '', image: '', rating: 4.5, openingTime: '09:00', closingTime: '21:00', timingType: 'daily', category: [], location: '' });
+            setStoreForm({ name: '', address: '', mobile: '', image: '', rating: 4.5, openingTime: '09:00', closingTime: '21:00', timingType: 'daily', deliveryType: 'instant', deliveryTimes: defaultWorkingSlots, category: [], location: '' });
             setEditingStore(null);
             setView('list');
             setSecurityVerified(false);
@@ -1873,6 +1904,132 @@ const StoreManagement = ({
                                                 className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2E5A2E] outline-none text-sm"
                                                 required={storeForm.timingType === 'daily'}
                                             />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Delivery Schedule Timing for this Store */}
+                            <div className="col-span-full bg-gray-50 dark:bg-gray-755 p-4 rounded-2xl border border-gray-200/80 dark:border-gray-700 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950/40 text-[#2E5A2E] dark:text-[#CBF9B2] rounded-xl">
+                                            <Calendar size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-gray-900 dark:text-white">{t('Customer Delivery Timing')}</h4>
+                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 tracking-tight">{t('Configure Instant Delivery or Scheduled Timing for this store')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                    {/* Instant Mode */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setStoreForm(prev => ({ ...prev, deliveryType: 'instant' }))}
+                                        className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center justify-between cursor-pointer ${
+                                            storeForm.deliveryType !== 'scheduled'
+                                                ? 'border-[#2E5A2E] bg-emerald-50/50 text-[#2E5A2E] dark:bg-emerald-950/20 dark:text-[#7CA90E]'
+                                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <Zap size={18} className={storeForm.deliveryType !== 'scheduled' ? 'text-[#2E5A2E] dark:text-[#7CA90E]' : 'text-gray-400'} />
+                                            <div>
+                                                <h5 className="font-bold text-xs sm:text-sm">{t('Instant Delivery')}</h5>
+                                                <p className="text-[10px] text-gray-400">{t('No schedule picker at checkout')}</p>
+                                            </div>
+                                        </div>
+                                        {storeForm.deliveryType !== 'scheduled' && <Check size={16} className="shrink-0 text-[#2E5A2E] dark:text-[#7CA90E]" />}
+                                    </button>
+
+                                    {/* Scheduled Mode */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setStoreForm(prev => ({ ...prev, deliveryType: 'scheduled' }))}
+                                        className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center justify-between cursor-pointer ${
+                                            storeForm.deliveryType === 'scheduled'
+                                                ? 'border-[#2E5A2E] bg-emerald-50/50 text-[#2E5A2E] dark:bg-emerald-950/20 dark:text-[#7CA90E]'
+                                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <Calendar size={18} className={storeForm.deliveryType === 'scheduled' ? 'text-[#2E5A2E] dark:text-[#7CA90E]' : 'text-gray-400'} />
+                                            <div>
+                                                <h5 className="font-bold text-xs sm:text-sm">{t('Schedule Timing')}</h5>
+                                                <p className="text-[10px] text-gray-400">{t('Customers choose delivery slot')}</p>
+                                            </div>
+                                        </div>
+                                        {storeForm.deliveryType === 'scheduled' && <Check size={16} className="shrink-0 text-[#2E5A2E] dark:text-[#7CA90E]" />}
+                                    </button>
+                                </div>
+
+                                {/* Delivery Time Slots Grid (only shown when Scheduled is chosen) */}
+                                {storeForm.deliveryType === 'scheduled' && (
+                                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                            <div>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('Delivery Time Slots')}</span>
+                                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t('Select available delivery slots for this store')}</p>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const workingSlots = allDeliverySlots
+                                                            .filter(s => s.hour >= 9 && s.hour < 21)
+                                                            .map(s => s.id);
+                                                        setStoreForm(prev => ({ ...prev, deliveryTimes: workingSlots }));
+                                                    }}
+                                                    className="px-2.5 py-1 text-[11px] font-bold text-[#2E5A2E] bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-lg transition-colors cursor-pointer"
+                                                >
+                                                    {t('9am - 9pm')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setStoreForm(prev => ({ ...prev, deliveryTimes: allDeliverySlots.map(s => s.id) }))}
+                                                    className="px-2.5 py-1 text-[11px] font-bold text-gray-600 hover:bg-gray-200 bg-gray-100 dark:bg-gray-700 dark:text-gray-200 rounded-lg transition-colors cursor-pointer"
+                                                >
+                                                    {t('All')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setStoreForm(prev => ({ ...prev, deliveryTimes: [] }))}
+                                                    className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-100 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300 rounded-lg transition-colors cursor-pointer"
+                                                >
+                                                    {t('Clear')}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                            {allDeliverySlots.map(slot => {
+                                                const isSelected = (storeForm.deliveryTimes || []).includes(slot.id);
+                                                return (
+                                                    <button
+                                                        key={slot.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setStoreForm(prev => {
+                                                                const current = prev.deliveryTimes || [];
+                                                                const updated = current.includes(slot.id)
+                                                                    ? current.filter(id => id !== slot.id)
+                                                                    : [...current, slot.id].sort();
+                                                                return { ...prev, deliveryTimes: updated };
+                                                            });
+                                                        }}
+                                                        className={`py-1.5 px-2.5 rounded-lg border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
+                                                            isSelected
+                                                                ? 'bg-[#2E5A2E] border-[#2E5A2E] text-white shadow-xs'
+                                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300'
+                                                        }`}
+                                                    >
+                                                        <span className="truncate">{slot.label}</span>
+                                                        {isSelected && <Check size={13} className="text-[#CBF9B2] shrink-0 ml-1" />}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}

@@ -69,6 +69,10 @@ const storeSchema = new mongoose.Schema({
     deliveryType: {
         type: String,
         default: 'instant'
+    },
+    deliveryTimes: {
+        type: [String],
+        default: []
     }
 }, {
     timestamps: true,

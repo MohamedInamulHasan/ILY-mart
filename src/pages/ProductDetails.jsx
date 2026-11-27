@@ -7,8 +7,8 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { renderBilingualTitle } from '../utils/titleHelpers';
-import { Plus, ArrowLeft, Minus, ShoppingCart, ChevronLeft, ChevronRight, Star, Share2, Bookmark, Store as StoreIcon, Phone } from 'lucide-react';
-import { isStoreOpen, isProductScheduled } from '../utils/storeHelpers';
+import { Plus, ArrowLeft, Minus, ShoppingCart, ChevronLeft, ChevronRight, Star, Share2, Bookmark, Store as StoreIcon, Phone, Clock } from 'lucide-react';
+import { isStoreOpen, isProductScheduled, isStoreScheduled, formatDeliveryRange, getAvailableDeliverySlots } from '../utils/storeHelpers';
 import { isCategoryPreview } from '../utils/categoryHelpers';
 import { useCategories } from '../hooks/queries/useCategories';
 import SwipeActionButton from '../components/SwipeActionButton';
@@ -42,6 +42,14 @@ const ProductDetails = () => {
     // Look up store and preview status
     const store = product && stores?.find(s => (s._id || s.id) === product.storeId);
     const storeName = store?.name || 'Unknown Store';
+    const isStoreScheduledStore = store && isStoreScheduled(store);
+    const storeDeliverySlots = useMemo(() => {
+        if (!isStoreScheduledStore || !store) return [];
+        const slots = Array.isArray(store.deliveryTimes) && store.deliveryTimes.length > 0 
+            ? store.deliveryTimes 
+            : (store.scheduleTimes || null);
+        return getAvailableDeliverySlots(slots, 'today');
+    }, [isStoreScheduledStore, store]);
     const isPreview = isCategoryPreview(product?.category, categories) || product?.isPreview === true || product?.mode === 'preview';
 
     const { blocks: descBlocks, mentions: descMentions } = useMemo(() => {
@@ -590,7 +598,20 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Action Button (Reduced size & length, Add Product in preview mode without call button) */}
-                    <div className="w-full flex justify-center mt-3 mb-10 pb-4">
+                    <div className="w-full flex flex-col items-center mt-3 mb-10 pb-4">
+                        {isStoreScheduledStore && (
+                            <div className="w-[82%] sm:w-[70%] max-w-sm mb-3 px-3.5 py-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/80 rounded-2xl flex items-center gap-2.5 text-xs text-[#2E5A2E] dark:text-[#CBF9B2]">
+                                <Clock size={16} className="shrink-0 text-[#2E5A2E] dark:text-[#7CA90E]" />
+                                <div className="min-w-0 flex-1">
+                                    <span className="font-bold block leading-tight">{t('Schedule Delivery Timing')}</span>
+                                    <span className="text-[11px] opacity-85 block leading-tight mt-0.5">
+                                        {storeDeliverySlots.length > 0
+                                            ? `${t('Available slots')}: ${storeDeliverySlots.slice(0, 2).map(s => formatDeliveryRange(s, language)).join(', ')}`
+                                            : t('Select your preferred slot at checkout')}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                         {!isCurrentlyAvailable && !isPreview ? (
                             <div className="w-[82%] sm:w-[70%] max-w-sm py-3 bg-red-50 dark:bg-red-900/10 rounded-full border border-red-100 dark:border-red-800 text-center">
                                 <p className="text-red-600 dark:text-red-400 font-bold text-sm">
