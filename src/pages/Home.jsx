@@ -18,6 +18,8 @@ import HeroBanner from '../components/home/HeroBanner';
 import PullToRefreshLayout from '../components/PullToRefreshLayout';
 import { useCart } from '../context/CartContext';
 import useTypewriterPlaceholder, { cleanSearchTitle } from '../hooks/useTypewriterPlaceholder';
+import ProductCard from '../components/ProductCard';
+import { groupProducts } from '../utils/productGrouping';
 
 const Home = () => {
     const { cartItems, deliveryCharge } = useCart();
@@ -146,96 +148,81 @@ const Home = () => {
     }, [rawCategories, rawProducts]);
 
 
-    // Grouping Logic (show all available products - timed-out ones show overlay, manually disabled are hidden)
-    const groupedByStore = useMemo(() => {
-        const availableProducts = products.filter(p => {
-            if (p.isAvailable === false) return false; // Manually disabled -> hide completely
-            return true; // Timed products still show with an availability overlay
+    // Active products for Home store sections (non-disabled & from active stores)
+    const activeProducts = useMemo(() => {
+        const allProducts = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || []);
+        return allProducts.filter(p => {
+            if (p.isAvailable === false) return false;
+            return isProductFromActiveStore(p, stores);
         });
+    }, [rawProducts, stores]);
 
-        return availableProducts.reduce((acc, product) => {
-            const storeId = product.storeId?._id || product.storeId;
-            const key = storeId || `category_${product.category || 'Other'}`;
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(product);
-            return acc;
-        }, {});
-    }, [products]);
+    // Apply product grouping (variants) & sorting like CategoryProducts
+    const groupedHomeProducts = useMemo(() => {
+        const grouped = groupProducts(activeProducts, stores);
+        let list = [...grouped];
+        if (globalSortOrder && globalSortOrder !== 'none') {
+            list.sort((a, b) => {
+                const priceA = Number(a.price || 0);
+                const priceB = Number(b.price || 0);
+                return globalSortOrder === 'lowToHigh' ? priceA - priceB : priceB - priceA;
+            });
+        }
+        return list;
+    }, [activeProducts, stores, globalSortOrder]);
 
-    
+    // Multi-store sections (all stores list matching CategoryProducts page)
+    const storeSections = useMemo(() => {
+        if (!stores || stores.length === 0 || groupedHomeProducts.length === 0) return [];
 
-    // Create sections list
-    const displaySections = useMemo(() => {
-        const sections = [];
+        const storeMap = {};
+        const generalProducts = [];
 
-        
-
-        // 1. Add real stores
-        stores.forEach(s => {
-            const storeId = s._id || s.id;
-            const storeProducts = groupedByStore[storeId] || [];
-            
-            // Filter by selected category if not 'All'
-            const matchesCategory = selectedCategory === 'All' || 
-                                    storeProducts.some(p => p.category === selectedCategory);
-
-            if (storeProducts.length > 0 && matchesCategory) {
-                sections.push({
-                    id: storeId,
-                    name: s.name,
-                    address: s.address,
-                    type: 'store',
-                    data: s
-                });
-            }
-        });
-
-        // 2. Add orphan category sections (only if 'All' or matching and not hidden)
-        Object.entries(groupedByStore).forEach(([key, products]) => {
-            if (key.startsWith('category_')) {
-                const categoryName = key.replace('category_', '');
-                const catObj = (rawCategories || []).find(c => (c.name || '').toLowerCase() === categoryName.toLowerCase());
-                if (catObj && (catObj.isHidden || catObj.isHomeHidden)) return;
-
-                if (selectedCategory === 'All' || categoryName === selectedCategory) {
-                    sections.push({
-                        id: key,
-                        name: categoryName,
-                        type: 'category',
-                        data: { name: categoryName }
-                    });
+        groupedHomeProducts.forEach(product => {
+            const rawStoreId = product.storeId?._id || product.storeId;
+            if (rawStoreId) {
+                const sId = String(rawStoreId);
+                if (!storeMap[sId]) {
+                    const storeObj = stores.find(s => String(s._id || s.id) === sId) || product.storeId || { _id: sId, name: t('Store') };
+                    storeMap[sId] = {
+                        store: storeObj,
+                        products: []
+                    };
                 }
+                storeMap[sId].products.push(product);
+            } else {
+                generalProducts.push(product);
             }
         });
 
-        // Sort by Type then Status
-        return sections.sort((a, b) => {
+        const sections = Object.values(storeMap);
+        sections.sort((a, b) => {
+            const aOpen = isStoreOpen(a.store);
+            const bOpen = isStoreOpen(b.store);
+            if (aOpen && !bOpen) return -1;
+            if (!aOpen && bOpen) return 1;
 
-            // 2. Prioritize Category Sections over Store Sections
-            if (a.type === 'category' && b.type === 'store') return -1;
-            if (a.type === 'store' && b.type === 'category') return 1;
-
-            // 3. For Category Sections, sort based on featuredCategories order
-            if (a.type === 'category' && b.type === 'category') {
-                const aIndex = featuredCategories.findIndex(cat => cat.name === a.name);
-                const bIndex = featuredCategories.findIndex(cat => cat.name === b.name);
-                // If found, sort by index. If not found (e.g. "Other"), put at the end.
-                const aPos = aIndex === -1 ? 999 : aIndex;
-                const bPos = bIndex === -1 ? 999 : bIndex;
-                return aPos - bPos;
-            }
-
-            // 4. For Store Sections, sort by Status (Open first)
-            if (a.type === 'store' && b.type === 'store') {
-                const aOpen = isStoreOpen(a.data);
-                const bOpen = isStoreOpen(b.data);
-                if (aOpen && !bOpen) return -1;
-                if (!aOpen && bOpen) return 1;
-            }
-
-            return 0;
+            // Preserve store order from admin panel / database
+            const aIndex = stores.findIndex(s => String(s._id || s.id) === String(a.store?._id || a.store?.id));
+            const bIndex = stores.findIndex(s => String(s._id || s.id) === String(b.store?._id || b.store?.id));
+            const aPos = aIndex === -1 ? 999 : aIndex;
+            const bPos = bIndex === -1 ? 999 : bIndex;
+            return aPos - bPos;
         });
-    }, [stores, groupedByStore, selectedCategory, featuredCategories]);
+
+        if (generalProducts.length > 0) {
+            sections.push({
+                store: {
+                    _id: 'general',
+                    name: t('All Products'),
+                    isGeneral: true
+                },
+                products: generalProducts
+            });
+        }
+
+        return sections;
+    }, [groupedHomeProducts, stores, t]);
 
     // Only show skeleton when there is NO data at all (not even cached)
     const hasAnyProducts = (Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data || [])).length > 0;
@@ -482,6 +469,88 @@ const Home = () => {
                         </div>
                     ) : null}
                 </section>
+
+                {/* Store Products Section (all stores list like in Category Products page) */}
+                <div className="px-3 sm:px-4 max-w-7xl mx-auto space-y-4 mb-6">
+                    {loadingProducts && !hasAnyProducts ? (
+                        <div className="space-y-6">
+                            {[1, 2].map((s) => (
+                                <div key={s} className="space-y-3">
+                                    <div className="flex justify-between items-center px-1">
+                                        <div className="h-4 w-36 sm:w-44 rounded-md blinkit-shimmer" />
+                                        <div className="h-3 w-14 rounded-md blinkit-shimmer" />
+                                    </div>
+                                    <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-1">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="w-[155px] sm:w-[170px] flex-shrink-0 bg-white dark:bg-gray-800 rounded-2xl p-2.5 shadow-xs border border-gray-100 dark:border-gray-700 space-y-2">
+                                                <div className="aspect-square w-full rounded-xl blinkit-shimmer"></div>
+                                                <div className="h-3.5 rounded-md w-full blinkit-shimmer"></div>
+                                                <div className="h-3 rounded-md w-2/3 blinkit-shimmer"></div>
+                                                <div className="flex items-center justify-between pt-1">
+                                                    <div className="h-5 w-12 rounded-md blinkit-shimmer"></div>
+                                                    <div className="h-7 w-7 rounded-lg blinkit-shimmer"></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : storeSections.length > 0 ? (
+                        <div className="space-y-4">
+                            {storeSections.map((section) => {
+                                const storeId = section.store?._id || section.store?.id;
+                                const isStoreSection = !section.store?.isGeneral && storeId !== 'general';
+                                const isOpen = isStoreSection ? isStoreOpen(section.store) : true;
+
+                                return (
+                                    <section key={storeId} className="pt-1 pb-2">
+                                        {/* Store Section Header */}
+                                        <div className="flex justify-between items-end mb-2.5 px-2">
+                                            <div className="flex flex-col min-w-0 flex-1 pr-2">
+                                                <h3 className="text-[15px] sm:text-[17px] font-bold text-gray-900 dark:text-white truncate">
+                                                    {t(section.store?.name || section.store)}
+                                                </h3>
+                                                {(section.store?.address || section.store?.location) && (
+                                                    <p className="text-[10.5px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                        {section.store.address || section.store.location}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {isStoreSection && isOpen && (
+                                                <Link 
+                                                    to={`/store/${storeId}`} 
+                                                    className="text-xs font-semibold text-[#2E5A2E] dark:text-[#CBF9B2] hover:opacity-75 transition-opacity shrink-0"
+                                                >
+                                                    {t('See All')}
+                                                </Link>
+                                            )}
+                                        </div>
+
+                                        {/* Horizontal Side-Scrollable Product Cards (Homepage Style) */}
+                                        <div className="flex overflow-x-auto scrollbar-hide gap-2.5 sm:gap-3 md:gap-4 pb-2 px-1">
+                                            <div className="flex gap-2.5 sm:gap-3 md:gap-4">
+                                                {section.products.map((product) => (
+                                                    <div 
+                                                        key={product._id || product.id}
+                                                        className="w-[142px] sm:w-[155px] md:w-[175px] shrink-0 animate-in fade-in duration-300"
+                                                    >
+                                                        <ProductCard 
+                                                            product={product}
+                                                            showCartControls={true}
+                                                            stores={stores}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </section>
+                                );
+                            })}
+                        </div>
+                    ) : null}
+                </div>
 
                 </div>
             </div>
