@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Order from '../models/Order.js';
 import Settings from '../models/Settings.js';
 import LoginLog from '../models/LoginLog.js';
 import OTP from '../models/OTP.js';
@@ -65,19 +66,154 @@ const sendTokenResponse = (user, statusCode, res) => {
         });
 };
 
+// Normalizes a mobile number to the last 10 digits
+export const normalize10DigitMobile = (mobile) => {
+    if (!mobile) return '';
+    const digits = String(mobile).replace(/\D/g, '');
+    return digits.length >= 10 ? digits.slice(-10) : '';
+};
+
+/**
+ * Finds all users matching a 10-digit mobile number, selects the best primary user,
+ * merges orders, coins, address, and deletes all duplicate documents.
+ * Ensures only ONE user document exists for that mobile number in MongoDB.
+ */
+export const consolidateUserByMobile = async (mobile, preferredUserId = null) => {
+    const standardMobile = normalize10DigitMobile(mobile);
+    if (!standardMobile) return null;
+
+    const query = {
+        $or: [
+            { mobile: standardMobile },
+            { mobile: '91' + standardMobile },
+            { mobile: '+91' + standardMobile },
+            { mobile: { $regex: standardMobile + '$' } },
+            { email: `mobile_${standardMobile}@ily-mart.com` }
+        ]
+    };
+
+    const users = await User.find(query).select('+password');
+    if (!users || users.length === 0) return null;
+    if (users.length === 1) {
+        const singleUser = users[0];
+        if (singleUser.mobile !== standardMobile) {
+            singleUser.mobile = standardMobile;
+            await singleUser.save().catch(() => {});
+        }
+        return singleUser;
+    }
+
+    console.log(`🧹 Consolidating ${users.length} duplicate users for mobile: ${standardMobile}`);
+
+    // Determine primary user to retain
+    let primaryUser = null;
+
+    if (preferredUserId) {
+        primaryUser = users.find(u => String(u._id) === String(preferredUserId));
+    }
+
+    if (!primaryUser) {
+        // 1. Prefer staff accounts (admin, delivery_boy, store_admin, service_admin)
+        primaryUser = users.find(u => {
+            const roles = Array.isArray(u.role) ? u.role : [u.role || 'customer'];
+            return roles.some(r => ['admin', 'delivery_boy', 'store_admin', 'service_admin'].includes(r));
+        });
+    }
+
+    if (!primaryUser) {
+        // 2. Prefer registered account (not guest_)
+        primaryUser = users.find(u => u.email && !u.email.startsWith('guest_'));
+    }
+
+    if (!primaryUser) {
+        // 3. Prefer user with an address or coins
+        primaryUser = users.find(u => (u.address && u.address.street) || (u.coins && u.coins > 0));
+    }
+
+    if (!primaryUser) {
+        // 4. Default to oldest or first user
+        primaryUser = users[0];
+    }
+
+    const duplicateUsers = users.filter(u => String(u._id) !== String(primaryUser._id));
+    const duplicateIds = duplicateUsers.map(u => u._id);
+
+    // Merge coins, address, location, saved products
+    let maxCoins = primaryUser.coins || 0;
+    let bestAddress = primaryUser.address;
+    let bestLocation = primaryUser.location;
+    let bestName = primaryUser.name;
+    const combinedSaved = new Set((primaryUser.savedProducts || []).map(String));
+
+    duplicateUsers.forEach(dup => {
+        if ((dup.coins || 0) > maxCoins) maxCoins = dup.coins;
+        if ((!bestAddress || !bestAddress.street) && dup.address && dup.address.street) {
+            bestAddress = dup.address;
+        }
+        if (!bestLocation && dup.location) bestLocation = dup.location;
+        if ((!bestName || bestName.startsWith('User_')) && dup.name && !dup.name.startsWith('User_')) {
+            bestName = dup.name;
+        }
+        (dup.savedProducts || []).forEach(pId => combinedSaved.add(String(pId)));
+    });
+
+    primaryUser.coins = maxCoins;
+    if (bestAddress) primaryUser.set('address', bestAddress);
+    if (bestLocation) primaryUser.location = bestLocation;
+    if (bestName) primaryUser.name = bestName;
+    primaryUser.mobile = standardMobile;
+    primaryUser.savedProducts = Array.from(combinedSaved);
+    await primaryUser.save().catch(() => {});
+
+    // Migrate all orders from duplicates to primary user
+    try {
+        await Order.updateMany(
+            { user: { $in: duplicateIds } },
+            { $set: { user: primaryUser._id } }
+        );
+    } catch (err) {
+        console.warn('Error migrating duplicate user orders:', err);
+    }
+
+    // Delete duplicate user records so only 1 record exists in DB
+    try {
+        await User.deleteMany({ _id: { $in: duplicateIds } });
+        console.log(`✅ Deleted ${duplicateIds.length} duplicate user records for mobile ${standardMobile}`);
+    } catch (err) {
+        console.warn('Error deleting duplicate users:', err);
+    }
+
+    return primaryUser;
+};
+
 // @desc    Register new user
 // @route   POST /api/users/register
 // @access  Public
 export const registerUser = async (req, res, next) => {
     try {
         const { name, email, password, mobile } = req.body;
+        const standardMobile = normalize10DigitMobile(mobile);
 
-        // Check if user exists
+        // Check if user exists by email
         const userExists = await User.findOne({ email });
 
         if (userExists) {
             res.status(400);
             throw new Error('User already exists');
+        }
+
+        // If mobile provided, check if user already exists with this mobile and consolidate
+        if (standardMobile) {
+            let existingUser = await consolidateUserByMobile(standardMobile);
+            if (existingUser) {
+                // Overwrite / upgrade this existing user with the new registration details
+                existingUser.name = name || existingUser.name;
+                existingUser.email = email;
+                if (password) existingUser.password = password;
+                existingUser.mobile = standardMobile;
+                await existingUser.save();
+                return sendTokenResponse(existingUser, 200, res);
+            }
         }
 
         // Check for signup bonus
@@ -86,8 +222,6 @@ export const registerUser = async (req, res, next) => {
         
         if (bonusConfig && bonusConfig.value?.isEnabled && bonusConfig.value?.remainingLimit > 0) {
             initialCoins = 1;
-            
-            // Decrement limit
             bonusConfig.value.remainingLimit -= 1;
             if (bonusConfig.value.remainingLimit <= 0) {
                 bonusConfig.value.isEnabled = false;
@@ -101,7 +235,7 @@ export const registerUser = async (req, res, next) => {
             name,
             email,
             password,
-            mobile,
+            mobile: standardMobile || mobile,
             role: ['customer'],
             coins: initialCoins
         });
@@ -220,20 +354,16 @@ export const mobileLogin = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please enter a 10-digit mobile number' });
         }
 
-        const standardMobile = raw.slice(-10);
-        const mobileQueries = [
-            standardMobile,
-            '91' + standardMobile,
-            '+91' + standardMobile
-        ];
+        const standardMobile = normalize10DigitMobile(inputMobile);
+        if (!standardMobile) {
+            return res.status(400).json({ success: false, message: 'Please enter a 10-digit mobile number' });
+        }
 
-        // 1. Search for existing user with this mobile number or mobile email
-        let user = await User.findOne({
-            $or: [
-                { mobile: { $in: mobileQueries } },
-                { email: `mobile_${standardMobile}@ily-mart.com` }
-            ]
-        }).select('+password');
+        // 1. Search for existing user with this mobile number and consolidate any duplicates
+        let user = await consolidateUserByMobile(standardMobile);
+        if (user) {
+            user = await User.findById(user._id).select('+password');
+        }
 
         if (user) {
             const roles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
@@ -498,12 +628,10 @@ export const updateUserProfile = async (req, res, next) => {
             user.email = req.body.email || user.email;
 
             if (req.body.mobile !== undefined) {
-                const rawMobile = req.body.mobile ? req.body.mobile.replace(/[^0-9]/g, '') : '';
-                const standardMobile = rawMobile.slice(-10);
+                const standardMobile = normalize10DigitMobile(req.body.mobile);
 
                 if (standardMobile) {
-                    // Check if mobile belongs to an existing staff account (delivery_boy, admin, store_admin)
-                    // or another registered account
+                    // Check if mobile belongs to an existing staff account
                     const existingUser = await User.findOne({
                         _id: { $ne: user._id },
                         $or: [
@@ -516,9 +644,8 @@ export const updateUserProfile = async (req, res, next) => {
                     if (existingUser) {
                         const existingRoles = Array.isArray(existingUser.role) ? existingUser.role : [existingUser.role || 'customer'];
                         const isStaff = existingRoles.some(r => ['delivery_boy', 'admin', 'store_admin', 'service_admin'].includes(r));
-                        const isRegisteredUser = existingUser.email && !existingUser.email.startsWith('guest_');
 
-                        if (isStaff || isRegisteredUser) {
+                        if (isStaff) {
                             if (existingRoles.includes('delivery_boy') || standardMobile === '9578654411') {
                                 if (req.body.securityPassword !== 'ILYmart@2026' && req.body.securityPassword !== 'Moh@2004') {
                                     return res.status(403).json({
@@ -544,8 +671,13 @@ export const updateUserProfile = async (req, res, next) => {
                             return sendTokenResponse(existingUser, 200, res);
                         }
                     }
+
+                    // Consolidate any duplicate accounts sharing this number into this user
+                    await consolidateUserByMobile(standardMobile, user._id);
+                    user.mobile = standardMobile;
+                } else if (!req.body.mobile) {
+                    user.mobile = '';
                 }
-                user.mobile = rawMobile;
             }
 
             if (req.body.address) {
@@ -616,12 +748,61 @@ export const updateUserProfile = async (req, res, next) => {
 // @access  Private/Admin
 export const getAllUsers = async (req, res, next) => {
     try {
-        const users = await User.find({}).select('-password').populate('storeId', 'name').populate('serviceId', 'name');
+        const allUsers = await User.find({})
+            .select('-password')
+            .populate('storeId', 'name')
+            .populate('serviceId', 'name')
+            .sort({ createdAt: -1 });
+
+        // Group by 10-digit mobile number to ensure exactly 1 record per user in admin list
+        const mobileGroups = new Map();
+        const usersToKeep = [];
+        const duplicateIdsToDelete = [];
+
+        for (const user of allUsers) {
+            const standardMobile = normalize10DigitMobile(user.mobile);
+
+            if (!standardMobile) {
+                // Keep admins or users without mobile
+                usersToKeep.push(user);
+                continue;
+            }
+
+            if (!mobileGroups.has(standardMobile)) {
+                mobileGroups.set(standardMobile, user);
+                usersToKeep.push(user);
+            } else {
+                // Duplicate found for this mobile!
+                const primary = mobileGroups.get(standardMobile);
+                const isUserStaff = Array.isArray(user.role) && user.role.some(r => ['admin', 'delivery_boy', 'store_admin', 'service_admin'].includes(r));
+                const isPrimaryStaff = Array.isArray(primary.role) && primary.role.some(r => ['admin', 'delivery_boy', 'store_admin', 'service_admin'].includes(r));
+
+                if (isUserStaff && !isPrimaryStaff) {
+                    duplicateIdsToDelete.push(primary._id);
+                    const idx = usersToKeep.findIndex(u => String(u._id) === String(primary._id));
+                    if (idx !== -1) usersToKeep[idx] = user;
+                    mobileGroups.set(standardMobile, user);
+                } else {
+                    duplicateIdsToDelete.push(user._id);
+                    // Copy address if primary had none
+                    if ((!primary.address || !primary.address.street) && user.address && user.address.street) {
+                        primary.address = user.address;
+                        User.findByIdAndUpdate(primary._id, { $set: { address: user.address } }).catch(() => {});
+                    }
+                }
+            }
+        }
+
+        // Clean up duplicate documents from DB in background
+        if (duplicateIdsToDelete.length > 0) {
+            console.log(`🧹 Cleaning up ${duplicateIdsToDelete.length} duplicate users in getAllUsers...`);
+            User.deleteMany({ _id: { $in: duplicateIdsToDelete } }).catch(err => console.warn('User deduplication cleanup error:', err));
+        }
 
         res.status(200).json({
             success: true,
-            count: users.length,
-            data: users
+            count: usersToKeep.length,
+            data: usersToKeep
         });
     } catch (error) {
         next(error);
@@ -1262,28 +1443,21 @@ export const updateGuest = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Name and mobile number are required' });
         }
 
-        const rawMobile = mobile.replace(/[^0-9]/g, '');
-        const standardMobile = rawMobile.slice(-10);
+        const standardMobile = normalize10DigitMobile(mobile);
+        if (!standardMobile) {
+            return res.status(400).json({ success: false, message: 'Please enter a 10-digit mobile number' });
+        }
+
         const currentUserId = req.user.id || req.user._id;
 
-        // Check if the entered mobile belongs to an existing DIFFERENT account
-        const existingUser = await User.findOne({
-            _id: { $ne: currentUserId },
-            $or: [
-                { mobile: standardMobile },
-                { mobile: '91' + standardMobile },
-                { email: 'mobile_' + standardMobile + '@ily-mart.com' }
-            ]
-        });
+        // Check for any existing account with this mobile number and consolidate duplicates
+        const existingUser = await consolidateUserByMobile(standardMobile, currentUserId);
 
         if (existingUser) {
-            // Check if this existing account is a staff account (delivery_boy, admin, store_admin)
-            // or an existing registered account (NOT a temporary guest_ account)
             const existingRoles = Array.isArray(existingUser.role) ? existingUser.role : [existingUser.role || 'customer'];
             const isStaff = existingRoles.some(r => ['delivery_boy', 'admin', 'store_admin', 'service_admin'].includes(r));
-            const isRegisteredUser = existingUser.email && !existingUser.email.startsWith('guest_');
 
-            if (isStaff || isRegisteredUser) {
+            if (isStaff) {
                 if (existingRoles.includes('delivery_boy') || standardMobile === '9578654411') {
                     if (securityPassword !== 'ILYmart@2026' && securityPassword !== 'Moh@2004') {
                         return res.status(403).json({
@@ -1303,47 +1477,34 @@ export const updateGuest = async (req, res, next) => {
                         });
                     }
                 }
-
-                // Switch session to this existing account (admin or existing customer claiming their account)
-                if (address) existingUser.address = address;
-                if (location) existingUser.location = location;
-                if (name) existingUser.name = name;
-                await existingUser.save();
-                return sendTokenResponse(existingUser, 200, res);
-            } else {
-                // Synchronize address and name to the existing account so no stale record keeps old data
-                if (address) existingUser.address = address;
-                if (location) existingUser.location = location;
-                if (name) existingUser.name = name;
-                await existingUser.save().catch(() => {});
             }
+
+            // Overwrite existing account with the latest details
+            if (name) existingUser.name = name;
+            existingUser.mobile = standardMobile;
+            if (address) {
+                existingUser.set('address', address);
+                existingUser.markModified('address');
+            }
+            if (location) existingUser.location = location;
+            await existingUser.save();
+
+            // If currentUserId was a temporary guest account different from existingUser, clean it up
+            if (String(currentUserId) !== String(existingUser._id)) {
+                await Order.updateMany(
+                    { user: currentUserId },
+                    { $set: { user: existingUser._id } }
+                ).catch(() => {});
+                await User.findByIdAndDelete(currentUserId).catch(() => {});
+            }
+
+            return sendTokenResponse(existingUser, 200, res);
         }
 
-        // Update current user's name, mobile, address, and location
+        // If no existing account was found, update the current user
         const user = await User.findById(currentUserId);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        const currentUserRoles = Array.isArray(user.role) ? user.role : [user.role || 'customer'];
-        if (currentUserRoles.includes('delivery_boy') && user.mobile && user.mobile !== standardMobile) {
-            if (securityPassword !== 'ILYmart@2026' && securityPassword !== 'Moh@2004') {
-                return res.status(403).json({
-                    success: false,
-                    requireSecurityAuth: true,
-                    authType: 'delivery_boy',
-                    message: 'Delivery Boy authentication required to change number'
-                });
-            }
-        } else if (currentUserRoles.includes('admin') && user.mobile && user.mobile !== standardMobile) {
-            if (securityPassword !== 'Moh@2004') {
-                return res.status(403).json({
-                    success: false,
-                    requireSecurityAuth: true,
-                    authType: 'admin',
-                    message: 'Admin authentication required to change number'
-                });
-            }
         }
 
         user.name = name;
@@ -1353,29 +1514,10 @@ export const updateGuest = async (req, res, next) => {
             user.markModified('address');
         }
         if (location) user.location = location;
+        if (user.email && user.email.startsWith('guest_')) {
+            user.email = `mobile_${standardMobile}@ily-mart.com`;
+        }
         await user.save();
-
-        // Direct MongoDB update to guarantee persistence
-        await User.findByIdAndUpdate(user._id, {
-            $set: {
-                name: user.name,
-                mobile: user.mobile,
-                ...(address ? { address } : {}),
-                ...(location ? { location } : {})
-            }
-        }).catch(() => {});
-
-        // Update all documents sharing this mobile number so old addresses never resurface
-        await User.updateMany(
-            { $or: [{ mobile: standardMobile }, { mobile: '91' + standardMobile }] },
-            { 
-                $set: { 
-                    ...(address ? { address } : {}),
-                    ...(location ? { location } : {}),
-                    name: user.name 
-                } 
-            }
-        ).catch(() => {});
 
         sendTokenResponse(user, 200, res);
     } catch (error) {

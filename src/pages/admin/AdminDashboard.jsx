@@ -2,7 +2,7 @@ import RichDescriptionEditor from '../../components/RichDescriptionEditor';
 import { parseProductDescription, serializeProductDescription } from '../../utils/descriptionHelper';
 import { CartoonCoin } from '../../components/CartoonCoin';
 import { getUserRoles } from '../../utils/userHelpers';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -3581,14 +3581,52 @@ const UserManagement = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     // Stats for Top Card
-    // Filter out delivery boys from general user management
-    const filteredUsers = users.filter(u => {
-        const isDeliveryBoy = Array.isArray(u.role) ? u.role.includes('delivery_boy') : u.role === 'delivery_boy';
-        const hasMobile = u.mobile && u.mobile.trim() !== '';
-        const isAdmin = Array.isArray(u.role) ? u.role.includes('admin') : u.role === 'admin';
-        // Show only users with a mobile number (real users), plus admins regardless
-        return !isDeliveryBoy && (hasMobile || isAdmin);
-    });
+    // Filter out delivery boys from general user management and deduplicate by 10-digit mobile number
+    const filteredUsers = useMemo(() => {
+        const seenMobiles = new Set();
+        const seenIds = new Set();
+        const result = [];
+
+        // Sort users so that staff/admin and users with complete addresses/latest updates come first
+        const sorted = [...users].sort((a, b) => {
+            const aAdmin = Array.isArray(a.role) ? a.role.includes('admin') : a.role === 'admin';
+            const bAdmin = Array.isArray(b.role) ? b.role.includes('admin') : b.role === 'admin';
+            if (aAdmin && !bAdmin) return -1;
+            if (!aAdmin && bAdmin) return 1;
+
+            const aHasAddr = a.address && (a.address.street || a.address.city);
+            const bHasAddr = b.address && (b.address.street || b.address.city);
+            if (aHasAddr && !bHasAddr) return -1;
+            if (!aHasAddr && bHasAddr) return 1;
+
+            return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+        });
+
+        for (const u of sorted) {
+            const isDeliveryBoy = Array.isArray(u.role) ? u.role.includes('delivery_boy') : u.role === 'delivery_boy';
+            if (isDeliveryBoy) continue;
+
+            const rawMobile = (u.mobile || '').replace(/\D/g, '');
+            const standardMobile = rawMobile.length >= 10 ? rawMobile.slice(-10) : '';
+            const isAdmin = Array.isArray(u.role) ? u.role.includes('admin') : u.role === 'admin';
+
+            // Show only users with a mobile number (real users), plus admins regardless
+            if (!standardMobile && !isAdmin) continue;
+
+            if (standardMobile) {
+                if (seenMobiles.has(standardMobile)) continue;
+                seenMobiles.add(standardMobile);
+            }
+
+            const uId = String(u._id || u.id);
+            if (seenIds.has(uId)) continue;
+            seenIds.add(uId);
+
+            result.push(u);
+        }
+
+        return result;
+    }, [users]);
 
     // Stats for Top Card
     const totalUsers = filteredUsers.length;

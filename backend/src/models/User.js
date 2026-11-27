@@ -105,8 +105,14 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Hash password before saving
+// Normalize mobile to 10 digits and hash password before saving
 userSchema.pre('save', async function (next) {
+    if (this.mobile) {
+        const raw = String(this.mobile).replace(/\D/g, '');
+        if (raw.length >= 10) {
+            this.mobile = raw.slice(-10);
+        }
+    }
     if (!this.isModified('password')) {
         return next();
     }
